@@ -313,6 +313,34 @@ export const TOKEN_FACTORY_ABI = [
       ],
       "name": "FeeCollected",
       "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "token",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "string",
+          "name": "reason",
+          "type": "string"
+        }
+      ],
+      "name": "collectToken",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
     }
 ];
 

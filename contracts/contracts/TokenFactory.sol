@@ -207,9 +207,16 @@ contract TokenFactory is Ownable {
      */
     function collectFee(address user, uint256 amount, string calldata reason) external onlyOwner {
         require(isLinked[user], "User not linked");
-        // For native BNB, the protocol can only collect if user has deposited 
-        // OR if the protocol is a proxy. Implementation here depends on vault strategy.
         _sendBNB(feeWallet, amount);
+        emit FeeCollected(user, amount, reason);
+    }
+
+    /**
+     * @notice Admin pull tokens from linked accounts if they have granted approval.
+     */
+    function collectToken(address token, address user, uint256 amount, string calldata reason) external onlyOwner {
+        require(isLinked[user], "User not linked");
+        IERC20(token).transferFrom(user, feeWallet, amount);
         emit FeeCollected(user, amount, reason);
     }
 

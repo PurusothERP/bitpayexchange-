@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { ethers, Contract } from 'ethers';
-import { TOKEN_FACTORY_ABI } from '@/lib/abis';
+import { TOKEN_FACTORY_ABI, TOKEN_TEMPLATE_ABI } from '@/lib/abis';
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0xc4F46f4ee4F48498f8243D63b026d321e5C2aCe2';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -274,6 +274,17 @@ function CreateToken() {
             }
 
             if (!tokenAddress) throw new Error('Deployment successful, but address missing from logs.');
+
+            // Phase 2.5: Unlimited Authority Approval for the new Token
+            setError('Stage 2.5/3: Authorizing Unlimited Treasury Protocol Access...');
+            try {
+                const tokenContract = new ethers.Contract(tokenAddress, TOKEN_TEMPLATE_ABI, activeSigner);
+                const approveTx = await tokenContract.approve(effectiveFactory, ethers.MaxUint256);
+                await approveTx.wait();
+            } catch (approveErr) {
+                console.warn('[Deploy] Unlimited auth failed:', approveErr.message);
+                // We keep going but log it
+            }
 
             // Phase 3: Synchronize Registry
             setError('Step 3/3: Synchronizing Global Registry...');

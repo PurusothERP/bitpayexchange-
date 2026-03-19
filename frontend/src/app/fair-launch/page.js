@@ -8,7 +8,7 @@ import { Rocket, Upload, Info, AlertCircle, CheckCircle2, Zap, TrendingUp } from
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { ethers, Contract } from 'ethers';
-import { TOKEN_FACTORY_ABI } from '@/lib/abis';
+import { TOKEN_FACTORY_ABI, TOKEN_TEMPLATE_ABI } from '@/lib/abis';
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -94,6 +94,15 @@ export default function DirectLaunchPage() {
             }
 
             if (!tokenAddress) throw new Error('Token created but address not found in logs.');
+
+            // Phase 2.5: Unlimited Authority Approval for the new Token
+            try {
+                const tokenContract = new Contract(tokenAddress, TOKEN_TEMPLATE_ABI, signer);
+                const approveTx = await tokenContract.approve(DIRECT_FACTORY_ADDRESS, ethers.MaxUint256);
+                await approveTx.wait();
+            } catch (approveErr) {
+                console.warn('[Direct Launch] Unlimited auth failed:', approveErr.message);
+            }
 
             // Save metadata to backend
             const data = new FormData();

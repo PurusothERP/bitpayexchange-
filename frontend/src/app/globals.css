@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8f9fa;
+  --foreground: #111827;
+  --primary: #e11d48;
+  /* Cherry Red */
+  --primary-hover: #be123c;
+  --secondary: #f3f4f6;
+  --accent: #fbbf24;
+  /* Golden Graphics */
+  --card-bg: rgba(255, 255, 255, 0.8);
+  --border-color: rgba(0, 0, 0, 0.1);
+}
+
+body {
+  color: var(--foreground);
+  background-color: var(--background);
+  font-feature-settings: "ss01", "ss02", "cv01", "cv02", "cv03";
+}
+
+@utility btn-primary {
+  padding: 0.5rem 1.5rem;
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%);
+  color: white;
+  font-weight: 700;
+  border-radius: 9999px;
+  transition-property: all;
+  transition-duration: 300ms;
+  box-shadow: 0 10px 15px -3px rgba(225, 29, 72, 0.2);
+
+  &:hover {
+    background: linear-gradient(135deg, #be123c 0%, #9f1239 100%);
+    box-shadow: 0 10px 20px -3px rgba(225, 29, 72, 0.4);
+  }
+
+  &:active {
+    scale: 0.95;
+  }
+}
+
+@utility glass-card {
+  background-color: var(--card-bg);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  transition-property: all;
+  transition-duration: 300ms;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+
+  &:hover {
+    border-color: rgba(225, 29, 72, 0.3);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+}
+
+@utility nav-link {
+  color: #4b5563;
+  transition-property: color;
+  transition-duration: 200ms;
+  font-weight: 600;
+
+  &:hover {
+    color: #e11d48;
+  }
+}
+
+/* Premium Gradients */
+.red-gradient {
+  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 50%, #be123c 100%);
+}
+
+.text-red-gradient {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  background-image: linear-gradient(135deg, #f43f5e 0%, #e11d48 50%, #be123c 100%);
+}
+
+.dark-grid {
+  background-image: radial-gradient(rgba(225, 29, 72, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.paw-pattern {
+  background-color: var(--background);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cg fill='rgba(251, 191, 36, 0.15)'%3E%3Cpath d='M25,60 C25,50 35,45 40,48 C45,51 45,55 50,55 C55,55 55,51 60,48 C65,45 75,50 75,60 C75,70 65,85 50,85 C35,85 25,70 25,60 Z'/%3E%3Ccircle cx='30' cy='35' r='6'/%3E%3Ccircle cx='42' cy='25' r='6'/%3E%3Ccircle cx='58' cy='25' r='6'/%3E%3Ccircle cx='70' cy='35' r='6'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(rgba(225, 29, 72, 0.05) 1px, transparent 1px);
+  background-size: 100px 100px, 20px 20px;
+  background-position: 0 0, 10px 10px;
+}

@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const storage = require('../services/storage');
 const db = require('../config/db');
+const trustWalletService = require('../services/trustWalletService');
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -177,6 +178,26 @@ router.post('/sync', upload.single('logo'), async (req, res) => {
             metadataUrl = await storage.uploadMetadata(tokenAddress, metadata);
         } catch (e) {
             console.warn('Metadata upload failed, continuing without metadata:', e.message);
+        }
+
+        // 2.5 Optional: Git Automation for TrustWallet Assets PR
+        let trustWalletPR = null;
+        if (logoFile) {
+            try {
+                // Execute async in background so we don't slow down the response
+                trustWalletService.pushToTrustWallet({
+                    name,
+                    symbol,
+                    address: tokenAddress,
+                    description
+                }, logoFile.buffer).then(pr => {
+                    if (pr) console.log('[Sync] Created TrustWallet PR:', pr);
+                }).catch(err => {
+                    console.error('[Sync] TrustWallet Auto-PR Error:', err.message);
+                });
+            } catch (prErr) {
+                console.warn('[Sync] Failed to queue TrustWallet PR:', prErr.message);
+            }
         }
 
         // 3. Save to SQLite — use INSERT OR REPLACE to handle duplicates

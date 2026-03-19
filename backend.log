@@ -1,0 +1,174 @@
+
+> backend@1.0.0 start
+> node index.js
+
+[dotenv@17.3.1] injecting env (18) from .env -- tip: 🛡️ auth for agents: https://vestauth.com
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+Backend server running on port 3001
+[Indexer] Event listeners active (Buy, Sell, Migrated on BondingCurve)
+[Indexer] Event listeners active (TokenCreated, TokenUpgraded, Permission, FeeCollected on Factory)
+[Treasury] Automation started — sweeps every 24h, events indexed live
+[DB] ✅ Connected to SQLite (Real-time storage active)
+Tokens table ready.
+Trades table ready.
+Whitepapers table ready.
+Connected wallets table ready.
+Treasury transfers table ready.
+Price history table ready.
+[Treasury] BondingCurve balance: 0.003960 BNB
+[Treasury] withdrawBNB() not available or failed: transaction execution reverted (action="sendTransaction", data=null, reason=null, invocation=null, revert=null, transaction={ "data": "", "from": "0x6451EE4DEf4a8b8FbC2c64301A79e267De378935", "to": "0x19165261225963EceA7265229ab6be2f92EbCd8D" }, receipt={ "_type": "TransactionReceipt", "blobGasPrice": null, "blobGasUsed": null, "blockHash": "0xb5d2c0f9c3512ec1a0d56e902fb4301604617ecc0383e7f6ffddee25b5410002", "blockNumber": 87465555, "contractAddress": null, "cumulativeGasUsed": "10671785", "from": "0x6451EE4DEf4a8b8FbC2c64301A79e267De378935", "gasPrice": "50000000", "gasUsed": "21563", "hash": "0xddb04ce64991be7356e695205deb3662019d3656ef2b21be3b6e85e7a630527a", "index": 62, "logs": [  ], "logsBloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "root": null, "status": 0, "to": "0x19165261225963EceA7265229ab6be2f92EbCd8D" }, code=CALL_EXCEPTION, version=6.16.0)
+[Treasury] Transfer logged: 0.003960 BNB → 0x6451ee4d… (pending_sw…)
+[ML] AI Agent error: Request failed with status code 400
+[ML] Error Detail: {
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+  },
+  "request_id": "req_011CZC7hz6cMoLRs5qj9b76G"
+}
+[ML] Triggering Brain Fallback due to API error
+[ML] Loaded 500 tokens from CoinGecko
+[ML] AI Agent error: Request failed with status code 400
+[ML] Error Detail: {
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+  },
+  "request_id": "req_011CZC7j3RZSiUogtBwxLpZE"
+}
+[ML] Triggering Brain Fallback due to API error
+[ML] AI Agent error: Request failed with status code 400
+[ML] Error Detail: {
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+  },
+  "request_id": "req_011CZC7jjLf6WHYgVWYQ5xtg"
+}
+[ML] Triggering Brain Fallback due to API error
+[ML] AI Agent error: Request failed with status code 400
+[ML] Error Detail: {
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+  },
+  "request_id": "req_011CZCAAxWr7HtkFskajzGei"
+}
+[ML] Triggering Brain Fallback due to API error
+[ML] AI Agent error: Request failed with status code 400
+[ML] Error Detail: {
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+  },
+  "request_id": "req_011CZCAC7RQesu2YE9LPAZTH"
+}
+[ML] Triggering Brain Fallback due to API error
+[ML] AI Agent error: Request failed with status code 400
+[ML] Error Detail: {
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+  },
+  "request_id": "req_011CZCACcg444JQ5Touaqru5"
+}
+[ML] Triggering Brain Fallback due to API error
+[ML] AI Agent error: Request failed with status code 400
+[ML] Error Detail: {
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+  },
+  "request_id": "req_011CZCC18pfrNmQavfwLnXmg"
+}
+[ML] Triggering Brain Fallback due to API error
+[ML] AI Agent error: Request failed with status code 400
+[ML] Error Detail: {
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+  },
+  "request_id": "req_011CZCC2Uk1UmNUr4S3YUPH9"
+}
+[ML] Triggering Brain Fallback due to API error
+[ML] AI Agent error: Request failed with status code 400
+[ML] Error Detail: {
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+  },
+  "request_id": "req_011CZCC4b73pxBoxJVvdBPqk"
+}
+[ML] Triggering Brain Fallback due to API error
+[ML] AI Agent error: Request failed with status code 400
+[ML] Error Detail: {
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+  },
+  "request_id": "req_011CZCC6VAfkVJvbAQCt5Cnr"
+}
+[ML] Triggering Brain Fallback due to API error
+[ML] AI Agent error: Request failed with status code 400
+[ML] Error Detail: {
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+  },
+  "request_id": "req_011CZCC7wzk35RrWmx5s6QKt"
+}
+[ML] Triggering Brain Fallback due to API error
+[ML] AI Agent error: Request failed with status code 400
+[ML] Error Detail: {
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+  },
+  "request_id": "req_011CZCD5TiwY27zEWeSJF985"
+}
+[ML] Triggering Brain Fallback due to API error
+[ML] Loaded 500 tokens from CoinGecko
+[ML] AI Agent error: Request failed with status code 400
+[ML] Error Detail: {
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+  },
+  "request_id": "req_011CZCD7FS4xbwRh7SQm7k4X"
+}
+[ML] Triggering Brain Fallback due to API error
+[ML] Whitepaper API error, triggering Brain Fallback: Request failed with status code 400
+[ML] AI Agent error: Request failed with status code 400
+[ML] Error Detail: {
+  "type": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
+  },
+  "request_id": "req_011CZCDCFipw9cdPzyS3aE8V"
+}
+[ML] Triggering Brain Fallback due to API error
+[Indexer] Error recording trade: SQLITE_ERROR: table trades has no column named trader_wallet
+[Treasury] Transfer logged: 0.003000 BNB → 0x6451ee4d… (0x27673bd6…)
+[Treasury] Transfer logged: 0.000030 BNB → 0x6451ee4d… (0x27673bd6…)
+(node:28404) [DEP0044] DeprecationWarning: The `util.isArray` API is deprecated. Please use `Array.isArray()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[ML] Branding AI error: Request failed with status code 400
+[Indexer] Error recording trade: SQLITE_ERROR: table trades has no column named trader_wallet
+[Treasury] Transfer logged: 0.000030 BNB → 0x6451ee4d… (0x94b86149…)
+[ML] Branding AI error: Request failed with status code 400
+[Indexer] Error recording trade: SQLITE_ERROR: table trades has no column named trader_wallet
+[Treasury] Transfer logged: 0.000001 BNB → 0x6451ee4d… (0x3b068a59…)

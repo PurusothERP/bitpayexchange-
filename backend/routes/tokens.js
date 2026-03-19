@@ -1,0 +1,361 @@
+const express = require('express');
+const router = express.Router();
+const multer = require('multer');
+const storage = require('../services/storage');
+const db = require('../config/db');
+
+const upload = multer({ storage: multer.memoryStorage() });
+
+// ── Normalize IPFS URLs to a reliable public gateway ─────────────────────────
+// Pinata's gateway rate-limits heavily (HTTP 429). Use cloudflare-ipfs.com instead.
+function normalizeLogo(url) {
+    if (!url) return url;
+    // Replace Pinata gateway (rate-limited 429) with ipfs.io public gateway
+    if (url.includes('gateway.pinata.cloud/ipfs/')) {
+        return url.replace('https://gateway.pinata.cloud/ipfs/', 'https://ipfs.io/ipfs/');
+    }
+    // Also handle ipfs:// protocol
+    if (url.startsWith('ipfs://')) {
+        return url.replace('ipfs://', 'https://ipfs.io/ipfs/');
+    }
+    return url;
+}
+
+// Apply to a token row
+function normalizeToken(t) {
+    const totalSold = t.liquidity_bnb ? (parseFloat(t.liquidity_bnb) / 1e18) : 0; // Simplified proxy for 'sold'
+    let status = t.trust_status || 'Newly Launched Token';
+    
+    // Auto status rules
+    if (status === 'Newly Launched Token') {
+        if (totalSold > 0.5) status = 'Highly Trusted'; // Proxy for 500M (if price scales)
+        else if (totalSold > 0.2) status = 'Good to buy'; // Proxy for 200M
+    }
+
+    // Delisting logic: 60 days inactivity
+    const now = new Date();
+    const lastTrade = new Date(t.last_trade_at || t.created_at);
+    const diffDays = (now - lastTrade) / (1000 * 60 * 60 * 24);
+    
+    let isDelisted = t.is_delisted === 1;
+    let delistingSoon = false;
+    
+    if (diffDays >= 60) isDelisted = true;
+    else if (diffDays >= 57) delistingSoon = true;
+
+    return { 
+        ...t, 
+        logo_url: normalizeLogo(t.logo_url),
+        trust_status: status,
+        is_delisted: isDelisted,
+        delisting_soon: delistingSoon
+    };
+}
+
+
+
+// ─── GET /api/tokens ─────────────────────────────────────────────────────────
+// List all tokens for the launchpad page
+router.get('/', async (req, res) => {
+    const { include_delisted } = req.query;
+    try {
+        const query = include_delisted === 'true' 
+            ? 'SELECT * FROM tokens ORDER BY created_at DESC'
+            : 'SELECT * FROM tokens WHERE is_delisted = 0 ORDER BY created_at DESC';
+            
+        const result = await db.query(query);
+        const tokens = result.rows.map(normalizeToken);
+        
+        // Final filter in JS for time-based delisting unless explicitly included
+        if (include_delisted === 'true') {
+            res.json(tokens);
+        } else {
+            res.json(tokens.filter(t => !t.is_delisted));
+        }
+    } catch (error) {
+        console.error('Error fetching tokens:', error);
+        res.status(500).json({ error: 'Failed to fetch tokens', details: error.message });
+    }
+});
+
+// ─── GET /api/tokens/list ────────────────────────────────────────────────────
+// Standard Token List compatible with Uniswap / PancakeSwap
+// Format: https://uniswap.org/tokenlist
+router.get('/list', async (req, res) => {
+    try {
+        const query = 'SELECT * FROM tokens ORDER BY created_at DESC';
+        const result = await db.query(query);
+        
+        const tokenList = {
+            name: "B20-LAB Launchpad Tokens",
+            timestamp: new Date().toISOString(),
+            version: { major: 1, minor: 0, patch: 0 },
+            tags: {},
+            logoURI: "https://b20-lab.com/logo.png",
+            keywords: ["meme", "bsc", "b20-lab"],
+            tokens: result.rows.map(t => {
+                // Return ipfs:// format if we can, otherwise use the gateway url
+                let logoIpfs = t.logo_url;
+                if (logoIpfs && logoIpfs.includes('gateway.pinata.cloud/ipfs/')) {
+                    logoIpfs = logoIpfs.replace('https://gateway.pinata.cloud/ipfs/', 'ipfs://');
+                }
+                
+                return {
+                    name: t.name,
+                    symbol: t.symbol,
+                    address: t.contract_address,
+                    chainId: 56,
+                    decimals: 18,
+                    logoURI: logoIpfs || t.logo_url,
+                    description: t.description || ''
+                };
+            })
+        };
+        
+        res.json(tokenList);
+    } catch (error) {
+        console.error('Error fetching token list:', error);
+        res.status(500).json({ error: 'Failed to fetch token list', details: error.message });
+    }
+});
+
+// ─── GET /api/tokens/by-wallet/:wallet ────────────────────────────────────────
+// Fetch tokens by creator wallet address — used by the Profile page
+// IMPORTANT: Must be before /:address route
+router.get('/by-wallet/:wallet', async (req, res) => {
+    const { wallet } = req.params;
+    try {
+        const query = 'SELECT * FROM tokens WHERE creator_wallet = ? ORDER BY created_at DESC';
+        const result = await db.query(query, [wallet]);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error fetching tokens for wallet:', error);
+        res.status(500).json({ error: 'Failed to fetch tokens for wallet', details: error.message });
+    }
+});
+
+// ─── POST /api/tokens/sync ────────────────────────────────────────────────────
+// Called by the frontend after on-chain token creation to save metadata + logo
+// IMPORTANT: Must be before /:address route
+router.post('/sync', upload.single('logo'), async (req, res) => {
+    const { name, symbol, supply, owner, description, tokenAddress, txHash, launch_type } = req.body;
+    const logoFile = req.file;
+
+    if (!tokenAddress) {
+        return res.status(400).json({ error: 'tokenAddress is required' });
+    }
+
+    try {
+        // 1. Upload logo to Pinata if provided
+        let logoUrl = '';
+        if (logoFile) {
+            try {
+                logoUrl = await storage.uploadLogo(tokenAddress, logoFile.buffer, logoFile.originalname);
+            } catch (e) {
+                console.warn('Logo upload failed, continuing without logo:', e.message);
+            }
+        }
+
+        // 2. Create and upload metadata to Pinata
+        let metadataUrl = '';
+        try {
+            // Standard metadata format requested by user
+            // Convert logo URL to standardized ipfs:// format for metadata JSON
+            let metadataLogoUri = logoUrl;
+            if (metadataLogoUri && metadataLogoUri.includes('gateway.pinata.cloud/ipfs/')) {
+                metadataLogoUri = metadataLogoUri.replace('https://gateway.pinata.cloud/ipfs/', 'ipfs://');
+            }
+
+            const metadata = {
+                name,
+                symbol,
+                address: tokenAddress,
+                decimals: 18,
+                logoURI: metadataLogoUri,
+                description
+            };
+            metadataUrl = await storage.uploadMetadata(tokenAddress, metadata);
+        } catch (e) {
+            console.warn('Metadata upload failed, continuing without metadata:', e.message);
+        }
+
+        // 3. Save to SQLite — use INSERT OR REPLACE to handle duplicates
+        const query = `
+            INSERT INTO tokens (name, symbol, contract_address, creator_wallet, logo_url, metadata_url, description, total_supply, tx_hash, launch_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(contract_address) DO UPDATE SET
+                name = excluded.name,
+                symbol = excluded.symbol,
+                logo_url = excluded.logo_url,
+                metadata_url = excluded.metadata_url,
+                description = excluded.description,
+                creator_wallet = excluded.creator_wallet,
+                tx_hash = excluded.tx_hash,
+                launch_type = excluded.launch_type
+        `;
+        const values = [
+            name || 'Unknown',
+            symbol || 'UNKNOWN',
+            tokenAddress,
+            owner || '',
+            logoUrl,
+            metadataUrl,
+            description || '',
+            supply || '1000000000',
+            txHash || '',
+            launch_type || 'MEME'
+        ];
+
+        await db.query(query, values);
+
+        // 3.5 Link whitepaper if temp_id provided
+        const { whitepaper_temp_id } = req.body;
+        if (whitepaper_temp_id) {
+            try {
+                await db.query(
+                    `UPDATE whitepapers SET token_address = ? WHERE temp_id = ?`,
+                    [tokenAddress, whitepaper_temp_id]
+                );
+            } catch (wpErr) {
+                console.warn('Failed to link whitepaper during sync:', wpErr.message);
+            }
+        }
+
+        // 3.6 Log the creation fee in treasury_transfers
+        try {
+            const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+            const isOwnerAdmin = (owner || '').toLowerCase() === TREASURY;
+            const creationFee = isOwnerAdmin ? 0 : 0.003;
+            
+            await db.query(
+                'INSERT OR IGNORE INTO treasury_transfers (tx_hash, amount_bnb, transfer_type, source_contract, destination_address) VALUES (?, ?, ?, ?, ?)',
+                [txHash || `manual_${tokenAddress}_${Date.now()}`, creationFee, 'creation_fee', tokenAddress, TREASURY]
+            );
+        } catch (feeErr) {
+            console.warn('Failed to log creation fee to treasury:', feeErr.message);
+        }
+
+        // 4. Fetch back the saved row
+        const insertedRow = await db.query('SELECT * FROM tokens WHERE LOWER(contract_address) = LOWER(?)', [tokenAddress]);
+        const row = insertedRow.rows[0] || { contract_address: tokenAddress, name, symbol };
+        res.status(201).json(normalizeToken(row));
+    } catch (error) {
+        console.error('Error syncing token:', error);
+        res.status(500).json({ error: 'Failed to sync token metadata', details: error.message });
+    }
+});
+
+// ─── GET /api/tokens/filter/delisted ──────────────────────────────────────────
+router.get('/filter/delisted', async (req, res) => {
+    try {
+        const query = 'SELECT * FROM tokens WHERE is_delisted = 1 ORDER BY created_at DESC';
+        const result = await db.query(query);
+        res.json(result.rows.map(normalizeToken));
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch delisted tokens' });
+    }
+});
+
+// ─── POST /api/tokens/status/update ──────────────────────────────────────────
+router.post('/status/update', async (req, res) => {
+    const { contract_address, status, is_delisted, wallet } = req.body;
+    const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+    
+    if (wallet.toLowerCase() !== TREASURY) {
+        return res.status(403).json({ error: 'Admin only access' });
+    }
+
+    try {
+        await db.query(
+            'UPDATE tokens SET trust_status = ?, is_delisted = ? WHERE contract_address = ?',
+            [status, is_delisted ? 1 : 0, contract_address]
+        );
+        res.json({ success: true, message: 'Status updated' });
+    } catch (error) {
+        res.status(500).json({ error: 'Update failed' });
+    }
+});
+
+// ─── POST /api/tokens/status/request ──────────────────────────────────────────
+router.post('/status/request', async (req, res) => {
+    const { contract_address, new_status, tx_hash } = req.body;
+    const isManual = tx_hash === 'admin_manual';
+    
+    try {
+        await db.query(
+            'UPDATE tokens SET trust_status = ? WHERE contract_address = ?',
+            [new_status, contract_address]
+        );
+        
+        // Log the service fee in treasury_transfers
+        // If manual (admin), log 0 fee. If from user, log 0.01 fee.
+        try {
+            const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+            await db.query(
+                'INSERT OR IGNORE INTO treasury_transfers (tx_hash, amount_bnb, transfer_type, source_contract, destination_address) VALUES (?, ?, ?, ?, ?)',
+                [tx_hash || `status_req_${contract_address}_${Date.now()}`, isManual ? 0 : 0.01, 'upgrade_fee', contract_address, TREASURY]
+            );
+        } catch (transErr) {
+            console.warn('Failed to log status fee transfer:', transErr.message);
+        }
+
+        res.json({ success: true, message: isManual ? 'Status updated by Admin' : 'Status updated after verification' });
+    } catch (error) {
+        console.error('Status request failed:', error);
+        res.status(500).json({ error: 'Request failed' });
+    }
+});
+
+// ─── GET /api/tokens/:address ─────────────────────────────────────────────────
+// Get a single token by contract address
+router.get('/:address', async (req, res) => {
+    const { address } = req.params;
+
+    // Validate looks like an Ethereum address
+    if (!address.startsWith('0x') || address.length !== 42) {
+        return res.status(400).json({ error: 'Invalid token address' });
+    }
+
+    try {
+        const query = 'SELECT * FROM tokens WHERE LOWER(contract_address) = LOWER(?)';
+        const result = await db.query(query, [address]);
+
+        if (result.rows.length === 0) {
+            // Fallback: try to fetch basic info on-chain
+            try {
+                const { ethers } = require('ethers');
+                const provider = new ethers.JsonRpcProvider(process.env.BSC_RPC_URL || 'https://bsc-dataseed.binance.org');
+                const tokenAbi = [
+                    'function name() view returns (string)',
+                    'function symbol() view returns (string)',
+                    'function totalSupply() view returns (uint256)',
+                    'function decimals() view returns (uint8)'
+                ];
+                const tokenContract = new ethers.Contract(address, tokenAbi, provider);
+                const [name, symbol, totalSupply] = await Promise.all([
+                    tokenContract.name(),
+                    tokenContract.symbol(),
+                    tokenContract.totalSupply()
+                ]);
+                return res.json({
+                    contract_address: address,
+                    name,
+                    symbol,
+                    total_supply: totalSupply.toString(),
+                    price_bnb: 0,
+                    liquidity_bnb: '0',
+                    trading_enabled: false
+                });
+            } catch (chainErr) {
+                return res.status(404).json({ error: 'Token not found' });
+            }
+        }
+
+        res.json(normalizeToken(result.rows[0]));
+    } catch (error) {
+        console.error('Error fetching token:', error);
+        res.status(500).json({ error: 'Failed to fetch token', details: error.message });
+    }
+});
+
+module.exports = router;

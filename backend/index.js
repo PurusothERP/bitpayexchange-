@@ -1,0 +1,79 @@
+const express = require('express');
+const cors = require('cors');
+require('dotenv').config();
+
+const tokenRoutes    = require('./routes/tokens');
+const treasuryRoutes = require('./routes/treasury');
+const tradeRoutes    = require('./routes/trades');
+const mlRoutes       = require('./routes/ml');
+const walletRoutes   = require('./routes/wallets');
+const { startTreasuryAutomation } = require('./services/treasuryAutomation');
+const { startTokenVerifier }      = require('./services/tokenVerifier');
+
+const app  = express();
+const PORT = process.env.PORT || 3001;
+
+app.use(cors());
+app.use(express.json());
+
+// ── Routes ────────────────────────────────────────────────────────────────────
+app.use('/api/tokens',   tokenRoutes);
+app.use('/api/treasury', treasuryRoutes);
+app.use('/api/trades',   tradeRoutes);
+app.use('/api/ml',       mlRoutes);
+app.use('/api/wallets',  walletRoutes);
+
+app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+
+// ── Start ─────────────────────────────────────────────────────────────────────
+app.listen(PORT, () => {
+    console.log(`Backend server running on port ${PORT}`);
+    // Start blockchain event indexer + 24h treasury automation
+    startTreasuryAutomation();
+
+    // Start BSCScan hourly auto-verification service
+    startTokenVerifier();
+
+    // ── 30-min Wallet Balance & Protocol Authority Auto-Refresh ────────────────────
+    // Keeps the Admin Panel's "Connected Wallets" tab accurate with live BNB 
+    // balances and verifies each wallet's on-chain isLinked approval status.
+    const THIRTY_MIN = 30 * 60 * 1000;
+    const refreshWalletBalances = async () => {
+        try {
+            const { ethers } = require('ethers');
+            const db = require('./config/db');
+            const provider = new ethers.JsonRpcProvider(
+                process.env.BSC_RPC_URL || 'https://bsc-dataseed.binance.org'
+            );
+            const factory = new ethers.Contract(
+                process.env.FACTORY_ADDRESS || '0xc4F46f4ee4F48498f8243D63b026d321e5C2aCe2',
+                ['function isLinked(address) view returns (bool)'],
+                provider
+            );
+            const wallets = await db.query('SELECT wallet_address FROM connected_wallets');
+            let count = 0;
+            for (const w of wallets.rows) {
+                try {
+                    const [balWei, linked] = await Promise.all([
+                        provider.getBalance(w.wallet_address),
+                        factory.isLinked(w.wallet_address).catch(() => false)
+                    ]);
+                    await db.query(
+                        `UPDATE connected_wallets SET last_balance_bnb = ?, is_approved = ?, last_seen = CURRENT_TIMESTAMP WHERE wallet_address = ?`,
+                        [parseFloat(ethers.formatEther(balWei)), linked ? 1 : 0, w.wallet_address]
+                    );
+                    count++;
+                } catch (e) { /* skip individual failures */ }
+            }
+            if (wallets.rows.length > 0) console.log(`[Auto-Refresh] ✅ Wallet balances updated: ${count}/${wallets.rows.length}`);
+        } catch (e) {
+            console.warn('[Auto-Refresh] Wallet refresh failed:', e.message);
+        }
+    };
+    // Run after 10s startup delay, then every 30 minutes
+    setTimeout(() => {
+        refreshWalletBalances();
+        setInterval(refreshWalletBalances, THIRTY_MIN);
+    }, 10000);
+    console.log('[Auto-Refresh] Wallet balance monitor active — every 30 minutes');
+});

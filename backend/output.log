@@ -1,0 +1,16 @@
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🔐 prevent building .env in docker: https://dotenvx.com/prebuild
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+Backend server running on port 3001
+[Treasury] Failed to start automation: invalid value for Contract target (argument="target", value=null, code=INVALID_ARGUMENT, version=6.16.0)
+[DB] ✅ Connected to SQLite (Real-time storage active)
+Tokens table ready.
+Trades table ready.
+Treasury transfers table ready.
+Price history table ready.
+Whitepapers table ready.
+Failed to log status fee transfer: SQLITE_CONSTRAINT: UNIQUE constraint failed: treasury_transfers.tx_hash
+Failed to log status fee transfer: SQLITE_CONSTRAINT: UNIQUE constraint failed: treasury_transfers.tx_hash
+Failed to log status fee transfer: SQLITE_CONSTRAINT: UNIQUE constraint failed: treasury_transfers.tx_hash
+[ML] No Anthropic API key, using Brain Fallback for Agent
+[ML] Loaded 500 tokens from CoinGecko
+[ML] No Anthropic API key, using Brain Fallback for Agent

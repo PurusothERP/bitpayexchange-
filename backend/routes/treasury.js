@@ -1,0 +1,49 @@
+const express = require('express');
+const router = express.Router();
+const db = require('../config/db');
+
+// ── GET /api/treasury/transfers ───────────────────────────────────────────────
+// Returns all recorded treasury transfers for the Admin Dashboard
+router.get('/transfers', async (req, res) => {
+    try {
+        const result = await db.query(
+            `SELECT * FROM treasury_transfers ORDER BY timestamp DESC LIMIT 200`
+        );
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch treasury transfers', details: err.message });
+    }
+});
+
+// ── GET /api/treasury/stats ───────────────────────────────────────────────────
+// Summary stats for admin
+router.get('/stats', async (req, res) => {
+    try {
+        const totals = await db.query(`
+            SELECT
+                SUM(amount_bnb) as total_bnb,
+                COUNT(*) as total_transfers,
+                COUNT(CASE WHEN transfer_type = 'trading_fee' THEN 1 END) as fee_transfers,
+                COUNT(CASE WHEN transfer_type = 'migration_fee' THEN 1 END) as migration_transfers,
+                COUNT(CASE WHEN transfer_type LIKE '%sweep%' THEN 1 END) as sweep_transfers
+            FROM treasury_transfers
+        `);
+        const tradeStats = await db.query(`
+            SELECT
+                COUNT(*) as total_trades,
+                COUNT(CASE WHEN trade_type = 'buy' THEN 1 END) as buys,
+                COUNT(CASE WHEN trade_type = 'sell' THEN 1 END) as sells,
+                SUM(amount_bnb) as total_volume_bnb,
+                SUM(fee_bnb) as total_fees_bnb
+            FROM trades
+        `);
+        res.json({
+            treasury: totals.rows[0] || {},
+            trading: tradeStats.rows[0] || {}
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch stats', details: err.message });
+    }
+});
+
+module.exports = router;

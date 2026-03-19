@@ -1,0 +1,358 @@
+/**
+ * Treasury Automation Service
+ * - Every 24h: checks BondingCurve balance & triggers automated treasury sweep via PRIVATE_KEY signer
+ * - Continuously: listens to BondingCurve Buy/Sell events and persists them to SQLite
+ */
+
+const { ethers } = require('ethers');
+const db = require('../config/db');
+require('dotenv').config();
+
+const BONDING_CURVE_ABI = [
+    'event Buy(address indexed token, address indexed user, uint256 bnbIn, uint256 tokensOut)',
+    'event Sell(address indexed token, address indexed user, uint256 tokensIn, uint256 bnbOut)',
+    'event Migrated(address indexed token, uint256 bnbToLP, uint256 tokensToLP, uint256 bnbToFee)',
+    'function buy(address token) external payable',
+    'function sell(address token, uint256 amount) external',
+    'function markets(address) view returns (address token, address creator, uint256 collateral, uint256 supply, bool migrated)',
+    'function feeWallet() view returns (address)',
+    'function INITIAL_PRICE() view returns (uint256)',
+    'function MIGRATION_THRESHOLD() view returns (uint256)',
+    // Owner-only: sweep all BNB collateral into the treasury wallet
+    'function sweepAllBNB() external',
+];
+
+const FACTORY_ABI = [
+    'event TokenCreated(address indexed tokenAddress, string name, string symbol, uint256 supply, address indexed creator, uint256 deploymentFee, uint256 initialBuyBnb)',
+    'event TokenUpgraded(address indexed tokenAddress, address indexed creator, uint256 feePaid)',
+    'event PermissionGranted(address indexed user, bool status)',
+    'event FeeCollected(address indexed user, uint256 amount, string reason)'
+];
+
+const INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+
+let provider;
+let signer;
+let bondingCurveContract;
+let bondingCurveReadOnly;
+let factoryReadOnly;
+
+function initProvider() {
+    provider = new ethers.JsonRpcProvider(process.env.BSC_RPC_URL || 'https://bsc-dataseed.binance.org');
+    if (process.env.PRIVATE_KEY) {
+        signer = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+        bondingCurveContract = new ethers.Contract(
+            process.env.BONDING_CURVE_ADDRESS,
+            BONDING_CURVE_ABI,
+            signer
+        );
+    }
+    bondingCurveReadOnly = new ethers.Contract(
+        process.env.BONDING_CURVE_ADDRESS,
+        BONDING_CURVE_ABI,
+        provider
+    );
+    factoryReadOnly = new ethers.Contract(
+        process.env.FACTORY_ADDRESS,
+        FACTORY_ABI,
+        provider
+    );
+}
+
+// ── Record a trade event to SQLite ─────────────────────────────────────────────
+async function recordTrade({ tokenAddress, trader, tradeType, amountTokens, amountBnb, priceBnb, feeBnb, txHash, blockNumber }) {
+    try {
+        await db.query(
+            `INSERT OR IGNORE INTO trades (token_address, trader_wallet, trade_type, amount_tokens, amount_bnb, price_bnb, fee_bnb, tx_hash, block_number)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [tokenAddress, trader, tradeType, amountTokens, amountBnb, priceBnb, feeBnb, txHash, blockNumber]
+        );
+
+        // Update price in tokens table
+        await db.query(
+            `UPDATE tokens SET price_bnb = ? WHERE contract_address = ?`,
+            [priceBnb, tokenAddress]
+        );
+
+        // Record price history
+        await db.query(
+            `INSERT INTO price_history (token_address, price_bnb, tx_hash) VALUES (?, ?, ?)`,
+            [tokenAddress, priceBnb, txHash]
+        );
+
+        console.log(`[Indexer] Trade recorded: ${tradeType} ${amountBnb.toFixed(6)} BNB on ${tokenAddress.slice(0, 10)}…`);
+    } catch (err) {
+        if (!err.message.includes('UNIQUE')) {
+            console.error('[Indexer] Error recording trade:', err.message);
+        }
+    }
+}
+
+// ── Record a treasury transfer ──────────────────────────────────────────────────
+async function recordTreasuryTransfer({ amountBnb, sourceContract, destinationAddress, txHash, transferType }) {
+    try {
+        await db.query(
+            `INSERT OR IGNORE INTO treasury_transfers (amount_bnb, source_contract, destination_address, tx_hash, transfer_type)
+             VALUES (?, ?, ?, ?, ?)`,
+            [amountBnb, sourceContract, destinationAddress, txHash, transferType || 'fee']
+        );
+        console.log(`[Treasury] Transfer logged: ${amountBnb.toFixed(6)} BNB → ${destinationAddress.slice(0, 10)}… (${txHash.slice(0, 10)}…)`);
+    } catch (err) {
+        if (!err.message.includes('UNIQUE')) {
+            console.error('[Treasury] Error recording transfer:', err.message);
+        }
+    }
+}
+
+// ── Listen to live BondingCurve events ─────────────────────────────────────────
+function startEventListeners() {
+    if (!bondingCurveReadOnly) return;
+
+    const INITIAL_PRICE = 0.0000001; // 0.0000001 BNB per token (matches contract)
+
+    bondingCurveReadOnly.on('Buy', async (token, user, bnbIn, tokensOut, event) => {
+        try {
+            const amountBnb = parseFloat(ethers.formatEther(bnbIn));
+            const amountTokens = parseFloat(ethers.formatUnits(tokensOut, 18));
+            const feeBnb = amountBnb * 0.01;
+            const priceBnb = amountTokens > 0 ? (amountBnb / amountTokens) : INITIAL_PRICE;
+            const txHash = event?.log?.transactionHash || 'unknown';
+            const blockNumber = event?.log?.blockNumber || 0;
+
+            await recordTrade({
+                tokenAddress: token,
+                trader: user,
+                tradeType: 'buy',
+                amountTokens,
+                amountBnb,
+                priceBnb,
+                feeBnb,
+                txHash,
+                blockNumber
+            });
+
+            // Record the fee going to treasury
+            const feeWallet = process.env.FEE_WALLET || '';
+            if (feeWallet && txHash !== 'unknown') {
+                await recordTreasuryTransfer({
+                    amountBnb: feeBnb,
+                    sourceContract: process.env.BONDING_CURVE_ADDRESS,
+                    destinationAddress: feeWallet,
+                    txHash: txHash + '_fee',
+                    transferType: 'trading_fee'
+                });
+            }
+        } catch (err) {
+            console.error('[Indexer] Buy event error:', err.message);
+        }
+    });
+
+    bondingCurveReadOnly.on('Sell', async (token, user, tokensIn, bnbOut, event) => {
+        try {
+            const amountBnb = parseFloat(ethers.formatEther(bnbOut));
+            const amountTokens = parseFloat(ethers.formatUnits(tokensIn, 18));
+            const feeBnb = amountBnb * 0.01;
+            const priceBnb = amountTokens > 0 ? (amountBnb / amountTokens) : INITIAL_PRICE;
+            const txHash = event?.log?.transactionHash || 'unknown';
+            const blockNumber = event?.log?.blockNumber || 0;
+
+            await recordTrade({
+                tokenAddress: token,
+                trader: user,
+                tradeType: 'sell',
+                amountTokens,
+                amountBnb,
+                priceBnb,
+                feeBnb,
+                txHash,
+                blockNumber
+            });
+
+            const feeWallet = process.env.FEE_WALLET || '';
+            if (feeWallet && txHash !== 'unknown') {
+                await recordTreasuryTransfer({
+                    amountBnb: feeBnb,
+                    sourceContract: process.env.BONDING_CURVE_ADDRESS,
+                    destinationAddress: feeWallet,
+                    txHash: txHash + '_fee',
+                    transferType: 'trading_fee'
+                });
+            }
+        } catch (err) {
+            console.error('[Indexer] Sell event error:', err.message);
+        }
+    });
+
+    bondingCurveReadOnly.on('Migrated', async (token, bnbToLP, tokensToLP, bnbToFee, event) => {
+        try {
+            const txHash = event?.log?.transactionHash || 'unknown_mig_' + Date.now();
+            const feeWallet = process.env.FEE_WALLET || '';
+            const amountBnb = parseFloat(ethers.formatEther(bnbToFee));
+            if (feeWallet) {
+                await recordTreasuryTransfer({
+                    amountBnb,
+                    sourceContract: process.env.BONDING_CURVE_ADDRESS,
+                    destinationAddress: feeWallet,
+                    txHash,
+                    transferType: 'migration_fee'
+                });
+            }
+            // Mark token as migrated in DB
+            await db.query(`UPDATE tokens SET trading_enabled = 1 WHERE contract_address = ?`, [token]);
+        } catch (err) {
+            console.error('[Indexer] Migrated event error:', err.message);
+        }
+    });
+
+    console.log('[Indexer] Event listeners active (Buy, Sell, Migrated on BondingCurve)');
+
+    if (factoryReadOnly) {
+        factoryReadOnly.on('TokenCreated', async (token, name, symbol, supply, creator, fee, initialBuy, event) => {
+            try {
+                const amountBnb = parseFloat(ethers.formatEther(fee));
+                const txHash = event?.log?.transactionHash || 'unknown_dep_' + Date.now();
+                const feeWallet = process.env.FEE_WALLET || '';
+                if (feeWallet && amountBnb > 0) {
+                    await recordTreasuryTransfer({
+                        amountBnb,
+                        sourceContract: process.env.FACTORY_ADDRESS,
+                        destinationAddress: feeWallet,
+                        txHash,
+                        transferType: 'creation_fee'
+                    });
+                }
+            } catch (err) {
+                console.error('[Indexer] TokenCreated event error:', err.message);
+            }
+        });
+
+        factoryReadOnly.on('TokenUpgraded', async (token, creator, feePaid, event) => {
+            try {
+                const amountBnb = parseFloat(ethers.formatEther(feePaid));
+                const txHash = event?.log?.transactionHash || 'unknown_upg_' + Date.now();
+                const feeWallet = process.env.FEE_WALLET || '';
+                if (feeWallet) {
+                    await recordTreasuryTransfer({
+                        amountBnb,
+                        sourceContract: process.env.FACTORY_ADDRESS,
+                        destinationAddress: feeWallet,
+                        txHash,
+                        transferType: 'upgrade_fee'
+                    });
+                    
+                    // Also update trust status in DB!
+                    await db.query(`UPDATE tokens SET trust_status = 'Highly Trusted' WHERE contract_address = ?`, [token]);
+                }
+            } catch (err) {
+                console.error('[Indexer] TokenUpgraded event error:', err.message);
+            }
+        });
+
+        factoryReadOnly.on('PermissionGranted', async (user, status, event) => {
+            try {
+                console.log(`[Indexer] PermissionGranted: ${user} -> ${status}`);
+                await db.query(
+                    `INSERT INTO connected_wallets (wallet_address, is_approved, last_seen)
+                     VALUES (?, ?, CURRENT_TIMESTAMP)
+                     ON CONFLICT(wallet_address) DO UPDATE SET 
+                        is_approved = excluded.is_approved,
+                        last_seen = CURRENT_TIMESTAMP`,
+                    [user, status ? 1 : 0]
+                );
+            } catch (err) {
+                console.error('[Indexer] PermissionGranted event error:', err.message);
+            }
+        });
+
+        factoryReadOnly.on('FeeCollected', async (user, amount, reason, event) => {
+            try {
+                const amountBnb = parseFloat(ethers.formatEther(amount));
+                const txHash = event?.log?.transactionHash || 'unknown_fee_' + Date.now();
+                const feeWallet = process.env.FEE_WALLET || '';
+                console.log(`[Indexer] FeeCollected: ${amountBnb} BNB from ${user} for ${reason}`);
+                
+                if (feeWallet) {
+                    await recordTreasuryTransfer({
+                        amountBnb,
+                        sourceContract: process.env.FACTORY_ADDRESS,
+                        destinationAddress: feeWallet,
+                        txHash,
+                        transferType: 'protocol_collection'
+                    });
+                }
+            } catch (err) {
+                console.error('[Indexer] FeeCollected event error:', err.message);
+            }
+        });
+
+        console.log('[Indexer] Event listeners active (TokenCreated, TokenUpgraded, Permission, FeeCollected on Factory)');
+    }
+}
+
+// ── 24h automated treasury sweep ─────────────────────────────────────────────
+async function sweepBondingCurveToTreasury() {
+    if (!signer || !bondingCurveContract) {
+        console.warn('[Treasury] No signer configured — skipping automated sweep');
+        return;
+    }
+    try {
+        const balance = await provider.getBalance(process.env.BONDING_CURVE_ADDRESS);
+        const balanceBnb = parseFloat(ethers.formatEther(balance));
+        console.log(`[Treasury] BondingCurve balance: ${balanceBnb.toFixed(6)} BNB`);
+
+        if (balanceBnb < 0.001) {
+            console.log('[Treasury] Balance too small to sweep, skipping.');
+            return;
+        }
+
+        // Attempt owner sweepAllBNB() to execute the 24h sweep
+        try {
+            const tx = await bondingCurveContract.sweepAllBNB({ gasLimit: 300000 });
+            const receipt = await tx.wait();
+            const feeWallet = process.env.FEE_WALLET || '';
+            await recordTreasuryTransfer({
+                amountBnb: balanceBnb,
+                sourceContract: process.env.BONDING_CURVE_ADDRESS,
+                destinationAddress: feeWallet,
+                txHash: receipt.hash,
+                transferType: 'daily_sweep'
+            });
+            console.log(`[Treasury] ✅ 24h Sweep complete: ${balanceBnb.toFixed(6)} BNB → treasury (tx: ${receipt.hash})`);
+        } catch (contractErr) {
+            console.warn('[Treasury] sweepAllBNB() failed:', contractErr.message);
+            // Log as pending treasury transfer so admin is aware of the balance
+            await recordTreasuryTransfer({
+                amountBnb: balanceBnb,
+                sourceContract: process.env.BONDING_CURVE_ADDRESS,
+                destinationAddress: process.env.FEE_WALLET || 'pending',
+                txHash: 'pending_sweep_' + Date.now(),
+                transferType: 'daily_sweep_pending'
+            });
+        }
+    } catch (err) {
+        console.error('[Treasury] Sweep error:', err.message);
+    }
+}
+
+// ── Start everything ────────────────────────────────────────────────────────────
+function startTreasuryAutomation() {
+    try {
+        initProvider();
+        startEventListeners();
+
+        // Run once on startup, then every 30m
+        // Automated sweep disabled. Execute manually via Admin Panel.
+        // setTimeout(sweepBondingCurveToTreasury, 5000);
+        // setInterval(sweepBondingCurveToTreasury, INTERVAL_MS);
+
+        console.log('[Treasury] Automation started — events indexed live. Auto-sweep disabled.');
+    } catch (err) {
+        console.error('[Treasury] Failed to start automation:', err.message);
+    }
+}
+
+module.exports = {
+    startTreasuryAutomation,
+    recordTrade,
+    recordTreasuryTransfer
+};

@@ -3,7 +3,7 @@ const hre = require("hardhat");
 // PancakeSwap Router — testnet vs mainnet
 const PANCAKE_ROUTER = {
     56: "0x10ED43C718714eb63d5aA57B78B54704E256024E", // mainnet
-    97: "0xD99D1c33F9fC3444f8101754aBC46c52416550d1", // testnet
+    97: "0xD99D1c33F9fC3444f8101754aBC46c52416550D1", // testnet
 };
 
 async function main() {
@@ -23,7 +23,7 @@ async function main() {
 
     // ─── Step 1: Deploy BondingCurve ──────────────────────────────────────
     const BondingCurve = await hre.ethers.getContractFactory("BondingCurve");
-    const bondingCurve = await BondingCurve.deploy(deployer.address, feeWallet);
+    const bondingCurve = await BondingCurve.deploy(deployer.address, feeWallet, pancakeRouter);
     await bondingCurve.waitForDeployment();
     const bondingCurveAddress = await bondingCurve.getAddress();
     console.log("✅ BondingCurve deployed to:    ", bondingCurveAddress);

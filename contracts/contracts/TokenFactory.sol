@@ -32,11 +32,11 @@ interface IBondingCurve {
  */
 contract TokenFactory is Ownable {
     // ── Fee Configuration ────────────────────────────────────────────────────
-    /// @notice Platform deployment fee in BNB (0.003 deployment + 0.002 platform)
-    uint256 public DEPLOYMENT_FEE = 0.005 ether;
+    /// @notice Platform deployment fee in BNB (0.003 deployment)
+    uint256 public DEPLOYMENT_FEE = 0.003 ether;
 
     /// @notice Minimum initial buy the creator must make at launch
-    uint256 public MIN_INITIAL_BUY = 0.001 ether;
+    uint256 public MIN_INITIAL_BUY = 0.05 ether;
 
     /// @notice Fee to upgrade/boost a token's status
     uint256 public UPGRADE_FEE = 0.01 ether;

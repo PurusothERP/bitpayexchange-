@@ -131,17 +131,21 @@ export default function TradePage() {
             const provider = new ethers.JsonRpcProvider(BSC_RPC);
             const bc = new Contract(BONDING_CURVE_ADDRESS, BONDING_CURVE_ABI, provider);
             
-            const [m, INITIAL_PRICE, MIGRATION_THRESHOLD] = await Promise.all([
+            const [m, VIRTUAL_BNB, LP_INIT_THRESHOLD] = await Promise.all([
                 bc.markets(selectedToken.contract_address),
-                bc.INITIAL_PRICE().catch(() => 100000000000n),
-                bc.MIGRATION_THRESHOLD().catch(() => ethers.parseEther('50')),
+                bc.VIRTUAL_BNB().catch(() => ethers.parseEther('0.5')),
+                bc.LP_INIT_THRESHOLD().catch(() => ethers.parseEther('0.3')),
             ]);
 
-            const priceBnb      = parseFloat(ethers.formatEther(INITIAL_PRICE));
-            const collateralBnb = parseFloat(ethers.formatEther(m.collateral));
-            const supplyTraded  = parseFloat(ethers.formatUnits(m.supply, 18));
+            const virtualBnb     = parseFloat(ethers.formatEther(VIRTUAL_BNB));
+            const bnbReserve     = parseFloat(ethers.formatEther(m.bnbReserve || m.collateral || 0n));
+            const tokenReserve   = parseFloat(ethers.formatUnits(m.tokenReserve || 0n, 18));
             
-            const effectivePrice = supplyTraded > 0 ? (collateralBnb / supplyTraded) : priceBnb;
+            const supplyTraded   = m.supply ? parseFloat(ethers.formatUnits(m.supply, 18)) : (1000000000 - tokenReserve);
+            const migThreshold   = parseFloat(ethers.formatEther(LP_INIT_THRESHOLD));
+            const available      = tokenReserve > 0 ? tokenReserve : (1_000_000_000 - supplyTraded);
+
+            const effectivePrice = tokenReserve > 0 ? ((virtualBnb + bnbReserve) / tokenReserve) : 0.0000005;
             
             const prev = prevPriceRef.current;
             const trend = prev ? (effectivePrice > prev ? 'up' : effectivePrice < prev ? 'down' : 'none') : 'none';
@@ -149,7 +153,7 @@ export default function TradePage() {
 
             setMarket({
                 isRegistered: m.token !== ethers.ZeroAddress,
-                collateralBnb, supplyTraded,
+                collateralBnb: bnbReserve, supplyTraded, available,
                 migrated: m.migrated,
                 priceBnb: effectivePrice,
                 trend
@@ -157,7 +161,7 @@ export default function TradePage() {
 
             // Fallback chart if brand new
             setChartData(prevData => {
-                if (prevData.length === 0 && collateralBnb > 0) {
+                if (prevData.length === 0 && bnbReserve > 0) {
                     return Array.from({ length: 15 }, (_, i) => ({
                         time: `T-${15-i}`, price: Number((effectivePrice * (0.8 + (0.2*(i/15)))).toFixed(12))
                     }));
@@ -358,7 +362,7 @@ export default function TradePage() {
                         </div>
                         <div>
                             <p className="text-[10px] text-[#848e9c] font-medium tracking-wider mb-0.5">Curve Progress</p>
-                            <p className="text-xs font-mono font-bold text-white">{market?.collateralBnb.toFixed(2) || '0.00'} / 50 BNB</p>
+                            <p className="text-xs font-mono font-bold text-white">{market?.collateralBnb.toFixed(2) || '0.00'} BNB</p>
                         </div>
                         {market?.migrated && (
                             <div className="ml-4 px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded text-[10px] font-bold text-[#0ecb81] tracking-widest uppercase">

@@ -212,22 +212,24 @@ function TokenDetail() {
         try {
             const provider = new ethers.JsonRpcProvider(BSC_RPC);
             const bc = new Contract(BONDING_CURVE_ADDRESS, BONDING_CURVE_ABI, provider);
-            const [m, INITIAL_PRICE, MIGRATION_THRESHOLD] = await Promise.all([
+            const [m, VIRTUAL_BNB, LP_INIT_THRESHOLD] = await Promise.all([
                 bc.markets(address),
-                bc.INITIAL_PRICE().catch(() => 100000000000n),
-                bc.MIGRATION_THRESHOLD().catch(() => ethers.parseEther('50')),
+                bc.VIRTUAL_BNB().catch(() => ethers.parseEther('0.5')),
+                bc.LP_INIT_THRESHOLD().catch(() => ethers.parseEther('0.3')),
             ]);
 
-            const priceBnb       = parseFloat(ethers.formatEther(INITIAL_PRICE));
-            const collateralBnb  = parseFloat(ethers.formatEther(m.collateral));
-            const supplyTraded   = parseFloat(ethers.formatUnits(m.supply, 18));
-            const migThreshold   = parseFloat(ethers.formatEther(MIGRATION_THRESHOLD));
-            const progress       = Math.min((collateralBnb / migThreshold) * 100, 100);
-            const available      = 1_000_000_000 - supplyTraded;
+            const virtualBnb     = parseFloat(ethers.formatEther(VIRTUAL_BNB));
+            const bnbReserve     = parseFloat(ethers.formatEther(m.bnbReserve || m.collateral || 0n));
+            const tokenReserve   = parseFloat(ethers.formatUnits(m.tokenReserve || 0n, 18));
+            
+            const supplyTraded   = m.supply ? parseFloat(ethers.formatUnits(m.supply, 18)) : (1000000000 - tokenReserve);
+            const migThreshold   = parseFloat(ethers.formatEther(LP_INIT_THRESHOLD));
+            const progress       = Math.min((bnbReserve / migThreshold) * 100, 100);
+            const available      = tokenReserve > 0 ? tokenReserve : (1_000_000_000 - supplyTraded);
 
-            const effectivePrice = supplyTraded > 0
-                ? (collateralBnb / supplyTraded)
-                : priceBnb;
+            const effectivePrice = tokenReserve > 0
+                ? ((virtualBnb + bnbReserve) / tokenReserve)
+                : 0.0000005;
 
             const prevPrice = prevPriceRef.current;
             const trend = prevPrice
@@ -237,7 +239,7 @@ function TokenDetail() {
 
             setMarket({
                 isRegistered: m.token !== ethers.ZeroAddress,
-                collateralBnb, supplyTraded, available,
+                collateralBnb: bnbReserve, supplyTraded, available,
                 migrated: m.migrated,
                 priceBnb: effectivePrice,
                 progress: progress.toFixed(2),
@@ -248,7 +250,7 @@ function TokenDetail() {
             // If no DB chart data yet, build a synthetic one from on-chain collateral/price
             setChartData(prev => {
                 if (prev.length === 0) {
-                    if (collateralBnb > 0) {
+                    if (bnbReserve > 0) {
                         const steps = 20;
                         return Array.from({ length: steps }, (_, idx) => ({
                             time: `T-${steps - idx}`,
@@ -912,10 +914,6 @@ function TokenDetail() {
                                 </div>
                                 <div className="text-center border-x border-black/5">
                                     <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Target</p>
-                                    <p className="font-black text-gray-900">{market?.migrationThreshold ?? 50}</p>
-                                    <p className="text-[10px] text-gray-400">BNB</p>
-                                </div>
-                                <div className="text-center">
                                     <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Remaining</p>
                                     <p className="font-black text-gray-900">{Math.max(0, (market?.migrationThreshold ?? 50) - (market?.collateralBnb ?? 0)).toFixed(4)}</p>
                                     <p className="text-[10px] text-gray-400">BNB</p>

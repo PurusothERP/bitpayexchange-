@@ -338,13 +338,12 @@ export default function Launchpad() {
         return () => clearInterval(iv);
     }, []);
 
-    // For simplicity: all tokens from DB are Bonding Curve tokens.
-    // Fair Launch tokens are those that are already migrated (trading_enabled = 1 with migrated flag).
-    // Delisted tokens are identified by the `is_delisted` flag.
+    // All non-delisted tokens go to bonding tab (they're on the curve)
+    // Tokens with trading_enabled=1 also show in the PancakeSwap/Fair tab
     const delistedTokens = useMemo(() => tokens.filter(t => t.is_delisted), [tokens]);
-    const bondingTokens = useMemo(() => tokens.filter(t => !t.migrated && !t.is_delisted), [tokens]);
-    const fairTokens    = useMemo(() => tokens.filter(t => (t.migrated || t.trading_enabled) && !t.is_delisted), [tokens]);
-    const displayTokens = launchType === 'bonding' ? bondingTokens : launchType === 'fair' ? fairTokens : delistedTokens;
+    const bondingTokens  = useMemo(() => tokens.filter(t => !t.is_delisted), [tokens]);
+    const fairTokens     = useMemo(() => tokens.filter(t => (t.trading_enabled === 1 || t.trading_enabled === true) && !t.is_delisted), [tokens]);
+    const displayTokens  = launchType === 'bonding' ? bondingTokens : launchType === 'fair' ? fairTokens : delistedTokens;
 
     const filtered = useMemo(() => {
         let list = [...displayTokens];
@@ -623,7 +622,7 @@ export default function Launchpad() {
                             <div className="space-y-4">
                                 <div className="space-y-1">
                                     <p className="text-xs font-black text-gray-900">Bonding Curve</p>
-                                    <p className="text-[11px] text-gray-500 leading-relaxed font-medium">Price rises algorithmically. Reaches 50 BNB target to auto-verify & list on PancakeSwap.</p>
+                                    <p className="text-[11px] text-gray-500 leading-relaxed font-medium">Price rises algorithmically. Reaches 0.01 BNB target to auto-verify & list on PancakeSwap.</p>
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-xs font-black text-gray-900">Fair Launch</p>

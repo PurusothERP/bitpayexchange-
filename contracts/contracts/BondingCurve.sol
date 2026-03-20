@@ -29,8 +29,7 @@ interface IPancakeRouter {
 contract BondingCurve is Ownable, ReentrancyGuard {
     // ── Constants ────────────────────────────────────────────────────────────
     uint256 public constant MAX_SUPPLY          = 1_000_000_000 * 10**18;
-    uint256 public constant LP_INIT_THRESHOLD   = 0.3 ether;
-    uint256 public constant VIRTUAL_BNB         = 0.5 ether; // Used for starting price calculation
+    uint256 public constant LP_INIT_THRESHOLD   = 0.01 ether;
 
     // ── State ─────────────────────────────────────────────────────────────────
     address public feeWallet;
@@ -41,6 +40,7 @@ contract BondingCurve is Ownable, ReentrancyGuard {
         address creator;     // Wallet that launched this token
         uint256 bnbReserve;
         uint256 tokenReserve;
+        uint256 virtualBnb;
         bool    lpInitialized;
         bool    migrated;
     }
@@ -89,7 +89,7 @@ contract BondingCurve is Ownable, ReentrancyGuard {
     }
 
     // ── Token Setup ───────────────────────────────────────────────────────────
-    function launchToken(address token, address creator) external {
+    function launchToken(address token, address creator, uint256 _virtualBnb) external {
         require(authorizedFactories[msg.sender] || msg.sender == owner(), "Not authorized factory");
         require(markets[token].token == address(0), "Already launched");
         markets[token] = Market({
@@ -97,6 +97,7 @@ contract BondingCurve is Ownable, ReentrancyGuard {
             creator:      creator,
             bnbReserve:   0,
             tokenReserve: IERC20(token).balanceOf(address(this)), // starts with all tokens
+            virtualBnb:   _virtualBnb > 0 ? _virtualBnb : 0.5 ether,
             lpInitialized: false,
             migrated:     false
         });
@@ -116,7 +117,7 @@ contract BondingCurve is Ownable, ReentrancyGuard {
         uint256 fee = isTreasury ? 0 : (msg.value * 5) / 100;
         uint256 remaining = msg.value - fee;
 
-        uint256 totalBnb = VIRTUAL_BNB + market.bnbReserve;
+        uint256 totalBnb = market.virtualBnb + market.bnbReserve;
         // AMM formula: amountOut = (amountIn * tokenReserve) / (reserveIn + amountIn)
         uint256 tokensOut = (remaining * market.tokenReserve) / (totalBnb + remaining);
         require(tokensOut > 0, "Amount too small");
@@ -151,7 +152,7 @@ contract BondingCurve is Ownable, ReentrancyGuard {
 
         require(IERC20(token).transferFrom(msg.sender, address(this), amount), "Transfer fail");
 
-        uint256 totalBnb = VIRTUAL_BNB + market.bnbReserve;
+        uint256 totalBnb = market.virtualBnb + market.bnbReserve;
         uint256 bnbOut = (amount * totalBnb) / (market.tokenReserve + amount);
 
         market.bnbReserve -= bnbOut;

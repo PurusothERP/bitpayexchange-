@@ -114,6 +114,10 @@ function ShareButtons({ token, address }) {
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-colors">
                 <ExternalLink className="w-3 h-3" /> BSCScan
             </a>
+            <a href={`https://pancakeswap.finance/swap?outputCurrency=${address}&chain=bsc`} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1fc7d4] hover:bg-[#1ab8c4] text-white text-xs font-bold rounded-xl transition-colors">
+                🥞 PancakeSwap
+            </a>
         </div>
     );
 }
@@ -155,13 +159,36 @@ function TokenDetail() {
     const [aiLoading,    setAiLoading]   = useState(false);
     const prevPriceRef = useRef(null);
 
-    // ── Fetch token DB record ─────────────────────────────────────────────────
+    const [retryCount,    setRetryCount]  = useState(0);
+    const [syncMsg,       setSyncMsg]     = useState('');
+
+    // ── Fetch token DB record (with retry for just-deployed tokens) ───────────
     useEffect(() => {
         if (!address) return;
-        axios.get(`${API_URL}/tokens/${address}`)
-            .then(r => setToken(r.data))
-            .catch(() => {})
-            .finally(() => setLoading(false));
+        let tries = 0;
+        const MAX_TRIES = 8;
+
+        const attemptFetch = () => {
+            setSyncMsg(tries > 0 ? `Syncing on-chain data... (${tries}/${MAX_TRIES})` : '');
+            axios.get(`${API_URL}/tokens/${address}`)
+                .then(r => {
+                    setToken(r.data);
+                    setSyncMsg('');
+                    setLoading(false);
+                })
+                .catch(() => {
+                    if (tries < MAX_TRIES) {
+                        tries++;
+                        setRetryCount(tries);
+                        setSyncMsg(`Syncing on-chain data... (${tries}/${MAX_TRIES})`);
+                        setTimeout(attemptFetch, 3000);
+                    } else {
+                        setLoading(false); // Give up — show not found
+                    }
+                });
+        };
+        attemptFetch();
+
         axios.get(`${API_URL}/tokens`)
             .then(r => setAllTokens(Array.isArray(r.data)
                 ? r.data.filter(t => (t.contract_address || t.token_address) !== address)
@@ -174,10 +201,10 @@ function TokenDetail() {
             .catch(() => {});
 
         // Fetch AI Analysis (initial cache check)
-        axios.post(`${API_URL}/ml/analyze`, { name: token?.name || '', symbol: token?.symbol || '' })
+        axios.post(`${API_URL}/ml/analyze`, { name: '', symbol: '' })
             .then(r => setAiAnalysis(r.data))
             .catch(() => {});
-    }, [address, token?.name, token?.symbol]);
+    }, [address]);
 
     // ── Fetch trade history + stats from DB ───────────────────────────────────
     const fetchTradeData = useCallback(async () => {
@@ -215,7 +242,7 @@ function TokenDetail() {
             const [m, VIRTUAL_BNB, LP_INIT_THRESHOLD] = await Promise.all([
                 bc.markets(address),
                 bc.VIRTUAL_BNB().catch(() => ethers.parseEther('0.5')),
-                bc.LP_INIT_THRESHOLD().catch(() => ethers.parseEther('0.3')),
+                bc.LP_INIT_THRESHOLD().catch(() => ethers.parseEther('0.01')),
             ]);
 
             const virtualBnb     = parseFloat(ethers.formatEther(VIRTUAL_BNB));
@@ -397,7 +424,14 @@ function TokenDetail() {
             <Navbar />
             <div className="pt-40 flex flex-col items-center justify-center gap-4">
                 <div className="w-12 h-12 border-4 border-rose-500/20 border-t-rose-500 rounded-full animate-spin" />
-                <p className="text-gray-400 text-sm font-semibold">Loading token…</p>
+                <p className="text-gray-700 text-base font-bold">
+                    {syncMsg || 'Loading token…'}
+                </p>
+                {syncMsg && (
+                    <p className="text-gray-400 text-xs max-w-xs text-center">
+                        Token was just deployed. Indexing metadata from the blockchain…
+                    </p>
+                )}
             </div>
         </main>
     );
@@ -522,8 +556,16 @@ function TokenDetail() {
                         </div>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-black/5">
+                    <div className="mt-4 pt-4 border-t border-black/5 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
                         <ShareButtons token={token} address={token.contract_address || address} />
+                        {/* PancakeSwap Quick Trade Button */}
+                        <a
+                            href={`https://pancakeswap.finance/swap?outputCurrency=${token.contract_address || address}&chain=bsc`}
+                            target="_blank" rel="noopener noreferrer"
+                            className="shrink-0 flex items-center gap-2 px-4 py-2 bg-[#1fc7d4]/10 hover:bg-[#1fc7d4]/20 border border-[#1fc7d4]/30 text-[#1ab8c4] font-black text-xs rounded-xl transition-colors"
+                        >
+                            🥞 Trade on PancakeSwap
+                        </a>
                     </div>
                 </motion.div>
 
@@ -654,7 +696,7 @@ function TokenDetail() {
                                                 <Info className="w-4 h-4 text-blue-500" /> About {token.name}
                                             </h3>
                                             <p className="text-gray-600 text-sm leading-relaxed mb-5">
-                                                {token.description || `${token.name} ($${token.symbol}) was launched on the B20-LAB Launchpad on BNB Smart Chain. It uses a dynamic bonding curve for fair price discovery and automatic liquidity. When the curve reaches its 50 BNB target, liquidity is permanently migrated to PancakeSwap.`}
+                                                {token.description || `${token.name} ($${token.symbol}) was launched on the B20-LAB Launchpad on BNB Smart Chain. It uses a dynamic bonding curve for fair price discovery and automatic liquidity. When the curve reaches its 0.01 BNB target, liquidity is permanently migrated to PancakeSwap.`}
                                             </p>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {[

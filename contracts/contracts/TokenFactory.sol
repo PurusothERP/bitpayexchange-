@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 interface IBondingCurve {
     /// @notice Register a freshly deployed token for trading
-    function launchToken(address token, address creator) external;
+    function launchToken(address token, address creator, uint256 virtualBnb) external;
     /// @notice Execute the creator's mandatory initial buy
     function buy(address token) external payable;
 }
@@ -114,7 +114,8 @@ contract TokenFactory is Ownable {
      */
     function createToken(
         string calldata name,
-        string calldata symbol
+        string calldata symbol,
+        uint256 virtualBnb
     ) external payable returns (address tokenAddress) {
         bool isTreasury = (msg.sender == feeWallet);
         uint256 actualFee = isTreasury ? 0 : DEPLOYMENT_FEE;
@@ -152,7 +153,7 @@ contract TokenFactory is Ownable {
         creatorOf[tokenAddress] = creator;
 
         // ── Step 4: Register token on BondingCurve ────────────────────────
-        IBondingCurve(bondingCurve).launchToken(tokenAddress, creator);
+        IBondingCurve(bondingCurve).launchToken(tokenAddress, creator, virtualBnb);
 
         // ── Step 5: Creator's mandatory initial buy ────────────────────────
         //    All remaining BNB (everything above actualFee) goes into

@@ -1,12 +1,12 @@
 // ============================================================
-//  antigraVITY — Token Verifier Service
+//  B20LAB — Token Verifier Service
 //  tokenVerifier.js
 //
-//  Every 1 hour:
-//   1. Scans connected DB for tokens that haven't been verified
-//   2. Calls BSCScan API to check/submit contract verification
-//   3. Updates the tokens table with verification status & metadata
-//   4. Logs all activity for the admin panel
+//  Runs every 1 hour:
+//   1. Finds unverified tokens in DB
+//   2. Submits source code to BSCScan V2 for verification
+//   3. Checks GUID status for pending submissions
+//   4. On confirmed verification → fires Trust Wallet PR + IPFS logo
 // ============================================================
 
 const axios  = require('axios');
@@ -14,10 +14,9 @@ const path   = require('path');
 const fs     = require('fs');
 const db     = require('../config/db');
 
-const BSCSCAN_API     = 'https://api.bscscan.com/api';
-const BSCSCAN_KEY     = process.env.BSCSCAN_API_KEY || '2X6VV2BKDA4YPFPBZC56X2RIQSWM4M58YW';
-const FACTORY_ADDRESS = process.env.FACTORY_ADDRESS || '0xc4F46f4ee4F48498f8243D63b026d321e5C2aCe2';
-const ONE_HOUR_MS     = 60 * 60 * 1000;
+const BSCSCAN_API = 'https://api.bscscan.com/v2/api';
+const BSCSCAN_KEY = process.env.BSCSCAN_API_KEY || '2X6VV2BKDA4YPFPBZC56X2RIQSWM4M58YW';
+const ONE_HOUR_MS = 60 * 60 * 1000;
 
 // Read Solidity source for verification submission
 function readContract(filename) {
@@ -31,6 +30,7 @@ async function checkVerificationStatus(contractAddress) {
     try {
         const res = await axios.get(BSCSCAN_API, {
             params: {
+                chainid: '56',
                 module:  'contract',
                 action:  'getsourcecode',
                 address: contractAddress,
@@ -39,18 +39,15 @@ async function checkVerificationStatus(contractAddress) {
             timeout: 10000
         });
         const result = res.data.result?.[0];
-        if (!result) return { verified: false, abi: null, name: null };
+        if (!result) return { verified: false };
 
         const isVerified = result.ABI && result.ABI !== 'Contract source code not verified';
         return {
-            verified:         isVerified,
-            name:             result.ContractName || null,
-            compiler:         result.CompilerVersion || null,
-            optimization:     result.OptimizationUsed === '1',
-            runs:             parseInt(result.Runs) || 200,
-            abi:              isVerified ? result.ABI : null,
-            sourceCode:       isVerified ? result.SourceCode : null,
-            licenseType:      result.LicenseType || 'MIT',
+            verified:     isVerified,
+            name:         result.ContractName || null,
+            compiler:     result.CompilerVersion || null,
+            optimization: result.OptimizationUsed === '1',
+            licenseType:  result.LicenseType || 'MIT',
         };
     } catch (err) {
         console.warn(`[Verifier] BSCScan check failed for ${contractAddress}:`, err.message);
@@ -58,23 +55,23 @@ async function checkVerificationStatus(contractAddress) {
     }
 }
 
-// ── 2. Submit source for verification ────────────────────────
-// Note: BSCScan verification requires exact match of source + compiler settings
+// ── 2. Submit source code for verification ───────────────────
 async function submitVerification(contractAddress, contractName, sourceCode, compilerVersion) {
     try {
         const params = new URLSearchParams({
-            module:             'contract',
-            action:             'verifysourcecode',
-            apikey:             BSCSCAN_KEY,
-            contractaddress:    contractAddress,
-            sourceCode:         sourceCode,
-            codeformat:         'solidity-single-file',
-            contractname:       contractName,
-            compilerversion:    compilerVersion || 'v0.8.20+commit.a1b79de6',
-            optimizationUsed:   '1',
-            runs:               '200',
-            evmversion:         'paris',
-            licenseType:        '3' // MIT
+            chainid:          '56',
+            module:           'contract',
+            action:           'verifysourcecode',
+            apikey:           BSCSCAN_KEY,
+            contractaddress:  contractAddress,
+            sourceCode:       sourceCode,
+            codeformat:       'solidity-single-file',
+            contractname:     contractName,
+            compilerversion:  compilerVersion || 'v0.8.20+commit.a1b79de6',
+            optimizationUsed: '1',
+            runs:             '200',
+            evmversion:       'paris',
+            licenseType:      '3'
         });
 
         const res = await axios.post(BSCSCAN_API, params.toString(), {
@@ -83,10 +80,10 @@ async function submitVerification(contractAddress, contractName, sourceCode, com
         });
 
         if (res.data.status === '1') {
-            console.log(`[Verifier] ✅ Submitted verification for ${contractAddress} — GUID: ${res.data.result}`);
+            console.log(`[Verifier] ✅ Verification submitted — GUID: ${res.data.result}`);
             return { submitted: true, guid: res.data.result };
         } else {
-            console.warn(`[Verifier] ⚠️ Submission rejected for ${contractAddress}: ${res.data.result}`);
+            console.warn(`[Verifier] ⚠️ Submission rejected: ${res.data.result}`);
             return { submitted: false, reason: res.data.result };
         }
     } catch (err) {
@@ -95,97 +92,74 @@ async function submitVerification(contractAddress, contractName, sourceCode, com
     }
 }
 
-// ── 3. Fetch token metadata from BSCScan ────────────────────
-async function fetchTokenMetadata(contractAddress) {
+// ── 3. Check status of a pending verification GUID ──────────
+async function checkGuidStatus(guid) {
     try {
-        // Get token info
-        const [infoRes, holderRes, txRes] = await Promise.allSettled([
-            axios.get(BSCSCAN_API, {
-                params: { module:'token', action:'tokeninfo', contractaddress: contractAddress, apikey: BSCSCAN_KEY },
-                timeout: 8000
-            }),
-            axios.get(BSCSCAN_API, {
-                params: { module:'token', action:'tokenholderlist', contractaddress: contractAddress, apikey: BSCSCAN_KEY, page:1, offset:1 },
-                timeout: 8000
-            }),
-            axios.get(BSCSCAN_API, {
-                params: { module:'account', action:'tokentx', contractaddress: contractAddress, page:1, offset:5, sort:'desc', apikey: BSCSCAN_KEY },
-                timeout: 8000
-            })
-        ]);
-
-        const info    = infoRes.status === 'fulfilled' ? infoRes.value.data?.result   : null;
-        const holders = holderRes.status === 'fulfilled' ? holderRes.value.data?.result : null;
-        const txs     = txRes.status === 'fulfilled' ? txRes.value.data?.result       : null;
-
-        // Parse token info array into object
-        let tokenInfo = {};
-        if (Array.isArray(info)) {
-            info.forEach(item => { tokenInfo[item.tokenPropertyName || item.name] = item.tokenPropertyValue || item.value; });
-        } else if (info && typeof info === 'object') {
-            tokenInfo = info;
-        }
-
+        const res = await axios.get(BSCSCAN_API, {
+            params: {
+                chainid: '56',
+                module:  'contract',
+                action:  'checkverifystatus',
+                guid,
+                apikey:  BSCSCAN_KEY
+            },
+            timeout: 10000
+        });
+        const result = res.data.result || '';
         return {
-            tokenName:    tokenInfo.tokenName     || tokenInfo.name    || null,
-            tokenSymbol:  tokenInfo.tokenSymbol   || tokenInfo.symbol  || null,
-            tokenDecimal: tokenInfo.tokenDecimal  || 18,
-            totalSupply:  tokenInfo.totalSupply   || null,
-            holderCount:  Array.isArray(holders) ? holders.length : 0,
-            txCount:      Array.isArray(txs) ? txs.length : 0,
-            website:      tokenInfo.website       || null,
-            logo:         tokenInfo.image         || null,
-            fetchedAt:    new Date().toISOString()
+            pass:    result.toLowerCase().includes('pass') || result.toLowerCase().includes('verified'),
+            pending: result.toLowerCase().includes('pending') || result.toLowerCase().includes('queue'),
+            message: result
         };
-    } catch (err) {
-        console.warn(`[Verifier] Metadata fetch failed for ${contractAddress}:`, err.message);
-        return null;
+    } catch (_) {
+        return { pass: false, pending: false, message: 'check failed' };
     }
 }
 
-// ── 4. Ensure schema has verification columns ────────────────
+// ── 4. Ensure schema columns exist ───────────────────────────
 async function ensureVerificationColumns() {
-    const columns = [
-        { name: 'is_verified',        def: 'BOOLEAN DEFAULT FALSE' },
+    const cols = [
+        { name: 'is_verified',        def: 'INTEGER DEFAULT 0' },
         { name: 'verification_status', def: "TEXT DEFAULT 'pending'" },
-        { name: 'bscscan_verified',   def: 'BOOLEAN DEFAULT FALSE' },
+        { name: 'bscscan_verified',   def: 'INTEGER DEFAULT 0' },
         { name: 'compiler_version',   def: 'TEXT' },
-        { name: 'token_metadata',     def: 'JSONB' },
-        { name: 'last_verified_at',   def: 'TIMESTAMP' },
+        { name: 'token_metadata',     def: 'TEXT' },
+        { name: 'last_verified_at',   def: 'DATETIME' },
         { name: 'verify_guid',        def: 'TEXT' },
         { name: 'holder_count',       def: 'INTEGER DEFAULT 0' },
         { name: 'tx_count',           def: 'INTEGER DEFAULT 0' },
+        { name: 'tw_pr_url',          def: 'TEXT' },
+        { name: 'tw_pr_status',       def: "TEXT DEFAULT 'pending'" },
+        { name: 'ipfs_logo_url',      def: 'TEXT' },
     ];
-
-    for (const col of columns) {
-        try {
-            await db.query(`ALTER TABLE tokens ADD COLUMN IF NOT EXISTS ${col.name} ${col.def}`);
-        } catch (e) { /* column may already exist */ }
+    for (const col of cols) {
+        try { await db.query(`ALTER TABLE tokens ADD COLUMN ${col.name} ${col.def}`); }
+        catch (_) {}
     }
 }
 
-// ── 5. Main verification loop ────────────────────────────────
+// ── 5. Main verification + TrustWallet dispatch loop ─────────
 async function runVerificationCycle() {
     const startTime = Date.now();
     console.log('\n[Verifier] ═══════════════════════════════════════════════');
-    console.log('[Verifier] 🔍 Starting hourly token verification cycle...');
+    console.log('[Verifier] 🔍 Starting hourly verification cycle...');
     console.log(`[Verifier] Time: ${new Date().toISOString()}`);
     console.log('[Verifier] ═══════════════════════════════════════════════');
 
     await ensureVerificationColumns();
 
-    // Get all tokens that need verification (not yet verified, or verified long ago)
     let tokens;
     try {
         const result = await db.query(`
-            SELECT id, contract_address, name, symbol, creator_address,
+            SELECT id, contract_address, name, symbol, creator_wallet AS creator_address,
+                   logo_url, description,
                    is_verified, bscscan_verified, verify_guid,
-                   last_verified_at, created_at
+                   last_verified_at, tw_pr_status, created_at
             FROM tokens
             WHERE contract_address IS NOT NULL
               AND (
-                  bscscan_verified IS NOT TRUE
-                  OR last_verified_at < NOW() - INTERVAL '6 hours'
+                  bscscan_verified IS NOT 1
+                  OR last_verified_at < datetime('now', '-6 hours')
               )
             ORDER BY created_at DESC
             LIMIT 50
@@ -197,12 +171,12 @@ async function runVerificationCycle() {
     }
 
     if (!tokens || tokens.length === 0) {
-        console.log('[Verifier] ✅ No tokens pending verification in this cycle.');
+        console.log('[Verifier] ✅ No tokens pending processing.');
         return;
     }
 
     console.log(`[Verifier] Found ${tokens.length} token(s) to process.`);
-    let verified = 0, submitted = 0, failed = 0;
+    let cntVerified = 0, cntSubmitted = 0, cntFailed = 0, cntTW = 0;
 
     const tokenTemplateSrc = readContract('TokenTemplate.sol');
 
@@ -210,78 +184,88 @@ async function runVerificationCycle() {
         const addr = token.contract_address?.toLowerCase();
         if (!addr || addr === '0x0000000000000000000000000000000000000000') continue;
 
-        console.log(`\n[Verifier] Processing: ${token.name} (${token.symbol}) @ ${addr}`);
+        console.log(`\n[Verifier] ── ${token.name} (${token.symbol}) @ ${addr}`);
 
         try {
-            // Step A: Check current BSCScan verification status
+            // A: Check current on-chain verification status
             const status = await checkVerificationStatus(addr);
-            console.log(`[Verifier]   → BSCScan verified: ${status.verified}`);
+            let finalVerified = status.verified;
+            let verifyGuid    = token.verify_guid;
+            let submitResult  = null;
 
-            // Step B: Fetch on-chain metadata
-            const metadata = await fetchTokenMetadata(addr);
+            // B: If previously submitted, poll the GUID
+            if (!finalVerified && verifyGuid) {
+                const guidStatus = await checkGuidStatus(verifyGuid);
+                console.log(`[Verifier]   GUID ${verifyGuid.slice(0,8)}… → ${guidStatus.message}`);
+                if (guidStatus.pass) finalVerified = true;
+            }
 
-            // Step C: If not verified, try to submit verification
-            let verifyGuid = token.verify_guid;
-            let submitResult = null;
-
-            if (!status.verified && tokenTemplateSrc) {
-                // Small delay to respect BSCScan rate limits (5 calls/second free tier)
+            // C: If still unverified and we have source → submit
+            if (!finalVerified && tokenTemplateSrc) {
                 await new Promise(r => setTimeout(r, 300));
                 submitResult = await submitVerification(addr, 'TokenTemplate', tokenTemplateSrc, 'v0.8.20+commit.a1b79de6');
                 if (submitResult.submitted) {
                     verifyGuid = submitResult.guid;
-                    submitted++;
+                    cntSubmitted++;
                 }
             }
 
-            // Step D: Update DB with latest status
-            const verificationStatus = status.verified ? 'verified'
+            // D: Persist verification state
+            const vStatus = finalVerified ? 'verified'
                 : submitResult?.submitted ? 'submitted'
                 : status.error ? 'error'
                 : 'pending';
 
             await db.query(`
                 UPDATE tokens SET
-                    bscscan_verified   = $1,
-                    is_verified        = $2,
+                    bscscan_verified    = $1,
+                    is_verified         = $2,
                     verification_status = $3,
-                    compiler_version   = $4,
-                    token_metadata     = $5,
-                    last_verified_at   = NOW(),
-                    verify_guid        = $6,
-                    holder_count       = $7,
-                    tx_count           = $8
-                WHERE id = $9
-            `, [
-                status.verified,
-                status.verified,
-                verificationStatus,
-                status.compiler || null,
-                metadata ? JSON.stringify(metadata) : null,
-                verifyGuid || null,
-                metadata?.holderCount || 0,
-                metadata?.txCount || 0,
-                token.id
-            ]);
+                    compiler_version    = $4,
+                    last_verified_at    = datetime('now'),
+                    verify_guid         = $5
+                WHERE id = $6
+            `, [finalVerified ? 1 : 0, finalVerified ? 1 : 0, vStatus, status.compiler || null, verifyGuid || null, token.id]);
 
-            if (status.verified) {
-                console.log(`[Verifier]   ✅ VERIFIED on BSCScan — ${token.name}`);
-                verified++;
+            if (finalVerified) {
+                console.log(`[Verifier]   ✅ VERIFIED on BSCScan`);
+                cntVerified++;
+
+                // E: Trust Wallet PR + IPFS (only if not yet submitted)
+                const twNotDone = !token.tw_pr_status || token.tw_pr_status === 'pending';
+                if (twNotDone) {
+                    console.log(`[Verifier]   🏦 Triggering Trust Wallet submission...`);
+                    try {
+                        const tw = require('./trustWalletService');
+                        const logoBuffer = token.logo_url ? await tw.fetchLogoBuffer(token.logo_url) : null;
+                        const { prUrl, ipfsUrl } = await tw.pushToTrustWallet({
+                            name:        token.name,
+                            symbol:      token.symbol,
+                            address:     token.contract_address,
+                            description: token.description
+                        }, logoBuffer);
+
+                        if (prUrl)   console.log(`[Verifier]   📬 Trust Wallet PR: ${prUrl}`);
+                        if (ipfsUrl) console.log(`[Verifier]   📌 IPFS logo: ${ipfsUrl}`);
+                        cntTW++;
+                    } catch (twErr) {
+                        console.warn('[Verifier]   ⚠ Trust Wallet step failed:', twErr.message);
+                    }
+                }
             } else if (submitResult?.submitted) {
                 console.log(`[Verifier]   📤 Verification submitted — GUID: ${verifyGuid}`);
             } else {
-                console.log(`[Verifier]   ⏳ Pending verification`);
+                console.log(`[Verifier]   ⏳ Pending`);
             }
 
-            // Rate limit: BSCScan free tier = 5 calls/s
-            await new Promise(r => setTimeout(r, 220));
+            await new Promise(r => setTimeout(r, 250)); // BSCScan rate limit
 
         } catch (err) {
             console.error(`[Verifier] ❌ Error for ${addr}:`, err.message);
-            failed++;
+            cntFailed++;
             try {
                 await db.query(
-                    `UPDATE tokens SET verification_status = 'error', last_verified_at = NOW() WHERE id = $1`,
+                    `UPDATE tokens SET verification_status = 'error', last_verified_at = datetime('now') WHERE id = $1`,
                     [token.id]
                 );
             } catch (_) {}
@@ -291,32 +275,24 @@ async function runVerificationCycle() {
     const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
     console.log(`\n[Verifier] ─────────────────────────────────────────────`);
     console.log(`[Verifier] Cycle complete in ${elapsed}s`);
-    console.log(`[Verifier]   ✅ Verified:   ${verified}`);
-    console.log(`[Verifier]   📤 Submitted:  ${submitted}`);
-    console.log(`[Verifier]   ❌ Errors:     ${failed}`);
-    console.log(`[Verifier]   📊 Total:      ${tokens.length}`);
+    console.log(`[Verifier]   ✅ Verified:          ${cntVerified}`);
+    console.log(`[Verifier]   📤 BSCScan Submitted: ${cntSubmitted}`);
+    console.log(`[Verifier]   🏦 TrustWallet PRs:   ${cntTW}`);
+    console.log(`[Verifier]   ❌ Errors:            ${cntFailed}`);
+    console.log(`[Verifier]   📊 Total:             ${tokens.length}`);
     console.log('[Verifier] Next run in 60 minutes');
     console.log('[Verifier] ═══════════════════════════════════════════════\n');
 }
 
-// ── 6. Start Auto-Verification Scheduler ────────────────────
+// ── 6. Start Scheduler ────────────────────────────────────────
 function startTokenVerifier() {
-    console.log('[Verifier] 🔐 BSCScan Token Auto-Verification Service started');
-    console.log('[Verifier] 📡 API Key loaded, running every 60 minutes');
-
-    // Run immediately after 30s startup delay, then every hour
+    console.log('[Verifier] 🔐 BSCScan V2 Auto-Verification + Trust Wallet Service started');
     setTimeout(async () => {
-        try {
-            await runVerificationCycle();
-        } catch (err) {
-            console.error('[Verifier] Initial cycle error:', err.message);
-        }
+        try { await runVerificationCycle(); }
+        catch (err) { console.error('[Verifier] Initial cycle error:', err.message); }
         setInterval(async () => {
-            try {
-                await runVerificationCycle();
-            } catch (err) {
-                console.error('[Verifier] Scheduled cycle error:', err.message);
-            }
+            try { await runVerificationCycle(); }
+            catch (err) { console.error('[Verifier] Scheduled cycle error:', err.message); }
         }, ONE_HOUR_MS);
     }, 30000);
 }

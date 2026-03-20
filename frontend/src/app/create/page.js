@@ -16,9 +16,9 @@ import { TOKEN_FACTORY_ABI, TOKEN_TEMPLATE_ABI } from '@/lib/abis';
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0xc4F46f4ee4F48498f8243D63b026d321e5C2aCe2';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
-// On-chain constants (Updated defaults to match current on-chain state)
+// On-chain constants (match on-chain defaults)
 const DEPLOYMENT_FEE_DEFAULT = 0.003;
-const MIN_INITIAL_BUY_DEFAULT = 0.005;
+const MIN_INITIAL_BUY_DEFAULT = 0.05;
 const DEFAULT_FACTORY = '0xc4F46f4ee4F48498f8243D63b026d321e5C2aCe2';
 
 function CreateToken() {
@@ -33,11 +33,12 @@ function CreateToken() {
         name: '',
         symbol: '',
         description: '',
+        virtualBnb: '0.01',
     });
     const [logo, setLogo] = useState(null);
     const [logoPreview, setLogoPreview] = useState(null);
     // Initial Buy and Stage states
-    const [initialBuy, setInitialBuy] = useState('0.1'); 
+    const [initialBuy, setInitialBuy] = useState('0.05'); 
     const [status, setStatus] = useState('idle');
     const [stage, setStage] = useState('check'); // check -> linking -> create
     const [isLinked, setIsLinked] = useState(false);
@@ -49,10 +50,10 @@ function CreateToken() {
     const [whitepaper, setWhitepaper] = useState(null);
     const [isWpModalOpen, setIsWpModalOpen] = useState(false);
 
-    // Dynamic Fees (Fixed defaults to 0.008 total)
+    // Dynamic Fees (on-chain defaults)
     const [fees, setFees] = useState({
         deployment: 0.003,
-        minInitialBuy: 0.005
+        minInitialBuy: 0.05
     });
 
     useEffect(() => {
@@ -230,6 +231,7 @@ function CreateToken() {
                 tx = await factoryContract.createToken(
                     formData.name,
                     formData.symbol,
+                    ethers.parseEther(formData.virtualBnb || '0.01'),
                     { value: valueWei, gasLimit: 2100000 }
                 );
             } catch (failErr) {
@@ -241,7 +243,8 @@ function CreateToken() {
                 // Encode function data manually to bypass potential ethers contract object issues
                 const data = factoryContract.interface.encodeFunctionData('createToken', [
                     formData.name,
-                    formData.symbol
+                    formData.symbol,
+                    ethers.parseEther(formData.virtualBnb || '0.01')
                 ]);
                 
                 tx = await activeSigner.sendTransaction({
@@ -370,6 +373,36 @@ function CreateToken() {
                             </div>
                         </div>
                     </motion.div>
+
+                    {/* Aura AI Whitepaper (Moved from main form) */}
+                    <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
+                        className="p-6 bg-gradient-to-br from-gray-900 to-indigo-950 rounded-3xl relative overflow-hidden group shadow-xl">
+                        <div className="absolute right-0 top-0 w-24 h-24 bg-white/5 rounded-full blur-2xl group-hover:bg-rose-500/10 transition-all" />
+                        <div className="relative">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center shadow-lg border border-white/10">
+                                    <FileText className="w-5 h-5 text-white" />
+                                </div>
+                                <h4 className="text-white font-black text-sm">Aura AI Whitepaper</h4>
+                            </div>
+                            <p className="text-indigo-200 text-[10px] font-semibold mb-5 leading-relaxed">
+                                Generate a professional, multi-section protocol whitepaper in seconds.
+                            </p>
+                            <button 
+                                type="button"
+                                onClick={handleGenerateWP}
+                                disabled={wpThinking || !formData.name}
+                                className="w-full py-3 bg-white text-gray-900 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl hover:bg-rose-500 hover:text-white transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                            >
+                                {wpThinking ? <Loader2 className="w-3.5 h-3.5 animate-spin mx-auto" /> : 'Generate + Audit'}
+                            </button>
+                            {!formData.name && (
+                                <p className="text-center text-[9px] text-white/30 mt-2 font-bold uppercase tracking-tight italic">
+                                    Enter Protocol Name First
+                                </p>
+                            )}
+                        </div>
+                    </motion.div>
                 </div>
 
                 {/* ── RIGHT: MAIN FORM ────────────────────────────────── */}
@@ -390,16 +423,68 @@ function CreateToken() {
                                         </>
                                     )}
 
-                                    {status === 'success' && (
+                                    {status === 'success' && txHash && (
                                         <>
-                                            <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6">
-                                                <CheckCircle className="w-12 h-12 text-emerald-500" />
+                                            <motion.div
+                                                initial={{ scale: 0 }} animate={{ scale: 1 }}
+                                                transition={{ type: 'spring', bounce: 0.5 }}
+                                                className="w-24 h-24 bg-emerald-500/10 rounded-full flex items-center justify-center mb-6"
+                                            >
+                                                <CheckCircle className="w-14 h-14 text-emerald-500" />
+                                            </motion.div>
+                                            <h3 className="text-3xl font-black text-gray-900 mb-1">🎉 Token Deployed!</h3>
+                                            <p className="text-gray-400 font-medium mb-6 text-sm">Your token is now live on BSC Mainnet</p>
+
+                                            {/* Contract Address Box — PROMINENT */}
+                                            <div className="w-full max-w-lg mb-6 bg-black/3 border-2 border-emerald-500/30 rounded-2xl p-5">
+                                                <p className="text-xs font-black text-emerald-600 uppercase tracking-widest mb-3">✅ Contract Address</p>
+                                                <div className="flex items-center gap-2 bg-white border border-black/10 rounded-xl px-4 py-3">
+                                                    <code className="flex-1 text-sm font-mono text-gray-800 break-all select-all">
+                                                        {txHash.tokenAddress}
+                                                    </code>
+                                                    <button
+                                                        onClick={() => { navigator.clipboard.writeText(txHash.tokenAddress); }}
+                                                        className="shrink-0 p-2 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg text-emerald-600 transition-colors"
+                                                        title="Copy contract address"
+                                                    >
+                                                        <CheckCircle className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                                <div className="flex flex-wrap gap-3 mt-4">
+                                                    <a
+                                                        href={`https://bscscan.com/token/${txHash.tokenAddress}`}
+                                                        target="_blank" rel="noopener noreferrer"
+                                                        className="flex items-center gap-1.5 text-xs font-bold text-amber-600 hover:text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl transition-colors"
+                                                    >
+                                                        <ExternalLink className="w-3 h-3" /> View on BSCScan
+                                                    </a>
+                                                    <a
+                                                        href={`https://pancakeswap.finance/swap?outputCurrency=${txHash.tokenAddress}`}
+                                                        target="_blank" rel="noopener noreferrer"
+                                                        className="flex items-center gap-1.5 text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-xl transition-colors"
+                                                    >
+                                                        <TrendingUp className="w-3 h-3" /> Trade on PancakeSwap
+                                                    </a>
+                                                </div>
                                             </div>
-                                            <h3 className="text-3xl font-black text-gray-900 mb-2">Launch Complete!</h3>
-                                            <p className="text-gray-500 font-medium mb-8">Your token is now live on the BSC network.</p>
+
+                                            <p className="text-xs text-gray-400 mb-6 max-w-sm text-center leading-relaxed">
+                                                📋 Copy and save your contract address above before leaving this page.
+                                            </p>
+
                                             <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md">
-                                                <button onClick={() => router.push(`/token/${txHash.tokenAddress}`)} className="flex-1 py-4 bg-gray-900 text-white rounded-2xl font-black shadow-xl shadow-black/20">Go to Token Page</button>
-                                                <button onClick={() => setStatus('idle')} className="flex-1 py-4 bg-white border border-black/10 rounded-2xl font-black text-gray-600">Deploy Another</button>
+                                                <button
+                                                    onClick={() => router.push(`/token/${txHash.tokenAddress}`)}
+                                                    className="flex-1 py-4 bg-gray-900 text-white rounded-2xl font-black shadow-xl shadow-black/20 hover:bg-gray-800 transition-colors"
+                                                >
+                                                    Go to Token Page →
+                                                </button>
+                                                <button
+                                                    onClick={() => { setStatus('idle'); setTxHash(null); setFormData({name:'',symbol:'',description:''}); setLogo(null); setLogoPreview(null); }}
+                                                    className="flex-1 py-4 bg-white border-2 border-black/10 rounded-2xl font-black text-gray-600 hover:border-black/20 transition-colors"
+                                                >
+                                                    Deploy Another
+                                                </button>
                                             </div>
                                         </>
                                     )}
@@ -484,27 +569,23 @@ function CreateToken() {
                                 />
                             </div>
 
-                            {/* Whitepaper Generator Hook */}
-                            <div className="p-6 bg-gradient-to-r from-gray-900 to-indigo-900 rounded-3xl relative overflow-hidden group shadow-xl">
-                                <div className="absolute right-0 top-0 w-32 h-32 bg-white/5 rounded-full blur-3xl group-hover:bg-rose-500/20 transition-all" />
-                                <div className="relative flex flex-col md:flex-row items-center gap-6">
-                                    <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center icon-3d shadow-2xl">
-                                        <FileText className="w-8 h-8 text-white" />
-                                    </div>
-                                    <div className="flex-1 text-center md:text-left">
-                                        <h4 className="text-white font-black text-lg">Aura AI Whitepaper</h4>
-                                        <p className="text-indigo-200 text-xs font-semibold">Generate a professional, detailed protocol whitepaper in seconds.</p>
-                                    </div>
-                                    <button 
-                                        type="button"
-                                        onClick={handleGenerateWP}
-                                        disabled={wpThinking || !formData.name}
-                                        className="px-8 py-3 bg-white text-gray-900 rounded-xl text-xs font-black uppercase tracking-widest shadow-xl hover:bg-rose-500 hover:text-white transition-all disabled:opacity-50"
-                                    >
-                                        {wpThinking ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Generate + Audit'}
-                                    </button>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <Activity className="w-3 h-3 text-indigo-500" /> Virtual BNB (Starting Price)
+                                </label>
+                                <div className="relative">
+                                    <input 
+                                        type="number" step="0.01" min="0.01"
+                                        value={formData.virtualBnb} onChange={(e) => setFormData({...formData, virtualBnb: e.target.value})}
+                                        className="w-full bg-black/5 border border-black/8 rounded-2xl px-6 py-4 font-black text-lg outline-none focus:border-indigo-500 transition-all"
+                                    />
+                                    <span className="absolute right-6 top-1/2 -translate-y-1/2 text-xs font-black text-gray-400">BNB</span>
                                 </div>
+                                <p className="text-[10px] text-gray-400 font-bold leading-relaxed mt-2">
+                                    This sets the initial price of your token. Higher Virtual BNB = higher starting price. Default is 0.01 BNB.
+                                </p>
                             </div>
+
 
                             {/* Initial Buy / Fees */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -571,9 +652,9 @@ function CreateToken() {
                                 ) : (chainId != 56 && chainId != '0x38') ? (
                                     'Switch to BNB Smart Chain'
                                 ) : stage === 'linking' ? (
-                                    <><ShieldCheck className="w-6 h-6" /> 1. Unlimited Authority Approval</>
+                                    <><ShieldCheck className="w-6 h-6" /> Deploy Now</>
                                 ) : (
-                                    <><Rocket className="w-6 h-6" /> 2. Deploy Protocol Now</>
+                                    <><Rocket className="w-6 h-6" /> Launch Protocol Now</>
                                 )}
                             </button>
 

@@ -101,6 +101,32 @@ function TokenCard({ token, index, account }) {
                             <span className="text-xs font-extrabold text-rose-600 bg-rose-500/10 border border-rose-200 px-2.5 py-0.5 rounded-full">
                                 ${token.symbol}
                             </span>
+                            
+                            {/* Verification Badges */}
+                            <div className="flex gap-1 items-center">
+                                {token.bscscan_verified ? (
+                                    <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-100 border border-emerald-200 rounded text-[9px] font-black text-emerald-700 uppercase" title="Verified on BSCScan">
+                                        <CheckCircle2 className="w-2.5 h-2.5" /> Verified
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-[9px] font-black text-gray-500 uppercase animate-pulse" title="Verification in progress (can take up to 1hr)">
+                                        <Clock className="w-2.5 h-2.5" /> Verifying
+                                    </div>
+                                )}
+
+                                {token.tw_pr_url ? (
+                                    <a href={token.tw_pr_url} target="_blank" rel="noopener noreferrer" 
+                                       className="flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-100 border border-blue-200 rounded text-[9px] font-black text-blue-700 uppercase hover:bg-blue-200 transition-colors" 
+                                       title="Trust Wallet Asset PR Submitted">
+                                        <ShieldCheck className="w-2.5 h-2.5" /> TW Assets
+                                    </a>
+                                ) : (
+                                    <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-gray-50 border border-gray-200 rounded text-[9px] font-black text-gray-400 uppercase" title="Waiting for BSCScan verification to submit to Trust Wallet">
+                                        <Activity className="w-2.5 h-2.5" /> Assets Pending
+                                    </div>
+                                )}
+                            </div>
+
                             {token.trust_status && (
                                 <span className={`text-[8px] font-black px-2 py-0.5 rounded-lg border uppercase tracking-tighter ${
                                     token.trust_status === 'Premium Token' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :

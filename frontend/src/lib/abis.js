@@ -11,6 +11,11 @@ export const TOKEN_FACTORY_ABI = [
         "internalType": "string",
         "name": "symbol",
         "type": "string"
+      },
+      {
+        "internalType": "uint256",
+        "name": "virtualBnb",
+        "type": "uint256"
       }
     ],
     "name": "createToken",
@@ -348,11 +353,7 @@ export const TOKEN_FACTORY_ABI = [
 export const BONDING_CURVE_ABI = [
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      }
+      { "internalType": "address", "name": "token", "type": "address" }
     ],
     "name": "buy",
     "outputs": [],
@@ -361,16 +362,8 @@ export const BONDING_CURVE_ABI = [
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      }
+      { "internalType": "address", "name": "token", "type": "address" },
+      { "internalType": "uint256", "name": "amount", "type": "uint256" }
     ],
     "name": "sell",
     "outputs": [],
@@ -379,122 +372,63 @@ export const BONDING_CURVE_ABI = [
   },
   {
     "inputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
+      { "internalType": "address", "name": "", "type": "address" }
     ],
     "name": "markets",
     "outputs": [
-      {
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "creator",
-        "type": "address"
-      },
-      {
-        "internalType": "uint256",
-        "name": "collateral",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "supply",
-        "type": "uint256"
-      },
-      {
-        "internalType": "bool",
-        "name": "migrated",
-        "type": "bool"
-      }
+      { "internalType": "address", "name": "token", "type": "address" },
+      { "internalType": "address", "name": "creator", "type": "address" },
+      { "internalType": "uint256", "name": "bnbReserve", "type": "uint256" },
+      { "internalType": "uint256", "name": "tokenReserve", "type": "uint256" },
+      { "internalType": "uint256", "name": "virtualBnb",   "type": "uint256" },
+      { "internalType": "bool",    "name": "lpInitialized", "type": "bool" },
+      { "internalType": "bool",    "name": "migrated", "type": "bool" }
     ],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
-    "name": "INITIAL_PRICE",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
+    "name": "VIRTUAL_BNB",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
-    "name": "MIGRATION_THRESHOLD",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
+    "name": "LP_INIT_THRESHOLD",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "MAX_SUPPLY",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
     "stateMutability": "view",
     "type": "function"
   },
   {
     "inputs": [],
     "name": "feeWallet",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
     "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "sweepAllBNB",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
     "anonymous": false,
     "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "bnbIn",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "tokensOut",
-        "type": "uint256"
-      }
+      { "indexed": true,  "internalType": "address", "name": "token",     "type": "address" },
+      { "indexed": true,  "internalType": "address", "name": "user",      "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "bnbIn",     "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "tokensOut", "type": "uint256" }
     ],
     "name": "Buy",
     "type": "event"
@@ -502,30 +436,10 @@ export const BONDING_CURVE_ABI = [
   {
     "anonymous": false,
     "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "user",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "tokensIn",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "bnbOut",
-        "type": "uint256"
-      }
+      { "indexed": true,  "internalType": "address", "name": "token",    "type": "address" },
+      { "indexed": true,  "internalType": "address", "name": "user",     "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "tokensIn", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "bnbOut",   "type": "uint256" }
     ],
     "name": "Sell",
     "type": "event"
@@ -533,32 +447,29 @@ export const BONDING_CURVE_ABI = [
   {
     "anonymous": false,
     "inputs": [
-      {
-        "indexed": true,
-        "internalType": "address",
-        "name": "token",
-        "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "bnbToLP",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "tokensToLP",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "bnbToFee",
-        "type": "uint256"
-      }
+      { "indexed": true,  "internalType": "address", "name": "token",       "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "bnbAmount",   "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "tokenAmount", "type": "uint256" }
     ],
-    "name": "Migrated",
+    "name": "LPInitialized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true,  "internalType": "address", "name": "token",     "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "bnbAmount", "type": "uint256" }
+    ],
+    "name": "FirstTradeTriggered",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true,  "internalType": "address", "name": "to",     "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
+    ],
+    "name": "BNBSwept",
     "type": "event"
   }
 ];

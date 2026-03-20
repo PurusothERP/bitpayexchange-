@@ -532,7 +532,7 @@ export default function Home() {
               { icon: '📊', title: 'Demand-Driven Pricing', desc: 'Price increases automatically as more people buy the token — rewarding early believers.' },
               { icon: '⚖️', title: 'Fair Distribution', desc: 'No pre-sales or insider allocations. Everyone buys at the on-chain price at the time of purchase.' },
               { icon: '💧', title: 'Automated Liquidity', desc: 'Collateral from bonding curve sales automatically flows into PancakeSwap liquidity pools.' },
-              { icon: '🥞', title: 'PancakeSwap Listing', desc: 'Once the curve reaches 50 BNB collateral, the token auto-migrates to PancakeSwap for infinite scale.' },
+              { icon: '🥞', title: 'PancakeSwap Listing', desc: 'Once the curve reaches 0.01 BNB collateral, the token auto-migrates to PancakeSwap for infinite scale.' },
             ].map((item, i) => (
               <motion.div
                 key={i}

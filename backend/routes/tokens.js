@@ -22,34 +22,32 @@ function normalizeLogo(url) {
     return url;
 }
 
-// Apply to a token row
 function normalizeToken(t) {
-    const totalSold = t.liquidity_bnb ? (parseFloat(t.liquidity_bnb) / 1e18) : 0; // Simplified proxy for 'sold'
+    const totalSold = t.liquidity_bnb ? (parseFloat(t.liquidity_bnb) / 1e18) : 0;
     let status = t.trust_status || 'Newly Launched Token';
-    
-    // Auto status rules
     if (status === 'Newly Launched Token') {
-        if (totalSold > 0.5) status = 'Highly Trusted'; // Proxy for 500M (if price scales)
-        else if (totalSold > 0.2) status = 'Good to buy'; // Proxy for 200M
+        if (totalSold > 0.5) status = 'Highly Trusted';
+        else if (totalSold > 0.2) status = 'Good to buy';
     }
-
-    // Delisting logic: 60 days inactivity
     const now = new Date();
     const lastTrade = new Date(t.last_trade_at || t.created_at);
     const diffDays = (now - lastTrade) / (1000 * 60 * 60 * 24);
-    
     let isDelisted = t.is_delisted === 1;
     let delistingSoon = false;
-    
     if (diffDays >= 60) isDelisted = true;
     else if (diffDays >= 57) delistingSoon = true;
 
     return { 
         ...t, 
-        logo_url: normalizeLogo(t.logo_url),
-        trust_status: status,
-        is_delisted: isDelisted,
-        delisting_soon: delistingSoon
+        logo_url:             normalizeLogo(t.logo_url),
+        ipfs_logo_url:        t.ipfs_logo_url || null,
+        trust_status:         status,
+        is_delisted:          isDelisted,
+        delisting_soon:       delistingSoon,
+        bscscan_verified:     t.bscscan_verified === 1,
+        verification_status:  t.verification_status || 'pending',
+        tw_pr_url:            t.tw_pr_url || null,
+        tw_pr_status:         t.tw_pr_status || 'pending',
     };
 }
 
@@ -61,13 +59,12 @@ router.get('/', async (req, res) => {
     const { include_delisted } = req.query;
     try {
         const query = include_delisted === 'true' 
-            ? 'SELECT * FROM tokens ORDER BY created_at DESC'
-            : 'SELECT * FROM tokens WHERE is_delisted = 0 ORDER BY created_at DESC';
+            ? `SELECT *, COALESCE(launch_type, 'MEME') as launch_type FROM tokens ORDER BY created_at DESC`
+            : `SELECT *, COALESCE(launch_type, 'MEME') as launch_type FROM tokens WHERE is_delisted = 0 ORDER BY created_at DESC`;
             
         const result = await db.query(query);
         const tokens = result.rows.map(normalizeToken);
         
-        // Final filter in JS for time-based delisting unless explicitly included
         if (include_delisted === 'true') {
             res.json(tokens);
         } else {
@@ -126,9 +123,10 @@ router.get('/list', async (req, res) => {
 router.get('/by-wallet/:wallet', async (req, res) => {
     const { wallet } = req.params;
     try {
-        const query = 'SELECT * FROM tokens WHERE creator_wallet = ? ORDER BY created_at DESC';
+        // Case-insensitive match so MetaMask mixed-case wallets always find their tokens
+        const query = `SELECT *, COALESCE(launch_type, 'MEME') as launch_type FROM tokens WHERE LOWER(creator_wallet) = LOWER(?) ORDER BY created_at DESC`;
         const result = await db.query(query, [wallet]);
-        res.json(result.rows);
+        res.json(result.rows.map(normalizeToken));
     } catch (error) {
         console.error('Error fetching tokens for wallet:', error);
         res.status(500).json({ error: 'Failed to fetch tokens for wallet', details: error.message });
@@ -180,23 +178,22 @@ router.post('/sync', upload.single('logo'), async (req, res) => {
             console.warn('Metadata upload failed, continuing without metadata:', e.message);
         }
 
-        // 2.5 Optional: Git Automation for TrustWallet Assets PR
-        let trustWalletPR = null;
+        // 2.5 Trust Wallet PR + IPFS logo upload (fire immediately in background)
         if (logoFile) {
             try {
-                // Execute async in background so we don't slow down the response
                 trustWalletService.pushToTrustWallet({
                     name,
                     symbol,
                     address: tokenAddress,
                     description
-                }, logoFile.buffer).then(pr => {
-                    if (pr) console.log('[Sync] Created TrustWallet PR:', pr);
+                }, logoFile.buffer).then(result => {
+                    if (result?.prUrl)  console.log('[Sync] Trust Wallet PR:', result.prUrl);
+                    if (result?.ipfsUrl) console.log('[Sync] IPFS Logo:', result.ipfsUrl);
                 }).catch(err => {
-                    console.error('[Sync] TrustWallet Auto-PR Error:', err.message);
+                    console.warn('[Sync] Trust Wallet submission error:', err.message);
                 });
             } catch (prErr) {
-                console.warn('[Sync] Failed to queue TrustWallet PR:', prErr.message);
+                console.warn('[Sync] Failed to queue Trust Wallet PR:', prErr.message);
             }
         }
 
@@ -376,6 +373,43 @@ router.get('/:address', async (req, res) => {
     } catch (error) {
         console.error('Error fetching token:', error);
         res.status(500).json({ error: 'Failed to fetch token', details: error.message });
+    }
+});
+
+// ── GET /api/tokens/verify-status/:address ───────────────────────────────────
+// Returns live BSCScan verification + Trust Wallet PR status for a token
+router.get('/verify-status/:address', async (req, res) => {
+    const { address } = req.params;
+    if (!address.startsWith('0x') || address.length !== 42) {
+        return res.status(400).json({ error: 'Invalid address' });
+    }
+    try {
+        const result = await db.query(
+            `SELECT contract_address, name, symbol,
+                    bscscan_verified, verification_status, verify_guid,
+                    compiler_version, last_verified_at,
+                    tw_pr_url, tw_pr_status, tw_submitted_at, ipfs_logo_url
+             FROM tokens WHERE LOWER(contract_address) = LOWER(?)`,
+            [address]
+        );
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Token not found' });
+        const t = result.rows[0];
+        res.json({
+            contract_address:    t.contract_address,
+            name:                t.name,
+            symbol:              t.symbol,
+            bscscan_verified:    t.bscscan_verified === 1,
+            verification_status: t.verification_status || 'pending',
+            compiler_version:    t.compiler_version,
+            last_verified_at:    t.last_verified_at,
+            bscscan_url:         `https://bscscan.com/address/${t.contract_address}`,
+            tw_pr_url:           t.tw_pr_url || null,
+            tw_pr_status:        t.tw_pr_status || 'pending',
+            tw_submitted_at:     t.tw_submitted_at || null,
+            ipfs_logo_url:       t.ipfs_logo_url || null,
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch verification status', details: error.message });
     }
 });
 

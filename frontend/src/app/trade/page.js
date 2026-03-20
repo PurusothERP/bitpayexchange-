@@ -10,14 +10,25 @@ import {
 } from 'recharts';
 import {
     ChevronDown, TrendingUp, TrendingDown, Clock, Activity, AlertTriangle, CheckCircle2,
-    RefreshCw, Search, ArrowUpRight, ArrowDownRight, ExternalLink
+    RefreshCw, Search, ArrowUpRight, ArrowDownRight, ExternalLink, Zap
 } from 'lucide-react';
 import { ethers, Contract } from 'ethers';
 import { BONDING_CURVE_ABI, TOKEN_TEMPLATE_ABI } from '@/lib/abis';
 
-const BONDING_CURVE_ADDRESS = process.env.NEXT_PUBLIC_BONDING_CURVE_ADDRESS;
-const API_URL               = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-const BSC_RPC               = 'https://bsc-dataseed.binance.org';
+const BONDING_CURVE_ADDRESS  = process.env.NEXT_PUBLIC_BONDING_CURVE_ADDRESS;
+const API_URL                = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const BSC_RPC                = 'https://bsc-dataseed.binance.org';
+
+// PancakeSwap V2 Router — BSC Mainnet
+const PANCAKE_ROUTER_ADDR = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
+const WBNB_ADDR           = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
+// Minimal PancakeSwap Router ABI for swaps & quotes
+const PANCAKE_ROUTER_ABI = [
+    'function swapExactETHForTokensSupportingFeeOnTransferTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable',
+    'function swapExactTokensForETHSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external',
+    'function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts)',
+];
+
 
 function formatNumber(num, dec = 4) { return Number(num).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
 function formatPrice(num) {
@@ -124,37 +135,79 @@ export default function TradePage() {
         } catch (e) {}
     }, [selectedToken]);
 
-    // ── Live Bonding Curve Status ──────────────────────────────────────────
-    const fetchMarket = useCallback(async () => {
-        if (!selectedToken?.contract_address || !BONDING_CURVE_ADDRESS) return;
+    // ── DEX Price Feed (for Fair Launch / Migrated tokens) ─────────────────
+    const fetchDexMarket = useCallback(async () => {
+        if (!selectedToken?.contract_address) return;
         try {
             const provider = new ethers.JsonRpcProvider(BSC_RPC);
-            const bc = new Contract(BONDING_CURVE_ADDRESS, BONDING_CURVE_ABI, provider);
-            
-            const [m, VIRTUAL_BNB, LP_INIT_THRESHOLD] = await Promise.all([
-                bc.markets(selectedToken.contract_address),
-                bc.VIRTUAL_BNB().catch(() => ethers.parseEther('0.5')),
-                bc.LP_INIT_THRESHOLD().catch(() => ethers.parseEther('0.3')),
-            ]);
+            const router   = new Contract(PANCAKE_ROUTER_ADDR, PANCAKE_ROUTER_ABI, provider);
+            const path     = [WBNB_ADDR, selectedToken.contract_address];
 
-            const virtualBnb     = parseFloat(ethers.formatEther(VIRTUAL_BNB));
-            const bnbReserve     = parseFloat(ethers.formatEther(m.bnbReserve || m.collateral || 0n));
-            const tokenReserve   = parseFloat(ethers.formatUnits(m.tokenReserve || 0n, 18));
-            
-            const supplyTraded   = m.supply ? parseFloat(ethers.formatUnits(m.supply, 18)) : (1000000000 - tokenReserve);
-            const migThreshold   = parseFloat(ethers.formatEther(LP_INIT_THRESHOLD));
-            const available      = tokenReserve > 0 ? tokenReserve : (1_000_000_000 - supplyTraded);
+            // Get how many tokens you'd get for 1 BNB
+            let effectivePrice = 0;
+            try {
+                const amounts = await router.getAmountsOut(ethers.parseEther('1'), path);
+                const tokensPerBnb = parseFloat(ethers.formatUnits(amounts[1], 18));
+                effectivePrice = tokensPerBnb > 0 ? 1 / tokensPerBnb : 0;
+            } catch (_) {}
 
-            const effectivePrice = tokenReserve > 0 ? ((virtualBnb + bnbReserve) / tokenReserve) : 0.0000005;
-            
-            const prev = prevPriceRef.current;
+            const prev  = prevPriceRef.current;
             const trend = prev ? (effectivePrice > prev ? 'up' : effectivePrice < prev ? 'down' : 'none') : 'none';
             prevPriceRef.current = effectivePrice;
 
             setMarket({
+                isRegistered: true,
+                collateralBnb: 0,
+                supplyTraded: 0,
+                available: 0,
+                migrated: true,
+                isDex: true,
+                priceBnb: effectivePrice,
+                trend
+            });
+        } catch (e) { console.warn('[DEX Market]', e.message); }
+    }, [selectedToken]);
+
+    // ── Live Bonding Curve Status ──────────────────────────────────────────
+    const fetchMarket = useCallback(async () => {
+        if (!selectedToken?.contract_address) return;
+
+        // ── Fair Launch or already-migrated: read from PancakeSwap ──
+        const isFairLaunch = selectedToken?.launch_type === 'FAIR_LAUNCH';
+        if (isFairLaunch) { await fetchDexMarket(); return; }
+
+        if (!BONDING_CURVE_ADDRESS) return;
+        try {
+            const provider = new ethers.JsonRpcProvider(BSC_RPC);
+            const bc = new Contract(BONDING_CURVE_ADDRESS, BONDING_CURVE_ABI, provider);
+            
+            const [m, LP_INIT_THRESHOLD] = await Promise.all([
+                bc.markets(selectedToken.contract_address),
+                bc.LP_INIT_THRESHOLD().catch(() => ethers.parseEther('0.01')),
+            ]);
+
+            const virtualBnb   = m.virtualBnb ? parseFloat(ethers.formatEther(m.virtualBnb)) : 0.5;
+            const bnbReserve   = parseFloat(ethers.formatEther(m.bnbReserve || 0n));
+            const tokenReserve = parseFloat(ethers.formatUnits(m.tokenReserve || 0n, 18));
+            const supplyTraded = 1000000000 - tokenReserve;
+            const available    = tokenReserve;
+
+            const effectivePrice = tokenReserve > 0 ? ((virtualBnb + bnbReserve) / tokenReserve) : 0.0000005;
+            
+            const prev  = prevPriceRef.current;
+            const trend = prev ? (effectivePrice > prev ? 'up' : effectivePrice < prev ? 'down' : 'none') : 'none';
+            prevPriceRef.current = effectivePrice;
+
+            const isMigrated = m.migrated;
+
+            // If bonding curve has migrated, switch to DEX pricing
+            if (isMigrated) { await fetchDexMarket(); return; }
+
+            setMarket({
                 isRegistered: m.token !== ethers.ZeroAddress,
                 collateralBnb: bnbReserve, supplyTraded, available,
-                migrated: m.migrated,
+                migrated: false,
+                isDex: false,
                 priceBnb: effectivePrice,
                 trend
             });
@@ -169,7 +222,7 @@ export default function TradePage() {
                 return prevData;
             });
         } catch (e) {}
-    }, [selectedToken]);
+    }, [selectedToken, fetchDexMarket]);
 
     useEffect(() => {
         if (!selectedToken) return;
@@ -186,14 +239,8 @@ export default function TradePage() {
     const executeTrade = async () => {
         setOrderError('');
 
-        if (!account) {
-            connectWallet();
-            return;
-        }
-        if (!selectedToken?.contract_address) {
-            setOrderError('No token selected.');
-            return;
-        }
+        if (!account) { connectWallet(); return; }
+        if (!selectedToken?.contract_address) { setOrderError('No token selected.'); return; }
         if (!orderAmount || isNaN(orderAmount) || Number(orderAmount) <= 0) {
             setOrderError('Enter a valid amount greater than 0.');
             return;
@@ -201,67 +248,103 @@ export default function TradePage() {
 
         setOrderStatus('loading');
         try {
-            // Get signer — fallback to window.ethereum if Web3Modal signer is null
+            // Resolve signer
             let activeSigner = signer;
             if (!activeSigner) {
                 if (typeof window !== 'undefined' && window.ethereum) {
                     const { BrowserProvider } = await import('ethers');
-                    const browserProvider = new BrowserProvider(window.ethereum);
-                    activeSigner = await browserProvider.getSigner();
+                    activeSigner = await new BrowserProvider(window.ethereum).getSigner();
                 } else {
-                    throw new Error('Wallet not fully connected. Please disconnect and reconnect your wallet.');
+                    throw new Error('Wallet not fully connected. Please reconnect.');
                 }
             }
 
-            if (market?.migrated) {
-                throw new Error('Token already migrated to DEX. Trade on PancakeSwap directly.');
-            }
+            const tokenAddr = selectedToken.contract_address;
+            const isDex     = market?.isDex || selectedToken?.launch_type === 'FAIR_LAUNCH' || market?.migrated;
 
-            if (!BONDING_CURVE_ADDRESS) {
-                throw new Error('Bonding Curve contract address not configured.');
-            }
+            // ══════════════════════════════════════════════════
+            //  DEX PATH — PancakeSwap Router swap
+            // ══════════════════════════════════════════════════
+            if (isDex) {
+                const router = new Contract(PANCAKE_ROUTER_ADDR, PANCAKE_ROUTER_ABI, activeSigner);
+                const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 min
+                let tx;
 
-            const bc = new Contract(BONDING_CURVE_ADDRESS, BONDING_CURVE_ABI, activeSigner);
-            let tx;
+                if (orderSide === 'buy') {
+                    const bnbIn  = ethers.parseEther(Number(orderAmount).toFixed(18));
+                    const path   = [WBNB_ADDR, tokenAddr];
+                    // Get expected output and set 1% slippage minimum
+                    let amountOutMin = 0n;
+                    try {
+                        const amounts = await router.getAmountsOut(bnbIn, path);
+                        amountOutMin  = amounts[1] * 99n / 100n; // 1% slippage
+                    } catch (_) {}
 
-            if (orderSide === 'buy') {
-                const val = ethers.parseEther(Number(orderAmount).toFixed(18));
+                    tx = await router.swapExactETHForTokensSupportingFeeOnTransferTokens(
+                        amountOutMin, path, account, deadline,
+                        { value: bnbIn, gasLimit: 300000 }
+                    );
+                } else {
+                    // SELL: approve router first
+                    const tokenAmt = ethers.parseUnits(Number(orderAmount).toFixed(18), 18);
+                    const path     = [tokenAddr, WBNB_ADDR];
+                    const tokenContract = new Contract(tokenAddr, TOKEN_TEMPLATE_ABI, activeSigner);
 
-                // Gas pre-check to give clear error before wallet popup
-                try {
-                    await bc.buy.estimateGas(selectedToken.contract_address, { value: val });
-                } catch (gasErr) {
-                    const reason = gasErr.reason || gasErr.data?.message || gasErr.message;
-                    throw new Error('Transaction would fail: ' + reason);
+                    const allowance = await tokenContract.allowance(account, PANCAKE_ROUTER_ADDR);
+                    if (allowance < tokenAmt) {
+                        setOrderStatus('approving');
+                        const approveTx = await tokenContract.approve(PANCAKE_ROUTER_ADDR, ethers.MaxUint256);
+                        await approveTx.wait();
+                        setOrderStatus('loading');
+                    }
+
+                    let amountOutMin = 0n;
+                    try {
+                        const amounts = await router.getAmountsOut(tokenAmt, path);
+                        amountOutMin  = amounts[1] * 99n / 100n;
+                    } catch (_) {}
+
+                    tx = await router.swapExactTokensForETHSupportingFeeOnTransferTokens(
+                        tokenAmt, amountOutMin, path, account, deadline,
+                        { gasLimit: 300000 }
+                    );
                 }
 
-                tx = await bc.buy(selectedToken.contract_address, { value: val });
+                console.log('[DEX Trade] TX sent:', tx.hash);
+                await tx.wait();
+
+            // ══════════════════════════════════════════════════
+            //  BONDING CURVE PATH
+            // ══════════════════════════════════════════════════
             } else {
-                const val = ethers.parseUnits(Number(orderAmount).toFixed(18), 18);
-                const tokenContract = new Contract(selectedToken.contract_address, TOKEN_TEMPLATE_ABI, activeSigner);
+                if (!BONDING_CURVE_ADDRESS) throw new Error('Bonding Curve not configured.');
+                const bc = new Contract(BONDING_CURVE_ADDRESS, BONDING_CURVE_ABI, activeSigner);
+                let tx;
 
-                // Check allowance
-                const allowance = await tokenContract.allowance(account, BONDING_CURVE_ADDRESS);
-                if (allowance < val) {
-                    setOrderStatus('approving');
-                    const approveTx = await tokenContract.approve(BONDING_CURVE_ADDRESS, ethers.MaxUint256);
-                    await approveTx.wait();
-                    setOrderStatus('loading');
+                if (orderSide === 'buy') {
+                    const val = ethers.parseEther(Number(orderAmount).toFixed(18));
+                    try { await bc.buy.estimateGas(tokenAddr, { value: val }); }
+                    catch (gasErr) { throw new Error('Transaction would fail: ' + (gasErr.reason || gasErr.message)); }
+                    tx = await bc.buy(tokenAddr, { value: val });
+                } else {
+                    const val = ethers.parseUnits(Number(orderAmount).toFixed(18), 18);
+                    const tokenContract = new Contract(tokenAddr, TOKEN_TEMPLATE_ABI, activeSigner);
+                    const allowance = await tokenContract.allowance(account, BONDING_CURVE_ADDRESS);
+                    if (allowance < val) {
+                        setOrderStatus('approving');
+                        const approveTx = await tokenContract.approve(BONDING_CURVE_ADDRESS, ethers.MaxUint256);
+                        await approveTx.wait();
+                        setOrderStatus('loading');
+                    }
+                    try { await bc.sell.estimateGas(tokenAddr, val); }
+                    catch (gasErr) { throw new Error('Sell would fail: ' + (gasErr.reason || gasErr.message)); }
+                    tx = await bc.sell(tokenAddr, val);
                 }
 
-                // Gas pre-check
-                try {
-                    await bc.sell.estimateGas(selectedToken.contract_address, val);
-                } catch (gasErr) {
-                    const reason = gasErr.reason || gasErr.data?.message || gasErr.message;
-                    throw new Error('Sell would fail: ' + reason);
-                }
-
-                tx = await bc.sell(selectedToken.contract_address, val);
+                console.log('[BC Trade] TX sent:', tx.hash);
+                await tx.wait();
             }
 
-            console.log('[Trade] TX sent:', tx.hash);
-            await tx.wait();
             setOrderStatus('success');
             setOrderAmount('');
             fetchMarket();
@@ -387,7 +470,7 @@ export default function TradePage() {
                                     <span className="text-xs font-bold text-[#848e9c] hover:text-white cursor-pointer transition-colors pb-1">Depth</span>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[10px] px-2 py-1 bg-[#2b3139] rounded text-white font-mono">1% Treasury Fee Enabled</span>
+                                <span className="text-[10px] px-2 py-1 bg-[#2b3139] rounded text-white font-mono">5% Fee: 60% to LP · 40% to Treasury</span>
                                 </div>
                             </div>
                             
@@ -526,55 +609,77 @@ export default function TradePage() {
 
                         {/* ORDER ENTRY PANEL */}
                         <div className="h-auto p-4 bg-[#181a20]">
-                            
-                            {/* Market / Limit Selector */}
-                            <div className="flex gap-4 mb-4">
-                                <button className="text-sm font-bold text-white border-b-2 border-rose-500 pb-1">Market</button>
-                                <button className="text-sm font-bold text-[#848e9c] hover:text-white pb-1" title="Bonding Curve restricts Limits" onClick={() => alert("Bonding Curve natively executes instantly across the AMM curve.")}>Limit</button>
+                            {/* Mode Header */}
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex gap-4">
+                                    <button className="text-sm font-bold text-white border-b-2 border-rose-500 pb-1">Market</button>
+                                    <button className="text-sm font-bold text-[#848e9c] hover:text-white pb-1">Limit</button>
+                                </div>
+                                {market?.isDex ? (
+                                    <div className="flex items-center gap-1 px-2 py-1 bg-amber-500/10 border border-amber-500/30 rounded-full">
+                                        <Zap className="w-3 h-3 text-amber-400" />
+                                        <span className="text-[9px] font-black text-amber-400 uppercase tracking-widest">DEX Route</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-1 px-2 py-1 bg-rose-500/10 border border-rose-500/30 rounded-full">
+                                        <Activity className="w-3 h-3 text-rose-400" />
+                                        <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest">Bonding Curve</span>
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="flex items-center gap-1 bg-[#0b0e11] p-1 rounded-lg mb-5">
-                                <button onClick={() => setOrderSide('buy')} className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${orderSide === 'buy' ? 'bg-[#0ecb81] text-white shadow-[#0ecb81]/20 shadow-lg' : 'text-[#848e9c] hover:text-white'}`}>Open Long</button>
-                                <button onClick={() => setOrderSide('sell')} className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${orderSide === 'sell' ? 'bg-[#f6465d] text-white shadow-[#f6465d]/20 shadow-lg' : 'text-[#848e9c] hover:text-white'}`}>Open Short</button>
+                            <div className="flex items-center gap-1 bg-[#0b0e11] p-1 rounded-lg mb-4">
+                                <button onClick={() => setOrderSide('buy')} className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${orderSide === 'buy' ? 'bg-[#0ecb81] text-white shadow-[#0ecb81]/20 shadow-lg' : 'text-[#848e9c] hover:text-white'}`}>Buy / Long</button>
+                                <button onClick={() => setOrderSide('sell')} className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${orderSide === 'sell' ? 'bg-[#f6465d] text-white shadow-[#f6465d]/20 shadow-lg' : 'text-[#848e9c] hover:text-white'}`}>Sell / Short</button>
                             </div>
 
-                            {market?.migrated && (
-                                <div className="p-3 mb-4 rounded bg-amber-500/10 border border-amber-500/20 text-xs text-amber-500 flex items-start gap-2">
-                                    <AlertTriangle className="w-4 h-4 shrink-0" /> Token migrated to DEX. Trade directly on PancakeSwap.
+                            {market?.isDex && (
+                                <div className="p-2.5 mb-4 rounded-lg bg-amber-500/5 border border-amber-500/15 text-[10px] text-amber-400/80 flex items-center gap-2">
+                                    <Zap className="w-3 h-3 shrink-0" />
+                                    <span>Routed via PancakeSwap V2 · 1% slippage tolerance · Instant on-chain execution</span>
                                 </div>
                             )}
 
-                            {/* Avail Balance */}
                             <div className="flex justify-between text-xs text-[#848e9c] mb-2 px-1">
-                                <span>Avail</span>
-                                <span className="text-white font-mono">{orderSide === 'buy' ? `${formatNumber(userBnb, 4)} BNB` : `${formatNumber(userTokens, 2)} Token`}</span>
+                                <span>Available</span>
+                                <span className="text-white font-mono">{orderSide === 'buy' ? `${formatNumber(userBnb, 4)} BNB` : `${formatNumber(userTokens, 2)} ${selectedToken?.symbol || 'Token'}`}</span>
                             </div>
 
-                            {/* Input Field */}
                             <div className="relative flex items-center bg-[#2b3139] border border-[#2b3139] focus-within:border-[#848e9c] rounded-lg transition-colors overflow-hidden">
-                                <input type="number" step="any" placeholder={orderSide === 'buy' ? 'Enter Amount' : 'Enter Token Size'}
+                                <input type="number" step="any" placeholder={orderSide === 'buy' ? 'Enter BNB amount' : 'Enter token amount'}
                                     value={orderAmount} onChange={(e) => setOrderAmount(e.target.value)}
                                     className="w-full bg-transparent text-white px-3 py-3 font-mono text-sm focus:outline-none" />
                                 <div className="flex items-center gap-2 pr-3 shrink-0">
-                                    <button onClick={() => setOrderAmount(orderSide === 'buy' ? userBnb * 0.99 : userTokens)} className="text-[10px] uppercase font-bold text-rose-500 hover:text-rose-400">Max</button>
+                                    <button onClick={() => setOrderAmount(orderSide === 'buy' ? (userBnb * 0.99).toFixed(6) : userTokens.toFixed(2))} className="text-[10px] uppercase font-bold text-rose-500 hover:text-rose-400">Max</button>
                                     <span className="text-xs text-[#848e9c] font-bold border-l border-[#848e9c]/30 pl-2">{orderSide === 'buy' ? 'BNB' : selectedToken?.symbol}</span>
                                 </div>
                             </div>
                             
-                            {/* Estimated output trace */}
                             <div className="flex justify-between text-xs mt-3 px-1">
-                                <span className="text-[#848e9c]">Expected Recieve</span>
-                                <span className="text-white font-mono">{orderSide === 'buy' ? (orderAmount ? formatNumber(orderAmount / pBnb) : '0') : (orderAmount ? formatNumber(orderAmount * pBnb) : '0')} {orderSide === 'buy' ? selectedToken?.symbol : 'BNB'}</span>
+                                <span className="text-[#848e9c]">Expected Receive</span>
+                                <span className="text-white font-mono">
+                                    {pBnb > 0 ? orderSide === 'buy' ? `${formatNumber(orderAmount / pBnb)} ${selectedToken?.symbol || ''}` : `${formatNumber(orderAmount * pBnb)} BNB` : '—'}
+                                </span>
                             </div>
 
                             {orderError && <div className="mt-3 text-xs text-[#f6465d] p-2 bg-[#f6465d]/10 rounded border border-[#f6465d]/20">{orderError}</div>}
 
-                            <button onClick={executeTrade} disabled={orderStatus === 'loading' || orderStatus === 'approving' || market?.migrated || !account}
-                                className={`w-full mt-5 py-3.5 rounded-lg text-sm font-bold text-white shadow-xl transition-all
-                                ${!account ? 'bg-[#2b3139] text-[#848e9c]' : market?.migrated ? 'bg-[#2b3139] text-[#848e9c] cursor-not-allowed' : orderSide === 'buy' ? 'bg-[#0ecb81] hover:bg-[#0b9c64] shadow-[#0ecb81]/20' : 'bg-[#f6465d] hover:bg-[#c9364b] shadow-[#f6465d]/20'}`}>
-                                {!account ? 'Connect Wallet' : orderStatus === 'loading' ? 'Executing Order...' : orderStatus === 'approving' ? 'Approving Contract...' : orderStatus === 'success' ? 'Order Success!' : orderSide === 'buy' ? 'Buy / Long' : 'Sell / Short'}
+                            <button onClick={executeTrade} disabled={orderStatus === 'loading' || orderStatus === 'approving' || !account}
+                                className={`w-full mt-5 py-3.5 rounded-lg text-sm font-bold text-white shadow-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed
+                                ${!account ? 'bg-[#2b3139] text-[#848e9c]' : orderSide === 'buy' ? 'bg-[#0ecb81] hover:bg-[#0b9c64] shadow-[#0ecb81]/20' : 'bg-[#f6465d] hover:bg-[#c9364b] shadow-[#f6465d]/20'}`}>
+                                {!account ? 'Connect Wallet' : orderStatus === 'loading' ? 'Executing...' : orderStatus === 'approving' ? 'Approving Token...' : orderStatus === 'success' ? '✓ Order Filled!' : orderSide === 'buy' ? 'Buy / Long' : 'Sell / Short'}
                             </button>
-                            <p className="text-center text-[10px] text-[#848e9c] mt-3">1% Trading Fee automatically sent to Treasury.</p>
+
+                            <div className="flex items-center justify-between mt-3">
+                                <p className="text-[10px] text-[#848e9c]">
+                                    {market?.isDex ? 'Via PancakeSwap Router · ~1% slippage' : '5% fee · 60% LP · 40% Treasury'}
+                                </p>
+                                <a href={`https://pancakeswap.finance/swap?outputCurrency=${selectedToken?.contract_address}`}
+                                    target="_blank" rel="noopener noreferrer"
+                                    className="text-[10px] text-[#848e9c] hover:text-amber-400 flex items-center gap-1 transition-colors">
+                                    <ExternalLink className="w-2.5 h-2.5" /> PancakeSwap
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>

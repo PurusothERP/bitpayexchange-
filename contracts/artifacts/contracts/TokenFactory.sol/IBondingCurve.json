@@ -27,6 +27,11 @@
           "internalType": "address",
           "name": "creator",
           "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "virtualBnb",
+          "type": "uint256"
         }
       ],
       "name": "launchToken",

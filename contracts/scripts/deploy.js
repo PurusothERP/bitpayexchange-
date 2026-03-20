@@ -28,12 +28,6 @@ async function main() {
     const bondingCurveAddress = await bondingCurve.getAddress();
     console.log("✅ BondingCurve deployed to:    ", bondingCurveAddress);
 
-    // ─── Step 2: Deploy LiquidityManager ─────────────────────────────────
-    const LiquidityManager = await hre.ethers.getContractFactory("LiquidityManager");
-    const liquidityManager = await LiquidityManager.deploy(pancakeRouter, deployer.address);
-    await liquidityManager.waitForDeployment();
-    const liquidityManagerAddress = await liquidityManager.getAddress();
-    console.log("✅ LiquidityManager deployed to:", liquidityManagerAddress);
 
     // ─── Step 3: Deploy TokenFactory ──────────────────────────────────────
     //    Constructor: TokenFactory(bondingCurve, feeWallet, owner)
@@ -55,15 +49,6 @@ async function main() {
     await tx1.wait();
     console.log("   BondingCurve.setAuthorizedFactory(TokenFactory) ✓");
 
-    // BondingCurve: set LiquidityManager for auto-migration on reaching threshold
-    const tx2 = await bondingCurve.setLiquidityManager(liquidityManagerAddress);
-    await tx2.wait();
-    console.log("   BondingCurve.setLiquidityManager ✓");
-
-    // LiquidityManager: allow BondingCurve to call addLiquidity()
-    const tx3 = await liquidityManager.setAuthorizedCaller(bondingCurveAddress, true);
-    await tx3.wait();
-    console.log("   LiquidityManager.setAuthorizedCaller(BondingCurve) ✓");
 
     // ─── Output .env values ───────────────────────────────────────────────
     console.log("\n" + "─".repeat(60));
@@ -71,12 +56,10 @@ async function main() {
     console.log("# contracts/.env");
     console.log(`FACTORY_ADDRESS=${tokenFactoryAddress}`);
     console.log(`BONDING_CURVE_ADDRESS=${bondingCurveAddress}`);
-    console.log(`LIQUIDITY_MANAGER_ADDRESS=${liquidityManagerAddress}`);
     console.log(`FEE_WALLET=${feeWallet}`);
     console.log("\n# frontend/.env.local");
     console.log(`NEXT_PUBLIC_FACTORY_ADDRESS=${tokenFactoryAddress}`);
     console.log(`NEXT_PUBLIC_BONDING_CURVE_ADDRESS=${bondingCurveAddress}`);
-    console.log(`NEXT_PUBLIC_LIQUIDITY_MANAGER_ADDRESS=${liquidityManagerAddress}`);
     console.log("─".repeat(60));
 }
 

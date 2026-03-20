@@ -219,62 +219,93 @@ export default function Launchpad() {
                     </motion.div>
                 </div>
 
-                {/* ── PARALLEL DISCOVERY TERMINAL ──────────────────────────────── */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-20">
+                {/* ── NEXUS PARALLEL TERMINAL ────────────────────────────────── */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-32">
                     
-                    {/* Pillar 1: Trending Protocols (Col 3) */}
-                    <div className="lg:col-span-3 space-y-6">
-                        <div className="bg-white border border-gray-50 rounded-[2rem] shadow-lg p-6 relative overflow-hidden group min-h-[500px]">
-                            <h2 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.25em] mb-6 flex items-center gap-2">
-                                <Flame className="w-4 h-4 text-rose-500" /> Trending
+                    {/* Pillar 1: Trending Protocols */}
+                    <div className="lg:col-span-3">
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+                            className="bg-white/40 backdrop-blur-3xl border border-white/50 rounded-[2.5rem] shadow-2xl p-7 relative overflow-hidden group min-h-[600px] flex flex-col"
+                        >
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-rose-500/50 to-transparent" />
+                            <h2 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.3em] mb-8 flex items-center justify-between">
+                                <span className="flex items-center gap-3"><Flame className="w-5 h-5 text-rose-500 animate-pulse" /> Trending</span>
+                                <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
                             </h2>
-                            <div className="space-y-3">
-                                {tokens.filter(t => t.price_change > 0).slice(0, 10).map((t, i) => (
+                            <div className="space-y-4 flex-1">
+                                {tokens.filter(t => t.price_change > 0).slice(0, 8).map((t, i) => (
                                     <SidebarItem key={i} token={t} type="trending" />
                                 ))}
+                                {tokens.filter(t => t.price_change > 0).length === 0 && (
+                                    <div className="py-20 text-center opacity-20">
+                                        <Activity className="w-8 h-8 mx-auto mb-4" />
+                                        <p className="text-[9px] font-black uppercase tracking-widest">Awaiting Pulse...</p>
+                                    </div>
+                                )}
                             </div>
-                        </div>
+                        </motion.div>
                     </div>
 
-                    {/* Pillar 2: Recently Launched (Col 3) */}
-                    <div className="lg:col-span-3 space-y-6">
-                        <div className="bg-white border border-gray-50 rounded-[2rem] shadow-lg p-6 relative overflow-hidden group min-h-[500px]">
-                            <h2 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.25em] mb-6 flex items-center gap-2">
-                                <Clock className="w-4 h-4 text-blue-500" /> Recent
+                    {/* Pillar 2: Recently Launched */}
+                    <div className="lg:col-span-3">
+                        <motion.div 
+                            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                            className="bg-white/40 backdrop-blur-3xl border border-white/50 rounded-[2.5rem] shadow-2xl p-7 relative overflow-hidden group min-h-[600px] flex flex-col"
+                        >
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
+                            <h2 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.3em] mb-8 flex items-center gap-3">
+                                <Clock className="w-5 h-5 text-blue-500" /> Recent
                             </h2>
-                            <div className="space-y-3">
-                                {tokens.slice(0, 10).map((t, i) => (
+                            <div className="space-y-4 flex-1">
+                                {tokens.slice(0, 8).map((t, i) => (
                                     <SidebarItem key={i} token={t} type="recent" />
                                 ))}
                             </div>
-                        </div>
+                        </motion.div>
                     </div>
 
-                    {/* Pillar 3: All Protocols / Full Registry (Col 6 - Parallel to discovery) */}
-                    <div className="lg:col-span-6 space-y-6">
-                        <div className="bg-white/40 border border-gray-100/50 rounded-[2.5rem] shadow-2xl p-8 backdrop-blur-3xl min-h-[500px]">
-                            <div className="flex items-center justify-between mb-8">
-                                <h2 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.25em] flex items-center gap-2">
-                                    <List className="w-4 h-4 text-rose-500" /> Full Registry
-                                </h2>
-                                <span className="text-[9px] font-black text-gray-400 tracking-widest uppercase">{filtered.length} Protocols Indexed</span>
+                    {/* Pillar 3: Central Registry (The Main Hub) */}
+                    <div className="lg:col-span-6">
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 }}
+                            className="bg-white/60 backdrop-blur-xl border-2 border-white rounded-[3.5rem] shadow-[0_32px_128px_-32px_rgba(0,0,0,0.1)] p-10 relative group min-h-[600px] flex flex-col"
+                        >
+                            <div className="absolute -top-6 -right-6 w-32 h-32 bg-rose-500/10 blur-[64px] group-hover:bg-rose-500/20 transition-all duration-700" />
+                            <div className="flex items-center justify-between mb-10">
+                                <div>
+                                    <h2 className="text-xl font-black text-gray-900 tracking-tighter flex items-center gap-4">
+                                        <div className="w-10 h-10 bg-gray-900 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-gray-900/20">
+                                            <List className="w-5 h-5" />
+                                        </div>
+                                        Nexus Terminal
+                                    </h2>
+                                    <p className="text-[9px] font-black text-gray-400 tracking-[0.4em] uppercase mt-2">Global Asset Verification Registry</p>
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-[10px] font-black text-rose-500 bg-rose-50 px-4 py-2 rounded-full border border-rose-100 shadow-sm">{filtered.length} Protocols Indexed</span>
+                                </div>
                             </div>
 
-                            <div className="space-y-4 max-h-[1000px] overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="space-y-2 max-h-[1200px] overflow-y-auto pr-4 custom-scrollbar">
                                 {loading ? (
-                                    <div className="flex flex-col items-center justify-center py-20 gap-4">
-                                        <div className="w-10 h-10 border-2 border-rose-500/10 border-t-rose-500 rounded-full animate-spin" />
+                                    <div className="flex flex-col items-center justify-center py-40 gap-6">
+                                        <div className="w-12 h-12 border-4 border-rose-500/10 border-t-rose-500 rounded-full animate-spin" />
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.4em] animate-pulse">Syncing Global Hub...</p>
                                     </div>
                                 ) : filtered.length > 0 ? (
                                     filtered.map((t, i) => <TokenRowMinimal key={t.id} token={t} index={i} />)
                                 ) : (
-                                    <div className="py-20 text-center opacity-30">
-                                        <Search className="w-8 h-8 mx-auto mb-4" />
-                                        <p className="text-[10px] font-black uppercase tracking-widest">Registry Empty</p>
+                                    <div className="py-40 text-center">
+                                        <div className="w-20 h-20 bg-gray-50 rounded-[2rem] flex items-center justify-center mx-auto mb-8 border border-gray-100">
+                                            <Search className="w-8 h-8 text-gray-200" />
+                                        </div>
+                                        <h3 className="text-xl font-black text-gray-900 tracking-tight">Access Denied</h3>
+                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-2">No protocols match the current Nexus filters.</p>
                                     </div>
                                 )}
                             </div>
-                        </div>
+                        </motion.div>
                     </div>
 
                 </div>
@@ -289,22 +320,31 @@ function TokenRowMinimal({ token, index }) {
     return (
         <Link href={`/token/${addr}`}>
             <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.02 }}
-                className="flex items-center justify-between p-4 rounded-2xl hover:bg-white transition-all group border border-transparent hover:border-gray-100 hover:shadow-xl hover:shadow-gray-100/50">
-                <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform shadow-sm">
+                className="flex items-center justify-between p-6 rounded-[2rem] hover:bg-white transition-all group border border-transparent hover:border-gray-50 hover:shadow-2xl hover:shadow-gray-200/50">
+                <div className="flex items-center gap-6">
+                    <div className="w-14 h-14 rounded-2xl bg-gray-50 border-2 border-white flex items-center justify-center overflow-hidden group-hover:scale-110 transition-transform shadow-lg group-hover:shadow-rose-500/10 relative">
                         {token.logo_url ? <img src={token.logo_url} className="w-full h-full object-cover" /> : <span className="text-2xl">🪙</span>}
+                        <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent pointer-events-none" />
                     </div>
                     <div>
-                        <div className="flex items-center gap-2">
-                             <h3 className="font-black text-gray-900 text-sm tracking-tight">{token.name}</h3>
-                             <span className="text-[9px] font-black text-gray-400">{token.symbol}</span>
+                        <div className="flex items-center gap-3">
+                             <h3 className="font-black text-gray-900 text-lg tracking-tight group-hover:text-rose-500 transition-colors">{token.name}</h3>
+                             <span className="text-[10px] font-black text-rose-500/50 bg-rose-500/5 px-2 py-0.5 rounded-md">{token.symbol}</span>
                         </div>
-                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{shortAddr} • {timeAgo(token.created_at)}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-1">{shortAddr} • <span className="text-gray-300">{timeAgo(token.created_at)}</span></p>
                     </div>
                 </div>
-                <div className="text-right">
-                    <p className="text-xs font-black text-gray-900">{formatPrice(token.price_bnb)} <span className="text-[9px] opacity-40">BNB</span></p>
-                    <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Active</p>
+                <div className="flex items-center gap-8">
+                    <div className="text-right">
+                        <p className="text-lg font-black text-gray-900 tracking-tighter">{formatPrice(token.price_bnb)} <span className="text-[10px] text-gray-400 font-bold ml-1 uppercase">BNB</span></p>
+                        <div className="flex items-center justify-end gap-1.5 mt-1">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <p className="text-[9px] font-black text-emerald-500 uppercase tracking-[0.2em]">Active</p>
+                        </div>
+                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-300 group-hover:bg-rose-500 group-hover:text-white transition-all shadow-inner">
+                        <ArrowUpRight className="w-5 h-5" />
+                    </div>
                 </div>
             </motion.div>
         </Link>
@@ -313,21 +353,26 @@ function TokenRowMinimal({ token, index }) {
 
 function SidebarItem({ token, type }) {
     const color = type === 'trending' ? 'text-rose-500' : type === 'recent' ? 'text-blue-500' : 'text-emerald-500';
+    
     return (
         <Link href={`/token/${token.contract_address}`}>
-            <div className="flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100">
+            <div className={`p-4 rounded-2xl hover:bg-white border border-transparent hover:border-gray-50 transition-all group flex items-center justify-between hover:shadow-xl hover:shadow-gray-100/50`}>
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden">
-                        {token.logo_url ? <img src={token.logo_url} className="w-full h-full object-cover" /> : '🪙'}
+                    <div className="w-10 h-10 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden group-hover:scale-105 transition-all shadow-sm">
+                        {token.logo_url ? <img src={token.logo_url} className="w-full h-full object-cover" /> : <span className="text-xl">🪙</span>}
                     </div>
-                    <div>
-                        <p className="text-xs font-black text-gray-900">{token.symbol}</p>
-                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{token.name}</p>
+                    <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                            <h4 className="font-black text-gray-900 text-[11px] tracking-tight truncate w-24 group-hover:text-rose-500 transition-colors uppercase">{token.symbol}</h4>
+                        </div>
+                        <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest truncate w-24">{token.name}</p>
                     </div>
                 </div>
-                <div className="text-right">
-                    <p className={`text-[10px] font-black ${color}`}>{type === 'volume' ? `${(parseFloat(token.liquidity_bnb) || 0).toFixed(2)} BNB` : formatPrice(token.price_bnb)}</p>
-                    <p className="text-[8px] font-bold text-gray-300 uppercase tracking-widest">{type === 'recent' ? timeAgo(token.created_at) : 'Price Activity'}</p>
+                <div className="text-right ml-2">
+                    <p className={`text-[11px] font-black text-gray-900 tracking-tighter`}>{formatPrice(token.price_bnb)}</p>
+                    <div className="flex items-center justify-end gap-1">
+                        <p className={`text-[8px] font-black uppercase tracking-widest ${color}`}>{type === 'recent' ? timeAgo(token.created_at) : type === 'trending' ? '+12%' : 'Active'}</p>
+                    </div>
                 </div>
             </div>
         </Link>

@@ -184,6 +184,8 @@ export default function AdminPage() {
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
     const [ledgerSearch, setLedgerSearch] = useState('');
+    const [assetSearch, setAssetSearch] = useState('');
+    const [walletSearch, setWalletSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [fees, setFees] = useState({ deployment: '0.003', initialBuy: '0.005', upgrade: '0.01' });
     const [govStatus, setGovStatus] = useState('idle');
@@ -848,9 +850,21 @@ export default function AdminPage() {
                             </div>
 
                             <GlassCard className="p-0">
-                                <div className="p-10 border-b border-black/5 flex items-center justify-between bg-white">
-                                    <h3 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-4"><ListOrdered className="w-6 h-6 text-rose-500" /> MASTER ASSET LEDGER</h3>
-                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total: {stats?.tokens?.length || 0} Assets</span>
+                                <div className="p-10 border-b border-black/5 flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white">
+                                    <div>
+                                        <h3 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-4"><ListOrdered className="w-6 h-6 text-rose-500" /> MASTER ASSET LEDGER</h3>
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Found {stats?.tokens?.filter(t => (t.name || '').toLowerCase().includes(assetSearch.toLowerCase()) || (t.symbol || '').toLowerCase().includes(assetSearch.toLowerCase()) || (t.contract_address || '').toLowerCase().includes(assetSearch.toLowerCase())).length} Assets</p>
+                                    </div>
+                                    <div className="relative group w-full lg:max-w-md">
+                                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-rose-500 transition-colors" />
+                                        <input 
+                                            type="text" 
+                                            placeholder="Search by Name, Symbol or Address..." 
+                                            value={assetSearch}
+                                            onChange={(e) => setAssetSearch(e.target.value)}
+                                            className="w-full pl-14 pr-6 py-4 bg-gray-50 border border-transparent focus:border-rose-500/30 focus:bg-white rounded-[1.5rem] text-sm font-bold text-gray-900 shadow-inner transition-all outline-none" 
+                                        />
+                                    </div>
                                 </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
@@ -864,7 +878,14 @@ export default function AdminPage() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-black/5">
-                                            {stats?.tokens?.map((t, i) => (
+                                            {stats?.tokens
+                                                ?.filter(t => {
+                                                    const q = assetSearch.toLowerCase();
+                                                    return (t.name || '').toLowerCase().includes(q) || 
+                                                           (t.symbol || '').toLowerCase().includes(q) || 
+                                                           (t.contract_address || '').toLowerCase().includes(q);
+                                                })
+                                                ?.map((t, i) => (
                                                 <tr key={i} className="hover:bg-gray-50/80 transition-all group">
                                                     <td className="px-10 py-8 text-xs font-black text-gray-300">#{i + 1}</td>
                                                     <td className="px-10 py-8">
@@ -955,23 +976,28 @@ export default function AdminPage() {
                     {activeTab === 'wallets' && (
                         <motion.div key="wallets" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="space-y-6">
                             <GlassCard className="p-0 overflow-hidden">
-                                <div className="p-10 border-b border-black/5 flex items-center justify-between bg-gradient-to-r from-gray-50 to-white">
+                                <div className="p-10 border-b border-black/5 flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-gradient-to-r from-gray-50 to-white">
                                     <div>
                                         <h3 className="text-2xl font-black text-gray-900 tracking-tight">CONNECTED USER LEDGER</h3>
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Real-time wallet monitoring & balance tracking — auto-refreshes every 30 min</p>
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Found {wallets.filter(w => (w.wallet_address || '').toLowerCase().includes(walletSearch.toLowerCase())).length} Active Wallets</p>
                                     </div>
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex flex-col lg:flex-row items-center gap-6 w-full lg:max-w-2xl">
+                                        <div className="relative group flex-1 w-full">
+                                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-rose-500 transition-colors" />
+                                            <input 
+                                                type="text" 
+                                                placeholder="Track by Wallet Address..." 
+                                                value={walletSearch}
+                                                onChange={(e) => setWalletSearch(e.target.value)}
+                                                className="w-full pl-14 pr-6 py-4 bg-white border border-transparent focus:border-rose-500/30 rounded-[1.5rem] text-sm font-bold text-gray-900 shadow-inner transition-all outline-none" 
+                                            />
+                                        </div>
                                         <button
                                             onClick={refreshWalletBalances}
-                                            className="flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+                                            className="whitespace-nowrap flex items-center gap-2 px-6 py-4 bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
                                         >
                                             <RefreshCw className="w-3.5 h-3.5" /> Refresh Balances
                                         </button>
-                                        <div className="text-right">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">Total Users</p>
-                                            <p className="text-xl font-black text-gray-900">{wallets.length}</p>
-                                        </div>
-                                        <div className="w-12 h-12 rounded-xl bg-gray-900 text-white flex items-center justify-center shadow-lg"><Users className="w-6 h-6" /></div>
                                     </div>
                                 </div>
                                 <div className="overflow-x-auto">
@@ -987,7 +1013,9 @@ export default function AdminPage() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-black/5">
-                                            {wallets.map((w, i) => (
+                                            {wallets
+                                                .filter(w => (w.wallet_address || '').toLowerCase().includes(walletSearch.toLowerCase()))
+                                                .map((w, i) => (
                                                 <tr key={i} className="hover:bg-gray-50/80 transition-all group">
                                                     <td className="px-10 py-8 text-xs font-black text-gray-300">{i + 1}</td>
                                                     <td className="px-10 py-8">

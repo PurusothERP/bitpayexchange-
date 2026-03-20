@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useWallet } from '@/context/WalletContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
@@ -12,6 +12,36 @@ export default function Navbar() {
     const [isCreateDropdownOpen, setIsCreateDropdownOpen] = useState(false);
     const TREASURY = '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
     const isAdmin = account && account.toLowerCase() === TREASURY;
+
+    // ── Auto-Disconnect Session Safety ────────────────────────────────────────
+    // Monitors user activity and automatically disconnects the wallet after 15m 
+    // of inactivity to prevent unauthorized access if a user leaves their tab open.
+    useEffect(() => {
+        if (!account) return;
+
+        let timeoutId;
+        const SESSION_TIMEOUT = 15 * 60 * 1000; // 15 Minutes
+
+        const resetTimer = () => {
+            if (timeoutId) clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                console.warn('[Session] Inactivity detected. Auto-disconnecting wallet for safety.');
+                disconnectWallet();
+                // Optional: show a notification or alert to the user
+                alert("Session expired due to inactivity. Wallet disconnected.");
+            }, SESSION_TIMEOUT);
+        };
+
+        const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+        activityEvents.forEach(evt => document.addEventListener(evt, resetTimer));
+        
+        resetTimer(); // Initialize timer
+
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId);
+            activityEvents.forEach(evt => document.removeEventListener(evt, resetTimer));
+        };
+    }, [account, disconnectWallet]);
 
     const truncateAddress = (address) => {
         return `${address.slice(0, 6)}...${address.slice(-4)}`;

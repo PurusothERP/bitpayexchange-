@@ -196,24 +196,28 @@ export default function Launchpad() {
                         </div>
                     </div>
 
-                    {/* Stats Overview */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {/* Stats Metric Bar */}
+                    <motion.div 
+                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                        className="bg-white/60 backdrop-blur-xl border border-white rounded-[2.5rem] p-8 flex flex-wrap items-center justify-between gap-8 shadow-xl shadow-gray-200/20"
+                    >
                         {[
-                            { label: 'Protocols Live', val: tokens.length, icon: <Rocket className="w-4 h-4" />, color: 'bg-emerald-500' },
-                            { label: 'Market Cap 24H', val: '$2.4M', icon: <BarChart3 className="w-4 h-4" />, color: 'bg-rose-500' },
-                            { label: 'Registered', val: '12.8K', icon: <Users className="w-4 h-4" />, color: 'bg-amber-500' },
-                            { label: 'Wallets', val: '8.4K', icon: <Wallet className="w-4 h-4" />, color: 'bg-blue-500' },
+                            { label: 'Protocols Live', val: tokens.length, color: 'text-gray-900', icon: <Rocket className="w-3 h-3" /> },
+                            { label: '24H Market Volume', val: '$2.4M', color: 'text-rose-500', icon: <Activity className="w-3 h-3" /> },
+                            { label: 'Global Holders', val: '12.8K', color: 'text-amber-500', icon: <Users className="w-3 h-3" /> },
+                            { label: 'Active Wallets', val: '8.4K', color: 'text-blue-500', icon: <Wallet className="w-3 h-3" /> },
                         ].map((s, i) => (
-                            <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                                className="p-6 rounded-[2rem] bg-white border border-gray-50 shadow-sm relative group overflow-hidden">
-                                <div className={`w-8 h-8 ${s.color} bg-opacity-10 rounded-xl flex items-center justify-center mb-4`}>
-                                    <div className={`${s.color.replace('bg-', 'text-')}`}>{s.icon}</div>
+                            <div key={i} className={`flex-1 min-w-[140px] ${i > 0 ? 'lg:border-l lg:border-gray-50 lg:pl-8' : ''}`}>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div className={`p-1.5 rounded-lg bg-gray-50 ${s.color.replace('text-', 'bg-')}/10`}>
+                                        <span className={s.color}>{s.icon}</span>
+                                    </div>
+                                    <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-[0.25em]">{s.label}</h4>
                                 </div>
-                                <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">{s.label}</h4>
-                                <p className="text-xl font-black text-gray-900 tracking-tighter">{s.val}</p>
-                            </motion.div>
+                                <p className={`text-2xl font-black tracking-tighter ${s.color === 'text-gray-900' ? 'text-gray-900' : s.color}`}>{s.val}</p>
+                            </div>
                         ))}
-                    </div>
+                    </motion.div>
 
                     {/* Token Registry */}
                     <div className="space-y-4">

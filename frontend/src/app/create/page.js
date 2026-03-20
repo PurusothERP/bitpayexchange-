@@ -202,8 +202,7 @@ function CreateToken() {
                             {[
                                 { label: 'Fixed Supply', value: '1,000,000,000', icon: <Layers className="w-4 h-4" /> },
                                 { label: 'DEX Target', value: 'PancakeSwap V2', icon: <Globe className="w-4 h-4" /> },
-                                { label: 'Liquidity Share', value: '900M Tokens', icon: <Zap className="w-4 h-4" />, color: 'text-amber-500' },
-                                { label: 'Treasury Share', value: '100M Tokens', icon: <BarChart3 className="w-4 h-4" />, color: 'text-rose-500' }
+                                { label: 'Liquidity Share', value: '900M Tokens', icon: <Zap className="w-4 h-4" />, color: 'text-amber-500' }
                             ].map((p, i) => (
                                 <div key={i} className="flex justify-between items-center py-4 border-b last:border-0 border-gray-100">
                                     <div className="flex items-center gap-3">

@@ -31,10 +31,12 @@ const PANCAKE_ROUTER_ABI = [
 
 function formatNumber(num, dec = 4) { return Number(num).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
 function formatPrice(num) {
-    if (num === 0) return '0.0000';
-    if (num < 0.000001) return num.toExponential(4);
-    if (num < 0.01) return num.toFixed(8);
-    return num.toFixed(6);
+    if (num === null || num === undefined) return '0.0000';
+    const n = Number(num);
+    if (n === 0) return '0.0000';
+    if (n < 0.000001) return n.toExponential(4);
+    if (n < 0.01) return n.toFixed(8);
+    return n.toFixed(6);
 }
 function timeAgo(dateStr) {
     const diff = Math.floor((new Date() - new Date(dateStr)) / 1000);

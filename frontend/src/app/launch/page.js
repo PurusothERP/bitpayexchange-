@@ -176,7 +176,7 @@ export default function Launchpad() {
                                 <span className="text-[10px] font-black uppercase tracking-widest">Trending 24H</span>
                             </div>
                          </motion.div>
-                         <h1 className="text-6xl font-black text-gray-900 tracking-tight leading-none mb-4">Launchpad <span className="text-rose-500">Terminal</span></h1>
+                         <h1 className="text-4xl md:text-6xl font-black text-gray-900 tracking-tight leading-none mb-4">Launchpad <span className="text-rose-500">Terminal</span></h1>
                          <p className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.3em]">Institutional Grade Asset Deployment Registry</p>
                     </div>
 

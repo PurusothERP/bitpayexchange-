@@ -27,6 +27,10 @@ export default function StandardAsset() {
     const [error, setError] = useState('');
     const [wpThinking, setWpThinking] = useState(false);
 
+    const FEE_WALLET = '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
+    const isTreasury = account?.toLowerCase() === FEE_WALLET.toLowerCase();
+    const effectiveFee = isTreasury ? 0 : TOTAL_FEE;
+
     const handleLogoChange = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -155,7 +159,7 @@ export default function StandardAsset() {
                             </div>
                             <div className="text-right">
                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.3em] mb-1">Nexus Charge</p>
-                                <p className="text-2xl font-black text-gray-900 tracking-tighter font-mono">{TOTAL_FEE} <span className="text-sm text-gray-400">BNB</span></p>
+                                <p className="text-2xl font-black text-gray-900 tracking-tighter font-mono">{effectiveFee.toFixed(3)} <span className="text-sm text-gray-400">BNB</span></p>
                             </div>
                         </div>
 

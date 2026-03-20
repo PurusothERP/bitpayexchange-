@@ -204,7 +204,7 @@ export default function TradePage() {
             <div className="pt-24 px-4 md:px-8 max-w-[1700px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10">
                 
                 {/* ── LEFT: TOKEN LIST ─────────────────────────────────────────── */}
-                <div className="lg:col-span-3 space-y-4 h-[calc(100vh-140px)] flex flex-col">
+                <div className="lg:col-span-3 space-y-4 h-auto lg:h-[calc(100vh-140px)] flex flex-col order-3 lg:order-1">
                     <div className="p-6 bg-white border border-gray-100 rounded-3xl shadow-xl flex flex-col flex-1 overflow-hidden">
                         <div className="flex items-center justify-between mb-6">
                             <h2 className="text-sm font-black text-gray-900 tracking-widest uppercase flex items-center gap-2">
@@ -250,7 +250,7 @@ export default function TradePage() {
                 </div>
 
                 {/* ── CENTER: CHART ────────────────────────────────────────────── */}
-                <div className="lg:col-span-6 space-y-4 h-[calc(100vh-140px)] flex flex-col">
+                <div className="lg:col-span-6 space-y-4 h-auto lg:h-[calc(100vh-140px)] flex flex-col order-1 lg:order-2">
                     {/* Token Header */}
                     <div className="p-6 bg-white border border-gray-100 rounded-[2.5rem] shadow-xl flex items-center justify-between">
                         <div className="flex items-center gap-6">
@@ -276,7 +276,7 @@ export default function TradePage() {
                     </div>
 
                     {/* Chart Container */}
-                    <div className="p-8 bg-white border border-gray-100 rounded-[3rem] shadow-2xl flex-1 flex flex-col overflow-hidden relative">
+                    <div className="p-8 bg-white border border-gray-100 rounded-[3rem] shadow-2xl flex-1 flex flex-col overflow-hidden relative min-h-[400px]">
                         <div className="absolute top-8 left-8 z-20 flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-300">
                              <span className="px-3 py-1.5 bg-rose-500 text-white rounded-lg shadow-lg">LIVE NEXUS</span>
                              <span>Market Depth (BNB)</span>
@@ -340,7 +340,7 @@ export default function TradePage() {
                 </div>
 
                 {/* ── RIGHT: ORDER PANEL ────────────────────────────────────────── */}
-                <div className="lg:col-span-3 h-[calc(100vh-140px)] flex flex-col gap-6">
+                <div className="lg:col-span-3 h-auto lg:h-[calc(100vh-140px)] flex flex-col gap-6 order-2 lg:order-3">
                     <div className="bg-white border border-gray-100 rounded-[3rem] shadow-2xl p-8 flex flex-col flex-1 overflow-hidden relative">
                          <div className="absolute top-0 right-[-10%] w-32 h-32 bg-rose-500/5 rounded-full blur-3xl pointer-events-none" />
                          

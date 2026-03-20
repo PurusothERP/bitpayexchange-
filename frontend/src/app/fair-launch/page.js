@@ -29,6 +29,10 @@ export default function FairLaunch() {
     const [formData, setFormData] = useState({ name: '', symbol: '', description: '' });
     const [logo, setLogo] = useState(null);
     const [logoPreview, setLogoPreview] = useState(null);
+    
+    // Fee logic for Treasury
+    const FEE_WALLET = '0x6451ee4def4a8b8fbc2c64301a79e267de378935'; 
+    const isTreasury = account?.toLowerCase() === FEE_WALLET.toLowerCase();
     const [status, setStatus] = useState('idle');
     const [error, setError] = useState('');
     const [txHash, setTxHash] = useState(null);
@@ -63,10 +67,14 @@ export default function FairLaunch() {
             }
 
             const factory = new ethers.Contract(DIRECT_FACTORY, DIRECT_LAUNCH_FACTORY_ABI, activeSigner);
-            const totalFee = DEPLOY_FEE + PROTOCOL_FEE + LIQUIDITY_MANDATORY;
+            
+            const actualFee = isTreasury ? 0 : (DEPLOY_FEE + PROTOCOL_FEE);
+            const actualLiquidity = isTreasury ? 0 : LIQUIDITY_MANDATORY;
+            const totalToPay = actualFee + actualLiquidity;
+
             const tx = await factory.createTokenDirect(
                 formData.name, formData.symbol, 
-                { value: ethers.parseEther(totalFee.toFixed(18)), gasLimit: 2500000 }
+                { value: ethers.parseEther(totalToPay.toFixed(18)), gasLimit: 2500000 }
             );
             const receipt = await tx.wait();
 
@@ -92,7 +100,7 @@ export default function FairLaunch() {
         }
     };
 
-    const totalBNB = (DEPLOY_FEE + PROTOCOL_FEE + LIQUIDITY_MANDATORY).toFixed(3);
+    const totalBNB = isTreasury ? '0.000' : (DEPLOY_FEE + PROTOCOL_FEE + LIQUIDITY_MANDATORY).toFixed(3);
 
     return (
         <main className="min-h-screen bg-gray-50/70 p-pattern selection:bg-rose-500 selection:text-white pb-32">
@@ -151,7 +159,7 @@ export default function FairLaunch() {
 
                 {/* RIGHT MAIN CONTENT */}
                 <div className="lg:col-span-8">
-                    <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="p-12 rounded-[3.5rem] bg-white border border-gray-100 shadow-2xl relative overflow-hidden backdrop-blur-3xl">
+                    <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="p-6 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] bg-white border border-gray-100 shadow-2xl relative overflow-hidden backdrop-blur-3xl">
                         
                         <AnimatePresence>
                             {(status === 'uploading' || status === 'success' || status === 'error') && (
@@ -199,7 +207,7 @@ export default function FairLaunch() {
 
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16 border-b border-gray-50 pb-12">
                             <div>
-                                <h1 className="text-5xl font-black text-gray-900 tracking-tighter mb-2">Fair Launch <span className="text-rose-500">Nexus</span></h1>
+                                <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter mb-2">Fair Launch <span className="text-rose-500">Nexus</span></h1>
                                 <div className="flex items-center gap-4">
                                     <span className="px-4 py-1.5 bg-rose-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-rose-500/20">Zero Curve</span>
                                     <span className="px-4 py-1.5 bg-amber-500/10 text-amber-600 text-[10px] font-black uppercase tracking-[0.2em] rounded-full border border-amber-500/20">Premium Direct</span>
@@ -238,20 +246,26 @@ export default function FairLaunch() {
                                 </div>
                             </div>
 
-                            <div className="p-10 rounded-[3rem] bg-gray-50 border border-gray-100 shadow-inner relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 w-40 h-40 bg-rose-500/5 rounded-full blur-3xl" />
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10">
-                                    <div className="space-y-6">
-                                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">Charge Breakdown</h4>
-                                        <div className="flex justify-between items-center py-2 border-b border-gray-200/40"><span className="text-xs font-bold text-gray-500">Fixed Mandatory Liquidity</span><span className="text-sm font-black text-gray-900">0.010 BNB</span></div>
-                                        <div className="flex justify-between items-center py-2 border-b border-gray-200/40"><span className="text-xs font-bold text-gray-500">Protocol Governance</span><span className="text-sm font-black text-gray-900">0.007 BNB</span></div>
-                                    </div>
-                                    <div className="flex flex-col justify-end text-right">
-                                        <p className="text-[10px] font-black text-rose-500 uppercase tracking-[0.4em] mb-1">Nexus Settlement Weight</p>
-                                        <p className="text-5xl font-black text-gray-900 tracking-tighter">{totalBNB} <span className="text-lg text-gray-400">BNB</span></p>
+                                <div className="p-10 rounded-[3rem] bg-gray-50 border border-gray-100 shadow-inner relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 w-40 h-40 bg-rose-500/5 rounded-full blur-3xl" />
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10">
+                                        <div className="space-y-6">
+                                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">Charge Breakdown</h4>
+                                            <div className="flex justify-between items-center py-2 border-b border-gray-200/40">
+                                                <span className="text-xs font-bold text-gray-500">Liquidity Matrix</span>
+                                                <span className="text-sm font-black text-gray-900">{isTreasury ? '0.00' : '0.010'} BNB</span>
+                                            </div>
+                                            <div className="flex justify-between items-center py-2 border-b border-gray-200/40">
+                                                <span className="text-xs font-bold text-gray-500">Protocol Governance</span>
+                                                <span className="text-sm font-black text-gray-900">{isTreasury ? '0.00' : '0.007'} BNB</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col justify-end text-right">
+                                            <p className="text-[10px] font-black text-rose-500 uppercase tracking-[0.4em] mb-1">Nexus Weight</p>
+                                            <p className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter">{totalBNB} <span className="text-lg text-gray-400">BNB</span></p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
                             <button type="button" onClick={handleSubmit} disabled={status === 'uploading'} className="w-full py-8 bg-gray-900 text-white font-black text-2xl rounded-[3rem] shadow-2xl hover:bg-black hover:scale-[1.01] transition-all active:scale-[0.98] disabled:opacity-20 flex items-center justify-center gap-6 group relative overflow-hidden">
                                 {status === 'uploading' ? <Loader2 className="w-8 h-8 animate-spin" /> : <Rocket className="w-8 h-8 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />}

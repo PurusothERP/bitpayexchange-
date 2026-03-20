@@ -246,7 +246,7 @@ function CreateToken() {
 
                 {/* RIGHT: MAIN FORM */}
                 <div className="lg:col-span-8">
-                    <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="p-12 rounded-[3.5rem] bg-white border border-gray-100 shadow-2xl relative overflow-hidden backdrop-blur-3xl">
+                    <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="p-6 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] bg-white border border-gray-100 shadow-2xl relative overflow-hidden backdrop-blur-3xl">
                         
                         <AnimatePresence>
                             {(status === 'uploading' || status === 'success' || status === 'error') && (
@@ -316,7 +316,7 @@ function CreateToken() {
 
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16 border-b border-gray-50 pb-12">
                             <div>
-                                <h1 className="text-5xl font-black text-gray-900 tracking-tighter mb-2">Deploy Nexus</h1>
+                                <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter mb-2">Deploy Nexus</h1>
                                 <div className="flex items-center gap-4">
                                     <span className="px-4 py-1.5 bg-rose-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full">Bonding Matrix</span>
                                     <span className="px-4 py-1.5 bg-emerald-500/10 text-emerald-600 text-[10px] font-black uppercase tracking-[0.2em] rounded-full border border-emerald-500/20">Active Node</span>
@@ -395,7 +395,7 @@ function CreateToken() {
                                         <div className="flex justify-between items-end">
                                             <div>
                                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Nexus Payment</p>
-                                                <p className="text-5xl font-black text-rose-500 tracking-tighter shadow-rose-500/20 drop-shadow-lg">{totalBNB} <span className="text-base text-gray-400">BNB</span></p>
+                                                <p className="text-3xl md:text-5xl font-black text-rose-500 tracking-tighter shadow-rose-500/20 drop-shadow-lg">{totalBNB} <span className="text-base text-gray-400">BNB</span></p>
                                             </div>
                                             <div className="bg-rose-500 p-3 rounded-2xl shadow-xl shadow-rose-500/30 text-white"><Rocket className="w-5 h-5" /></div>
                                         </div>

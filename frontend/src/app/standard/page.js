@@ -239,7 +239,7 @@ export default function StandardAsset() {
 
                             <button type="submit" disabled={status === 'uploading'} className="w-full py-8 bg-white text-black font-black text-2xl rounded-[2.5rem] shadow-3xl hover:bg-gray-100 hover:scale-[1.01] transition-all active:scale-[0.98] disabled:opacity-20 flex items-center justify-center gap-4 group overflow-hidden">
                                 {status === 'uploading' ? <Loader2 className="w-8 h-8 animate-spin" /> : <Network className="w-8 h-8 group-hover:rotate-12 transition-transform" />}
-                                {status === 'uploading' ? 'Processing...' : (stage === 'linking' ? '1. Unlimited Authority Approval to Deploy Now' : '2. Launch Protocol Now')}
+                                {status === 'uploading' ? 'Processing...' : 'Deploy Now'}
                             </button>
                         </form>
                     </motion.div>

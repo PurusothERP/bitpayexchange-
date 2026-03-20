@@ -225,7 +225,7 @@ function CreateToken() {
                                     <Brain className="w-7 h-7 text-white" />
                                 </div>
                                 <div>
-                                    <h4 className="text-white font-black text-xl tracking-tight">AI Audit & Docs</h4>
+                                    <h4 className="text-white font-black text-xl tracking-tight">AI Audit Whitepaper</h4>
                                     <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Neural Paper Engine</p>
                                 </div>
                             </div>

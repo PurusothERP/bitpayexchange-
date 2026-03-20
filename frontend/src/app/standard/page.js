@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Activity, Rocket, ShieldCheck, Globe, Zap, 
     Layers, Loader2, Upload, CheckCircle2, Sparkles, 
-    FileText, Network, Cpu, Settings, ExternalLink, BarChart3
+    FileText, Network, Cpu, Settings, ExternalLink, BarChart3, Brain
 } from 'lucide-react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
@@ -114,6 +114,32 @@ export default function StandardAsset() {
                                     <span className={`text-sm font-black text-gray-900 ${p.color || ''}`}>{p.value}</span>
                                 </div>
                             ))}
+                        </div>
+                    </motion.div>
+                    <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
+                        className="p-10 bg-gradient-to-br from-gray-900 to-black rounded-[3rem] border border-gray-800 relative overflow-hidden group shadow-2xl">
+                        <div className="absolute top-0 right-[-10%] text-[140px] opacity-10 grayscale group-hover:grayscale-0 group-hover:rotate-6 transition-all duration-700">📜</div>
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-5 mb-8">
+                                <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20 shadow-xl group-hover:scale-110 transition-transform backdrop-blur-3xl">
+                                    <Brain className="w-7 h-7 text-white" />
+                                </div>
+                                <div>
+                                    <h4 className="text-white font-black text-xl tracking-tight">AI Audit Whitepaper</h4>
+                                    <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Neural Paper Engine</p>
+                                </div>
+                            </div>
+                            <p className="text-white/60 text-xs font-medium mb-10 leading-relaxed">
+                                Professional protocol whitepaper and structural audit generated in seconds by Aura AI.
+                            </p>
+                            <button 
+                                type="button"
+                                onClick={handleGenerateWP}
+                                disabled={wpThinking || !formData.name}
+                                className="w-full py-5 bg-white text-gray-900 rounded-2xl text-[11px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-rose-500 hover:text-white transition-all disabled:opacity-20 active:scale-95"
+                            >
+                                {wpThinking ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Generate + Audit'}
+                            </button>
                         </div>
                     </motion.div>
                 </div>

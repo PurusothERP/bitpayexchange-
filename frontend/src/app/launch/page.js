@@ -133,7 +133,7 @@ export default function Launchpad() {
     useEffect(() => {
         async function fetchTokens() {
             try {
-                const res = await axios.get(`${API_URL}/tokens/all`);
+                const res = await axios.get(`${API_URL}/tokens`);
                 setTokens(Array.isArray(res.data) ? res.data : []);
             } catch (err) { console.error('Fetch failed:', err); }
             finally { setLoading(false); }

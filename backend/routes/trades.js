@@ -2,79 +2,61 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 
-// ── GET /api/trades/:tokenAddress ─────────────────────────────────────────────
-// Returns all trades for a specific token (for chart / trading history)
-router.get('/:tokenAddress', async (req, res) => {
+// ── GET /api/trades/history/:tokenAddress ──────────────────────────────────────
+router.get('/history/:tokenAddress', async (req, res) => {
     const { tokenAddress } = req.params;
     if (!tokenAddress.startsWith('0x') || tokenAddress.length !== 42) {
         return res.status(400).json({ error: 'Invalid token address' });
     }
     try {
         const result = await db.query(
-            `SELECT * FROM trades WHERE LOWER(token_address) = LOWER(?) ORDER BY timestamp DESC LIMIT 500`,
+            `SELECT * FROM trades WHERE LOWER(token_address) = LOWER(?) ORDER BY timestamp DESC LIMIT 100`,
             [tokenAddress]
         );
         res.json(result.rows);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch trades', details: err.message });
+        res.status(500).json({ error: 'Failed to fetch trade history' });
     }
 });
 
-// ── GET /api/trades/:tokenAddress/chart ───────────────────────────────────────
-// Returns price history for chart rendering
-router.get('/:tokenAddress/chart', async (req, res) => {
+// ── GET /api/trades/chart/:tokenAddress ───────────────────────────────────────
+router.get('/chart/:tokenAddress', async (req, res) => {
     const { tokenAddress } = req.params;
     try {
         const result = await db.query(
-            `SELECT price_bnb, collateral_bnb, timestamp FROM price_history
-             WHERE LOWER(token_address) = LOWER(?) ORDER BY timestamp ASC LIMIT 200`,
+            `SELECT price_bnb as price, timestamp as time FROM price_history
+             WHERE LOWER(token_address) = LOWER(?) ORDER BY timestamp ASC LIMIT 500`,
             [tokenAddress]
         );
         res.json(result.rows);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch chart data', details: err.message });
+        res.status(500).json({ error: 'Failed to fetch chart data' });
     }
 });
 
-// ── GET /api/trades/:tokenAddress/stats ───────────────────────────────────────
-// Returns 24h volume, buy/sell counts, price change
-router.get('/:tokenAddress/stats', async (req, res) => {
+// ── GET /api/trades/market/:tokenAddress ──────────────────────────────────────
+router.get('/market/:tokenAddress', async (req, res) => {
     const { tokenAddress } = req.params;
     try {
-        const since24h = new Date(Date.now() - 86400000).toISOString();
         const stats = await db.query(`
             SELECT
-                COUNT(*) as total_trades,
-                COUNT(CASE WHEN trade_type = 'buy' THEN 1 END) as buys,
-                COUNT(CASE WHEN trade_type = 'sell' THEN 1 END) as sells,
                 SUM(amount_bnb) as volume_24h,
-                MAX(price_bnb) as price_high,
-                MIN(price_bnb) as price_low,
-                MAX(CASE WHEN trade_type = 'buy' THEN price_bnb END) as last_buy_price
+                MAX(price_bnb) as high_24h,
+                MIN(price_bnb) as low_24h
             FROM trades
-            WHERE LOWER(token_address) = LOWER(?) AND timestamp >= ?
-        `, [tokenAddress, since24h]);
-
-        const firstPrice = await db.query(`
-            SELECT price_bnb FROM price_history WHERE LOWER(token_address) = LOWER(?) ORDER BY timestamp ASC LIMIT 1
+            WHERE LOWER(token_address) = LOWER(?) AND timestamp >= DATETIME('now', '-1 day')
         `, [tokenAddress]);
 
-        const lastPrice = await db.query(`
+        const priceResult = await db.query(`
             SELECT price_bnb FROM price_history WHERE LOWER(token_address) = LOWER(?) ORDER BY timestamp DESC LIMIT 1
         `, [tokenAddress]);
 
-        const s = stats.rows[0] || {};
-        const fp = firstPrice.rows[0]?.price_bnb || 0;
-        const lp = lastPrice.rows[0]?.price_bnb || 0;
-        const change24h = fp > 0 ? ((lp - fp) / fp) * 100 : 0;
-
         res.json({
-            ...s,
-            price_change_24h: change24h.toFixed(2),
-            current_price: lp
+            ...stats.rows[0],
+            current_price: priceResult.rows[0]?.price_bnb || 0
         });
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch stats', details: err.message });
+        res.status(500).json({ error: 'Failed to fetch market stats' });
     }
 });
 

@@ -31,10 +31,11 @@ const PANCAKE_ROUTER_ABI = [
 
 function formatNumber(num, dec = 4) { return Number(num).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
 function formatPrice(num) {
-    if (num === null || num === undefined) return '0.0000';
+    if (num === null || num === undefined) return '0.00000000';
     const n = Number(num);
-    if (n === 0) return '0.0000';
-    if (n < 0.000001) return n.toExponential(4);
+    if (n === 0) return '0.00000000';
+    // Use fixed decimals for even very small numbers to avoid scientific notation (premium feel)
+    if (n < 0.0001) return n.toFixed(10);
     if (n < 0.01) return n.toFixed(8);
     return n.toFixed(6);
 }
@@ -263,9 +264,13 @@ export default function TradePage() {
                                 </div>
                             </div>
                             <div>
-                                <h1 className="text-2xl font-black text-gray-900 tracking-tighter flex items-center gap-3">
-                                    {selectedToken?.symbol} <span className="text-gray-300 font-bold uppercase text-xl">/</span> <span className="text-gray-400 font-black text-xl">BNB</span>
-                                    <span className="text-gray-300 font-bold uppercase text-[10px] tracking-widest px-2 py-1 bg-gray-50 rounded-lg">{selectedToken?.name}</span>
+                                <h1 className="text-2xl font-black text-gray-900 tracking-tighter flex items-center gap-4">
+                                    <div className="flex items-center">
+                                        <span>{selectedToken?.symbol}</span>
+                                        <span className="mx-2 text-gray-200">/</span>
+                                        <span className="text-gray-400">BNB</span>
+                                    </div>
+                                    <span className="text-gray-300 font-black uppercase text-[9px] tracking-[0.2em] px-3 py-1 bg-gray-50 rounded-full border border-gray-100">{selectedToken?.name}</span>
                                 </h1>
                                 <div className="flex items-center gap-6 mt-1 text-[11px] font-black uppercase tracking-widest text-gray-400">
                                     <span className="flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-emerald-500" /> Price: <span className="text-gray-900">{formatPrice(selectedToken?.price_bnb)} BNB</span></span>
@@ -309,7 +314,7 @@ export default function TradePage() {
                          <div className="flex border-b border-gray-50">
                              {['history', 'positions', 'about'].map(t => (
                                  <button key={t} onClick={() => setActiveBottomTab(t)}
-                                    className={`px-10 py-5 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative
+                                    className={`px-10 py-5 text-[11px] font-black uppercase tracking-[0.25em] transition-all relative
                                         ${activeBottomTab === t ? 'text-gray-900 bg-gray-50' : 'text-gray-300 hover:text-gray-500 hover:bg-gray-50/50'}
                                     `}>
                                     {activeBottomTab === t && <div className="absolute bottom-0 left-0 right-0 h-1 bg-rose-500" />}

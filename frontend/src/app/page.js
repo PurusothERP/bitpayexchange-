@@ -289,12 +289,6 @@ export default function Home() {
       <Navbar />
       <CryptoTicker />
 
-      {/* ── AI TREND BANNER ────────────────────────────────────────────────── */}
-      <section className="pt-32 pb-0 px-4">
-        <div className="max-w-7xl mx-auto">
-          <TrendBanner />
-        </div>
-      </section>
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
       <section className="relative pt-12 pb-24 px-4 md:px-8 overflow-hidden">

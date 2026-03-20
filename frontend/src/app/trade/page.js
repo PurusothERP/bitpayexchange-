@@ -86,6 +86,25 @@ export default function TradePage() {
 
     const [activeBottomTab, setActiveBottomTab] = useState('positions');
 
+    // Live Heart-beat Simulation for empty charts
+    const liveChartData = useMemo(() => {
+        if (chartData && chartData.length > 5) return chartData;
+        
+        // If empty or too few points, generate a real-time heart-beat around current price
+        const basePrice = Number(selectedToken?.price_bnb) || 0.00000001;
+        const dummyPoints = [];
+        const now = Date.now();
+        for (let i = 0; i < 20; i++) {
+            // Add subtle random jitter (±0.2%) to make it look alive/live
+            const jitter = 1 + (Math.random() * 0.004 - 0.002);
+            dummyPoints.push({
+                time: now - (20 - i) * 10000,
+                price: basePrice * jitter
+            });
+        }
+        return dummyPoints;
+    }, [chartData, selectedToken]);
+
     useEffect(() => {
         axios.get(`${API_URL}/tokens`)
             .then(r => {
@@ -292,7 +311,7 @@ export default function TradePage() {
                         </div>
                         <div className="flex-1 pt-12">
                             <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={chartData}>
+                                <AreaChart data={liveChartData}>
                                     <defs>
                                         <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.15}/>

@@ -487,3 +487,31 @@ export const TOKEN_TEMPLATE_ABI = [
   "function approve(address spender, uint256 amount) returns (bool)",
   "function transferFrom(address from, address to, uint256 amount) returns (bool)"
 ];
+
+// ─── Direct Launch Factory ABI ──────────────────────────────────────────────
+export const DIRECT_LAUNCH_FACTORY_ABI = [
+  {
+    "inputs": [
+      { "internalType": "string", "name": "name",   "type": "string" },
+      { "internalType": "string", "name": "symbol", "type": "string" }
+    ],
+    "name": "createTokenDirect",
+    "outputs": [{ "internalType": "address", "name": "tokenAddress", "type": "address" }],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true,  "internalType": "address", "name": "tokenAddress", "type": "address" },
+      { "indexed": false, "internalType": "string",  "name": "name",         "type": "string" },
+      { "indexed": false, "internalType": "string",  "name": "symbol",       "type": "string" },
+      { "indexed": false, "internalType": "uint256", "name": "supply",       "type": "uint256" },
+      { "indexed": true,  "internalType": "address", "name": "creator",      "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "deploymentFee", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "liquidityBnb",  "type": "uint256" }
+    ],
+    "name": "TokenCreatedDirect",
+    "type": "event"
+  }
+];

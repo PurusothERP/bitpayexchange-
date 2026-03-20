@@ -56,9 +56,9 @@ async function checkVerificationStatus(contractAddress) {
 }
 
 // ── 2. Submit source code for verification ───────────────────
-async function submitVerification(contractAddress, contractName, sourceCode, compilerVersion) {
+async function submitVerification(contractAddress, contractName, sourceCode, constructorArgs, compilerVersion) {
     try {
-        const params = new URLSearchParams({
+        const body = {
             chainid:          '56',
             module:           'contract',
             action:           'verifysourcecode',
@@ -72,7 +72,13 @@ async function submitVerification(contractAddress, contractName, sourceCode, com
             runs:             '200',
             evmversion:       'paris',
             licenseType:      '3'
-        });
+        };
+
+        if (constructorArgs) {
+            body.constructorArguements = constructorArgs; // Note: BSCScan uses this specific spelling
+        }
+
+        const params = new URLSearchParams(body);
 
         const res = await axios.post(BSCSCAN_API, params.toString(), {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -152,7 +158,7 @@ async function runVerificationCycle() {
     try {
         const result = await db.query(`
             SELECT id, contract_address, name, symbol, creator_wallet AS creator_address,
-                   logo_url, description,
+                   logo_url, description, launch_type,
                    is_verified, bscscan_verified, verify_guid,
                    last_verified_at, tw_pr_status, created_at
             FROM tokens
@@ -202,8 +208,26 @@ async function runVerificationCycle() {
 
             // C: If still unverified and we have source → submit
             if (!finalVerified && tokenTemplateSrc) {
+                console.log(`[Verifier]   Preparing constructor arguments for ${token.launch_type || 'MEME'}...`);
+                
+                const { ethers } = require('ethers');
+                const abiCoder = new ethers.AbiCoder();
+                
+                // Construct args based on launch type
+                const BC_ADDR  = process.env.BONDING_CURVE_ADDRESS || '0x279A5618Ff049667234c030792C0594B311A0451';
+                const DF_ADDR  = process.env.DIRECT_FACTORY_ADDRESS || '0x319C8c9efBF2742331e687DE8caf54B9944895A7';
+                const FEE_ADDR = process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
+                
+                const ownerAddr = (token.launch_type === 'FAIR') ? DF_ADDR : BC_ADDR;
+                
+                // TokenTemplate(string name_, string symbol_, uint256 fixedSupply, address _creator, address bondingCurve_, address feeWallet_)
+                const encodedArgs = abiCoder.encode(
+                    ['string', 'string', 'uint256', 'address', 'address', 'address'],
+                    [token.name, token.symbol, 1000000000n, token.creator_address, ownerAddr, FEE_ADDR]
+                ).replace('0x', '');
+
                 await new Promise(r => setTimeout(r, 300));
-                submitResult = await submitVerification(addr, 'TokenTemplate', tokenTemplateSrc, 'v0.8.20+commit.a1b79de6');
+                submitResult = await submitVerification(addr, 'TokenTemplate', tokenTemplateSrc, encodedArgs, 'v0.8.20+commit.a1b79de6');
                 if (submitResult.submitted) {
                     verifyGuid = submitResult.guid;
                     cntSubmitted++;

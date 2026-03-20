@@ -6,7 +6,7 @@ import {
     TrendingUp, Clock, Rocket, Search, Flame,
     ArrowRightLeft, Grid, List, Copy, CheckCircle2, Zap, ArrowUpRight, ArrowDownRight,
     Activity, ShieldCheck, Sparkles, Filter, LayoutGrid, BarChart3, ChevronRight,
-    Search as SearchIcon
+    Search as SearchIcon, Loader2
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';

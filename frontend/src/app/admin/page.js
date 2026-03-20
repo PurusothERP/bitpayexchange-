@@ -183,6 +183,7 @@ export default function AdminPage() {
     const [timeframe, setTimeframe] = useState('7d');
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
+    const [ledgerSearch, setLedgerSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [fees, setFees] = useState({ deployment: '0.003', initialBuy: '0.005', upgrade: '0.01' });
     const [govStatus, setGovStatus] = useState('idle');
@@ -736,9 +737,21 @@ export default function AdminPage() {
                     {activeTab === 'overview' && (
                         <motion.div key="ledger" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="space-y-6">
                             <GlassCard className="p-0">
-                                <div className="p-10 border-b border-black/5 flex items-center justify-between">
-                                    <h3 className="text-2xl font-black text-gray-900 tracking-tight">LIVE REVENUE TERMINAL</h3>
-                                    <div className="flex items-center gap-4"><div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-lg shadow-emerald-500/20" /><p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Real-time Node Tracking</p></div>
+                                <div className="p-10 border-b border-black/5 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                                    <div>
+                                        <h3 className="text-2xl font-black text-gray-900 tracking-tight">LIVE REVENUE TERMINAL</h3>
+                                        <div className="flex items-center gap-4 mt-1"><div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-lg shadow-emerald-500/20" /><p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Real-time Node Tracking</p></div>
+                                    </div>
+                                    <div className="relative group w-full lg:max-w-md">
+                                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-rose-500 transition-colors" />
+                                        <input 
+                                            type="text" 
+                                            placeholder="Audit by Hash, Address or Asset Name..." 
+                                            value={ledgerSearch}
+                                            onChange={(e) => setLedgerSearch(e.target.value)}
+                                            className="w-full pl-14 pr-6 py-4 bg-gray-50 border border-transparent focus:border-rose-500/30 focus:bg-white rounded-[1.5rem] text-sm font-bold text-gray-900 shadow-inner transition-all outline-none" 
+                                        />
+                                    </div>
                                 </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
@@ -752,7 +765,14 @@ export default function AdminPage() {
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-black/5">
-                                            {transfers.map((t, i) => (
+                                            {transfers
+                                                .filter(t => {
+                                                    const q = ledgerSearch.toLowerCase();
+                                                    return (t.tx_hash || '').toLowerCase().includes(q) || 
+                                                           (t.source_contract || '').toLowerCase().includes(q) || 
+                                                           (t.name || '').toLowerCase().includes(q);
+                                                })
+                                                .map((t, i) => (
                                                 <tr key={i} className="hover:bg-gray-50/80 transition-all">
                                                     <td className="px-10 py-8 text-xs font-black text-gray-300">#{i + 1}</td>
                                                     <td className="px-10 py-8">

@@ -219,74 +219,95 @@ export default function Launchpad() {
                     </motion.div>
                 </div>
 
-                {/* ── MIDDLE SECTION: TOKEN REGISTRY ───────────────────────────── */}
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between px-10 mb-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
-                        <span className="flex-1">Asset Identity</span>
-                        <span className="hidden lg:block w-[150px] text-center">Bonding State</span>
-                        <span className="w-[150px] text-right">Unit Price</span>
-                        <span className="w-[60px]"></span>
-                    </div>
-
-                    {loading ? (
-                        <div className="flex flex-col items-center justify-center py-40 gap-4">
-                            <div className="w-16 h-16 border-4 border-rose-500/10 border-t-rose-500 rounded-full animate-spin" />
-                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest animate-pulse">Syncing Nexus Registry...</p>
-                        </div>
-                    ) : filtered.length > 0 ? (
-                        filtered.map((t, i) => <TokenRow key={t.id} token={t} index={i} trend={i % 3 === 0} launchType={view} />)
-                    ) : (
-                        <div className="p-32 bg-white border border-gray-100 rounded-[3rem] text-center shadow-inner">
-                            <Search className="w-12 h-12 text-gray-200 mx-auto mb-6" />
-                            <h3 className="text-2xl font-black text-gray-900 tracking-tight">System Empty</h3>
-                            <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mt-2 px-10">No protocols found matching current Nexus filters.</p>
-                        </div>
-                    )}
-                </div>
-
-                {/* ── BOTTOM SECTION: DISCOVERY GRID ──────────────────────────── */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-20">
-                    {/* Trending Section */}
-                    <div className="bg-white border border-gray-50 rounded-[2.5rem] shadow-xl p-8 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-3xl group-hover:bg-rose-500/10 transition-colors" />
-                        <h2 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-8 flex items-center gap-3">
-                            <Flame className="w-5 h-5 text-rose-500" /> Trending
-                        </h2>
-                        <div className="space-y-4">
-                            {tokens.filter(t => t.price_change > 0).slice(0, 3).map((t, i) => (
-                                <SidebarItem key={i} token={t} type="trending" />
-                            ))}
+                {/* ── PARALLEL DISCOVERY TERMINAL ──────────────────────────────── */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-20">
+                    
+                    {/* Pillar 1: Trending Protocols (Col 3) */}
+                    <div className="lg:col-span-3 space-y-6">
+                        <div className="bg-white border border-gray-50 rounded-[2rem] shadow-lg p-6 relative overflow-hidden group min-h-[500px]">
+                            <h2 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.25em] mb-6 flex items-center gap-2">
+                                <Flame className="w-4 h-4 text-rose-500" /> Trending
+                            </h2>
+                            <div className="space-y-3">
+                                {tokens.filter(t => t.price_change > 0).slice(0, 10).map((t, i) => (
+                                    <SidebarItem key={i} token={t} type="trending" />
+                                ))}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Recently Launched */}
-                    <div className="bg-white border border-gray-50 rounded-[2.5rem] shadow-xl p-8 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-colors" />
-                        <h2 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-8 flex items-center gap-3">
-                            <Clock className="w-5 h-5 text-blue-500" /> Recently Launched
-                        </h2>
-                        <div className="space-y-4">
-                            {tokens.slice(0, 3).map((t, i) => (
-                                <SidebarItem key={i} token={t} type="recent" />
-                            ))}
+                    {/* Pillar 2: Recently Launched (Col 3) */}
+                    <div className="lg:col-span-3 space-y-6">
+                        <div className="bg-white border border-gray-50 rounded-[2rem] shadow-lg p-6 relative overflow-hidden group min-h-[500px]">
+                            <h2 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.25em] mb-6 flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-blue-500" /> Recent
+                            </h2>
+                            <div className="space-y-3">
+                                {tokens.slice(0, 10).map((t, i) => (
+                                    <SidebarItem key={i} token={t} type="recent" />
+                                ))}
+                            </div>
                         </div>
                     </div>
 
-                    {/* Highly Traded Section */}
-                    <div className="bg-white border border-gray-50 rounded-[2.5rem] shadow-xl p-8 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-colors" />
-                        <h2 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-8 flex items-center gap-3">
-                            <Activity className="w-5 h-5 text-emerald-500" /> Maximum Volume
-                        </h2>
-                        <div className="space-y-4">
-                            {tokens.filter(t => t.liquidity_bnb > 0).slice(0, 3).map((t, i) => (
-                                <SidebarItem key={i} token={t} type="volume" />
-                            ))}
+                    {/* Pillar 3: All Protocols / Full Registry (Col 6 - Parallel to discovery) */}
+                    <div className="lg:col-span-6 space-y-6">
+                        <div className="bg-white/40 border border-gray-100/50 rounded-[2.5rem] shadow-2xl p-8 backdrop-blur-3xl min-h-[500px]">
+                            <div className="flex items-center justify-between mb-8">
+                                <h2 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.25em] flex items-center gap-2">
+                                    <List className="w-4 h-4 text-rose-500" /> Full Registry
+                                </h2>
+                                <span className="text-[9px] font-black text-gray-400 tracking-widest uppercase">{filtered.length} Protocols Indexed</span>
+                            </div>
+
+                            <div className="space-y-4 max-h-[1000px] overflow-y-auto pr-2 custom-scrollbar">
+                                {loading ? (
+                                    <div className="flex flex-col items-center justify-center py-20 gap-4">
+                                        <div className="w-10 h-10 border-2 border-rose-500/10 border-t-rose-500 rounded-full animate-spin" />
+                                    </div>
+                                ) : filtered.length > 0 ? (
+                                    filtered.map((t, i) => <TokenRowMinimal key={t.id} token={t} index={i} />)
+                                ) : (
+                                    <div className="py-20 text-center opacity-30">
+                                        <Search className="w-8 h-8 mx-auto mb-4" />
+                                        <p className="text-[10px] font-black uppercase tracking-widest">Registry Empty</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </main>
+    );
+}
+
+function TokenRowMinimal({ token, index }) {
+    const addr = token.contract_address || '';
+    const shortAddr = addr ? `${addr.slice(0, 4)}…${addr.slice(-4)}` : '—';
+    return (
+        <Link href={`/token/${addr}`}>
+            <motion.div initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: index * 0.02 }}
+                className="flex items-center justify-between p-4 rounded-2xl hover:bg-white transition-all group border border-transparent hover:border-gray-100 hover:shadow-xl hover:shadow-gray-100/50">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform shadow-sm">
+                        {token.logo_url ? <img src={token.logo_url} className="w-full h-full object-cover" /> : <span className="text-2xl">🪙</span>}
+                    </div>
+                    <div>
+                        <div className="flex items-center gap-2">
+                             <h3 className="font-black text-gray-900 text-sm tracking-tight">{token.name}</h3>
+                             <span className="text-[9px] font-black text-gray-400">{token.symbol}</span>
+                        </div>
+                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{shortAddr} • {timeAgo(token.created_at)}</p>
+                    </div>
+                </div>
+                <div className="text-right">
+                    <p className="text-xs font-black text-gray-900">{formatPrice(token.price_bnb)} <span className="text-[9px] opacity-40">BNB</span></p>
+                    <p className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Active</p>
+                </div>
+            </motion.div>
+        </Link>
     );
 }
 

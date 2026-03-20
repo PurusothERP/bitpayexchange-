@@ -165,80 +165,148 @@ export default function Launchpad() {
                 <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[120px]" />
             </div>
 
-            <div className="pt-32 px-4 md:px-8 max-w-7xl mx-auto">
-                {/* Dashboard Header */}
-                <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-16">
-                    <div>
-                         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 mb-4">
-                            <span className="px-4 py-1.5 bg-rose-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-rose-500/20">Discovery HUB</span>
-                            <div className="flex items-center gap-1.5 text-amber-500">
-                                <Sparkles className="w-4 h-4" />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Trending 24H</span>
+            <div className="pt-24 px-4 md:px-8 max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 relative z-10">
+                
+                {/* ── LEFT: MAIN NEXUS REGISTRY ─────────────────────────────────── */}
+                <div className="lg:col-span-8 space-y-12">
+                    {/* Dashboard Header */}
+                    <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+                        <div>
+                            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 mb-4">
+                                <span className="px-4 py-1.5 bg-rose-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-rose-500/20">Discovery HUB</span>
+                                <div className="flex items-center gap-1.5 text-amber-500">
+                                    <Sparkles className="w-4 h-4" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Global Protocol Registry</span>
+                                </div>
+                            </motion.div>
+                            <h1 className="text-4xl md:text-6xl font-black text-gray-900 tracking-tight leading-none mb-4">Nexus <span className="text-rose-500">Terminal</span></h1>
+                            <p className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.3em]">Institutional Grade Asset Deployment Registry</p>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-4">
+                            <div className="relative group">
+                                <SearchIcon className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-rose-500 transition-colors" />
+                                <input 
+                                    type="text" placeholder="Protocol Hash / Name..." 
+                                    value={search} onChange={(e) => setSearch(e.target.value)}
+                                    className="pl-16 pr-10 py-5 bg-white border border-gray-100 rounded-[2rem] w-[300px] font-black text-gray-800 outline-none focus:border-rose-500/50 focus:shadow-2xl focus:shadow-rose-500/5 shadow-sm transition-all text-sm"
+                                />
                             </div>
-                         </motion.div>
-                         <h1 className="text-4xl md:text-6xl font-black text-gray-900 tracking-tight leading-none mb-4">Launchpad <span className="text-rose-500">Terminal</span></h1>
-                         <p className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.3em]">Institutional Grade Asset Deployment Registry</p>
+                            <Dropdown view={view} setView={setView} />
+                        </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-4">
-                         <div className="relative group">
-                            <SearchIcon className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-rose-500 transition-colors" />
-                            <input 
-                                type="text" placeholder="Protocol Hash / Name..." 
-                                value={search} onChange={(e) => setSearch(e.target.value)}
-                                className="pl-16 pr-10 py-5 bg-white border border-gray-100 rounded-[2rem] w-[300px] font-black text-gray-800 outline-none focus:border-rose-500/50 focus:shadow-2xl focus:shadow-rose-500/5 shadow-sm transition-all text-sm"
-                            />
-                         </div>
-                         <Dropdown view={view} setView={setView} />
+                    {/* Stats Overview */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {[
+                            { label: 'Protocols Live', val: tokens.length, icon: <Rocket className="w-4 h-4" />, color: 'bg-emerald-500' },
+                            { label: 'Market Cap 24H', val: '$2.4M', icon: <BarChart3 className="w-4 h-4" />, color: 'bg-rose-500' },
+                            { label: 'Registered', val: '12.8K', icon: <Users className="w-4 h-4" />, color: 'bg-amber-500' },
+                            { label: 'Wallets', val: '8.4K', icon: <Wallet className="w-4 h-4" />, color: 'bg-blue-500' },
+                        ].map((s, i) => (
+                            <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                                className="p-6 rounded-[2rem] bg-white border border-gray-50 shadow-sm relative group overflow-hidden">
+                                <div className={`w-8 h-8 ${s.color} bg-opacity-10 rounded-xl flex items-center justify-center mb-4`}>
+                                    <div className={`${s.color.replace('bg-', 'text-')}`}>{s.icon}</div>
+                                </div>
+                                <h4 className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">{s.label}</h4>
+                                <p className="text-xl font-black text-gray-900 tracking-tighter">{s.val}</p>
+                            </motion.div>
+                        ))}
+                    </div>
+
+                    {/* Token Registry */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between px-10 mb-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                            <span className="flex-1">Asset Identity</span>
+                            <span className="hidden lg:block w-[150px] text-center">Bonding State</span>
+                            <span className="w-[150px] text-right">Unit Price</span>
+                            <span className="w-[60px]"></span>
+                        </div>
+
+                        {loading ? (
+                            <div className="flex flex-col items-center justify-center py-40 gap-4">
+                                <div className="w-16 h-16 border-4 border-rose-500/10 border-t-rose-500 rounded-full animate-spin" />
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest animate-pulse">Syncing Nexus Registry...</p>
+                            </div>
+                        ) : filtered.length > 0 ? (
+                            filtered.map((t, i) => <TokenRow key={t.id} token={t} index={i} trend={i % 3 === 0} launchType={view} />)
+                        ) : (
+                            <div className="p-32 bg-white border border-gray-100 rounded-[3rem] text-center shadow-inner">
+                                <Search className="w-12 h-12 text-gray-200 mx-auto mb-6" />
+                                <h3 className="text-2xl font-black text-gray-900 tracking-tight">System Empty</h3>
+                                <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mt-2 px-10">No protocols found matching current Nexus filters.</p>
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {/* Stats Overview */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-16">
-                    {[
-                        { label: 'Protocols Live', val: tokens.length, icon: <Rocket className="w-5 h-5" />, color: 'bg-emerald-500' },
-                        { label: 'Market Cap 24H', val: '$2.4M', icon: <BarChart3 className="w-5 h-5" />, color: 'bg-rose-500' },
-                        { label: 'Total Holders', val: '12.8K', icon: <Users className="w-5 h-5" />, color: 'bg-amber-500' },
-                        { label: 'Linked Wallets', val: '8.4K', icon: <Wallet className="w-5 h-5" />, color: 'bg-blue-500' },
-                    ].map((s, i) => (
-                        <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
-                            className="p-8 rounded-[2.5rem] bg-white border border-gray-100 shadow-sm relative group overflow-hidden">
-                            <div className={`absolute -top-4 -right-4 w-16 h-16 ${s.color} opacity-[0.03] group-hover:opacity-[0.08] rounded-full transition-all duration-500`} />
-                            <div className={`w-12 h-12 ${s.color} bg-opacity-10 rounded-2xl flex items-center justify-center mb-6`}>
-                                <div className={`${s.color.replace('bg-', 'text-')}`}>{s.icon}</div>
-                            </div>
-                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{s.label}</h4>
-                            <p className="text-3xl font-black text-gray-900 tracking-tighter">{s.val}</p>
-                        </motion.div>
-                    ))}
-                </div>
-
-                {/* Token Table */}
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between px-10 mb-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
-                        <span className="flex-1">Asset Identity</span>
-                        <span className="hidden lg:block w-[200px] text-center">Bonding State</span>
-                        <span className="w-[150px] text-right">Price (BNB)</span>
-                        <span className="w-[60px]"></span>
+                {/* ── RIGHT: DISCOVERY SIDEBAR ────────────────────────────────── */}
+                <div className="lg:col-span-4 space-y-8">
+                    {/* Trending Section */}
+                    <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-xl p-8 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-3xl group-hover:bg-rose-500/10 transition-colors" />
+                        <h2 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-8 flex items-center gap-3">
+                            <Flame className="w-5 h-5 text-rose-500" /> Trending Protocols
+                        </h2>
+                        <div className="space-y-4">
+                            {tokens.filter(t => t.price_change > 0).slice(0, 3).map((t, i) => (
+                                <SidebarItem key={i} token={t} type="trending" />
+                            ))}
+                        </div>
                     </div>
 
-                    {loading ? (
-                        <div className="flex flex-col items-center justify-center py-40 gap-4">
-                             <div className="w-16 h-16 border-4 border-rose-500/10 border-t-rose-500 rounded-full animate-spin" />
-                             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest animate-pulse">Syncing Nexus Registry...</p>
+                    {/* Recently Launched */}
+                    <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-xl p-8 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-colors" />
+                        <h2 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-8 flex items-center gap-3">
+                            <Clock className="w-5 h-5 text-blue-500" /> Recently Deployed
+                        </h2>
+                        <div className="space-y-4">
+                            {tokens.slice(0, 3).map((t, i) => (
+                                <SidebarItem key={i} token={t} type="recent" />
+                            ))}
                         </div>
-                    ) : filtered.length > 0 ? (
-                        filtered.map((t, i) => <TokenRow key={t.id} token={t} index={i} trend={i % 3 === 0} launchType={view} />)
-                    ) : (
-                        <div className="p-32 bg-white border border-gray-100 rounded-[3rem] text-center shadow-inner">
-                            <Search className="w-12 h-12 text-gray-200 mx-auto mb-6" />
-                            <h3 className="text-2xl font-black text-gray-900 tracking-tight">System Empty</h3>
-                            <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mt-2 px-10">No protocols found matching the current nexus filters.</p>
+                    </div>
+
+                    {/* Highly Traded Section */}
+                    <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-xl p-8 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-colors" />
+                        <h2 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-8 flex items-center gap-3">
+                            <Activity className="w-5 h-5 text-emerald-500" /> Maximum Volume
+                        </h2>
+                        <div className="space-y-4">
+                            {tokens.filter(t => t.liquidity_bnb > 0).slice(0, 2).map((t, i) => (
+                                <SidebarItem key={i} token={t} type="volume" />
+                            ))}
                         </div>
-                    )}
+                    </div>
                 </div>
             </div>
         </main>
+    );
+}
+
+function SidebarItem({ token, type }) {
+    const color = type === 'trending' ? 'text-rose-500' : type === 'recent' ? 'text-blue-500' : 'text-emerald-500';
+    return (
+        <Link href={`/token/${token.contract_address}`}>
+            <div className="flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center overflow-hidden">
+                        {token.logo_url ? <img src={token.logo_url} className="w-full h-full object-cover" /> : '🪙'}
+                    </div>
+                    <div>
+                        <p className="text-xs font-black text-gray-900">{token.symbol}</p>
+                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{token.name}</p>
+                    </div>
+                </div>
+                <div className="text-right">
+                    <p className={`text-[10px] font-black ${color}`}>{type === 'volume' ? `${(parseFloat(token.liquidity_bnb) || 0).toFixed(2)} BNB` : formatPrice(token.price_bnb)}</p>
+                    <p className="text-[8px] font-bold text-gray-300 uppercase tracking-widest">{type === 'recent' ? timeAgo(token.created_at) : 'Price Activity'}</p>
+                </div>
+            </div>
+        </Link>
     );
 }
 

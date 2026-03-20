@@ -10,7 +10,8 @@ import {
 } from 'recharts';
 import {
     ChevronDown, TrendingUp, TrendingDown, Clock, Activity, AlertTriangle, CheckCircle2,
-    RefreshCw, Search, ArrowUpRight, ArrowDownRight, ExternalLink, Zap
+    RefreshCw, Search, ArrowUpRight, ArrowDownRight, ExternalLink, Zap,
+    Wallet, TrendingUp as Up, TrendingDown as Down, BarChart3, History, Layers, Info
 } from 'lucide-react';
 import { ethers, Contract } from 'ethers';
 import { BONDING_CURVE_ABI, TOKEN_TEMPLATE_ABI } from '@/lib/abis';
@@ -19,16 +20,13 @@ const BONDING_CURVE_ADDRESS  = process.env.NEXT_PUBLIC_BONDING_CURVE_ADDRESS;
 const API_URL                = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const BSC_RPC                = 'https://bsc-dataseed.binance.org';
 
-// PancakeSwap V2 Router — BSC Mainnet
 const PANCAKE_ROUTER_ADDR = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
 const WBNB_ADDR           = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
-// Minimal PancakeSwap Router ABI for swaps & quotes
 const PANCAKE_ROUTER_ABI = [
     'function swapExactETHForTokensSupportingFeeOnTransferTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable',
     'function swapExactTokensForETHSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external',
     'function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts)',
 ];
-
 
 function formatNumber(num, dec = 4) { return Number(num).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
 function formatPrice(num) {
@@ -44,15 +42,15 @@ function timeAgo(dateStr) {
     return `${Math.floor(diff / 3600)}h ago`;
 }
 
-// Custom Dark Chart Tooltip
-function DarkPriceTooltip({ active, payload }) {
+// Custom Light Chart Tooltip
+function LightPriceTooltip({ active, payload }) {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-[#1e2329] border border-[#2b3139] p-2.5 rounded shadow-xl text-xs">
-                <p className="text-[#848e9c] mb-1">{payload[0].payload.time}</p>
-                <p className="font-mono text-white tracking-wider">
-                    <span className="text-[#848e9c] mr-2">Price:</span>
-                    {formatPrice(payload[0].value)} <span className="text-[10px] text-[#848e9c]">BNB</span>
+            <div className="bg-white border border-gray-100 p-3 rounded-2xl shadow-2xl text-[10px] font-black uppercase tracking-widest">
+                <p className="text-gray-400 mb-1">{payload[0].payload.time}</p>
+                <p className="font-mono text-gray-900 flex items-center gap-2">
+                    <span className="text-rose-500">Price:</span>
+                    {formatPrice(payload[0].value)} <span className="text-gray-400">BNB</span>
                 </p>
             </div>
         );
@@ -84,614 +82,345 @@ export default function TradePage() {
 
     const [activeBottomTab, setActiveBottomTab] = useState('positions');
 
-    // ── Fetch active tokens ──────────────────────────────────────────────────
     useEffect(() => {
         axios.get(`${API_URL}/tokens`)
             .then(r => {
                 if (Array.isArray(r.data) && r.data.length > 0) {
                     setAllTokens(r.data);
-                    setSelectedToken(r.data[0]); // Auto-select first token
+                    setSelectedToken(r.data[0]); 
                 }
             })
             .catch(console.error);
     }, []);
 
-    // ── Fetch User Balances ──────────────────────────────────────────────────
     const fetchBalances = useCallback(async () => {
         if (!account || !selectedToken) return;
         try {
-            const provider = new ethers.JsonRpcProvider(BSC_RPC);
-            const balBnb = await provider.getBalance(account);
-            setUserBnb(parseFloat(ethers.formatEther(balBnb)));
+            const rpcProvider = new ethers.JsonRpcProvider(BSC_RPC);
+            const bnbVal = await rpcProvider.getBalance(account);
+            setUserBnb(ethers.formatEther(bnbVal));
 
-            if (selectedToken.contract_address) {
-                const tc = new Contract(selectedToken.contract_address, TOKEN_TEMPLATE_ABI, provider);
-                const balT = await tc.balanceOf(account);
-                setUserTokens(parseFloat(ethers.formatUnits(balT, 18)));
-            }
-        } catch (e) {}
+            const tokenContract = new ethers.Contract(selectedToken.contract_address, TOKEN_TEMPLATE_ABI, rpcProvider);
+            const tokenVal = await tokenContract.balanceOf(account);
+            setUserTokens(ethers.formatUnits(tokenVal, 18));
+        } catch (e) { console.warn('Balance check failed:', e); }
     }, [account, selectedToken]);
 
-    useEffect(() => { fetchBalances(); }, [fetchBalances]);
-
-    // ── Fetch Trade Data & Chart ───────────────────────────────────────────
-    const fetchTradeData = useCallback(async () => {
-        if (!selectedToken?.contract_address) return;
+    const fetchTokenData = useCallback(async () => {
+        if (!selectedToken) return;
         try {
-            const [tradesRes, statsRes, chartRes] = await Promise.allSettled([
-                axios.get(`${API_URL}/trades/${selectedToken.contract_address}`),
-                axios.get(`${API_URL}/trades/${selectedToken.contract_address}/stats`),
-                axios.get(`${API_URL}/trades/${selectedToken.contract_address}/chart`),
+            const [cRes, hRes, mRes] = await Promise.all([
+                axios.get(`${API_URL}/trades/chart/${selectedToken.contract_address}`),
+                axios.get(`${API_URL}/trades/history/${selectedToken.contract_address}`),
+                axios.get(`${API_URL}/trades/market/${selectedToken.contract_address}`)
             ]);
-
-            if (tradesRes.status === 'fulfilled') setTrades(Array.isArray(tradesRes.value.data) ? tradesRes.value.data : []);
-            if (statsRes.status === 'fulfilled') setTradeStats(statsRes.value.data);
-            if (chartRes.status === 'fulfilled' && Array.isArray(chartRes.value.data)) {
-                setChartData(chartRes.value.data.map(d => ({
-                    time: new Date(d.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-                    price: parseFloat(d.price_bnb || 0),
-                })));
-            }
-        } catch (e) {}
+            setChartData(cRes.data || []);
+            setTrades(hRes.data || []);
+            setMarket(mRes.data || null);
+        } catch (e) { console.error('Token data fetch error:', e); }
     }, [selectedToken]);
-
-    // ── DEX Price Feed (for Fair Launch / Migrated tokens) ─────────────────
-    const fetchDexMarket = useCallback(async () => {
-        if (!selectedToken?.contract_address) return;
-        try {
-            const provider = new ethers.JsonRpcProvider(BSC_RPC);
-            const router   = new Contract(PANCAKE_ROUTER_ADDR, PANCAKE_ROUTER_ABI, provider);
-            const path     = [WBNB_ADDR, selectedToken.contract_address];
-
-            // Get how many tokens you'd get for 1 BNB
-            let effectivePrice = 0;
-            try {
-                const amounts = await router.getAmountsOut(ethers.parseEther('1'), path);
-                const tokensPerBnb = parseFloat(ethers.formatUnits(amounts[1], 18));
-                effectivePrice = tokensPerBnb > 0 ? 1 / tokensPerBnb : 0;
-            } catch (_) {}
-
-            const prev  = prevPriceRef.current;
-            const trend = prev ? (effectivePrice > prev ? 'up' : effectivePrice < prev ? 'down' : 'none') : 'none';
-            prevPriceRef.current = effectivePrice;
-
-            setMarket({
-                isRegistered: true,
-                collateralBnb: 0,
-                supplyTraded: 0,
-                available: 0,
-                migrated: true,
-                isDex: true,
-                priceBnb: effectivePrice,
-                trend
-            });
-        } catch (e) { console.warn('[DEX Market]', e.message); }
-    }, [selectedToken]);
-
-    // ── Live Bonding Curve Status ──────────────────────────────────────────
-    const fetchMarket = useCallback(async () => {
-        if (!selectedToken?.contract_address) return;
-
-        // ── Fair Launch or already-migrated: read from PancakeSwap ──
-        const isFairLaunch = selectedToken?.launch_type === 'FAIR_LAUNCH';
-        if (isFairLaunch) { await fetchDexMarket(); return; }
-
-        if (!BONDING_CURVE_ADDRESS) return;
-        try {
-            const provider = new ethers.JsonRpcProvider(BSC_RPC);
-            const bc = new Contract(BONDING_CURVE_ADDRESS, BONDING_CURVE_ABI, provider);
-            
-            const [m, LP_INIT_THRESHOLD] = await Promise.all([
-                bc.markets(selectedToken.contract_address),
-                bc.LP_INIT_THRESHOLD().catch(() => ethers.parseEther('0.01')),
-            ]);
-
-            const virtualBnb   = m.virtualBnb ? parseFloat(ethers.formatEther(m.virtualBnb)) : 0.5;
-            const bnbReserve   = parseFloat(ethers.formatEther(m.bnbReserve || 0n));
-            const tokenReserve = parseFloat(ethers.formatUnits(m.tokenReserve || 0n, 18));
-            const supplyTraded = 1000000000 - tokenReserve;
-            const available    = tokenReserve;
-
-            const effectivePrice = tokenReserve > 0 ? ((virtualBnb + bnbReserve) / tokenReserve) : 0.0000005;
-            
-            const prev  = prevPriceRef.current;
-            const trend = prev ? (effectivePrice > prev ? 'up' : effectivePrice < prev ? 'down' : 'none') : 'none';
-            prevPriceRef.current = effectivePrice;
-
-            const isMigrated = m.migrated;
-
-            // If bonding curve has migrated, switch to DEX pricing
-            if (isMigrated) { await fetchDexMarket(); return; }
-
-            setMarket({
-                isRegistered: m.token !== ethers.ZeroAddress,
-                collateralBnb: bnbReserve, supplyTraded, available,
-                migrated: false,
-                isDex: false,
-                priceBnb: effectivePrice,
-                trend
-            });
-
-            // Fallback chart if brand new
-            setChartData(prevData => {
-                if (prevData.length === 0 && bnbReserve > 0) {
-                    return Array.from({ length: 15 }, (_, i) => ({
-                        time: `T-${15-i}`, price: Number((effectivePrice * (0.8 + (0.2*(i/15)))).toFixed(12))
-                    }));
-                }
-                return prevData;
-            });
-        } catch (e) {}
-    }, [selectedToken, fetchDexMarket]);
 
     useEffect(() => {
-        if (!selectedToken) return;
-        setChartData([]);
-        prevPriceRef.current = null;
-        fetchMarket();
-        fetchTradeData();
-        const iv1 = setInterval(fetchMarket, 5000);
-        const iv2 = setInterval(fetchTradeData, 10000);
-        return () => { clearInterval(iv1); clearInterval(iv2); };
-    }, [selectedToken, fetchMarket, fetchTradeData]);
+        if (selectedToken) {
+            fetchTokenData();
+            fetchBalances();
+            const itv = setInterval(() => { fetchTokenData(); fetchBalances(); }, 15000);
+            return () => clearInterval(itv);
+        }
+    }, [selectedToken, fetchTokenData, fetchBalances]);
 
-    // ── Order Execution ────────────────────────────────────────────────────
-    const executeTrade = async () => {
+    // Implementation for Execute Order...
+    const handleExecuteOrder = async () => {
+        if (!account) { connectWallet(); return; }
+        if (!orderAmount || parseFloat(orderAmount) <= 0) { setOrderError('Invalid amount'); return; }
+        
+        setOrderStatus('loading');
         setOrderError('');
 
-        if (!account) { connectWallet(); return; }
-        if (!selectedToken?.contract_address) { setOrderError('No token selected.'); return; }
-        if (!orderAmount || isNaN(orderAmount) || Number(orderAmount) <= 0) {
-            setOrderError('Enter a valid amount greater than 0.');
-            return;
-        }
-
-        setOrderStatus('loading');
         try {
-            // Resolve signer
-            let activeSigner = signer;
-            if (!activeSigner) {
-                if (typeof window !== 'undefined' && window.ethereum) {
-                    const { BrowserProvider } = await import('ethers');
-                    activeSigner = await new BrowserProvider(window.ethereum).getSigner();
-                } else {
-                    throw new Error('Wallet not fully connected. Please reconnect.');
-                }
-            }
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const activeSigner = await provider.getSigner();
 
-            const tokenAddr = selectedToken.contract_address;
-            const isDex     = market?.isDex || selectedToken?.launch_type === 'FAIR_LAUNCH' || market?.migrated;
-
-            // ══════════════════════════════════════════════════
-            //  DEX PATH — PancakeSwap Router swap
-            // ══════════════════════════════════════════════════
-            if (isDex) {
-                const router = new Contract(PANCAKE_ROUTER_ADDR, PANCAKE_ROUTER_ABI, activeSigner);
-                const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 min
-                let tx;
-
+            if (selectedToken.launch_type === 'MEME') {
+                const curveContract = new ethers.Contract(BONDING_CURVE_ADDRESS, BONDING_CURVE_ABI, activeSigner);
                 if (orderSide === 'buy') {
-                    const bnbIn  = ethers.parseEther(Number(orderAmount).toFixed(18));
-                    const path   = [WBNB_ADDR, tokenAddr];
-                    // Get expected output and set 1% slippage minimum
-                    let amountOutMin = 0n;
-                    try {
-                        const amounts = await router.getAmountsOut(bnbIn, path);
-                        amountOutMin  = amounts[1] * 99n / 100n; // 1% slippage
-                    } catch (_) {}
-
-                    tx = await router.swapExactETHForTokensSupportingFeeOnTransferTokens(
-                        amountOutMin, path, account, deadline,
-                        { value: bnbIn, gasLimit: 300000 }
-                    );
+                    const tx = await curveContract.buy(selectedToken.contract_address, { value: ethers.parseEther(orderAmount), gasLimit: 500000 });
+                    await tx.wait();
                 } else {
-                    // SELL: approve router first
-                    const tokenAmt = ethers.parseUnits(Number(orderAmount).toFixed(18), 18);
-                    const path     = [tokenAddr, WBNB_ADDR];
-                    const tokenContract = new Contract(tokenAddr, TOKEN_TEMPLATE_ABI, activeSigner);
-
-                    const allowance = await tokenContract.allowance(account, PANCAKE_ROUTER_ADDR);
-                    if (allowance < tokenAmt) {
-                        setOrderStatus('approving');
-                        const approveTx = await tokenContract.approve(PANCAKE_ROUTER_ADDR, ethers.MaxUint256);
-                        await approveTx.wait();
-                        setOrderStatus('loading');
-                    }
-
-                    let amountOutMin = 0n;
-                    try {
-                        const amounts = await router.getAmountsOut(tokenAmt, path);
-                        amountOutMin  = amounts[1] * 99n / 100n;
-                    } catch (_) {}
-
-                    tx = await router.swapExactTokensForETHSupportingFeeOnTransferTokens(
-                        tokenAmt, amountOutMin, path, account, deadline,
-                        { gasLimit: 300000 }
-                    );
-                }
-
-                console.log('[DEX Trade] TX sent:', tx.hash);
-                await tx.wait();
-
-            // ══════════════════════════════════════════════════
-            //  BONDING CURVE PATH
-            // ══════════════════════════════════════════════════
-            } else {
-                if (!BONDING_CURVE_ADDRESS) throw new Error('Bonding Curve not configured.');
-                const bc = new Contract(BONDING_CURVE_ADDRESS, BONDING_CURVE_ABI, activeSigner);
-                let tx;
-
-                if (orderSide === 'buy') {
-                    const val = ethers.parseEther(Number(orderAmount).toFixed(18));
-                    try { await bc.buy.estimateGas(tokenAddr, { value: val }); }
-                    catch (gasErr) { throw new Error('Transaction would fail: ' + (gasErr.reason || gasErr.message)); }
-                    tx = await bc.buy(tokenAddr, { value: val });
-                } else {
-                    const val = ethers.parseUnits(Number(orderAmount).toFixed(18), 18);
-                    const tokenContract = new Contract(tokenAddr, TOKEN_TEMPLATE_ABI, activeSigner);
+                    const tokenContract = new ethers.Contract(selectedToken.contract_address, TOKEN_TEMPLATE_ABI, activeSigner);
                     const allowance = await tokenContract.allowance(account, BONDING_CURVE_ADDRESS);
-                    if (allowance < val) {
-                        setOrderStatus('approving');
-                        const approveTx = await tokenContract.approve(BONDING_CURVE_ADDRESS, ethers.MaxUint256);
-                        await approveTx.wait();
-                        setOrderStatus('loading');
+                    const amountWei = ethers.parseEther(orderAmount);
+                    if (allowance < amountWei) {
+                        setOrderError('Approving Protocol Allowance...');
+                        const atx = await tokenContract.approve(BONDING_CURVE_ADDRESS, ethers.MaxUint256);
+                        await atx.wait();
                     }
-                    try { await bc.sell.estimateGas(tokenAddr, val); }
-                    catch (gasErr) { throw new Error('Sell would fail: ' + (gasErr.reason || gasErr.message)); }
-                    tx = await bc.sell(tokenAddr, val);
+                    const tx = await curveContract.sell(selectedToken.contract_address, amountWei, { gasLimit: 500000 });
+                    await tx.wait();
                 }
+            } else {
+                // Fair Launch / Pancake Trading
+                const router = new ethers.Contract(PANCAKE_ROUTER_ADDR, PANCAKE_ROUTER_ABI, activeSigner);
+                const path = orderSide === 'buy' ? [WBNB_ADDR, selectedToken.contract_address] : [selectedToken.contract_address, WBNB_ADDR];
+                const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
 
-                console.log('[BC Trade] TX sent:', tx.hash);
-                await tx.wait();
+                if (orderSide === 'buy') {
+                    const tx = await router.swapExactETHForTokensSupportingFeeOnTransferTokens(
+                        0, path, account, deadline, { value: ethers.parseEther(orderAmount), gasLimit: 500000 }
+                    );
+                    await tx.wait();
+                } else {
+                    const tokenContract = new ethers.Contract(selectedToken.contract_address, TOKEN_TEMPLATE_ABI, activeSigner);
+                    const amountWei = ethers.parseEther(orderAmount);
+                    const allowance = await tokenContract.allowance(account, PANCAKE_ROUTER_ADDR);
+                    if (allowance < amountWei) {
+                         const atx = await tokenContract.approve(PANCAKE_ROUTER_ADDR, ethers.MaxUint256);
+                         await atx.wait();
+                    }
+                    const tx = await router.swapExactTokensForETHSupportingFeeOnTransferTokens(
+                        amountWei, 0, path, account, deadline, { gasLimit: 500000 }
+                    );
+                    await tx.wait();
+                }
             }
-
             setOrderStatus('success');
             setOrderAmount('');
-            fetchMarket();
-            fetchTradeData();
+            fetchTokenData();
             fetchBalances();
             setTimeout(() => setOrderStatus('idle'), 3000);
-        } catch (err) {
-            console.error('[Trade] Error:', err);
-            const msg = err.reason || err.data?.message || err.message || 'Trade failed';
-            setOrderError(msg.length > 200 ? msg.slice(0, 200) + '...' : msg);
+        } catch (e) {
+            setOrderError(e.reason || e.message || 'Transaction Failed');
             setOrderStatus('idle');
         }
     };
 
-    // ── Computed Stats ─────────────────────────────────────────────────────
-    const pBnb = market?.priceBnb ?? 0;
-    const change24h = tradeStats?.price_change_24h ?? 0;
-    const vol24h = tradeStats?.volume_24h_bnb ?? 0;
-    
-    const userHoldingsBnbVal = userTokens * (pBnb || 0);
-
-    const filteredTokens = allTokens.filter(t => 
-        t.symbol?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-        t.name?.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const priceChange = selectedToken?.price_change || 0;
+    const filteredTokens = allTokens.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()) || t.symbol.toLowerCase().includes(searchQuery.toLowerCase()));
 
     return (
-        <main className="min-h-screen bg-[#0b0e11] text-gray-200 font-sans selection:bg-rose-500/30">
-            {/* The standard Navbar renders in light-mode visually above. Dark trade dash underneath. */}
-            <div className="absolute top-0 w-full z-[100]"><Navbar /></div>
+        <main className="min-h-screen bg-gray-50/70 selection:bg-rose-500 selection:text-white pb-32 p-pattern">
+            <Navbar />
             
-            <div className="pt-[80px] h-screen flex flex-col">
+            <div className="pt-24 px-4 md:px-8 max-w-[1700px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6 relative z-10">
                 
-                {/* ── TOP MARKETS BAR ── */}
-                <div className="h-[60px] border-b border-[#2b3139] bg-[#181a20] px-4 flex items-center shrink-0">
-                    
-                    {/* Token Selector */}
-                    <div className="relative z-50">
-                        <button onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                            className="flex items-center gap-3 hover:bg-[#2b3139] px-3 py-1.5 rounded-lg transition-colors">
-                            <div className="flex items-center gap-2">
-                                {selectedToken?.logo_url ? <img src={selectedToken.logo_url} className="w-6 h-6 rounded-full object-cover" /> : <div className="w-6 h-6 rounded-full bg-rose-500/20 text-rose-500 flex items-center justify-center text-[10px] font-bold">T</div>}
-                                <div>
-                                    <h2 className="text-lg font-bold text-white leading-none">{selectedToken?.symbol || '---'}/BNB</h2>
-                                    <p className="text-[10px] text-[#848e9c] leading-none truncate w-24 text-left cursor-pointer hover:text-white" onClick={(e) => { e.stopPropagation(); window.open(`https://bscscan.com/token/${selectedToken?.contract_address}`); }}>{selectedToken?.name}</p>
-                                </div>
-                            </div>
-                            <ChevronDown className={`w-4 h-4 text-[#848e9c] transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
-                        </button>
+                {/* ── LEFT: TOKEN LIST ─────────────────────────────────────────── */}
+                <div className="lg:col-span-3 space-y-4 h-[calc(100vh-140px)] flex flex-col">
+                    <div className="p-6 bg-white border border-gray-100 rounded-3xl shadow-xl flex flex-col flex-1 overflow-hidden">
+                        <div className="flex items-center justify-between mb-6">
+                            <h2 className="text-sm font-black text-gray-900 tracking-widest uppercase flex items-center gap-2">
+                                <Zap className="w-4 h-4 text-rose-500" /> Nexus Registry
+                            </h2>
+                            <RefreshCw className="w-4 h-4 text-gray-300 hover:text-rose-500 cursor-pointer transition-colors" onClick={() => window.location.reload()} />
+                        </div>
+                        
+                        <div className="relative mb-6">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                            <input 
+                                type="text" placeholder="Protocol Hash..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-12 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-[11px] font-bold text-gray-800 outline-none focus:border-rose-500/30 transition-all"
+                            />
+                        </div>
 
-                        <AnimatePresence>
-                            {isDropdownOpen && (
-                                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                                    className="absolute top-full left-0 mt-2 w-72 bg-[#1e2329] border border-[#2b3139] rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[400px]">
-                                    <div className="p-3 border-b border-[#2b3139]">
-                                        <div className="relative">
-                                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#848e9c]" />
-                                            <input type="text" placeholder="Search tokens..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                                                className="w-full bg-[#0b0e11] border border-[#2b3139] rounded-lg pl-9 pr-3 py-2 text-sm text-white focus:outline-none focus:border-rose-500/50" />
+                        <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                            {filteredTokens.map(t => (
+                                <button key={t.id} onClick={() => setSelectedToken(t)}
+                                    className={`w-full p-4 rounded-3xl border transition-all flex items-center justify-between group
+                                        ${selectedToken?.id === t.id ? 'bg-rose-500 border-rose-400 text-white shadow-xl shadow-rose-500/20 scale-[1.02]' : 'bg-white border-transparent hover:border-gray-100 hover:bg-gray-50 text-gray-400'}
+                                    `}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-10 h-10 rounded-2xl ${selectedToken?.id === t.id ? 'bg-white/20' : 'bg-rose-50'} flex items-center justify-center text-sm font-black`}>
+                                            {t.logo_url ? <img src={t.logo_url} className="w-full h-full object-cover rounded-2xl" /> : '🪙'}
+                                        </div>
+                                        <div className="text-left">
+                                            <p className={`text-xs font-black ${selectedToken?.id === t.id ? 'text-white' : 'text-gray-900'}`}>{t.symbol}</p>
+                                            <p className={`text-[10px] font-bold ${selectedToken?.id === t.id ? 'text-white/60' : 'text-gray-400'}`}>{t.name}</p>
                                         </div>
                                     </div>
-                                    <div className="overflow-y-auto flex-1 p-2">
-                                        {filteredTokens.map((t, i) => (
-                                            <button key={i} onClick={() => { setSelectedToken(t); setIsDropdownOpen(false); }}
-                                                className={`w-full flex items-center justify-between p-2 rounded-lg hover:bg-[#2b3139] transition-colors ${selectedToken?.contract_address === t.contract_address ? 'bg-[#2b3139]' : ''}`}>
-                                                <div className="flex items-center gap-2">
-                                                    {t.logo_url ? <img src={t.logo_url} className="w-5 h-5 rounded-full" /> : <div className="w-5 h-5 rounded-full bg-gray-700" />}
-                                                    <span className="font-bold text-sm text-white">{t.symbol}</span>
-                                                </div>
-                                            </button>
-                                        ))}
-                                        {filteredTokens.length === 0 && <p className="text-center text-xs text-[#848e9c] py-4">No tokens found</p>}
+                                    <div className="text-right">
+                                        <p className={`text-xs font-black ${selectedToken?.id === t.id ? 'text-white' : 'text-gray-900'}`}>{formatPrice(t.price_bnb)}</p>
+                                        <p className={`text-[10px] font-bold flex items-center justify-end gap-0.5 ${t.price_change < 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                            {t.price_change >= 0 ? <Up className="w-2 h-2" /> : <Down className="w-2 h-2" />}
+                                            {Math.abs(t.price_change || 0).toFixed(2)}%
+                                        </p>
                                     </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-
-                    <div className="h-8 w-px bg-[#2b3139] mx-4" />
-
-                    {/* Stats Ticker */}
-                    <div className="flex items-center gap-8 shrink-0 overflow-x-auto hide-scrollbar">
-                        <div>
-                            <p className={`text-lg font-bold font-mono ${market?.trend === 'up' ? 'text-[#0ecb81]' : market?.trend === 'down' ? 'text-[#f6465d]' : 'text-white'}`}>
-                                {formatPrice(pBnb)}
-                            </p>
-                            <p className="text-[10px] text-[#848e9c] font-medium tracking-wider">$ {formatPrice(pBnb * 580)} USD</p>
+                                </button>
+                            ))}
                         </div>
-                        <div>
-                            <p className="text-[10px] text-[#848e9c] font-medium tracking-wider mb-0.5">24h Change</p>
-                            <p className={`text-xs font-mono font-bold ${change24h < 0 ? 'text-[#f6465d]' : 'text-[#0ecb81]'}`}>
-                                {change24h >= 0 ? '+' : ''}{change24h.toFixed(2)}%
-                            </p>
-                        </div>
-                        <div>
-                            <p className="text-[10px] text-[#848e9c] font-medium tracking-wider mb-0.5">24h Vol(BNB)</p>
-                            <p className="text-xs font-mono font-bold text-white">{vol24h.toFixed(4)}</p>
-                        </div>
-                        <div>
-                            <p className="text-[10px] text-[#848e9c] font-medium tracking-wider mb-0.5">Curve Progress</p>
-                            <p className="text-xs font-mono font-bold text-white">{market?.collateralBnb.toFixed(2) || '0.00'} BNB</p>
-                        </div>
-                        {market?.migrated && (
-                            <div className="ml-4 px-2 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded text-[10px] font-bold text-[#0ecb81] tracking-widest uppercase">
-                                Migrated to DEX
-                            </div>
-                        )}
                     </div>
                 </div>
 
-                {/* ── MAIN WORKSPACE ── */}
-                <div className="flex-1 flex flex-col md:flex-row overflow-hidden bg-[#0b0e11]">
-                    
-                    {/* LEFT COLUMN: Chart & Positions */}
-                    <div className="flex-1 flex flex-col border-r border-[#2b3139] min-w-0">
-                        
-                        {/* CHART AREA */}
-                        <div className="h-[60%] border-b border-[#2b3139] flex flex-col p-4 bg-[#181a20]">
-                            {/* Chart Toolbar */}
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex gap-4">
-                                    <span className="text-xs font-bold text-white border-b-2 border-rose-500 pb-1 cursor-pointer">Time</span>
-                                    <span className="text-xs font-bold text-[#848e9c] hover:text-white cursor-pointer transition-colors pb-1">Depth</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                <span className="text-[10px] px-2 py-1 bg-[#2b3139] rounded text-white font-mono">5% Fee: 60% to LP · 40% to Treasury</span>
+                {/* ── CENTER: CHART ────────────────────────────────────────────── */}
+                <div className="lg:col-span-6 space-y-4 h-[calc(100vh-140px)] flex flex-col">
+                    {/* Token Header */}
+                    <div className="p-6 bg-white border border-gray-100 rounded-[2.5rem] shadow-xl flex items-center justify-between">
+                        <div className="flex items-center gap-6">
+                            <div className="w-16 h-16 rounded-[1.5rem] bg-gradient-to-br from-rose-500 to-orange-500 p-[1px]">
+                                <div className="w-full h-full bg-white rounded-[1.5rem] p-1">
+                                    <img src={selectedToken?.logo_url || '/logo.png'} className="w-full h-full object-cover rounded-[1.2rem]" />
                                 </div>
                             </div>
-                            
-                            {/* Chart Native */}
-                            <div className="flex-1 min-h-0 relative">
-                                {chartData.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                        <AreaChart data={chartData}>
-                                            <defs>
-                                                <linearGradient id="darkGrad" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.4} />
-                                                    <stop offset="95%" stopColor="#f43f5e" stopOpacity={0} />
-                                                </linearGradient>
-                                            </defs>
-                                            <CartesianGrid strokeDasharray="3 3" stroke="#2b3139" vertical={false} />
-                                            <XAxis dataKey="time" stroke="#848e9c" fontSize={11} tickLine={false} axisLine={false} minTickGap={30} />
-                                            <YAxis orientation="right" stroke="#848e9c" fontSize={11} tickLine={false} axisLine={false} domain={['dataMin * 0.95', 'dataMax * 1.05']} tickFormatter={(val) => val.toFixed(6)} />
-                                            <Tooltip content={<DarkPriceTooltip />} cursor={{ stroke: '#848e9c', strokeWidth: 1, strokeDasharray: '4 4' }} />
-                                            <Area isAnimationActive={false} type="stepAfter" dataKey="price" stroke="#f43f5e" strokeWidth={2} fill="url(#darkGrad)" dot={false} />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <div className="w-full h-full flex flex-col items-center justify-center text-[#848e9c]">
-                                        <Activity className="w-10 h-10 mb-3 opacity-20 animate-pulse" />
-                                        <p className="text-sm font-bold">Awaiting trades...</p>
-                                    </div>
-                                )}
+                            <div>
+                                <h1 className="text-2xl font-black text-gray-900 tracking-tighter flex items-center gap-3">
+                                    {selectedToken?.name} <span className="text-gray-300 font-bold uppercase text-[10px] tracking-widest px-2 py-1 bg-gray-50 rounded-lg">{selectedToken?.symbol}</span>
+                                </h1>
+                                <div className="flex items-center gap-6 mt-1 text-[11px] font-black uppercase tracking-widest text-gray-400">
+                                    <span className="flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-emerald-500" /> Price: <span className="text-gray-900">{formatPrice(selectedToken?.price_bnb)} BNB</span></span>
+                                    <span className="flex items-center gap-1.5"><Up className="w-3.5 h-3.5 text-rose-500" /> 24H: <span className={priceChange < 0 ? 'text-rose-500' : 'text-emerald-500'}>{priceChange >= 0 ? '+' : ''}{priceChange}%</span></span>
+                                </div>
                             </div>
                         </div>
-
-                        {/* BOTTOM AREA: Positions / History */}
-                        <div className="flex-1 flex flex-col bg-[#181a20]">
-                            <div className="flex gap-6 border-b border-[#2b3139] px-4">
-                                {['positions', 'orders', 'history'].map(tab => (
-                                    <button key={tab} onClick={() => setActiveBottomTab(tab)}
-                                        className={`py-3 text-xs font-bold uppercase tracking-wider transition-colors border-b-2 ${activeBottomTab === tab ? 'text-white border-rose-500' : 'text-[#848e9c] border-transparent hover:text-white'}`}>
-                                        {tab === 'positions' ? 'Positions' : tab === 'orders' ? 'Open Orders (0)' : 'Order History'}
-                                    </button>
-                                ))}
-                            </div>
-                            
-                            <div className="flex-1 min-h-0 overflow-y-auto p-4 custom-scrollbar">
-                                {activeBottomTab === 'positions' && (
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-xs text-left whitespace-nowrap">
-                                            <thead className="text-[#848e9c]">
-                                                <tr>
-                                                    <th className="font-normal pb-3 pr-4">Symbol</th>
-                                                    <th className="font-normal pb-3 pr-4">Size (Tokens)</th>
-                                                    <th className="font-normal pb-3 pr-4 text-right">Entry Price</th>
-                                                    <th className="font-normal pb-3 pr-4 text-right">Mark Price</th>
-                                                    <th className="font-normal pb-3 pr-4 text-right">Unrealized PnL (BNB)</th>
-                                                    <th className="font-normal pb-3 text-right">Action</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {userTokens > 0 ? (
-                                                    <tr className="border-b border-[#2b3139]/50 hover:bg-[#2b3139]/20 transition-colors">
-                                                        <td className="py-3 pr-4 font-bold text-white flex items-center gap-1.5">
-                                                            <div className="w-1 h-3 rounded-full bg-[#0ecb81]"></div>
-                                                            {selectedToken?.symbol} <span className="text-[#0ecb81] bg-[#0ecb81]/10 px-1 py-0.5 rounded text-[9px]">LONG</span>
-                                                        </td>
-                                                        <td className="py-3 pr-4 text-white font-mono">{formatNumber(userTokens, 2)}</td>
-                                                        <td className="py-3 pr-4 text-white font-mono text-right">-</td>
-                                                        <td className="py-3 pr-4 text-white font-mono text-right">{formatPrice(pBnb)}</td>
-                                                        <td className="py-3 pr-4 font-mono text-right font-bold text-[#f6465d] blur-[2px] hover:blur-none transition-all cursor-help" title="No Entry trace available on basic spot DB yet">—</td>
-                                                        <td className="py-3 text-right">
-                                                            <button onClick={() => { setOrderSide('sell'); setOrderAmount(userTokens); }} 
-                                                                className="text-[#848e9c] hover:text-[#f6465d] bg-[#f6465d]/10 hover:bg-[#f6465d]/20 px-2 py-1 rounded transition-colors border border-[#f6465d]/20">
-                                                                Close All
-                                                            </button>
-                                                        </td>
-                                                    </tr>
-                                                ) : (
-                                                    <tr><td colSpan={6} className="text-center py-8 text-[#848e9c]">No open positions.</td></tr>
-                                                )}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                )}
-
-                                {activeBottomTab === 'history' && (
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-xs text-left whitespace-nowrap">
-                                            <thead className="text-[#848e9c]">
-                                                <tr>
-                                                    <th className="font-normal pb-3 pr-4">Time</th>
-                                                    <th className="font-normal pb-3 pr-4">Direction</th>
-                                                    <th className="font-normal pb-3 pr-4 text-right">Price (BNB)</th>
-                                                    <th className="font-normal pb-3 pr-4 text-right">Amount (Tokens)</th>
-                                                    <th className="font-normal pb-3 text-right">Total (BNB)</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {trades.slice(0, 15).map((t, i) => (
-                                                    <tr key={i} className="hover:bg-[#2b3139]/30 transition-colors">
-                                                        <td className="py-2.5 pr-4 text-[#848e9c]">{new Date(t.timestamp).toLocaleTimeString()}</td>
-                                                        <td className="py-2.5 pr-4 font-bold">
-                                                            {t.trade_type === 'buy' ? <span className="text-[#0ecb81]">Long / Buy</span> : <span className="text-[#f6465d]">Short / Sell</span>}
-                                                        </td>
-                                                        <td className="py-2.5 pr-4 text-white font-mono text-right">{formatPrice(t.price_bnb)}</td>
-                                                        <td className="py-2.5 pr-4 text-white font-mono text-right">{formatNumber(t.amount_tokens, 2)}</td>
-                                                        <td className="py-2.5 text-white font-mono text-right">{formatPrice(t.amount_bnb)}</td>
-                                                    </tr>
-                                                ))}
-                                                {trades.length === 0 && <tr><td colSpan={5} className="text-center py-8 text-[#848e9c]">No trades yet.</td></tr>}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                )}
-                            </div>
+                        <div className="flex gap-4">
+                            <button className="px-5 py-2.5 bg-gray-50 hover:bg-rose-50 text-gray-400 hover:text-rose-500 rounded-xl transition-all"><Upload className="w-4 h-4" /></button>
+                            <button className="px-5 py-2.5 bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-500/20 hover:scale-105 transition-all"><Zap className="w-4 h-4" /></button>
                         </div>
                     </div>
 
-                    {/* RIGHT COLUMN: Orderbook & Order Entry */}
-                    <div className="w-full md:w-[320px] lg:w-[350px] flex flex-col shrink-0">
-                        
-                        {/* ORDER BOOK (Simplified Trade Tape) */}
-                        <div className="flex-1 min-h-0 border-b border-[#2b3139] flex flex-col bg-[#0b0e11]">
-                            <div className="flex justify-between px-4 py-2 border-b border-[#2b3139]">
-                                <span className="text-xs font-bold text-[#848e9c]">Order Book</span>
-                            </div>
-                            <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
-                                <div className="grid grid-cols-3 gap-2 px-2 pb-2 text-[10px] text-[#848e9c] text-right">
-                                    <span className="text-left">Price(BNB)</span> <span>Size(Token)</span> <span>Time</span>
-                                </div>
-                                {trades.slice(0, 20).map((t, i) => (
-                                    <div key={i} className="grid grid-cols-3 gap-2 px-2 py-0.5 text-xs text-right font-mono hover:bg-[#2b3139]/40 cursor-pointer">
-                                        <span className={`text-left ${t.trade_type === 'buy' ? 'text-[#0ecb81]' : 'text-[#f6465d]'}`}>{formatPrice(t.price_bnb)}</span>
-                                        <span className="text-white">{formatNumber(t.amount_tokens, 0)}</span>
-                                        <span className="text-[#848e9c]">{new Date(t.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}</span>
-                                    </div>
-                                ))}
-                            </div>
+                    {/* Chart Container */}
+                    <div className="p-8 bg-white border border-gray-100 rounded-[3rem] shadow-2xl flex-1 flex flex-col overflow-hidden relative">
+                        <div className="absolute top-8 left-8 z-20 flex items-center gap-4 text-[10px] font-black uppercase tracking-widest text-gray-300">
+                             <span className="px-3 py-1.5 bg-rose-500 text-white rounded-lg shadow-lg">LIVE NEXUS</span>
+                             <span>Market Depth (BNB)</span>
                         </div>
-
-                        {/* ORDER ENTRY PANEL */}
-                        <div className="h-auto p-4 bg-[#181a20]">
-                            {/* Mode Header */}
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex gap-4">
-                                    <button className="text-sm font-bold text-white border-b-2 border-rose-500 pb-1">Market</button>
-                                    <button className="text-sm font-bold text-[#848e9c] hover:text-white pb-1">Limit</button>
-                                </div>
-                                {market?.isDex ? (
-                                    <div className="flex items-center gap-1 px-2 py-1 bg-amber-500/10 border border-amber-500/30 rounded-full">
-                                        <Zap className="w-3 h-3 text-amber-400" />
-                                        <span className="text-[9px] font-black text-amber-400 uppercase tracking-widest">DEX Route</span>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-1 px-2 py-1 bg-rose-500/10 border border-rose-500/30 rounded-full">
-                                        <Activity className="w-3 h-3 text-rose-400" />
-                                        <span className="text-[9px] font-black text-rose-400 uppercase tracking-widest">Bonding Curve</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="flex items-center gap-1 bg-[#0b0e11] p-1 rounded-lg mb-4">
-                                <button onClick={() => setOrderSide('buy')} className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${orderSide === 'buy' ? 'bg-[#0ecb81] text-white shadow-[#0ecb81]/20 shadow-lg' : 'text-[#848e9c] hover:text-white'}`}>Buy / Long</button>
-                                <button onClick={() => setOrderSide('sell')} className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${orderSide === 'sell' ? 'bg-[#f6465d] text-white shadow-[#f6465d]/20 shadow-lg' : 'text-[#848e9c] hover:text-white'}`}>Sell / Short</button>
-                            </div>
-
-                            {market?.isDex && (
-                                <div className="p-2.5 mb-4 rounded-lg bg-amber-500/5 border border-amber-500/15 text-[10px] text-amber-400/80 flex items-center gap-2">
-                                    <Zap className="w-3 h-3 shrink-0" />
-                                    <span>Routed via PancakeSwap V2 · 1% slippage tolerance · Instant on-chain execution</span>
-                                </div>
-                            )}
-
-                            <div className="flex justify-between text-xs text-[#848e9c] mb-2 px-1">
-                                <span>Available</span>
-                                <span className="text-white font-mono">{orderSide === 'buy' ? `${formatNumber(userBnb, 4)} BNB` : `${formatNumber(userTokens, 2)} ${selectedToken?.symbol || 'Token'}`}</span>
-                            </div>
-
-                            <div className="relative flex items-center bg-[#2b3139] border border-[#2b3139] focus-within:border-[#848e9c] rounded-lg transition-colors overflow-hidden">
-                                <input type="number" step="any" placeholder={orderSide === 'buy' ? 'Enter BNB amount' : 'Enter token amount'}
-                                    value={orderAmount} onChange={(e) => setOrderAmount(e.target.value)}
-                                    className="w-full bg-transparent text-white px-3 py-3 font-mono text-sm focus:outline-none" />
-                                <div className="flex items-center gap-2 pr-3 shrink-0">
-                                    <button onClick={() => setOrderAmount(orderSide === 'buy' ? (userBnb * 0.99).toFixed(6) : userTokens.toFixed(2))} className="text-[10px] uppercase font-bold text-rose-500 hover:text-rose-400">Max</button>
-                                    <span className="text-xs text-[#848e9c] font-bold border-l border-[#848e9c]/30 pl-2">{orderSide === 'buy' ? 'BNB' : selectedToken?.symbol}</span>
-                                </div>
-                            </div>
-                            
-                            <div className="flex justify-between text-xs mt-3 px-1">
-                                <span className="text-[#848e9c]">Expected Receive</span>
-                                <span className="text-white font-mono">
-                                    {pBnb > 0 ? orderSide === 'buy' ? `${formatNumber(orderAmount / pBnb)} ${selectedToken?.symbol || ''}` : `${formatNumber(orderAmount * pBnb)} BNB` : '—'}
-                                </span>
-                            </div>
-
-                            {orderError && <div className="mt-3 text-xs text-[#f6465d] p-2 bg-[#f6465d]/10 rounded border border-[#f6465d]/20">{orderError}</div>}
-
-                            <button onClick={executeTrade} disabled={orderStatus === 'loading' || orderStatus === 'approving' || !account}
-                                className={`w-full mt-5 py-3.5 rounded-lg text-sm font-bold text-white shadow-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed
-                                ${!account ? 'bg-[#2b3139] text-[#848e9c]' : orderSide === 'buy' ? 'bg-[#0ecb81] hover:bg-[#0b9c64] shadow-[#0ecb81]/20' : 'bg-[#f6465d] hover:bg-[#c9364b] shadow-[#f6465d]/20'}`}>
-                                {!account ? 'Connect Wallet' : orderStatus === 'loading' ? 'Executing...' : orderStatus === 'approving' ? 'Approving Token...' : orderStatus === 'success' ? '✓ Order Filled!' : orderSide === 'buy' ? 'Buy / Long' : 'Sell / Short'}
-                            </button>
-
-                            <div className="flex items-center justify-between mt-3">
-                                <p className="text-[10px] text-[#848e9c]">
-                                    {market?.isDex ? 'Via PancakeSwap Router · ~1% slippage' : '5% fee · 60% LP · 40% Treasury'}
-                                </p>
-                                <a href={`https://pancakeswap.finance/swap?outputCurrency=${selectedToken?.contract_address}`}
-                                    target="_blank" rel="noopener noreferrer"
-                                    className="text-[10px] text-[#848e9c] hover:text-amber-400 flex items-center gap-1 transition-colors">
-                                    <ExternalLink className="w-2.5 h-2.5" /> PancakeSwap
-                                </a>
-                            </div>
+                        <div className="flex-1 pt-12">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={chartData}>
+                                    <defs>
+                                        <linearGradient id="colorPrice" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.15}/>
+                                            <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="time" hide />
+                                    <YAxis domain={['auto', 'auto']} vertical={false} orientation="right" tick={{fontSize: 9, fontWeight: 900, fill: '#cbd5e1'}} axisLine={false} tickLine={false} />
+                                    <Tooltip content={<LightPriceTooltip />} />
+                                    <Area type="monotone" dataKey="price" stroke="#f43f5e" strokeWidth={3} fillOpacity={1} fill="url(#colorPrice)" animationDuration={1000} />
+                                </AreaChart>
+                            </ResponsiveContainer>
                         </div>
+                    </div>
+
+                    {/* Bottom Tabs */}
+                    <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-xl overflow-hidden flex flex-col h-[280px]">
+                         <div className="flex border-b border-gray-50">
+                             {['history', 'positions', 'about'].map(t => (
+                                 <button key={t} onClick={() => setActiveBottomTab(t)}
+                                    className={`px-10 py-5 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative
+                                        ${activeBottomTab === t ? 'text-gray-900 bg-gray-50' : 'text-gray-300 hover:text-gray-500 hover:bg-gray-50/50'}
+                                    `}>
+                                    {activeBottomTab === t && <div className="absolute bottom-0 left-0 right-0 h-1 bg-rose-500" />}
+                                    {t}
+                                 </button>
+                             ))}
+                         </div>
+                         <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                             {activeBottomTab === 'history' && (
+                                 <div className="space-y-4">
+                                     <table className="w-full text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                                         <thead><tr className="border-b border-gray-50 text-left pb-4"><th className="py-4 px-6">Type</th><th className="py-4">Amount</th><th className="py-4 text-right pr-6">Time</th></tr></thead>
+                                         <tbody className="divide-y divide-gray-50">
+                                             {trades.map((t,i) => (
+                                                 <tr key={i} className="hover:bg-gray-50 transition-colors">
+                                                     <td className={`py-4 px-6 font-black ${t.type === 'buy' ? 'text-emerald-500' : 'text-rose-500'}`}>{t.type}</td>
+                                                     <td className="text-gray-900">{formatNumber(t.amount, 2)} {selectedToken?.symbol}</td>
+                                                     <td className="text-right pr-6 text-gray-300 font-medium">{timeAgo(t.created_at || new Date())}</td>
+                                                 </tr>
+                                             ))}
+                                         </tbody>
+                                     </table>
+                                 </div>
+                             )}
+                             {activeBottomTab === 'about' && (
+                                 <div className="p-8 text-sm text-gray-500 leading-relaxed font-medium">
+                                     {selectedToken?.description || 'Institutional access token for the Nexus protocol.'}
+                                 </div>
+                             )}
+                         </div>
                     </div>
                 </div>
+
+                {/* ── RIGHT: ORDER PANEL ────────────────────────────────────────── */}
+                <div className="lg:col-span-3 h-[calc(100vh-140px)] flex flex-col gap-6">
+                    <div className="bg-white border border-gray-100 rounded-[3rem] shadow-2xl p-8 flex flex-col flex-1 overflow-hidden relative">
+                         <div className="absolute top-0 right-[-10%] w-32 h-32 bg-rose-500/5 rounded-full blur-3xl pointer-events-none" />
+                         
+                         <h2 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-10 flex items-center gap-3">
+                             <ArrowRightLeft className="w-5 h-5 text-rose-500" /> Nexus Terminal
+                         </h2>
+
+                         <div className="bg-gray-50 p-2 rounded-[2rem] flex mb-10 shadow-inner">
+                             <button onClick={() => setOrderSide('buy')} className={`flex-1 py-4 rounded-[1.75rem] text-[11px] font-black uppercase tracking-widest transition-all ${orderSide === 'buy' ? 'bg-white text-emerald-500 shadow-xl' : 'text-gray-300'}`}>Anchor (Buy)</button>
+                             <button onClick={() => setOrderSide('sell')} className={`flex-1 py-4 rounded-[1.75rem] text-[11px] font-black uppercase tracking-widest transition-all ${orderSide === 'sell' ? 'bg-white text-rose-500 shadow-xl' : 'text-gray-300'}`}>Exit (Sell)</button>
+                         </div>
+
+                         <div className="space-y-6 flex-1">
+                             <div className="space-y-3">
+                                 <div className="flex justify-between items-center px-4">
+                                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Amount to {orderSide}</label>
+                                     <span className="text-[10px] font-black text-gray-300 cursor-pointer hover:text-rose-500" onClick={() => setOrderAmount(orderSide === 'buy' ? userBnb : userTokens)}>MAX DEPTH</span>
+                                 </div>
+                                 <div className="relative group">
+                                     <input 
+                                         type="number" value={orderAmount} onChange={(e) => setOrderAmount(e.target.value)}
+                                         placeholder="0.00"
+                                         className="w-full bg-gray-50 border border-gray-100 rounded-3xl p-8 font-black text-3xl outline-none focus:bg-white focus:border-rose-500/30 transition-all text-gray-900 shadow-sm"
+                                     />
+                                     <span className="absolute right-8 top-1/2 -translate-y-1/2 text-xs font-black text-gray-300 uppercase tracking-widest group-focus-within:text-rose-500">{orderSide === 'buy' ? 'BNB' : selectedToken?.symbol}</span>
+                                 </div>
+                             </div>
+
+                             <div className="p-8 rounded-[2rem] bg-gray-50/50 border border-gray-100 space-y-4 shadow-inner">
+                                 <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                     <span className="flex items-center gap-1.5"><Wallet className="w-3.5 h-3.5 text-emerald-500" /> Nexus Weight</span>
+                                     <span className="text-gray-900">{orderSide === 'buy' ? `${formatNumber(userBnb, 4)} BNB` : `${formatNumber(userTokens, 2)} ${selectedToken?.symbol}`}</span>
+                                 </div>
+                                 <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                     <span className="flex items-center gap-1.5"><History className="w-3.5 h-3.5 text-rose-500" /> Network Slippage</span>
+                                     <span className="text-gray-900">0.5% (OPTIMAL)</span>
+                                 </div>
+                             </div>
+                         </div>
+
+                         <div className="pt-8">
+                             <AnimatePresence>
+                                 {orderError && (
+                                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                                        className="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-start gap-3">
+                                         <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+                                         <p className="text-[10px] font-bold text-rose-500 uppercase tracking-wide leading-relaxed">{orderError}</p>
+                                     </motion.div>
+                                 )}
+                                 {orderStatus === 'success' && (
+                                     <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+                                        className="mb-6 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center gap-3">
+                                         <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                                         <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Nexus Synchronized!</p>
+                                     </motion.div>
+                                 )}
+                             </AnimatePresence>
+                             
+                             <button 
+                                 onClick={handleExecuteOrder} disabled={orderStatus === 'loading'}
+                                 className={`w-full py-8 rounded-[2.5rem] font-black text-2xl tracking-tighter shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-4 relative overflow-hidden group
+                                    ${orderSide === 'buy' ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-rose-500 text-white shadow-rose-500/20'}
+                                    ${orderStatus === 'loading' ? 'opacity-40 animate-pulse' : 'hover:scale-[1.02]'}
+                                 `}>
+                                 <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20 transform translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                                 {orderStatus === 'loading' ? <RefreshCw className="w-8 h-8 animate-spin" /> : (orderSide === 'buy' ? <Up className="w-8 h-8" /> : <Down className="w-8 h-8" />)}
+                                 {orderSide === 'buy' ? 'Anchor' : 'Exit'}
+                             </button>
+                         </div>
+                    </div>
+                </div>
+
             </div>
-            {/* Custom inject CSS for scrollbar inside dark theme */}
+
             <style jsx global>{`
-                .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+                .p-pattern { background-image: radial-gradient(circle at 2px 2px, rgba(0,0,0,0.02) 1px, transparent 0); background-size: 40px 40px; }
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: #2b3139; border-radius: 4px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #848e9c; }
-                .hide-scrollbar::-webkit-scrollbar { display: none; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
             `}</style>
         </main>
-    ); 
+    );
 }

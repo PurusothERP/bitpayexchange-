@@ -79,6 +79,20 @@ function shortAddr(a) {
     return `${a.slice(0, 6)}…${a.slice(-4)}`;
 }
 
+function formatCompact(n) {
+    if (n === null || n === undefined || isNaN(n)) return '0';
+    if (n < 1e3) return n.toString();
+    if (n < 1e6) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+    if (n < 1e9) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (n < 1e12) return (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+    if (n < 1e15) return (n / 1e12).toFixed(1).replace(/\.0$/, '') + 'T';
+    if (n < 1e18) return (n / 1e15).toFixed(1).replace(/\.0$/, '') + 'QD';
+    if (n < 1e21) return (n / 1e18).toFixed(1).replace(/\.0$/, '') + 'QN';
+    if (n < 1e24) return (n / 1e21).toFixed(1).replace(/\.0$/, '') + 'SX';
+    if (n < 1e27) return (n / 1e24).toFixed(1).replace(/\.0$/, '') + 'SP';
+    return (n / 1e28).toFixed(1).replace(/\.0$/, '') + 'OC'; // For Octillions and beyond
+}
+
 // ── Components ───────────────────────────────────────────────────────────────
 
 function GlassCard({ children, className = "" }) {
@@ -684,7 +698,7 @@ export default function AdminPage() {
                     <GlassCard className="p-8">
                          <div className="bg-gray-900 text-white p-8 rounded-[2rem] shadow-xl mb-6">
                             <div className="flex items-center gap-3 mb-4"><PieIcon className="w-5 h-5 text-rose-500" /><p className="text-[10px] font-black uppercase tracking-[0.2em]">Total Market Supply</p></div>
-                             <p className="text-3xl font-black tracking-tighter">{(econ?.totalSupply || 0).toLocaleString()}</p>
+                             <p className="text-3xl font-black tracking-tighter">{formatCompact(econ?.totalSupply || 0)}</p>
                              <p className="text-[10px] opacity-60 mt-1 uppercase font-bold tracking-widest">Assets deployed on-chain</p>
                          </div>
                         <h3 className="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-6">Revenue Mix</h3>

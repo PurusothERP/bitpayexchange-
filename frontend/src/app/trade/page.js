@@ -235,12 +235,12 @@ export default function TradePage() {
                                             {t.logo_url ? <img src={t.logo_url} className="w-full h-full object-cover rounded-2xl" /> : '🪙'}
                                         </div>
                                         <div className="text-left">
-                                            <p className={`text-xs font-black ${selectedToken?.id === t.id ? 'text-white' : 'text-gray-900'}`}>{t.symbol}</p>
+                                            <p className={`text-xs font-black ${selectedToken?.id === t.id ? 'text-white' : 'text-gray-900'}`}>{t.symbol} / BNB</p>
                                             <p className={`text-[10px] font-bold ${selectedToken?.id === t.id ? 'text-white/60' : 'text-gray-400'}`}>{t.name}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className={`text-xs font-black ${selectedToken?.id === t.id ? 'text-white' : 'text-gray-900'}`}>{formatPrice(t.price_bnb)}</p>
+                                        <p className={`text-xs font-black ${selectedToken?.id === t.id ? 'text-white' : 'text-gray-900'}`}>{formatPrice(t.price_bnb)} <span className="text-[9px] opacity-60">BNB</span></p>
                                         <p className={`text-[10px] font-bold flex items-center justify-end gap-0.5 ${t.price_change < 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
                                             {t.price_change >= 0 ? <Up className="w-2 h-2" /> : <Down className="w-2 h-2" />}
                                             {Math.abs(t.price_change || 0).toFixed(2)}%
@@ -264,7 +264,8 @@ export default function TradePage() {
                             </div>
                             <div>
                                 <h1 className="text-2xl font-black text-gray-900 tracking-tighter flex items-center gap-3">
-                                    {selectedToken?.name} <span className="text-gray-300 font-bold uppercase text-[10px] tracking-widest px-2 py-1 bg-gray-50 rounded-lg">{selectedToken?.symbol}</span>
+                                    {selectedToken?.symbol} <span className="text-gray-300 font-bold uppercase text-xl">/</span> <span className="text-gray-400 font-black text-xl">BNB</span>
+                                    <span className="text-gray-300 font-bold uppercase text-[10px] tracking-widest px-2 py-1 bg-gray-50 rounded-lg">{selectedToken?.name}</span>
                                 </h1>
                                 <div className="flex items-center gap-6 mt-1 text-[11px] font-black uppercase tracking-widest text-gray-400">
                                     <span className="flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-emerald-500" /> Price: <span className="text-gray-900">{formatPrice(selectedToken?.price_bnb)} BNB</span></span>

@@ -12,7 +12,7 @@ import {
     ChevronDown, TrendingUp, TrendingDown, Clock, Activity, AlertTriangle, CheckCircle2,
     RefreshCw, Search, ArrowUpRight, ArrowDownRight, ExternalLink, Zap,
     Wallet, TrendingUp as Up, TrendingDown as Down, BarChart3, History, Layers, Info,
-    ArrowLeftRight, ArrowRightLeft
+    ArrowLeftRight, ArrowRightLeft, Upload, ArrowRightLeft as Swap
 } from 'lucide-react';
 import { ethers, Contract } from 'ethers';
 import { BONDING_CURVE_ABI, TOKEN_TEMPLATE_ABI } from '@/lib/abis';

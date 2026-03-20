@@ -562,9 +562,9 @@ export default function Home() {
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {[
-              { icon: '🚀', label: 'Deployment Fee', value: '0.003 BNB', sub: 'Flat fee — no hidden charges', color: 'border-rose-500/30 bg-rose-500/5' },
-              { icon: '📈', label: 'Trading Fee', value: '1%', sub: 'Per buy/sell transaction', color: 'border-amber-500/30 bg-amber-500/5' },
-              { icon: '🛡️', label: 'Token Upgrade', value: '0.01 BNB', sub: 'Verified status boost', color: 'border-indigo-500/30 bg-indigo-500/5' },
+              { icon: '🚀', label: 'Deployment Fee', value: '0.005 BNB', sub: 'Fixed Deployment Logic', color: 'border-rose-500/30 bg-rose-500/5' },
+              { icon: '🏛️', label: 'Protocol Fee', value: '0.002 BNB', sub: 'System Governance', color: 'border-amber-500/30 bg-amber-500/5' },
+              { icon: '💧', label: 'Liquidity Protocol', value: '0.01 BNB', sub: 'Mandatory Initial Buy', color: 'border-indigo-500/30 bg-indigo-500/5' },
               { icon: '🤖', label: 'Anti-Bot Shield', value: 'FREE', sub: 'Sniper protection active', color: 'border-emerald-500/30 bg-emerald-500/5' },
               { icon: '🧠', label: 'AI Security', value: 'FREE', sub: 'ML-powered audit log', color: 'border-purple-500/30 bg-purple-500/5' },
             ].map((f, i) => (
@@ -574,7 +574,7 @@ export default function Home() {
                 className={`glass-card border-2 ${f.color} text-center py-8`}
               >
                 <div className="text-4xl mb-3">{f.icon}</div>
-                <div className="text-3xl font-black text-gray-900 mb-1">{f.value}</div>
+                <div className="text-2xl font-black text-gray-900 mb-1">{f.value}</div>
                 <div className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-widest">{f.label}</div>
                 <div className="text-xs text-gray-500">{f.sub}</div>
               </motion.div>

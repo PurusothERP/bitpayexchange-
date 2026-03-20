@@ -361,42 +361,6 @@ export default function Home() {
             </div>
           </motion.div>
 
-          {/* Live terminal-style deploy preview */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, duration: 0.7 }}
-            className="mt-16 max-w-2xl mx-auto bg-[#0d0d0d] rounded-2xl border border-white/10 overflow-hidden shadow-2xl text-left"
-          >
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/10 bg-[#1a1a1a]">
-              <div className="w-3 h-3 rounded-full bg-rose-500" />
-              <div className="w-3 h-3 rounded-full bg-amber-400" />
-              <div className="w-3 h-3 rounded-full bg-emerald-400" />
-              <span className="ml-2 text-gray-500 text-xs font-mono">b20lab — token-deploy</span>
-            </div>
-            <div className="px-5 py-4 font-mono text-xs space-y-1.5">
-              {[
-                { text: '$ b20lab create --name "MOONPUP" --symbol MPUP', color: 'text-white' },
-                { text: '✔ Compiling BEP-20 smart contract...', color: 'text-amber-400' },
-                { text: '✔ Deploying to BSC Mainnet...', color: 'text-amber-400' },
-                { text: '✔ Registering with BondingCurve...', color: 'text-amber-400' },
-                { text: '✔ Configuring liquidity parameters...', color: 'text-amber-400' },
-                { text: '✔ Token live at 0xA4f2...7777', color: 'text-emerald-400' },
-                { text: '🚀 MOONPUP is now trading on B20-LAB!', color: 'text-rose-400' },
-              ].map((line, i) => (
-                <motion.p
-                  key={i} className={line.color}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.8 + i * 0.3 }}
-                >
-                  {line.text}
-                </motion.p>
-              ))}
-              <motion.span
-                animate={{ opacity: [1, 0, 1] }} transition={{ repeat: Infinity, duration: 0.8 }}
-                className="inline-block w-2 h-3.5 bg-white mt-1"
-              />
-            </div>
-          </motion.div>
         </div>
       </section>
 

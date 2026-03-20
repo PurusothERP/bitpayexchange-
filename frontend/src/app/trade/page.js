@@ -11,7 +11,8 @@ import {
 import {
     ChevronDown, TrendingUp, TrendingDown, Clock, Activity, AlertTriangle, CheckCircle2,
     RefreshCw, Search, ArrowUpRight, ArrowDownRight, ExternalLink, Zap,
-    Wallet, TrendingUp as Up, TrendingDown as Down, BarChart3, History, Layers, Info
+    Wallet, TrendingUp as Up, TrendingDown as Down, BarChart3, History, Layers, Info,
+    ArrowLeftRight, ArrowRightLeft
 } from 'lucide-react';
 import { ethers, Contract } from 'ethers';
 import { BONDING_CURVE_ABI, TOKEN_TEMPLATE_ABI } from '@/lib/abis';
@@ -345,7 +346,7 @@ export default function TradePage() {
                          <div className="absolute top-0 right-[-10%] w-32 h-32 bg-rose-500/5 rounded-full blur-3xl pointer-events-none" />
                          
                          <h2 className="text-sm font-black text-gray-900 uppercase tracking-widest mb-10 flex items-center gap-3">
-                             <ArrowRightLeft className="w-5 h-5 text-rose-500" /> Nexus Terminal
+                             <ArrowLeftRight className="w-5 h-5 text-rose-500" /> Nexus Terminal
                          </h2>
 
                          <div className="bg-gray-50 p-2 rounded-[2rem] flex mb-10 shadow-inner">

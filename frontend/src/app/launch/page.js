@@ -165,11 +165,10 @@ export default function Launchpad() {
                 <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[120px]" />
             </div>
 
-            <div className="pt-24 px-4 md:px-8 max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 relative z-10">
+            <div className="pt-24 px-4 md:px-8 max-w-[1400px] mx-auto space-y-20 relative z-10">
                 
-                {/* ── LEFT: MAIN NEXUS REGISTRY ─────────────────────────────────── */}
-                <div className="lg:col-span-8 space-y-12">
-                    {/* Dashboard Header */}
+                {/* ── TOP SECTION: HEADER + METRICS ────────────────────────────── */}
+                <div className="space-y-12">
                     <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
                         <div>
                             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3 mb-4">
@@ -218,40 +217,40 @@ export default function Launchpad() {
                             </div>
                         ))}
                     </motion.div>
-
-                    {/* Token Registry */}
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between px-10 mb-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
-                            <span className="flex-1">Asset Identity</span>
-                            <span className="hidden lg:block w-[150px] text-center">Bonding State</span>
-                            <span className="w-[150px] text-right">Unit Price</span>
-                            <span className="w-[60px]"></span>
-                        </div>
-
-                        {loading ? (
-                            <div className="flex flex-col items-center justify-center py-40 gap-4">
-                                <div className="w-16 h-16 border-4 border-rose-500/10 border-t-rose-500 rounded-full animate-spin" />
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest animate-pulse">Syncing Nexus Registry...</p>
-                            </div>
-                        ) : filtered.length > 0 ? (
-                            filtered.map((t, i) => <TokenRow key={t.id} token={t} index={i} trend={i % 3 === 0} launchType={view} />)
-                        ) : (
-                            <div className="p-32 bg-white border border-gray-100 rounded-[3rem] text-center shadow-inner">
-                                <Search className="w-12 h-12 text-gray-200 mx-auto mb-6" />
-                                <h3 className="text-2xl font-black text-gray-900 tracking-tight">System Empty</h3>
-                                <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mt-2 px-10">No protocols found matching current Nexus filters.</p>
-                            </div>
-                        )}
-                    </div>
                 </div>
 
-                {/* ── RIGHT: DISCOVERY SIDEBAR ────────────────────────────────── */}
-                <div className="lg:col-span-4 space-y-8">
+                {/* ── MIDDLE SECTION: TOKEN REGISTRY ───────────────────────────── */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between px-10 mb-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                        <span className="flex-1">Asset Identity</span>
+                        <span className="hidden lg:block w-[150px] text-center">Bonding State</span>
+                        <span className="w-[150px] text-right">Unit Price</span>
+                        <span className="w-[60px]"></span>
+                    </div>
+
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center py-40 gap-4">
+                            <div className="w-16 h-16 border-4 border-rose-500/10 border-t-rose-500 rounded-full animate-spin" />
+                            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest animate-pulse">Syncing Nexus Registry...</p>
+                        </div>
+                    ) : filtered.length > 0 ? (
+                        filtered.map((t, i) => <TokenRow key={t.id} token={t} index={i} trend={i % 3 === 0} launchType={view} />)
+                    ) : (
+                        <div className="p-32 bg-white border border-gray-100 rounded-[3rem] text-center shadow-inner">
+                            <Search className="w-12 h-12 text-gray-200 mx-auto mb-6" />
+                            <h3 className="text-2xl font-black text-gray-900 tracking-tight">System Empty</h3>
+                            <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mt-2 px-10">No protocols found matching current Nexus filters.</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* ── BOTTOM SECTION: DISCOVERY GRID ──────────────────────────── */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-20">
                     {/* Trending Section */}
-                    <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-xl p-8 relative overflow-hidden group">
+                    <div className="bg-white border border-gray-50 rounded-[2.5rem] shadow-xl p-8 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-3xl group-hover:bg-rose-500/10 transition-colors" />
                         <h2 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-8 flex items-center gap-3">
-                            <Flame className="w-5 h-5 text-rose-500" /> Trending Protocols
+                            <Flame className="w-5 h-5 text-rose-500" /> Trending
                         </h2>
                         <div className="space-y-4">
                             {tokens.filter(t => t.price_change > 0).slice(0, 3).map((t, i) => (
@@ -261,10 +260,10 @@ export default function Launchpad() {
                     </div>
 
                     {/* Recently Launched */}
-                    <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-xl p-8 relative overflow-hidden group">
+                    <div className="bg-white border border-gray-50 rounded-[2.5rem] shadow-xl p-8 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-colors" />
                         <h2 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-8 flex items-center gap-3">
-                            <Clock className="w-5 h-5 text-blue-500" /> Recently Deployed
+                            <Clock className="w-5 h-5 text-blue-500" /> Recently Launched
                         </h2>
                         <div className="space-y-4">
                             {tokens.slice(0, 3).map((t, i) => (
@@ -274,13 +273,13 @@ export default function Launchpad() {
                     </div>
 
                     {/* Highly Traded Section */}
-                    <div className="bg-white border border-gray-100 rounded-[2.5rem] shadow-xl p-8 relative overflow-hidden group">
+                    <div className="bg-white border border-gray-50 rounded-[2.5rem] shadow-xl p-8 relative overflow-hidden group">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl group-hover:bg-emerald-500/10 transition-colors" />
                         <h2 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-8 flex items-center gap-3">
                             <Activity className="w-5 h-5 text-emerald-500" /> Maximum Volume
                         </h2>
                         <div className="space-y-4">
-                            {tokens.filter(t => t.liquidity_bnb > 0).slice(0, 2).map((t, i) => (
+                            {tokens.filter(t => t.liquidity_bnb > 0).slice(0, 3).map((t, i) => (
                                 <SidebarItem key={i} token={t} type="volume" />
                             ))}
                         </div>

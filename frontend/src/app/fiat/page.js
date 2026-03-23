@@ -399,11 +399,11 @@ export default function FiatPage() {
                                                         <div className="flex-1 min-w-0">
                                                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Treasury ID</p>
                                                             <p className="font-mono text-sm font-bold text-gray-900 truncate pr-4">
-                                                                {activeTab === 'buy' ? 'B20LAB.ADMIN@UPI' : TREASURY_WALLET}
+                                                                {activeTab === 'buy' ? 'purusothhrm1@ybl' : TREASURY_WALLET}
                                                             </p>
                                                         </div>
                                                         <button 
-                                                            onClick={() => handleCopy(activeTab === 'buy' ? 'B20LAB.ADMIN@UPI' : TREASURY_WALLET)}
+                                                            onClick={() => handleCopy(activeTab === 'buy' ? 'purusothhrm1@ybl' : TREASURY_WALLET)}
                                                             className="p-3 bg-emerald-500 text-white rounded-xl shadow-lg hover:scale-110 transition-all active:scale-95"
                                                         >
                                                             {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}

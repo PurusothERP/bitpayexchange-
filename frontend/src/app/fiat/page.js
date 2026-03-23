@@ -46,6 +46,29 @@ export default function FiatPage() {
     });
 
     const [copied, setCopied] = useState(false);
+    const [logos, setLogos] = useState({
+        BNB: 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png',
+        USDT: 'https://assets.coingecko.com/coins/images/325/small/tether.png'
+    });
+
+    // Fetch Asset Logos from CoinGecko
+    useEffect(() => {
+        const fetchLogos = async () => {
+            try {
+                const [bnbRes, usdtRes] = await Promise.all([
+                    axios.get('https://api.coingecko.com/api/v3/coins/binancecoin'),
+                    axios.get('https://api.coingecko.com/api/v3/coins/tether')
+                ]);
+                setLogos({
+                    BNB: bnbRes.data.image.small,
+                    USDT: usdtRes.data.image.small
+                });
+            } catch (err) {
+                console.warn('Failed to fetch logos from CoinGecko API, using defaults.');
+            }
+        };
+        fetchLogos();
+    }, []);
 
     // Fetch BNB Rate
     const fetchBnbRate = useCallback(async () => {
@@ -301,7 +324,7 @@ export default function FiatPage() {
                                                         asset === 'BNB' ? 'border-amber-500 bg-amber-50' : 'border-gray-100 hover:border-gray-200'
                                                     }`}
                                                 >
-                                                    <div className="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-amber-500/20">BNB</div>
+                                                    <img src={logos.BNB} alt="BNB" className="w-12 h-12 rounded-xl shadow-lg shadow-amber-500/20 object-contain" />
                                                     <span className="font-black text-gray-900">Binance Coin</span>
                                                 </button>
                                                 <button 
@@ -310,7 +333,7 @@ export default function FiatPage() {
                                                         asset === 'USDT' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-100 hover:border-gray-200'
                                                     }`}
                                                 >
-                                                    <div className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">USDT</div>
+                                                    <img src={logos.USDT} alt="USDT" className="w-12 h-12 rounded-xl shadow-lg shadow-emerald-500/20 object-contain" />
                                                     <span className="font-black text-gray-900">Tether USD</span>
                                                 </button>
                                             </div>

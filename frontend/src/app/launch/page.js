@@ -98,8 +98,8 @@ function TokenCard({ token, index }) {
                                 )}
                             </div>
                             {isPremium && (
-                                <div className="absolute -top-3 -right-3 w-8 h-8 bg-amber-500 rounded-xl flex items-center justify-center shadow-lg border-4 border-[#09090B]">
-                                    <Star className="w-4 h-4 text-white fill-current" />
+                                <div className="absolute -top-3 -right-3 w-8 h-8 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg border-4 border-[#09090B]">
+                                    <CheckCircle2 className="w-4 h-4 text-white fill-current" />
                                 </div>
                             )}
                         </div>
@@ -127,7 +127,7 @@ function TokenCard({ token, index }) {
                     <div className="grid grid-cols-2 gap-4 mb-8">
                         <div className="p-3 rounded-2xl bg-white/5 border border-white/5">
                             <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Market Cap</p>
-                            <p className="text-sm font-black text-white tracking-tight">$82.4K</p>
+                            <p className="text-sm font-black text-white tracking-tight">${token.liquidity_bnb ? (parseFloat(token.liquidity_bnb) * 600).toLocaleString() : '82.4K'}</p>
                         </div>
                         <div className="p-3 rounded-2xl bg-white/5 border border-white/5">
                             <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1">Bonding</p>
@@ -149,6 +149,120 @@ function TokenCard({ token, index }) {
     );
 }
 
+function ListView({ tokens }) {
+    return (
+        <div className="w-full overflow-hidden bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] shadow-2xl">
+            <table className="w-full text-left">
+                <thead>
+                    <tr className="border-b border-white/5">
+                        <th className="px-8 py-6 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Protocol</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Price</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Market Cap</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Bonding</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Launched</th>
+                        <th className="px-8 py-6"></th>
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                    {tokens.map((token, i) => (
+                        <tr key={token.id} className="group hover:bg-white/[0.02] transition-colors">
+                            <td className="px-8 py-6">
+                                <Link href={`/token/${token.contract_address}`} className="flex items-center gap-4">
+                                    <div className="w-12 h-12 rounded-xl bg-zinc-800 border border-white/5 overflow-hidden">
+                                        {token.logo_url ? <img src={token.logo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">🪙</div>}
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-black text-white">{token.name}</p>
+                                        <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{token.symbol}</p>
+                                    </div>
+                                </Link>
+                            </td>
+                            <td className="px-8 py-6">
+                                <p className="text-sm font-bold text-white tracking-tight">{formatPrice(token.price_bnb)}</p>
+                            </td>
+                            <td className="px-8 py-6">
+                                <p className="text-sm font-black text-zinc-200">${token.liquidity_bnb ? (parseFloat(token.liquidity_bnb) * 600).toLocaleString() : '0'}</p>
+                            </td>
+                            <td className="px-8 py-6">
+                                <div className="w-32 h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                    <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${token.bonding_progress || 0}%` }} />
+                                </div>
+                            </td>
+                            <td className="px-8 py-6 text-[10px] font-black text-zinc-500 uppercase tracking-widest">
+                                {timeAgo(token.created_at)} ago
+                            </td>
+                            <td className="px-8 py-6 text-right">
+                                <Link href={`/token/${token.contract_address}`} className="inline-flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-colors uppercase text-[10px] font-black tracking-widest">
+                                    Trade <ArrowUpRight className="w-4 h-4" />
+                                </Link>
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
+function BubbleView({ tokens }) {
+    return (
+        <div className="relative w-full h-[700px] bg-zinc-900/20 backdrop-blur-3xl border border-white/5 rounded-[2.5rem] overflow-hidden">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-10">
+                <BarChart3 className="w-96 h-96 text-white" />
+            </div>
+            
+            {tokens.map((token, i) => {
+                const size = 120 + ((token.bonding_progress || 0) * 2.5);
+                const randomX = Math.random() * 80 + 10;
+                const randomY = Math.random() * 80 + 10;
+                const duration = 10 + Math.random() * 20;
+
+                return (
+                    <motion.div
+                        key={token.id}
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ 
+                            scale: 1, 
+                            opacity: 1,
+                            x: [0, Math.random() * 40 - 20, 0],
+                            y: [0, Math.random() * 40 - 20, 0]
+                        }}
+                        transition={{ 
+                            scale: { duration: 0.5, delay: i * 0.1 },
+                            x: { duration, repeat: Infinity, ease: "linear" },
+                            y: { duration: duration * 1.2, repeat: Infinity, ease: "linear" }
+                        }}
+                        style={{ 
+                            position: 'absolute',
+                            left: `${randomX}%`,
+                            top: `${randomY}%`,
+                            width: size,
+                            height: size,
+                        }}
+                        className="group shrink-0 cursor-pointer"
+                    >
+                        <Link href={`/token/${token.contract_address}`}>
+                            <div className="w-full h-full rounded-full border border-white/10 bg-gradient-to-br from-white/10 to-transparent backdrop-blur-3xl flex flex-col items-center justify-center p-4 text-center group-hover:scale-110 group-hover:border-emerald-500/50 transition-all shadow-2xl shadow-black/80">
+                                <div className="w-12 h-12 rounded-xl border border-white/10 overflow-hidden mb-2 group-hover:shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all">
+                                    {token.logo_url ? <img src={token.logo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-zinc-800">🪙</div>}
+                                </div>
+                                <p className="text-[10px] font-black text-white uppercase tracking-widest truncate w-full">{token.name}</p>
+                                <p className="text-[8px] font-black text-emerald-400 mt-1">{token.bonding_progress || 0}% Sold</p>
+                            </div>
+                        </Link>
+                    </motion.div>
+                );
+            })}
+
+            {tokens.length === 0 && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <p className="text-zinc-500 font-black uppercase tracking-[0.4em] text-xs">Awaiting Network Signals...</p>
+                </div>
+            )}
+        </div>
+    );
+}
+
 // ── Main Page ────────────────────────────────────────────────────────────────
 
 export default function Launchpad() {
@@ -156,6 +270,7 @@ export default function Launchpad() {
     const [loading, setLoading] = useState(true);
     const [view, setView] = useState('all'); // all, trending, top, new
     const [launchType, setLaunchType] = useState('all'); // all, bonding, fair
+    const [viewMode, setViewMode] = useState('grid'); // grid, list, bubbles
     const [search, setSearch] = useState('');
 
     useEffect(() => {
@@ -173,9 +288,15 @@ export default function Launchpad() {
         let list = tokens;
         
         // Filter by View
-        if (view === 'trending') list = list.filter(t => t.price_change > 0).sort((a,b) => b.holders - a.holders);
-        if (view === 'top') list = [...list].sort((a,b) => b.price_bnb - a.price_bnb);
-        if (view === 'new') list = [...list].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+        if (view === 'trending') {
+            list = list.filter(t => (t.holders > 0 || t.liquidity_bnb > 0)).sort((a,b) => (b.holders || 0) - (a.holders || 0));
+        }
+        if (view === 'top') {
+            list = [...list].sort((a,b) => parseFloat(b.liquidity_bnb || 0) - parseFloat(a.liquidity_bnb || 0));
+        }
+        if (view === 'new') {
+            list = [...list].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+        }
 
         // Filter by Launch Type
         if (launchType === 'bonding') list = list.filter(t => t.launch_type === 'MEME' || !t.launch_type);
@@ -183,7 +304,11 @@ export default function Launchpad() {
 
         if (search) {
             const q = search.toLowerCase();
-            list = list.filter(t => t.name?.toLowerCase().includes(q) || t.symbol?.toLowerCase().includes(q) || t.contract_address?.toLowerCase().includes(q));
+            list = list.filter(t => 
+                t.name?.toLowerCase().includes(q) || 
+                t.symbol?.toLowerCase().includes(q) || 
+                t.contract_address?.toLowerCase().includes(q)
+            );
         }
         return list;
     }, [tokens, view, launchType, search]);
@@ -276,8 +401,8 @@ export default function Launchpad() {
                     </div>
                 </div>
 
-                {/* ── LAUNCH TYPE SWITCHER ────────────────────────────────────── */}
-                <div className="flex justify-center">
+                {/* ── LAUNCH TYPE & VIEW MODE SWITCHER ─────────────────────────── */}
+                <div className="flex flex-col md:flex-row items-center justify-between gap-8">
                     <div className="inline-flex p-1.5 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-2xl shadow-2xl">
                         {[
                             { id: 'all', label: 'Global Registry' },
@@ -296,18 +421,47 @@ export default function Launchpad() {
                             </button>
                         ))}
                     </div>
+
+                    <div className="inline-flex p-1.5 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-2xl shadow-2xl">
+                        {[
+                            { id: 'grid', icon: <LayoutGrid className="w-4 h-4" /> },
+                            { id: 'list', icon: <List className="w-4 h-4" /> },
+                            { id: 'bubbles', icon: <Sparkles className="w-4 h-4" /> }
+                        ].map(mode => (
+                            <button
+                                key={mode.id}
+                                onClick={() => setViewMode(mode.id)}
+                                className={`
+                                    p-3 rounded-xl transition-all
+                                    ${viewMode === mode.id ? 'bg-white text-black shadow-lg' : 'text-zinc-500 hover:text-white'}
+                                `}
+                            >
+                                {mode.icon}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                {/* ── TOKEN GRID ──────────────────────────────────────────────── */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                {/* ── TOKEN DISPLAY ───────────────────────────────────────────── */}
+                <div className="min-h-[400px]">
                     {loading ? (
-                        Array.from({ length: 8 }).map((_, i) => (
-                            <div key={i} className="h-[400px] bg-zinc-900/40 animate-pulse rounded-[2.5rem] border border-white/5" />
-                        ))
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                            {Array.from({ length: 8 }).map((_, i) => (
+                                <div key={i} className="h-[400px] bg-zinc-900/40 animate-pulse rounded-[2.5rem] border border-white/5" />
+                            ))}
+                        </div>
                     ) : filtered.length > 0 ? (
-                        filtered.map((t, i) => <TokenCard key={t.id} token={t} index={i} />)
+                        <>
+                            {viewMode === 'grid' && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                                    {filtered.map((t, i) => <TokenCard key={t.id} token={t} index={i} />)}
+                                </div>
+                            )}
+                            {viewMode === 'list' && <ListView tokens={filtered} />}
+                            {viewMode === 'bubbles' && <BubbleView tokens={filtered} />}
+                        </>
                     ) : (
-                        <div className="col-span-full py-40 text-center">
+                        <div className="py-40 text-center">
                             <div className="w-20 h-20 bg-zinc-900 border border-white/5 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-2xl">
                                 <SearchIcon className="w-8 h-8 text-zinc-700" />
                             </div>

@@ -224,9 +224,12 @@ function TokenDetail() {
             }
             if (chartRes.status === 'fulfilled' && Array.isArray(chartRes.value.data) && chartRes.value.data.length > 0) {
                 setChartData(chartRes.value.data.map((d, i) => ({
-                    time: new Date(d.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-                    price: parseFloat(d.price_bnb || 0),
+                    time: new Date(d.time || d.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+                    price: parseFloat(d.price || d.price_bnb || 0),
                 })));
+            } else if (chartRes.status === 'fulfilled') {
+                // If API returns empty, don't overwrite if we already have data
+                setChartData(prev => prev.length > 0 ? prev : []);
             }
         } catch (err) {
             console.warn('Trade data fetch error:', err.message);
@@ -274,22 +277,15 @@ function TokenDetail() {
                 trend
             });
 
-            // If no DB chart data yet, build a synthetic one from on-chain collateral/price
+            // Always ensure at least a synthetic chart if history is empty
             setChartData(prev => {
                 if (prev.length === 0) {
-                    if (bnbReserve > 0) {
-                        const steps = 20;
-                        return Array.from({ length: steps }, (_, idx) => ({
-                            time: `T-${steps - idx}`,
-                            price: parseFloat((effectivePrice * (0.7 + (0.3 * (idx / steps)))).toFixed(12)),
-                        }));
-                    } else {
-                        // Flatline at genesis price
-                        return Array.from({ length: 10 }, (_, idx) => ({
-                            time: `T-${10 - idx}`,
-                            price: effectivePrice || priceBnb || 0.0000001,
-                        }));
-                    }
+                    const price = effectivePrice || priceBnb || 0.0000001;
+                    const steps = 20;
+                    return Array.from({ length: steps }, (_, idx) => ({
+                        time: `T-${steps - idx}`,
+                        price: parseFloat((price * (0.99 + (0.01 * (idx / steps)))).toFixed(12)),
+                    }));
                 }
                 return prev;
             });

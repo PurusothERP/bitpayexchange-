@@ -155,6 +155,7 @@ export default function Launchpad() {
     const [tokens, setTokens] = useState([]);
     const [loading, setLoading] = useState(true);
     const [view, setView] = useState('all'); // all, trending, top, new
+    const [launchType, setLaunchType] = useState('all'); // all, bonding, fair
     const [search, setSearch] = useState('');
 
     useEffect(() => {
@@ -170,16 +171,22 @@ export default function Launchpad() {
 
     const filtered = useMemo(() => {
         let list = tokens;
+        
+        // Filter by View
         if (view === 'trending') list = list.filter(t => t.price_change > 0).sort((a,b) => b.holders - a.holders);
         if (view === 'top') list = [...list].sort((a,b) => b.price_bnb - a.price_bnb);
         if (view === 'new') list = [...list].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+
+        // Filter by Launch Type
+        if (launchType === 'bonding') list = list.filter(t => t.launch_type === 'MEME' || !t.launch_type);
+        if (launchType === 'fair') list = list.filter(t => t.launch_type === 'FAIR');
 
         if (search) {
             const q = search.toLowerCase();
             list = list.filter(t => t.name?.toLowerCase().includes(q) || t.symbol?.toLowerCase().includes(q) || t.contract_address?.toLowerCase().includes(q));
         }
         return list;
-    }, [tokens, view, search]);
+    }, [tokens, view, launchType, search]);
 
     return (
         <main className="min-h-screen bg-[#030303] selection:bg-emerald-500 selection:text-white pb-32">
@@ -266,6 +273,28 @@ export default function Launchpad() {
                             onChange={(e) => setSearch(e.target.value)}
                             className="w-full pl-14 pr-6 py-4 bg-white/5 border border-transparent focus:border-white/10 rounded-[1.8rem] text-sm font-black text-white outline-none transition-all"
                         />
+                    </div>
+                </div>
+
+                {/* ── LAUNCH TYPE SWITCHER ────────────────────────────────────── */}
+                <div className="flex justify-center">
+                    <div className="inline-flex p-1.5 bg-zinc-900/40 backdrop-blur-3xl border border-white/5 rounded-2xl shadow-2xl">
+                        {[
+                            { id: 'all', label: 'Global Registry' },
+                            { id: 'bonding', label: 'Bonding Curve' },
+                            { id: 'fair', label: 'Fair Launch' }
+                        ].map(type => (
+                            <button
+                                key={type.id}
+                                onClick={() => setLaunchType(type.id)}
+                                className={`
+                                    px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all
+                                    ${launchType === type.id ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'text-zinc-500 hover:text-zinc-300'}
+                                `}
+                            >
+                                {type.label}
+                            </button>
+                        ))}
                     </div>
                 </div>
 

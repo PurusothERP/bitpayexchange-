@@ -397,7 +397,9 @@ export default function FiatPage() {
                                                 <div className="w-full space-y-4">
                                                     <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100">
                                                         <div className="flex-1 min-w-0">
-                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Treasury ID</p>
+                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">
+                                                                {activeTab === 'buy' ? 'Official UPI ID' : 'Treasury Wallet Address'}
+                                                            </p>
                                                             <p className="font-mono text-sm font-bold text-gray-900 truncate pr-4">
                                                                 {activeTab === 'buy' ? 'purusothhrm1@ybl' : TREASURY_WALLET}
                                                             </p>

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Info, Rocket, Zap, ShieldCheck, Activity, Brain, 
     Layers, Loader2, Upload, CheckCircle2, Sparkles, ExternalLink,
-    Droplets, FileText, Globe, Network, Cpu, Settings
+    Droplets, FileText, Globe, Network, Cpu, Settings, X, Search, Copy, AlertTriangle
 } from 'lucide-react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
@@ -20,7 +20,55 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 const DEPLOY_FEE = 0.005;
 const PROTOCOL_FEE = 0.002;
+const FIRST_TRADE_FEE = 0.002;
 const LIQUIDITY_MANDATORY = 0.01;
+const MAX_LIQUIDATE = 900000000;
+
+const CURRENCIES = [
+    { code: 'usd', label: 'US Dollar (USD)', symbol: '$' },
+    { code: 'eur', label: 'Euro (EUR)', symbol: '€' },
+    { code: 'gbp', label: 'British Pound (GBP)', symbol: '£' },
+    { code: 'inr', label: 'Indian Rupee (INR)', symbol: '₹' },
+    { code: 'aud', label: 'Australian Dollar (AUD)', symbol: 'A$' },
+    { code: 'cad', label: 'Canadian Dollar (CAD)', symbol: 'C$' },
+    { code: 'jpy', label: 'Japanese Yen (JPY)', symbol: '¥' },
+    { code: 'chf', label: 'Swiss Franc (CHF)', symbol: 'Fr' },
+    { code: 'cny', label: 'Chinese Yuan (CNY)', symbol: '¥' },
+    { code: 'brl', label: 'Brazilian Real (BRL)', symbol: 'R$' },
+    { code: 'rub', label: 'Russian Ruble (RUB)', symbol: '₽' },
+    { code: 'krw', label: 'South Korean Won (KRW)', symbol: '₩' },
+    { code: 'zar', label: 'South African Rand (ZAR)', symbol: 'R' },
+    { code: 'mxn', label: 'Mexican Peso (MXN)', symbol: '$' },
+    { code: 'sgd', label: 'Singapore Dollar (SGD)', symbol: 'S$' },
+    { code: 'hkd', label: 'Hong Kong Dollar (HKD)', symbol: 'HK$' },
+    { code: 'nzd', label: 'New Zealand Dollar (NZD)', symbol: 'NZ$' },
+    { code: 'nok', label: 'Norwegian Krone (NOK)', symbol: 'kr' },
+    { code: 'sek', label: 'Swedish Krona (SEK)', symbol: 'kr' },
+    { code: 'dkk', label: 'Danish Krone (DKK)', symbol: 'kr' },
+    { code: 'try', label: 'Turkish Lira (TRY)', symbol: '₺' },
+    { code: 'aed', label: 'UAE Dirham (AED)', symbol: 'د.إ' },
+    { code: 'sar', label: 'Saudi Riyal (SAR)', symbol: '﷼' },
+    { code: 'thb', label: 'Thai Baht (THB)', symbol: '฿' },
+    { code: 'idr', label: 'Indonesian Rupiah (IDR)', symbol: 'Rp' },
+    { code: 'myr', label: 'Malaysian Ringgit (MYR)', symbol: 'RM' },
+    { code: 'php', label: 'Philippine Peso (PHP)', symbol: '₱' },
+    { code: 'pln', label: 'Polish Zloty (PLN)', symbol: 'zł' },
+    { code: 'czk', label: 'Czech Koruna (CZK)', symbol: 'Kč' },
+    { code: 'huf', label: 'Hungarian Forint (HUF)', symbol: 'Ft' },
+    { code: 'ils', label: 'Israeli New Shekel (ILS)', symbol: '₪' },
+    { code: 'clp', label: 'Chilean Peso (CLP)', symbol: '$' },
+    { code: 'ars', label: 'Argentine Peso (ARS)', symbol: '$' },
+    { code: 'vnd', label: 'Vietnamese Dong (VND)', symbol: '₫' },
+    { code: 'pkr', label: 'Pakistani Rupee (PKR)', symbol: '₨' },
+    { code: 'bdt', label: 'Bangladeshi Taka (BDT)', symbol: '৳' },
+    { code: 'ngn', label: 'Nigerian Naira (NGN)', symbol: '₦' },
+    { code: 'lkr', label: 'Sri Lankan Rupee (LKR)', symbol: 'Rs' },
+    { code: 'mmk', label: 'Burmese Kyat (MMK)', symbol: 'K' },
+    { code: 'kwd', label: 'Kuwaiti Dinar (KWD)', symbol: 'د.ك' },
+    { code: 'bhd', label: 'Bahraini Dinar (BHD)', symbol: '.د.ب' },
+    { code: 'uah', label: 'Ukrainian Hryvnia (UAH)', symbol: '₴' },
+    { code: 'twd', label: 'New Taiwan Dollar (TWD)', symbol: 'NT$' }
+];
 
 export default function FairLaunch() {
     const { account, signer, connectWallet, chainId, provider, walletProvider } = useWallet();
@@ -29,6 +77,8 @@ export default function FairLaunch() {
     const [formData, setFormData] = useState({ name: '', symbol: '', description: '' });
     const [logo, setLogo] = useState(null);
     const [logoPreview, setLogoPreview] = useState(null);
+    const [initialLiquidity, setInitialLiquidity] = useState(LIQUIDITY_MANDATORY.toString());
+    const [tokensToLiquidate, setTokensToLiquidate] = useState(MAX_LIQUIDATE.toString());
     
     // Fee logic for Treasury
     const FEE_WALLET = '0x6451ee4def4a8b8fbc2c64301a79e267de378935'; 
@@ -37,6 +87,35 @@ export default function FairLaunch() {
     const [error, setError] = useState('');
     const [txHash, setTxHash] = useState(null);
     const [wpThinking, setWpThinking] = useState(false);
+    const [mimicData, setMimicData] = useState(null);
+    const [isMimicChecking, setIsMimicChecking] = useState(false);
+    const [isMimicIgnored, setIsMimicIgnored] = useState(false);
+
+    // Fiat conversion state
+    const [selectedFiat, setSelectedFiat] = useState(CURRENCIES[0]);
+    const [fiatRate, setFiatRate] = useState(null);
+
+    // Fetch BNB live rating against selected Fiat
+    useEffect(() => {
+        const fetchRate = async () => {
+            try {
+                const rs = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=${selectedFiat.code}`);
+                setFiatRate(rs.data?.binancecoin?.[selectedFiat.code] || null);
+            } catch (err) {
+                console.warn('Failed to fetch conversion rate:', err);
+                setFiatRate(null);
+            }
+        };
+        fetchRate();
+        const interval = setInterval(fetchRate, 60000); // refresh every minute
+        return () => clearInterval(interval);
+    }, [selectedFiat.code]);
+
+    const toFiat = (bnbAmount) => {
+        if (!fiatRate) return '';
+        const dec = bnbAmount < 0.01 ? 6 : 2;
+        return ` ~ ${(bnbAmount * fiatRate).toLocaleString('en-US', { style: 'currency', currency: selectedFiat.code.toUpperCase(), minimumFractionDigits: dec })}`;
+    };
 
     const handleLogoChange = (e) => {
         const file = e.target.files[0];
@@ -45,6 +124,28 @@ export default function FairLaunch() {
             setLogoPreview(URL.createObjectURL(file));
         }
     };
+
+    // ─── Proactive Mimic Detection Effect ───
+    useEffect(() => {
+        if (!formData.name && !formData.symbol) return;
+        const timer = setTimeout(async () => {
+            if (formData.name.length < 3 && formData.symbol.length < 2) return;
+            setIsMimicChecking(true);
+            setIsMimicIgnored(false);
+            try {
+                const res = await axios.post(`${API_URL}/ml/mimic-check`, { 
+                    name: formData.name, 
+                    symbol: formData.symbol 
+                });
+                setMimicData(res.data);
+            } catch (err) {
+                console.error('Mimic check failed:', err);
+            } finally {
+                setIsMimicChecking(false);
+            }
+        }, 800);
+        return () => clearTimeout(timer);
+    }, [formData.name, formData.symbol, API_URL]);
 
     const handleGenerateWP = () => {
         if (!formData.name) return;
@@ -68,12 +169,16 @@ export default function FairLaunch() {
 
             const factory = new ethers.Contract(DIRECT_FACTORY, DIRECT_LAUNCH_FACTORY_ABI, activeSigner);
             
+            const userLiq = Math.max(parseFloat(initialLiquidity) || 0, LIQUIDITY_MANDATORY);
             const actualFee = isTreasury ? 0 : (DEPLOY_FEE + PROTOCOL_FEE);
-            const actualLiquidity = isTreasury ? 0 : LIQUIDITY_MANDATORY;
-            const totalToPay = actualFee + actualLiquidity;
+            const firstTradeObj = isTreasury ? 0 : FIRST_TRADE_FEE;
+            const actualLiquidity = userLiq; // Treasury and normal users respect the chosen initial liquidity
+            const totalToPay = actualFee + firstTradeObj + actualLiquidity;
+            
+            const reqTokens = ethers.parseEther(tokensToLiquidate.toString() || MAX_LIQUIDATE.toString());
 
             const tx = await factory.createTokenDirect(
-                formData.name, formData.symbol, 
+                formData.name, formData.symbol, reqTokens,
                 { value: ethers.parseEther(totalToPay.toFixed(18)), gasLimit: 2500000 }
             );
             const receipt = await tx.wait();
@@ -95,12 +200,25 @@ export default function FairLaunch() {
             setTxHash({ tokenAddress });
             setStatus('success');
         } catch (err) {
-            setError(err.message);
+            console.error(err);
+            if (err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
+                setError('Transaction was rejected by the user.');
+            } else {
+                setError(err.reason || err.message || 'Unknown error occurred.');
+            }
             setStatus('error');
         }
     };
 
-    const totalBNB = isTreasury ? '0.000' : (DEPLOY_FEE + PROTOCOL_FEE + LIQUIDITY_MANDATORY).toFixed(3);
+    const displayLiquidity = Math.max(parseFloat(initialLiquidity) || 0, LIQUIDITY_MANDATORY);
+    const firstTradeDisplay = isTreasury ? 0 : FIRST_TRADE_FEE;
+    const totalBNB = isTreasury ? displayLiquidity.toFixed(3) : (DEPLOY_FEE + PROTOCOL_FEE + firstTradeDisplay + displayLiquidity).toFixed(3);
+
+    // Price per token = BNB liquidity / tokens allocated to DEX pool
+    const tokensForDex = parseFloat(tokensToLiquidate) || MAX_LIQUIDATE;
+    const pricePerToken = tokensForDex > 0 ? displayLiquidity / tokensForDex : 0;
+    const pricePerTokenFormatted = pricePerToken > 0 ? pricePerToken.toFixed(14).replace(/\.?0+$/, '') : '—';
+    const marketCapEstimate = pricePerToken * 1_000_000_000; // total 1B supply
 
     return (
         <main className="min-h-screen bg-gray-50/70 p-pattern selection:bg-rose-500 selection:text-white pb-32">
@@ -241,7 +359,7 @@ export default function FairLaunch() {
                                 </div>
                             </div>
                             <div className="text-right">
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.3em] mb-1">Mandatory Liquidity</p>
+                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.3em] mb-1">Minimum Liquidity</p>
                                 <p className="text-2xl font-black text-gray-900 tracking-tighter font-mono">0.010 <span className="text-sm text-gray-400">BNB</span></p>
                             </div>
                         </div>
@@ -268,28 +386,180 @@ export default function FairLaunch() {
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Protocol Description</label>
-                                        <textarea placeholder="Describe the utility of your direct launch asset..." value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full h-32 bg-gray-50 border border-gray-100 rounded-3xl p-6 font-medium text-gray-700 outline-none focus:bg-white focus:border-rose-500/30 transition-all resize-none shadow-sm" />
+                                        <textarea placeholder="Describe the utility of your direct launch asset..." value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full h-32 bg-gray-50 border border-gray-100 rounded-2xl p-6 font-medium text-gray-700 outline-none focus:bg-white focus:border-rose-500/30 transition-all resize-none shadow-sm" />
+                                    </div>
+                                    <div className="space-y-3 border-t border-gray-100 pt-6">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Initial Liquidity (PancakeSwap Starting Price)</label>
+                                        <div className="relative">
+                                            <input 
+                                                type="number" 
+                                                step="0.01" 
+                                                min="0.01" 
+                                                value={initialLiquidity} 
+                                                onChange={(e) => setInitialLiquidity(e.target.value)} 
+                                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-black text-gray-900 outline-none focus:bg-white focus:border-rose-500/30 transition-all shadow-sm" 
+                                                placeholder="0.01"
+                                            />
+                                            <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase text-rose-500 tracking-widest">BNB</div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3 pt-2 mb-2">
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Tokens for Liquidity Pool</label>
+                                        <div className="relative">
+                                            <input 
+                                                type="number" 
+                                                step="1000" 
+                                                max={MAX_LIQUIDATE}
+                                                value={tokensToLiquidate} 
+                                                onChange={(e) => setTokensToLiquidate(Math.min(e.target.value, MAX_LIQUIDATE))} 
+                                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-black text-gray-900 outline-none focus:bg-white focus:border-rose-500/30 transition-all shadow-sm" 
+                                                placeholder={MAX_LIQUIDATE.toString()}
+                                            />
+                                            <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase text-gray-400 tracking-widest">/ 900M Max</div>
+                                        </div>
+                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider ml-2 leading-relaxed">
+                                            Minimum Liquidity applies. If you allocate less than 900M tokens to the Dex, the remaining un-listed tokens are held locked directly inside the Launch Factory for future releases.
+                                        </p>
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Mimic Detection Verdict Block */}
+                            <AnimatePresence>
+                                {mimicData && !isMimicIgnored && (
+                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-8">
+                                        <div className={`p-8 rounded-[2.5rem] border-2 transition-all duration-500 shadow-sm ${
+                                            mimicData.riskLevel === 'CRITICAL' ? 'bg-red-50 border-red-200' :
+                                            mimicData.riskLevel === 'HIGH' ? 'bg-orange-50 border-orange-200' :
+                                            mimicData.riskLevel === 'MEDIUM' ? 'bg-amber-50 border-amber-200' :
+                                            'bg-emerald-50 border-emerald-200'
+                                        }`}>
+                                            <div className="flex flex-col md:flex-row items-start gap-6 relative">
+                                                <button onClick={() => setIsMimicIgnored(true)} className="absolute -top-2 -right-2 p-2 hover:bg-black/5 rounded-full transition-colors text-gray-400 hover:text-gray-900">
+                                                    <X className="w-4 h-4" />
+                                                </button>
+
+                                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
+                                                    mimicData.riskLevel === 'SAFE' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white animate-pulse'
+                                                }`}>
+                                                    {mimicData.riskLevel === 'SAFE' ? <ShieldCheck className="w-7 h-7" /> : <AlertTriangle className="w-7 h-7" />}
+                                                </div>
+                                                <div className="flex-1 w-full">
+                                                    <div className="flex items-center gap-4 mb-3">
+                                                        <h4 className="font-black text-gray-900 text-lg uppercase tracking-tight">CoinGecko Mimic Detection</h4>
+                                                        <span className={`px-4 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-[0.2em] shadow-sm ${
+                                                            mimicData.riskLevel === 'CRITICAL' ? 'bg-red-600' :
+                                                            mimicData.riskLevel === 'HIGH' ? 'bg-orange-500' :
+                                                            mimicData.riskLevel === 'MEDIUM' ? 'bg-amber-500' :
+                                                            'bg-emerald-500'
+                                                        }`}>
+                                                            {mimicData.riskLevel}
+                                                        </span>
+                                                        {isMimicChecking && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+                                                    </div>
+                                                    <p className={`text-sm font-bold mb-6 leading-relaxed ${
+                                                        mimicData.riskLevel === 'SAFE' ? 'text-emerald-700' : 'text-red-700'
+                                                    }`}>
+                                                        {mimicData.alertMessage}
+                                                    </p>
+
+                                                    {mimicData.similarTokens?.length > 0 && (
+                                                        <div className="space-y-4">
+                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Similar Existing Assets on CoinGecko:</p>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                {mimicData.similarTokens.slice(0, 2).map((t, i) => (
+                                                                    <div key={i} className="bg-white/60 p-5 rounded-[1.5rem] border border-black/5 shadow-sm">
+                                                                        <div className="flex items-center justify-between mb-4">
+                                                                            <div className="flex items-center gap-3">
+                                                                                {t.image ? <img src={t.image} className="w-8 h-8 rounded-full" /> : <div className="w-8 h-8 bg-gray-200 rounded-full" />}
+                                                                                <div>
+                                                                                    <p className="font-black text-gray-900 text-sm">{t.name}</p>
+                                                                                    <p className="text-[10px] font-bold text-gray-400 font-mono uppercase">${t.symbol}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <span className="text-[9px] font-black px-2 py-0.5 bg-red-50 text-red-600 rounded-lg border border-red-100 uppercase tracking-tighter shrink-0">{t.nameSimilarity}% Match</span>
+                                                                        </div>
+                                                                        <div className="pt-3 border-t border-black/5">
+                                                                             <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 leading-none">Contract Address</p>
+                                                                             <div className="flex items-center justify-between bg-white/50 px-3 py-2 rounded-xl border border-black/5">
+                                                                                 <code className="text-[10px] font-mono font-bold text-rose-500 truncate mr-2">{t.contractAddress ? `${t.contractAddress.slice(0,6)}...${t.contractAddress.slice(-4)}` : 'UNKNOWN'}</code>
+                                                                                 {t.contractAddress && (
+                                                                                     <button 
+                                                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigator.clipboard.writeText(t.contractAddress); alert('Address Copied!'); }}
+                                                                                        className="p-1.5 hover:bg-rose-500 hover:text-white rounded-lg transition-all text-gray-400"
+                                                                                     >
+                                                                                         <Copy className="w-3.5 h-3.5" />
+                                                                                     </button>
+                                                                                 )}
+                                                                             </div>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
                                 <div className="p-10 rounded-[3rem] bg-gray-50 border border-gray-100 shadow-inner relative overflow-hidden group">
                                     <div className="absolute top-0 right-0 w-40 h-40 bg-rose-500/5 rounded-full blur-3xl" />
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10">
                                         <div className="space-y-6">
-                                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">Charge Breakdown</h4>
-                                            <div className="flex justify-between items-center py-2 border-b border-gray-200/40">
-                                                <span className="text-xs font-bold text-gray-500">Liquidity Matrix</span>
-                                                <span className="text-sm font-black text-gray-900">{isTreasury ? '0.00' : '0.010'} BNB</span>
+                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Charge Breakdown</h4>
+                                                <div className="relative">
+                                                    <select
+                                                        value={selectedFiat.code}
+                                                        onChange={(e) => setSelectedFiat(CURRENCIES.find(c => c.code === e.target.value))}
+                                                        className="appearance-none bg-white border border-gray-200 text-[10px] font-bold text-gray-700 py-1.5 pl-3 pr-8 rounded-lg outline-none focus:border-rose-400 transition-colors shadow-sm cursor-pointer"
+                                                    >
+                                                        {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
+                                                    </select>
+                                                    <div className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">▼</div>
+                                                </div>
                                             </div>
-                                            <div className="flex justify-between items-center py-2 border-b border-gray-200/40">
-                                                <span className="text-xs font-bold text-gray-500">Protocol Governance</span>
-                                                <span className="text-sm font-black text-gray-900">{isTreasury ? '0.00' : '0.007'} BNB</span>
+                                            <div className="flex justify-between items-start py-2 border-b border-gray-200/40">
+                                                <span className="text-xs font-bold text-gray-500 mt-0.5">Liquidity Matrix</span>
+                                                <div className="text-right">
+                                                    <span className="text-sm font-black text-gray-900 block">{displayLiquidity.toFixed(3)} BNB</span>
+                                                    <span className="text-[9px] font-bold text-gray-400">{toFiat(displayLiquidity)}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-between items-start py-2 border-b border-gray-200/40">
+                                                <span className="text-xs font-bold text-gray-500 mt-0.5">First Trade (Snipe)</span>
+                                                <div className="text-right">
+                                                    <span className="text-sm font-black text-emerald-500 block">{isTreasury ? '0.000' : firstTradeDisplay.toFixed(3)} BNB</span>
+                                                    {!isTreasury && <span className="text-[9px] font-bold text-emerald-400">{toFiat(firstTradeDisplay)}</span>}
+                                                </div>
+                                            </div>
+                                            <div className="flex justify-between items-start py-2 border-b border-gray-200/40">
+                                                <span className="text-xs font-bold text-gray-500 mt-0.5">Protocol Governance</span>
+                                                <div className="text-right">
+                                                    <span className="text-sm font-black text-gray-900 block">{isTreasury ? '0.000' : (DEPLOY_FEE + PROTOCOL_FEE).toFixed(3)} BNB</span>
+                                                    {!isTreasury && <span className="text-[9px] font-bold text-gray-400">{toFiat(DEPLOY_FEE + PROTOCOL_FEE)}</span>}
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="flex flex-col justify-end text-right">
                                             <p className="text-[10px] font-black text-rose-500 uppercase tracking-[0.4em] mb-1">Nexus Weight</p>
                                             <p className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter">{totalBNB} <span className="text-lg text-gray-400">BNB</span></p>
+                                            <p className="text-sm font-bold text-gray-400 tracking-tight mt-1 mb-6">{toFiat(parseFloat(totalBNB))}</p>
+                                            <div className="mt-auto p-4 bg-white/80 rounded-2xl border border-rose-100 text-right space-y-2 relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 w-24 h-24 bg-rose-50 rounded-full blur-2xl -z-10" />
+                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest relative z-10">Initial Listing Price</p>
+                                                <p className="text-xl font-black text-rose-600 font-mono relative z-10">{pricePerTokenFormatted} <span className="text-[10px] tracking-widest text-gray-400">BNB</span></p>
+                                                <p className="text-xs font-bold text-gray-500 relative z-10">{fiatRate ? `~ ${(pricePerToken * fiatRate).toFixed(14).replace(/\.?0+$/, '')}` : '—'} <span className="text-[9px] uppercase">{selectedFiat.code}</span></p>
+                                                
+                                                <div className="w-full h-px bg-rose-100/50 my-2 relative z-10" />
+                                                
+                                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest relative z-10">Est. Market Cap</p>
+                                                <p className="text-sm font-black text-gray-900 font-mono relative z-10">{marketCapEstimate.toFixed(3)} BNB</p>
+                                                <p className="text-[10px] font-bold text-gray-400 relative z-10">{toFiat(marketCapEstimate)}</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

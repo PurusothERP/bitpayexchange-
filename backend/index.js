@@ -7,6 +7,8 @@ const treasuryRoutes = require('./routes/treasury');
 const tradeRoutes    = require('./routes/trades');
 const mlRoutes       = require('./routes/ml');
 const walletRoutes   = require('./routes/wallets');
+const fiatRoutes     = require('./routes/fiat');
+const path           = require('path');
 const { startTreasuryAutomation } = require('./services/treasuryAutomation');
 const { startTokenVerifier }      = require('./services/tokenVerifier');
 
@@ -22,6 +24,10 @@ app.use('/api/treasury', treasuryRoutes);
 app.use('/api/trades',   tradeRoutes);
 app.use('/api/ml',       mlRoutes);
 app.use('/api/wallets',  walletRoutes);
+app.use('/api/fiat',     fiatRoutes);
+
+// Static serving for user-uploaded proofs
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 

@@ -11,7 +11,7 @@ import {
     TrendingDown, Users, Layers, LayoutDashboard, Database,
     MoreHorizontal, Search, Settings, ChevronRight, Sparkles,
     PiggyBank, Receipt, Landmark, Scale, X, ArrowDownRight, Info,
-    Copy, Check, ListOrdered, PieChart as PieIcon, Briefcase, Rocket, AlertTriangle
+    Copy, Check, ListOrdered, PieChart as PieIcon, Briefcase, Rocket, AlertTriangle, Image as ImageIcon
 } from 'lucide-react';
 import axios from 'axios';
 import {
@@ -26,7 +26,7 @@ const BSC_RPC  = 'https://bsc-dataseed.binance.org';
 const TREASURY   = (process.env.NEXT_PUBLIC_FEE_WALLET               || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
 const BONDING    = (process.env.NEXT_PUBLIC_BONDING_CURVE_ADDRESS     || '0xcE0f6B5B878F30bbC84Aa274d5a08A3092a3f75b').toLowerCase();
 const LIQ_MGR    = (process.env.NEXT_PUBLIC_LIQUIDITY_MANAGER_ADDRESS || '0x971414356b3b7f4a2e891CB97B46E06B22c237C6').toLowerCase();
-const DIRECT_FAC = (process.env.NEXT_PUBLIC_DIRECT_FACTORY_ADDRESS    || '0x0569243C37172339bE4D6B0b4880874F67630811').toLowerCase();
+const DIRECT_FAC = (process.env.NEXT_PUBLIC_DIRECT_FACTORY_ADDRESS    || '0xd2f602536605CAed0C30a2DA05B24B8F0E59197E').toLowerCase();
 const FACTORY    = (process.env.NEXT_PUBLIC_FACTORY_ADDRESS           || '0xfDAAF29FFE961a5D4279d3089f694cc5676Ee915').toLowerCase();
 
 const DEPLOYMENT_FEE_BNB = 0.003;
@@ -191,6 +191,8 @@ export default function AdminPage() {
     const [govStatus, setGovStatus] = useState('idle');
     const [isInitialLoad, setIsInitialLoad] = useState(true);
     const [error, setError] = useState(null);
+    const [fiatTransactions, setFiatTransactions] = useState([]);
+    const [fiatSearch, setFiatSearch] = useState('');
     // Fee Collection Modal
     const [collectModal, setCollectModal] = useState(null);
     const [collectAmount, setCollectAmount] = useState('0.005');
@@ -215,9 +217,10 @@ export default function AdminPage() {
                 axios.get(`${API_URL}/treasury/transfers`),
                 axios.get(`${API_URL}/ml/whitepaper-stats`),
                 axios.get(`${API_URL}/wallets`),
+                axios.get(`${API_URL}/fiat/transactions`),
             ]);
 
-            const [tokensRes, transfersRes, wpRes, walletsRes] = results;
+            const [tokensRes, transfersRes, wpRes, walletsRes, fiatRes] = results;
 
             setStats({
                 treasury: weiToBNB(treasuryWei),
@@ -230,6 +233,7 @@ export default function AdminPage() {
             
             if (transfersRes.status === 'fulfilled') setTransfers(transfersRes.value.data || []);
             if (walletsRes.status === 'fulfilled') setWallets(walletsRes.value.data || []);
+            if (fiatRes.status === 'fulfilled') setFiatTransactions(fiatRes.value.data || []);
             
             if (results.some(r => r.status === 'rejected')) {
                 console.warn('Some administrative data failed to load:', results.filter(r => r.status === 'rejected'));
@@ -348,6 +352,17 @@ export default function AdminPage() {
             loadData();
         } catch (err) {
             alert('Refresh failed: ' + (err.response?.data?.error || err.message));
+        }
+    };
+
+    const handleUpdateFiatStatus = async (id, status) => {
+        if (!confirm(`Are you sure you want to mark this transaction as ${status}?`)) return;
+        try {
+            await axios.patch(`${API_URL}/fiat/transaction/${id}`, { status });
+            alert(`Transaction ${status.toLowerCase()}!`);
+            loadData();
+        } catch (err) {
+            alert('Failed to update status: ' + (err.response?.data?.error || err.message));
         }
     };
 
@@ -729,6 +744,7 @@ export default function AdminPage() {
                         { id: 'overview', icon: <LayoutDashboard className="w-4 h-4" />, label: 'Revenue Ledger' },
                         { id: 'tokens', icon: <Database className="w-4 h-4" />, label: 'Asset Management Control' },
                         { id: 'wallets', icon: <Wallet className="w-4 h-4" />, label: 'Connected Wallets' },
+                        { id: 'fiat', icon: <DollarSign className="w-4 h-4" />, label: 'Fiat Management' },
                         { id: 'governance', icon: <Scale className="w-4 h-4" />, label: 'Protocol Governance' }
                     ].map(tab => (
                         <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-2 px-8 py-3 rounded-2xl text-sm font-bold transition-all ${activeTab === tab.id ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900'}`}>{tab.icon} {tab.label}</button>
@@ -973,7 +989,104 @@ export default function AdminPage() {
                         </motion.div>
                     )}
 
+                    {/* ── Fair Launch Detailed Token Panel ────────────────────────── */}
+                    {activeTab === 'tokens' && (
+                        <motion.div key="fair-detail" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+                            <GlassCard className="p-0 mt-6 overflow-hidden">
+                                <div className="p-10 border-b border-black/5 bg-gradient-to-r from-blue-50 to-white flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-4">
+                                            <Rocket className="w-6 h-6 text-blue-500" /> FAIR LAUNCH MANAGEMENT
+                                        </h3>
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">
+                                            {stats?.tokens?.filter(t => t.launch_type === 'FAIR' || t.launch_type === 'FAIR_LAUNCH').length || 0} Active Fair Launches · Pancake Swap Service
+                                        </p>
+                                    </div>
+                                    <div className="px-5 py-2.5 bg-blue-500 text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-500/20">
+                                        Release Service Fee: 0.003 BNB
+                                    </div>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead className="bg-blue-50/40">
+                                            <tr>
+                                                <th className="px-8 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Token</th>
+                                                <th className="px-8 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Contract Address</th>
+                                                <th className="px-8 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Creator</th>
+                                                <th className="px-8 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Supply</th>
+                                                <th className="px-8 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Released to DEX</th>
+                                                <th className="px-8 py-5 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Locked in Factory</th>
+                                                <th className="px-8 py-5 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest pr-10">Last Activity</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-black/5">
+                                            {(stats?.tokens?.filter(t => t.launch_type === 'FAIR' || t.launch_type === 'FAIR_LAUNCH') || []).length === 0 ? (
+                                                <tr><td colSpan="7" className="py-16 text-center text-sm text-gray-400 font-bold">No Fair Launch tokens deployed yet</td></tr>
+                                            ) : stats.tokens.filter(t => t.launch_type === 'FAIR' || t.launch_type === 'FAIR_LAUNCH').map((t, i) => {
+                                                const totalSup = parseFloat(t.total_supply) || 1_000_000_000;
+                                                // Treasury gets 10%, 900M available. We show totalSupply as released guess since we don't track partial on chain
+                                                const treasuryShare = Math.floor(totalSup * 0.1);
+                                                const maxReleasable = totalSup - treasuryShare;
+                                                const releasedEst = t.tokens_released || maxReleasable; // Fallback full 900M if no partial info
+                                                const lockedEst = maxReleasable - releasedEst;
+                                                return (
+                                                    <tr key={i} className="hover:bg-blue-50/30 transition-all group">
+                                                        <td className="px-8 py-6">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-10 h-10 rounded-xl bg-white border border-black/5 shadow-inner overflow-hidden flex items-center justify-center text-sm">
+                                                                    {t.logo_url ? <img src={t.logo_url} className="w-full h-full object-cover" /> : '🚀'}
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-black text-gray-900 text-sm">{t.name}</p>
+                                                                    <p className="text-[10px] text-blue-500 font-black">${t.symbol}</p>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-8 py-6">
+                                                            <div className="flex items-center gap-2">
+                                                                <code className="text-[11px] font-mono font-bold text-gray-700 bg-gray-50 border border-gray-100 px-2 py-1 rounded-lg">{shortAddr(t.contract_address)}</code>
+                                                                <CopyButton text={t.contract_address} />
+                                                                <a href={'https://bscscan.com/token/' + t.contract_address} target="_blank" className="text-gray-300 hover:text-blue-500 transition-colors"><ExternalLink className="w-3.5 h-3.5" /></a>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-8 py-6">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <code className="text-[11px] font-mono font-bold text-gray-500">{shortAddr(t.owner)}</code>
+                                                                {t.owner && <CopyButton text={t.owner} />}
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-8 py-6">
+                                                            <p className="font-mono text-sm font-black text-gray-900">{(totalSup / 1e6).toFixed(0)}M</p>
+                                                            <p className="text-[9px] text-gray-400 font-bold uppercase">100M → Treasury</p>
+                                                        </td>
+                                                        <td className="px-8 py-6">
+                                                            <div className="space-y-1">
+                                                                <p className="font-mono text-sm font-black text-emerald-600">{(releasedEst / 1e6).toFixed(0)}M</p>
+                                                                <div className="w-20 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                                                                    <div className="h-full rounded-full bg-emerald-400" style={{width: Math.min(100, (releasedEst / maxReleasable) * 100) + '%'}} />
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-8 py-6">
+                                                            <p className="font-mono text-sm font-black text-amber-600">{(lockedEst / 1e6).toFixed(0)}M</p>
+                                                            <p className="text-[9px] text-gray-400 font-bold uppercase">In Factory Vault</p>
+                                                        </td>
+                                                        <td className="px-8 py-6 text-right pr-10">
+                                                            <p className="text-xs font-bold text-gray-500">{timeAgo(t.last_trade_at || t.created_at)}</p>
+                                                            <p className="text-[9px] text-gray-300 font-bold">{fullDateTime(t.created_at)}</p>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </GlassCard>
+                        </motion.div>
+                    )}
+
                     {activeTab === 'wallets' && (
+
                         <motion.div key="wallets" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="space-y-6">
                             <GlassCard className="p-0 overflow-hidden">
                                 <div className="p-10 border-b border-black/5 flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-gradient-to-r from-gray-50 to-white">
@@ -1149,6 +1262,105 @@ export default function AdminPage() {
                                 <div className="mt-12 p-8 rounded-[2rem] bg-amber-50 border border-amber-100 flex items-start gap-4">
                                     <Info className="w-6 h-6 text-amber-500 shrink-0 mt-1" />
                                     <p className="text-xs text-amber-700 leading-relaxed font-medium">Changes made here will directly affect the <span className="font-black">TokenFactory</span> smart contract on the BSC network. Please ensure you have sufficient gas and are connected with the owner wallet.</p>
+                                </div>
+                            </GlassCard>
+                        </motion.div>
+                    )}
+                    {activeTab === 'fiat' && (
+                        <motion.div key="fiat" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+                            <GlassCard className="p-0">
+                                <div className="p-10 border-b border-black/5 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                                    <div>
+                                        <h3 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Fiat Buy & Sell Ledger</h3>
+                                        <div className="flex items-center gap-4 mt-1"><div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-lg" /><p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Awaiting Verification</p></div>
+                                    </div>
+                                    <div className="relative group w-full lg:max-w-md">
+                                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-emerald-500" />
+                                        <input 
+                                            type="text" 
+                                            placeholder="Search by wallet, name, or asset..." 
+                                            value={fiatSearch}
+                                            onChange={(e) => setFiatSearch(e.target.value)}
+                                            className="w-full pl-14 pr-6 py-4 bg-gray-50 border border-transparent focus:border-emerald-500/30 focus:bg-white rounded-[1.5rem] text-sm font-bold shadow-inner outline-none transition-all" 
+                                        />
+                                    </div>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead className="bg-gray-50/50">
+                                            <tr>
+                                                <th className="px-10 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">S.No</th>
+                                                <th className="px-10 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">User Details</th>
+                                                <th className="px-10 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Type / Asset</th>
+                                                <th className="px-10 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">INR Amount</th>
+                                                <th className="px-10 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Status / Proof</th>
+                                                <th className="px-10 py-6 text-right text-[11px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-black/5">
+                                            {fiatTransactions
+                                                .filter(t => {
+                                                    const q = (fiatSearch || '').toLowerCase();
+                                                    return (t.user_wallet || '').toLowerCase().includes(q) || 
+                                                           (t.user_name || '').toLowerCase().includes(q) || 
+                                                           (t.asset || '').toLowerCase().includes(q);
+                                                })
+                                                .map((t, i) => (
+                                                <tr key={i} className="hover:bg-gray-50/80 transition-all group">
+                                                    <td className="px-10 py-8 text-xs font-black text-gray-300">#{i + 1}</td>
+                                                    <td className="px-10 py-8">
+                                                        <div className="flex flex-col gap-1">
+                                                            <p className="font-black text-gray-900 text-sm whitespace-nowrap">{t.user_name}</p>
+                                                            <div className="flex items-center gap-2">
+                                                                <p className="font-mono text-[10px] text-gray-400 font-bold">{t.user_wallet.slice(0,6)}...{t.user_wallet.slice(-4)}</p>
+                                                            </div>
+                                                            <p className="text-[9px] text-gray-400 font-bold">{t.phone_number} | {t.email}</p>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-10 py-8 text-xs font-black text-gray-800">
+                                                        <span className={`px-2 py-1 rounded-lg text-[10px] mr-2 ${t.type === 'BUY' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>{t.type}</span>
+                                                        {t.amount} {t.asset}
+                                                    </td>
+                                                    <td className="px-10 py-8">
+                                                        <p className="font-black text-gray-900">₹{t.inr_amount?.toLocaleString()}</p>
+                                                        <p className="text-[9px] text-gray-400 font-bold">{new Date(t.timestamp).toLocaleString()}</p>
+                                                    </td>
+                                                    <td className="px-10 py-8">
+                                                        <div className="flex items-center gap-3">
+                                                            <span className={`text-[10px] font-black px-3 py-1.5 rounded-full border shadow-sm ${
+                                                                t.status === 'VERIFIED' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                                t.status === 'REJECTED' ? 'bg-rose-50 text-rose-600 border-rose-100' :
+                                                                'bg-amber-50 text-amber-600 border-amber-100 animate-pulse'
+                                                            }`}>
+                                                                {t.status}
+                                                            </span>
+                                                            {t.proof_url && (
+                                                                <a href={`${API_URL.replace('/api', '')}${t.proof_url}`} target="_blank" className="p-2 bg-gray-50 hover:bg-emerald-50 text-gray-400 hover:text-emerald-500 rounded-xl transition-all border border-transparent hover:border-emerald-100">
+                                                                    <ImageIcon className="w-4 h-4" />
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-10 py-8 text-right">
+                                                        {t.status === 'PENDING' && (
+                                                            <div className="flex items-center justify-end gap-2">
+                                                                <button onClick={() => handleUpdateFiatStatus(t.id, 'VERIFIED')} className="p-3 bg-emerald-500 text-white rounded-xl shadow-lg hover:scale-105 transition-all"><Check className="w-4 h-4" /></button>
+                                                                <button onClick={() => handleUpdateFiatStatus(t.id, 'REJECTED')} className="p-3 bg-rose-500 text-white rounded-xl shadow-lg hover:scale-105 transition-all"><X className="w-4 h-4" /></button>
+                                                            </div>
+                                                        )}
+                                                        {t.bank_details && (
+                                                            <button 
+                                                                onClick={() => alert(`Details: ${t.bank_details}`)}
+                                                                className="mt-2 text-[9px] font-black text-gray-400 uppercase tracking-widest hover:text-rose-500 transition-colors"
+                                                            >
+                                                                View Details
+                                                            </button>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
                                 </div>
                             </GlassCard>
                         </motion.div>

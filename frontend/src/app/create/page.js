@@ -8,7 +8,7 @@ import {
     Info, Image as ImageIcon, Rocket, Zap, Clock, ShieldCheck, Activity, Brain, 
     AlertTriangle, TrendingUp, ChevronDown, CheckCircle, FileText, Loader2, 
     Upload, AlertCircle, CheckCircle2, Sparkles, ExternalLink, Droplets, Layers, 
-    Wallet as WalletIcon, Settings, Globe, BarChart3, Users
+    Wallet as WalletIcon, Settings, Globe, BarChart3, Users, Search, Copy, X
 } from 'lucide-react';
 import axios from 'axios';
 import WhitepaperModal from '@/components/WhitepaperModal';
@@ -45,6 +45,9 @@ function CreateToken() {
     const [wpThinking, setWpThinking] = useState(false);
     const [whitepaper, setWhitepaper] = useState(null);
     const [isWpModalOpen, setIsWpModalOpen] = useState(false);
+    const [mimicData, setMimicData] = useState(null);
+    const [isMimicChecking, setIsMimicChecking] = useState(false);
+    const [isMimicIgnored, setIsMimicIgnored] = useState(false);
 
     const [fees, setFees] = useState({ deployment: DEPLOY_FEE + PROTOCOL_FEE, minInitialBuy: MIN_LIQUIDITY });
 
@@ -72,6 +75,30 @@ function CreateToken() {
         }
         checkConnection();
     }, [account, provider, effectiveFactory]);
+    
+    // Proactive Mimic Detection
+    useEffect(() => {
+        if (!formData.name && !formData.symbol) {
+            setMimicData(null);
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            if (formData.name.length < 3 && formData.symbol.length < 2) return;
+            setIsMimicChecking(true);
+            setIsMimicIgnored(false); // Reset ignore status on new search
+            try {
+                const res = await axios.post(`${API_URL}/ml/mimic-check`, { 
+                    name: formData.name, 
+                    symbol: formData.symbol 
+                });
+                setMimicData(res.data);
+            } catch (err) { console.warn('Audit failed:', err); }
+            finally { setIsMimicChecking(false); }
+        }, 800);
+
+        return () => clearTimeout(timer);
+    }, [formData.name, formData.symbol]);
 
     const actualFee = isTreasury ? 0 : fees.deployment;
     const actualMinBuy = isTreasury ? 0 : fees.minInitialBuy; 
@@ -156,7 +183,12 @@ function CreateToken() {
             setTxHash({ tokenAddress });
             setStatus('success');
         } catch (err) {
-            setError(err.message || 'Deployment Error');
+            console.error(err);
+            if (err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
+                setError('Transaction was rejected by the user.');
+            } else {
+                setError(err.reason || err.message || 'Deployment Error');
+            }
             setStatus('error');
         }
     };
@@ -353,6 +385,101 @@ function CreateToken() {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Mimic Detection Verdict Block */}
+                            <AnimatePresence>
+                                {mimicData && !isMimicIgnored && (
+                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-12">
+                                        <div className={`p-8 rounded-[2.5rem] border-2 transition-all duration-500 ${
+                                            mimicData.riskLevel === 'CRITICAL' ? 'bg-red-50 border-red-200' :
+                                            mimicData.riskLevel === 'HIGH' ? 'bg-orange-50 border-orange-200' :
+                                            mimicData.riskLevel === 'MEDIUM' ? 'bg-amber-50 border-amber-200' :
+                                            'bg-emerald-50 border-emerald-200'
+                                        }`}>
+                                            <div className="flex flex-col md:flex-row items-start gap-6">
+                                                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
+                                                    mimicData.riskLevel === 'SAFE' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white animate-pulse'
+                                                }`}>
+                                                    {mimicData.riskLevel === 'SAFE' ? <ShieldCheck className="w-7 h-7" /> : <AlertTriangle className="w-7 h-7" />}
+                                                </div>
+                                                <div className="flex-1 w-full relative">
+                                                    <button 
+                                                        onClick={() => setIsMimicIgnored(true)}
+                                                        className="absolute -top-2 -right-2 p-2 hover:bg-black/5 rounded-full transition-colors text-gray-400 hover:text-gray-900"
+                                                        title="Ignore and Close"
+                                                    >
+                                                        <X className="w-4 h-4" /> 
+                                                        <span className="sr-only">Ignore</span>
+                                                    </button>
+                                                    <div className="flex items-center gap-4 mb-3">
+                                                        <h4 className="font-black text-gray-900 text-lg uppercase tracking-tight">CoinGecko Mimic Detection</h4>
+                                                        <span className={`px-4 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-[0.2em] shadow-sm ${
+                                                            mimicData.riskLevel === 'CRITICAL' ? 'bg-red-600' :
+                                                            mimicData.riskLevel === 'HIGH' ? 'bg-orange-500' :
+                                                            mimicData.riskLevel === 'MEDIUM' ? 'bg-amber-500' :
+                                                            'bg-emerald-500'
+                                                        }`}>
+                                                            {mimicData.riskLevel}
+                                                        </span>
+                                                        {isMimicChecking && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+                                                    </div>
+                                                    <p className={`text-sm font-bold mb-6 leading-relaxed ${
+                                                        mimicData.riskLevel === 'SAFE' ? 'text-emerald-700' : 'text-red-700'
+                                                    }`}>
+                                                        {mimicData.alertMessage || `✅ The Nexus algorithm has verified that "${formData.name}" is a unique identifier. No major mimic patterns detected on CoinGecko.`}
+                                                    </p>
+
+                                                    {mimicData.similarTokens?.length > 0 && (
+                                                        <div className="space-y-4">
+                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Similar Existing Assets on CoinGecko:</p>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                {mimicData.similarTokens.slice(0, 2).map((t, i) => (
+                                                                    <div key={i} className="bg-white/60 p-5 rounded-[1.5rem] border border-black/5 shadow-sm">
+                                                                        <div className="flex items-center justify-between mb-4">
+                                                                            <div className="flex items-center gap-3">
+                                                                                {t.image ? <img src={t.image} className="w-8 h-8 rounded-full" /> : <div className="w-8 h-8 bg-gray-200 rounded-full" />}
+                                                                                <div>
+                                                                                    <p className="font-black text-gray-900 text-sm whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px]">{t.name}</p>
+                                                                                    <p className="text-[10px] font-bold text-gray-400 font-mono uppercase">${t.symbol}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                            <span className="text-[9px] font-black px-2 py-0.5 bg-red-50 text-red-600 rounded-lg border border-red-100 uppercase tracking-tighter shrink-0">{t.nameSimilarity}% Match</span>
+                                                                        </div>
+                                                                        <div className="grid grid-cols-2 gap-4 mb-4">
+                                                                            <div className="space-y-0.5">
+                                                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest leading-none">Price</p>
+                                                                                <p className="text-xs font-black text-gray-900">${t.price?.toLocaleString(undefined, { maximumSignificantDigits: 4 }) || 'N/A'}</p>
+                                                                            </div>
+                                                                            <div className="space-y-0.5">
+                                                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest leading-none">Rank</p>
+                                                                                <p className="text-xs font-black text-gray-900">#{t.rank || 'N/A'}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="pt-3 border-t border-black/5">
+                                                                             <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 leading-none">Contract Address</p>
+                                                                             <div className="flex items-center justify-between bg-white/50 px-3 py-2 rounded-xl border border-black/5">
+                                                                                 <code className="text-[10px] font-mono font-bold text-rose-500 truncate mr-2">{t.contractAddress ? `${t.contractAddress.slice(0,6)}...${t.contractAddress.slice(-4)}` : 'UNKNOWN'}</code>
+                                                                                 {t.contractAddress && (
+                                                                                     <button 
+                                                                                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigator.clipboard.writeText(t.contractAddress); alert('Address Copied!'); }}
+                                                                                        className="p-1.5 hover:bg-rose-500 hover:text-white rounded-lg transition-all text-gray-400"
+                                                                                     >
+                                                                                         <Copy className="w-3.5 h-3.5" />
+                                                                                     </button>
+                                                                                 )}
+                                                                             </div>
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-12 border-t border-gray-50">
                                 <div className="space-y-8">

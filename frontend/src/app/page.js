@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useWallet } from '@/context/WalletContext';
 import { useEffect, useState, useRef } from 'react';
-import { Sparkles, TrendingUp, Zap, ArrowRight, Brain, CheckCircle, Smartphone, Globe, Shield } from 'lucide-react';
+import { Sparkles, TrendingUp, Zap, ArrowRight, Brain, CheckCircle, Smartphone, Globe, Shield, MessageSquare } from 'lucide-react';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -360,7 +360,99 @@ export default function Home() {
               </Link>
             </div>
           </motion.div>
+        </div>
+      </section>
 
+      {/* ── Neura AI Guidance Section ── */}
+      <section className="py-24 px-4 md:px-8 relative overflow-hidden bg-gray-900 border-y border-white/5">
+        <div className="absolute inset-0 paw-pattern opacity-10" />
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-rose-500/10 blur-[150px] -z-10 rounded-full" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-indigo-500/5 blur-[150px] -z-10 rounded-full" />
+        
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <motion.div 
+               initial={{ opacity: 0, x: -50 }}
+               whileInView={{ opacity: 1, x: 0 }}
+               viewport={{ once: true }}
+               className="relative"
+            >
+              <div className="relative z-10 rounded-[3rem] overflow-hidden border-8 border-white/5 shadow-3xl aspect-square group">
+                <img 
+                  src="/assets/neura_ai.jpg" 
+                  alt="Neura AI Neural Core"
+                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-110 group-hover:scale-100"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-60" />
+                <div className="absolute bottom-8 left-8 right-8 p-6 bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl">
+                   <div className="flex items-center gap-2 mb-2">
+                      <div className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" /> 
+                      <p className="text-white font-black text-xs uppercase tracking-[0.3em]">Neura AI Active</p>
+                   </div>
+                   <p className="text-gray-300 text-sm font-medium leading-relaxed italic">
+                      "I analyze complex neural patterns to ensure your token architecture is perfect before it ever touches the blockchain."
+                   </p>
+                </div>
+              </div>
+              
+              {/* Floating Tech Badges */}
+              <motion.div animate={{ y: [0, -20, 0] }} transition={{ duration: 4, repeat: Infinity }} className="absolute -top-10 -right-10 p-6 bg-white rounded-3xl shadow-2xl z-20 hidden md:block border border-gray-100">
+                <div className="flex items-center gap-3">
+                   <div className="w-10 h-10 bg-indigo-500 text-white rounded-xl flex items-center justify-center">
+                      <Brain className="w-6 h-6" />
+                   </div>
+                   <div>
+                      <p className="text-[10px] font-black uppercase text-gray-400">Memory Core</p>
+                      <p className="text-sm font-black text-gray-900">Adaptive Intelligence</p>
+                   </div>
+                </div>
+              </motion.div>
+            </motion.div>
+
+            <motion.div 
+               initial={{ opacity: 0, x: 50 }}
+               whileInView={{ opacity: 1, x: 0 }}
+               viewport={{ once: true }}
+               className="space-y-8"
+            >
+              <div>
+                <SectionBadge icon={<Sparkles className="w-4 h-4" />} text="Intelligent Guidance" />
+                <h2 className="text-4xl md:text-6xl font-black text-white leading-tight mb-6">
+                  Stuck in the process? <br />
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-indigo-500">Neura AI is here to lead.</span>
+                </h2>
+                <p className="text-gray-400 text-lg leading-relaxed max-w-xl">
+                  Deploying a token can be complex. Neura AI is integrated throughout B20-LAB to guide you through fees, smart contract logic, and listing strategies.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {[
+                  { title: 'Zero Friction', desc: 'Ask about deployment fees or minimum balances anytime.', icon: '⚡' },
+                  { title: 'Market Logic', desc: 'Get AI insights on name uniqueness and market trends.', icon: '📊' },
+                  { title: 'Technical Oracle', desc: 'Understand the underlying B20 standard architecture.', icon: '🏗️' },
+                  { title: 'Guardian Mode', desc: 'Neura identifies common pitfalls and bot-vulnerability.', icon: '🛡️' }
+                ].map((item, idx) => (
+                  <div key={idx} className="p-6 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/10 transition-all cursor-default group">
+                    <span className="text-2xl mb-3 block">{item.icon}</span>
+                    <h4 className="text-white font-black text-sm mb-2 uppercase tracking-wide">{item.title}</h4>
+                    <p className="text-gray-500 text-xs leading-relaxed">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-4 flex flex-col sm:flex-row gap-4">
+                 <button className="px-8 py-4 bg-rose-500 hover:bg-rose-600 text-white font-black rounded-2xl shadow-xl shadow-rose-500/20 flex items-center justify-center gap-3 transition-all group active:scale-95">
+                    <MessageSquare className="w-5 h-5" /> Start Chatting with Neura
+                 </button>
+                 <Link href="/create">
+                    <button className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-black rounded-2xl border border-white/10 flex items-center justify-center gap-3 transition-all active:scale-95">
+                       Explore Creation <ArrowRight className="w-5 h-5 flex group-hover:translate-x-1" />
+                    </button>
+                 </Link>
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 

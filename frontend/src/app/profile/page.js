@@ -3,7 +3,7 @@
 import Navbar from '@/components/Navbar';
 import { useWallet } from '@/context/WalletContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wallet, Rocket, TrendingUp, Clock, ExternalLink, Copy, CheckCircle2, ArrowUpRight, Activity, Users, Zap, ShieldCheck } from 'lucide-react';
+import { Wallet, Rocket, TrendingUp, Clock, ExternalLink, Copy, CheckCircle2, ArrowUpRight, Activity, Users, Zap, ShieldCheck, Search, PlusCircle, Unlock, ChevronRight, Loader2, AlertTriangle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import Link from 'next/link';
@@ -11,6 +11,8 @@ import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const ADMIN_WALLET = '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
+const DIRECT_FACTORY = process.env.NEXT_PUBLIC_DIRECT_FACTORY_ADDRESS || '0xd2f602536605CAed0C30a2DA05B24B8F0E59197E';
+const RELEASE_SERVICE_FEE = 0.003;
 
 export function formatPrice(num) {
     if (!num) return <span className="font-mono">0.00000000</span>;
@@ -55,8 +57,63 @@ function TokenCard({ token, index, account }) {
     const [isUpgrading, setIsUpgrading] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState('Highly Trusted');
     const [isProcessing, setIsProcessing] = useState(false);
+    // Fair Launch Token Release State
+    const [isReleasing, setIsReleasing] = useState(false);
+    const [releaseTokens, setReleaseTokens] = useState('');
+    const [releaseLiqBnb, setReleaseLiqBnb] = useState('');
+    const [releaseStatus, setReleaseStatus] = useState('idle'); // idle | loading | success | error
+    const [releaseError, setReleaseError] = useState('');
+
+    const isFairLaunch = token.launch_type === 'FAIR' || token.launch_type === 'FAIR_LAUNCH';
+    const isOwner = account?.toLowerCase() === token.owner?.toLowerCase();
 
     const isAdmin = account?.toLowerCase() === ADMIN_WALLET.toLowerCase();
+
+    const handleReleaseTokens = async () => {
+        const tokensNum = parseFloat(releaseTokens);
+        const bnbNum = parseFloat(releaseLiqBnb);
+        if (!tokensNum || tokensNum <= 0) { setReleaseError('Enter valid token amount.'); return; }
+        if (!bnbNum || bnbNum <= 0) { setReleaseError('Enter BNB liquidity amount.'); return; }
+        setReleaseStatus('loading');
+        setReleaseError('');
+        try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+
+            // Service fee + liquidity to pair
+            const totalBnb = RELEASE_SERVICE_FEE + bnbNum;
+
+            // Approve factory to spend tokens first
+            const tokenAbi = ['function approve(address spender, uint256 amount) returns (bool)', 'function allowance(address owner, address spender) view returns (uint256)'];
+            const tokenContract = new ethers.Contract(token.contract_address, tokenAbi, signer);
+            const amountWei = ethers.parseEther(tokensNum.toString());
+            const allowance = await tokenContract.allowance(account, DIRECT_FACTORY);
+            if (allowance < amountWei) {
+                setReleaseError('Approving token allowance...');
+                const atx = await tokenContract.approve(DIRECT_FACTORY, ethers.MaxUint256);
+                await atx.wait();
+            }
+
+            // Call factory releaseAdditionalLiquidity
+            const factoryAbi = ['function addLiquidityForToken(address tokenAddress, uint256 tokenAmount) external payable'];
+            const factory = new ethers.Contract(DIRECT_FACTORY, factoryAbi, signer);
+            const tx = await factory.addLiquidityForToken(
+                token.contract_address,
+                amountWei,
+                { value: ethers.parseEther(totalBnb.toFixed(18)), gasLimit: 1200000 }
+            );
+            await tx.wait();
+            setReleaseStatus('success');
+            setTimeout(() => { setReleaseStatus('idle'); setIsReleasing(false); setReleaseTokens(''); setReleaseLiqBnb(''); }, 5000);
+        } catch(e) {
+            if (e.code === 'ACTION_REJECTED' || (e.message && e.message.includes('rejected'))) {
+                setReleaseError('Transaction was rejected.');
+            } else {
+                setReleaseError(e.reason || e.message || 'Transaction failed.');
+            }
+            setReleaseStatus('idle');
+        }
+    };
     const displayAddress = token.contract_address
         ? `${token.contract_address.slice(0, 10)}...${token.contract_address.slice(-8)}`
         : '—';
@@ -289,6 +346,52 @@ function TokenCard({ token, index, account }) {
                         <ArrowUpRight className="w-4 h-4" />
                     </a>
                 </div>
+                {/* Token Release Panel - Fair Launch only */}
+                {isFairLaunch && isOwner && (
+                    <div className="mt-4">
+                        {!isReleasing ? (
+                            <button
+                                onClick={() => setIsReleasing(true)}
+                                className="w-full flex items-center justify-between px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold text-xs rounded-xl transition-all group"
+                            >
+                                <span className="flex items-center gap-2"><Unlock className="w-4 h-4" /> Release Additional Tokens to PancakeSwap</span>
+                                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                            </button>
+                        ) : (
+                            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-3">
+                                <div className="flex items-center justify-between mb-2">
+                                    <p className="text-xs font-black text-emerald-800 uppercase tracking-widest flex items-center gap-1.5"><PlusCircle className="w-4 h-4" /> Expand Liquidity Pool</p>
+                                    <button onClick={() => setIsReleasing(false)} className="text-gray-400 hover:text-gray-600"><span className="text-lg leading-none">&times;</span></button>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1 block">Tokens to Release</label>
+                                        <input type="number" placeholder="e.g. 50000000" value={releaseTokens} onChange={e => setReleaseTokens(e.target.value)}
+                                            className="w-full bg-white border border-emerald-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:border-emerald-400 transition-all" />
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1 block">BNB Liquidity to Pair</label>
+                                        <input type="number" step="0.01" placeholder="e.g. 0.05" value={releaseLiqBnb} onChange={e => setReleaseLiqBnb(e.target.value)}
+                                            className="w-full bg-white border border-emerald-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:border-emerald-400 transition-all" />
+                                    </div>
+                                </div>
+                                <div className="p-3 bg-white/70 rounded-xl border border-emerald-100 text-[10px] font-bold text-gray-600 space-y-1.5">
+                                    <div className="flex justify-between"><span>BNB Liquidity</span><span>{releaseLiqBnb || '0.000'} BNB</span></div>
+                                    <div className="flex justify-between"><span>Service Fee</span><span className="text-amber-600">{RELEASE_SERVICE_FEE.toFixed(3)} BNB</span></div>
+                                    <div className="flex justify-between font-black text-gray-900 border-t border-emerald-100 pt-1.5">
+                                        <span>Total</span><span>{((parseFloat(releaseLiqBnb) || 0) + RELEASE_SERVICE_FEE).toFixed(3)} BNB</span>
+                                    </div>
+                                </div>
+                                {releaseError && <p className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-3 py-2 rounded-lg flex items-start gap-2"><AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />{releaseError}</p>}
+                                {releaseStatus === 'success' && <p className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-3 py-2 rounded-lg flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Tokens released to PancakeSwap!</p>}
+                                <button onClick={handleReleaseTokens} disabled={releaseStatus === 'loading'}
+                                    className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs rounded-xl uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/20">
+                                    {releaseStatus === 'loading' ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</> : <><Unlock className="w-4 h-4" /> Release Tokens to PancakeSwap</>}
+                                </button>
+                            </motion.div>
+                        )}
+                    </div>
+                )}
             </div>
         </motion.div>
     );
@@ -299,6 +402,7 @@ export default function ProfilePage() {
     const [tokens, setTokens] = useState([]);
     const [loading, setLoading] = useState(false);
     const [bnbBalance, setBnbBalance] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         if (!account) return;
@@ -324,6 +428,12 @@ export default function ProfilePage() {
         { label: 'Wallet Balance', value: bnbBalance !== null ? `${formatBNB(bnbBalance)} BNB` : '…', icon: <Wallet className="w-5 h-5" />, color: 'text-indigo-500', bg: 'bg-indigo-50', border: 'border-indigo-200' },
         { label: 'Last Deploy', value: tokens[0]?.created_at ? new Date(tokens[0].created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '—', icon: <Clock className="w-5 h-5" />, color: 'text-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-200' },
     ];
+
+    const filteredTokens = tokens.filter(t => 
+        (t.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (t.symbol || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (t.contract_address || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     return (
         <main className="min-h-screen paw-pattern">
@@ -390,16 +500,30 @@ export default function ProfilePage() {
                         </div>
 
                         {/* Tokens header */}
-                        <div className="mb-5 flex items-center justify-between">
-                            <h2 className="text-xl font-black text-gray-900">Your Tokens
+                        <div className="mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                            <h2 className="text-xl font-black text-gray-900 flex items-center">Your Tokens
                                 <span className="ml-2 text-sm font-bold text-gray-400 bg-black/5 px-2.5 py-0.5 rounded-full">{tokens.length}</span>
                             </h2>
-                            <Link href="/create">
-                                <motion.button whileHover={{ scale: 1.04 }}
-                                    className="px-5 py-2.5 bg-gradient-to-r from-rose-500 to-orange-500 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-md shadow-rose-500/20">
-                                    <Rocket className="w-4 h-4" /> Deploy New Token
-                                </motion.button>
-                            </Link>
+                            <div className="flex items-center gap-3 w-full sm:w-auto">
+                                <div className="relative flex-1 sm:w-64">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Search className="w-4 h-4 text-gray-400" />
+                                    </div>
+                                    <input
+                                        type="text"
+                                        placeholder="Search by name, symbol, or address..."
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-500/20 transition-all shadow-sm"
+                                    />
+                                </div>
+                                <Link href="/create" className="shrink-0">
+                                    <motion.button whileHover={{ scale: 1.04 }}
+                                        className="h-full px-5 py-2.5 bg-gradient-to-r from-rose-500 to-orange-500 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-md shadow-rose-500/20">
+                                        <Rocket className="w-4 h-4" /> Deploy
+                                    </motion.button>
+                                </Link>
+                            </div>
                         </div>
 
                         {loading ? (
@@ -407,22 +531,20 @@ export default function ProfilePage() {
                                 <div className="w-12 h-12 border-4 border-rose-500/20 border-t-rose-500 rounded-full animate-spin" />
                                 <p className="text-gray-400 text-sm font-semibold">Loading your tokens…</p>
                             </div>
-                        ) : tokens.length === 0 ? (
+                        ) : filteredTokens.length === 0 ? (
                             <div className="bg-white border border-black/8 rounded-2xl py-20 text-center shadow-sm">
-                                <div className="w-16 h-16 rounded-2xl bg-rose-50 flex items-center justify-center mx-auto mb-4">
-                                    <Rocket className="w-8 h-8 text-rose-400" />
+                                <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-4">
+                                    <Search className="w-8 h-8 text-gray-400" />
                                 </div>
-                                <p className="font-black text-xl text-gray-800 mb-1">No tokens yet</p>
-                                <p className="text-sm text-gray-500 mb-6">Deploy your first meme token to get started</p>
-                                <Link href="/create">
-                                    <button className="px-8 py-3 bg-gradient-to-r from-rose-500 to-orange-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-rose-500/20">
-                                        🚀 Create Token
-                                    </button>
-                                </Link>
+                                <p className="font-black text-xl text-gray-800 mb-1">No tokens found</p>
+                                <p className="text-sm text-gray-500 mb-6">Could not find any deployed tokens matching your search criteria.</p>
+                                <button onClick={() => setSearchQuery('')} className="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl text-sm transition-colors">
+                                    Clear Search
+                                </button>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                {tokens.map((token, i) => <TokenCard key={i} token={token} index={i} account={account} />)}
+                                {filteredTokens.map((token, i) => <TokenCard key={token.contract_address || i} token={token} index={i} account={account} />)}
                             </div>
                         )}
                     </>

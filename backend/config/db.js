@@ -127,6 +127,28 @@ const db = new sqlite3.Database(dbPath, (err) => {
             if (err) console.error('Error creating connected_wallets table:', err);
             else console.log('Connected wallets table ready.');
         });
+
+        // Fiat Transactions (Buy/Sell)
+        db.run(`
+            CREATE TABLE IF NOT EXISTS fiat_transactions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_wallet TEXT NOT NULL,
+                user_name TEXT NOT NULL,
+                phone_number TEXT NOT NULL,
+                email TEXT NOT NULL,
+                type TEXT NOT NULL, -- 'BUY' or 'SELL'
+                asset TEXT NOT NULL, -- 'BNB' or 'USDT'
+                amount REAL NOT NULL,
+                inr_amount REAL NOT NULL,
+                proof_url TEXT,
+                bank_details_json TEXT, -- JSON string for Bank/UPI details
+                status TEXT DEFAULT 'PENDING', -- 'PENDING', 'VERIFIED', 'REJECTED'
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `, (err) => {
+            if (err) console.error('Error creating fiat_transactions table:', err);
+            else console.log('Fiat transactions table ready.');
+        });
     }
 });
 

@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Activity, Rocket, ShieldCheck, Globe, Zap, 
     Layers, Loader2, Upload, CheckCircle2, Sparkles, 
-    FileText, Network, Cpu, Settings, ExternalLink, BarChart3, Brain
+    FileText, Network, Cpu, Settings, ExternalLink, BarChart3, Brain,
+    AlertTriangle, ShieldCheck, Copy, X, Search
 } from 'lucide-react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
@@ -26,10 +27,37 @@ export default function StandardAsset() {
     const [status, setStatus] = useState('idle');
     const [error, setError] = useState('');
     const [wpThinking, setWpThinking] = useState(false);
+    const [mimicData, setMimicData] = useState(null);
+    const [isMimicChecking, setIsMimicChecking] = useState(false);
+    const [isMimicIgnored, setIsMimicIgnored] = useState(false);
+
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
     const FEE_WALLET = '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
     const isTreasury = account?.toLowerCase() === FEE_WALLET.toLowerCase();
     const effectiveFee = isTreasury ? 0 : TOTAL_FEE;
+
+    // ─── Proactive Mimic Detection Effect ───
+    useState(() => {
+        if (!formData.name && !formData.symbol) return;
+        const timer = setTimeout(async () => {
+            if (formData.name.length < 3 && formData.symbol.length < 2) return;
+            setIsMimicChecking(true);
+            setIsMimicIgnored(false);
+            try {
+                const res = await axios.post(`${API_URL}/ml/mimic-check`, { 
+                    name: formData.name, 
+                    symbol: formData.symbol 
+                });
+                setMimicData(res.data);
+            } catch (err) {
+                console.error('Mimic check failed:', err);
+            } finally {
+                setIsMimicChecking(false);
+            }
+        }, 800);
+        return () => clearTimeout(timer);
+    }, [formData.name, formData.symbol]);
 
     const handleLogoChange = (e) => {
         const file = e.target.files[0];
@@ -58,7 +86,11 @@ export default function StandardAsset() {
                 setStatus('success');
             }, 3000);
         } catch (err) {
-            setError(err.message);
+            if (err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
+                setError('Transaction was rejected by the user.');
+            } else {
+                setError(err.reason || err.message || 'Unknown error occurred.');
+            }
             setStatus('error');
         }
     };
@@ -221,6 +253,77 @@ export default function StandardAsset() {
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Mimic Detection Verdict Block */}
+                            <AnimatePresence>
+                                {mimicData && !isMimicIgnored && (
+                                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-8">
+                                        <div className={`p-6 rounded-[2rem] border-2 transition-all duration-500 shadow-sm ${
+                                            mimicData.riskLevel === 'CRITICAL' ? 'bg-red-50 border-red-200' :
+                                            mimicData.riskLevel === 'HIGH' ? 'bg-orange-50 border-orange-200' :
+                                            mimicData.riskLevel === 'MEDIUM' ? 'bg-amber-50 border-amber-200' :
+                                            'bg-emerald-50 border-emerald-200'
+                                        }`}>
+                                            <div className="flex items-start gap-4 relative">
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => setIsMimicIgnored(true)}
+                                                    className="absolute -top-1 -right-1 p-1.5 hover:bg-black/5 rounded-full transition-colors text-gray-400 hover:text-gray-900"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
+                                                    mimicData.riskLevel === 'SAFE' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white animate-pulse'
+                                                }`}>
+                                                    {mimicData.riskLevel === 'SAFE' ? <ShieldCheck className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-3 mb-1">
+                                                        <h4 className="font-black text-gray-900 text-xs uppercase tracking-tight">Mimic Detection</h4>
+                                                        <span className={`px-2 py-0.5 rounded-full text-[8px] font-black text-white uppercase tracking-wider ${
+                                                            mimicData.riskLevel === 'CRITICAL' ? 'bg-red-600' :
+                                                            mimicData.riskLevel === 'HIGH' ? 'bg-orange-500' :
+                                                            mimicData.riskLevel === 'MEDIUM' ? 'bg-amber-500' :
+                                                            'bg-emerald-500'
+                                                        }`}>
+                                                            {mimicData.riskLevel}
+                                                        </span>
+                                                        {isMimicChecking && <Loader2 className="w-3 h-3 animate-spin text-gray-400" />}
+                                                    </div>
+                                                    <p className={`text-[11px] font-bold mb-4 ${
+                                                        mimicData.riskLevel === 'SAFE' ? 'text-emerald-700' : 'text-red-700'
+                                                    }`}>
+                                                        {mimicData.alertMessage || "Safe identifier detected."}
+                                                    </p>
+
+                                                    {mimicData.similarTokens?.length > 0 && (
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                            {mimicData.similarTokens.slice(0, 2).map((t, i) => (
+                                                                <div key={i} className="bg-white/60 p-3 rounded-2xl border border-black/5">
+                                                                    <div className="flex items-center justify-between gap-2 mb-2">
+                                                                        <div className="flex items-center gap-2 min-w-0">
+                                                                            {t.image && <img src={t.image} className="w-5 h-5 rounded-full" />}
+                                                                            <p className="font-black text-gray-900 text-[10px] truncate">{t.name}</p>
+                                                                        </div>
+                                                                        <span className="text-[8px] font-bold text-red-500 shrink-0">{t.nameSimilarity}% Match</span>
+                                                                    </div>
+                                                                    <div className="flex items-center justify-between bg-white/50 px-2 py-1.5 rounded-lg border border-black/5 group">
+                                                                         <code className="text-[9px] font-mono text-rose-500 truncate">{t.contractAddress ? `${t.contractAddress.slice(0,6)}...${t.contractAddress.slice(-4)}` : 'UNKNOWN'}</code>
+                                                                         <button type="button" onClick={(e) => { e.preventDefault(); navigator.clipboard.writeText(t.contractAddress); alert('Copied!'); }} className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                             <Copy className="w-3 h-3 text-gray-400 hover:text-rose-500" />
+                                                                         </button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
                             <button type="submit" disabled={status === 'uploading'} className="w-full py-8 bg-gray-900 text-white font-black text-2xl rounded-[3rem] shadow-2xl hover:bg-black hover:scale-[1.01] transition-all active:scale-[0.98] disabled:opacity-20 flex items-center justify-center gap-6 group relative overflow-hidden">
                                 {status === 'uploading' ? <Loader2 className="w-8 h-8 animate-spin" /> : <Rocket className="w-8 h-8 group-hover:rotate-12 transition-transform" />}

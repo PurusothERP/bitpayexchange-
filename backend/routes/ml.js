@@ -225,4 +225,22 @@ router.get('/whitepaper-stats', async (req, res) => {
     }
 });
 
+/**
+ * @route   POST /api/ml/neura-chat
+ * @desc    Neura AI intelligent assistant chat
+ */
+router.post('/neura-chat', async (req, res) => {
+    const { messages } = req.body;
+    if (!messages || !Array.isArray(messages)) {
+        return res.status(400).json({ error: 'Messages array is required' });
+    }
+    try {
+        const result = await mlEngine.runNeuraChat(messages);
+        res.json(result);
+    } catch (error) {
+        console.error('[ML Route] Neura chat error:', error.message);
+        res.status(500).json({ error: 'Neura chat failed' });
+    }
+});
+
 module.exports = router;

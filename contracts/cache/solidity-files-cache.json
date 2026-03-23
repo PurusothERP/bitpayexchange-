@@ -477,8 +477,8 @@
       ]
     },
     "/Users/purusothaman/Desktop/untitled folder 2/contracts/contracts/DirectDexLaunchFactory.sol": {
-      "lastModificationDate": 1773921225817,
-      "contentHash": "65fb325235d815c465798f39eb5721ce",
+      "lastModificationDate": 1774255927486,
+      "contentHash": "bee38bdc41698f312c6e65bce125311c",
       "sourceName": "contracts/DirectDexLaunchFactory.sol",
       "solcConfig": {
         "version": "0.8.20",

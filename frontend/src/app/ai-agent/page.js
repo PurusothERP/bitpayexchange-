@@ -207,12 +207,12 @@ export default function AIAgent() {
                                                                     </span>
                                                                 </div>
                                                             </div>
-                                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px] font-medium text-gray-600">
+                                                            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 text-[10px] font-medium text-gray-600">
                                                                 <div>
                                                                     <span className="block text-gray-400 font-bold uppercase tracking-widest text-[8px]">Current Price</span>
                                                                     <span className="text-gray-800 font-bold">${t.price != null ? t.price.toLocaleString(undefined, { maximumSignificantDigits: 6 }) : 'N/A'}</span>
                                                                 </div>
-                                                                <div>
+                                                                <div className="hidden lg:block">
                                                                     <span className="block text-gray-400 font-bold uppercase tracking-widest text-[8px]">Circulating Supply</span>
                                                                     <span className="text-gray-800 font-bold">{t.circulatingSupply ? t.circulatingSupply.toLocaleString() : 'N/A'}</span>
                                                                 </div>
@@ -220,9 +220,23 @@ export default function AIAgent() {
                                                                     <span className="block text-gray-400 font-bold uppercase tracking-widest text-[8px]">Market Cap Rank</span>
                                                                     <span className="text-gray-800 font-bold">#{t.rank || 'N/A'}</span>
                                                                 </div>
-                                                                <div>
+                                                                <div className="hidden md:block">
                                                                     <span className="block text-gray-400 font-bold uppercase tracking-widest text-[8px]">All Time High Date</span>
                                                                     <span className="text-gray-800 font-bold">{t.launchDateInfo ? new Date(t.launchDateInfo).toLocaleDateString() : '—'}</span>
+                                                                </div>
+                                                                <div className="col-span-2 lg:col-span-1">
+                                                                    <span className="block text-gray-400 font-bold uppercase tracking-widest text-[8px]">Contract Identity</span>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-rose-500 font-mono font-bold truncate max-w-[80px]">{t.contractAddress ? `${t.contractAddress.slice(0,6)}...${t.contractAddress.slice(-4)}` : 'UNKNOWN'}</span>
+                                                                        {t.contractAddress && (
+                                                                            <button 
+                                                                                onClick={() => { navigator.clipboard.writeText(t.contractAddress); alert('Address Copied!'); }}
+                                                                                className="p-1.5 bg-gray-100 hover:bg-rose-500 hover:text-white rounded-lg transition-all"
+                                                                            >
+                                                                                <ExternalLink className="w-3 h-3" />
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>

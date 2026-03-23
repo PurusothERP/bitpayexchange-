@@ -3,6 +3,7 @@ import "./globals.css";
 import { WalletProvider } from "@/context/WalletContext";
 import Footer from "@/components/Footer";
 import NetworkGuard from "@/components/NetworkGuard";
+import ChatBox from "@/components/ChatBox";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,6 +22,7 @@ export default function RootLayout({ children }) {
               {children}
             </div>
             <Footer />
+            <ChatBox />
           </NetworkGuard>
         </WalletProvider>
       </body>

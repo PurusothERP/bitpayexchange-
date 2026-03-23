@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useWallet } from '@/context/WalletContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { Wallet, Rocket, Activity, Image as ImageIcon, Menu, X, FileText, ArrowRightLeft, ChevronDown, Coins, ShieldCheck, Shield, Sparkles } from 'lucide-react';
+import { Wallet, Rocket, Activity, Image as ImageIcon, Menu, X, FileText, ArrowRightLeft, ChevronDown, Coins, ShieldCheck, Shield, Sparkles, DollarSign } from 'lucide-react';
 
 export default function Navbar() {
     const { account, connectWallet, disconnectWallet, isConnecting } = useWallet();
@@ -145,6 +145,9 @@ export default function Navbar() {
                             <Link href="/dex" className="nav-link flex items-center gap-2 hover:text-rose-500 transition-colors">
                                 <ArrowRightLeft className="w-4 h-4" /> DEX
                             </Link>
+                            <Link href="/fiat" className="nav-link flex items-center gap-2 text-emerald-600 font-bold hover:text-emerald-700 transition-colors">
+                                <DollarSign className="w-4 h-4" /> Fiat
+                            </Link>
                             <Link href="/profile" className="nav-link flex items-center gap-2 hover:text-rose-500 transition-colors">
                                 <Wallet className="w-4 h-4" /> Profile
                             </Link>
@@ -229,6 +232,9 @@ export default function Navbar() {
                             </Link>
                             <Link href="/dex" className="block px-3 py-3 rounded-md text-base font-medium text-gray-900 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
                                 <ArrowRightLeft className="w-5 h-5 text-rose-500" /> DEX
+                            </Link>
+                            <Link href="/fiat" className="block px-3 py-3 rounded-md text-base font-medium text-emerald-600 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
+                                <DollarSign className="w-5 h-5 text-emerald-500" /> Fiat Buy & Sell
                             </Link>
                             <Link href="/profile" className="block px-3 py-3 rounded-md text-base font-medium text-gray-900 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
                                 <Wallet className="w-5 h-5 text-rose-500" /> My Profile

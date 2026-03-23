@@ -493,7 +493,8 @@ export const DIRECT_LAUNCH_FACTORY_ABI = [
   {
     "inputs": [
       { "internalType": "string", "name": "name",   "type": "string" },
-      { "internalType": "string", "name": "symbol", "type": "string" }
+      { "internalType": "string", "name": "symbol", "type": "string" },
+      { "internalType": "uint256", "name": "tokensToLiquidate",  "type": "uint256" }
     ],
     "name": "createTokenDirect",
     "outputs": [{ "internalType": "address", "name": "tokenAddress", "type": "address" }],
@@ -513,5 +514,41 @@ export const DIRECT_LAUNCH_FACTORY_ABI = [
     ],
     "name": "TokenCreatedDirect",
     "type": "event"
+  },
+  {
+    "inputs": [
+      { "internalType": "address", "name": "tokenAddress", "type": "address" },
+      { "internalType": "uint256", "name": "tokenAmount",  "type": "uint256" }
+    ],
+    "name": "addLiquidityForToken",
+    "outputs": [],
+    "stateMutability": "payable",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "name": "tokensLocked",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "name": "tokenCreator",
+    "outputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true,  "internalType": "address", "name": "tokenAddress", "type": "address" },
+      { "indexed": true,  "internalType": "address", "name": "caller",      "type": "address" },
+      { "indexed": false, "internalType": "uint256", "name": "tokenAmount", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "bnbAdded",    "type": "uint256" }
+    ],
+    "name": "LiquidityAdded",
+    "type": "event"
   }
 ];
+

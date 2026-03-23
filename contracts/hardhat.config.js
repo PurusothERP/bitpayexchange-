@@ -30,5 +30,10 @@ module.exports = {
             accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
             gasPrice: 10000000000, // 10 gwei
         }
+    },
+    etherscan: {
+        apiKey: {
+            bsc: process.env.BSCSCAN_API_KEY || ''
+        }
     }
 };

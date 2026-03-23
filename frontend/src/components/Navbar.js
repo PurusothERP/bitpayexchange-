@@ -136,6 +136,9 @@ export default function Navbar() {
                             <Link href="/launch" className="nav-link flex items-center gap-2 hover:text-rose-500 transition-colors">
                                 <Coins className="w-4 h-4" /> Launchpad
                             </Link>
+                            <Link href="/fiat" className="nav-link flex items-center gap-2 text-emerald-600 font-bold hover:text-emerald-700 transition-colors">
+                                <DollarSign className="w-4 h-4" /> Fiat
+                            </Link>
                             <Link href="/trade" className="nav-link flex items-center gap-2 text-rose-600 hover:text-rose-700 transition-colors">
                                 <Activity className="w-4 h-4" /> Trade
                             </Link>
@@ -144,9 +147,6 @@ export default function Navbar() {
                             </Link>
                             <Link href="/dex" className="nav-link flex items-center gap-2 hover:text-rose-500 transition-colors">
                                 <ArrowRightLeft className="w-4 h-4" /> DEX
-                            </Link>
-                            <Link href="/fiat" className="nav-link flex items-center gap-2 text-emerald-600 font-bold hover:text-emerald-700 transition-colors">
-                                <DollarSign className="w-4 h-4" /> Fiat
                             </Link>
                             <Link href="/profile" className="nav-link flex items-center gap-2 hover:text-rose-500 transition-colors">
                                 <Wallet className="w-4 h-4" /> Profile
@@ -224,6 +224,9 @@ export default function Navbar() {
                             <Link href="/launch" className="block px-3 py-3 rounded-md text-base font-medium text-gray-900 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
                                 <Coins className="w-5 h-5 text-gray-600" /> Launchpad
                             </Link>
+                            <Link href="/fiat" className="block px-3 py-3 rounded-md text-base font-medium text-emerald-600 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
+                                <DollarSign className="w-5 h-5 text-emerald-500" /> Fiat Buy & Sell
+                            </Link>
                             <Link href="/trade" className="block px-3 py-3 rounded-md text-base font-medium text-rose-600 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
                                 <Activity className="w-5 h-5 text-rose-500" /> Trade
                             </Link>
@@ -232,9 +235,6 @@ export default function Navbar() {
                             </Link>
                             <Link href="/dex" className="block px-3 py-3 rounded-md text-base font-medium text-gray-900 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
                                 <ArrowRightLeft className="w-5 h-5 text-rose-500" /> DEX
-                            </Link>
-                            <Link href="/fiat" className="block px-3 py-3 rounded-md text-base font-medium text-emerald-600 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
-                                <DollarSign className="w-5 h-5 text-emerald-500" /> Fiat Buy & Sell
                             </Link>
                             <Link href="/profile" className="block px-3 py-3 rounded-md text-base font-medium text-gray-900 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
                                 <Wallet className="w-5 h-5 text-rose-500" /> My Profile

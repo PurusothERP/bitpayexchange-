@@ -19,9 +19,9 @@ const bscMainnet = {
 
 // 3. Create a metadata object
 const metadata = {
-    name: 'B20-LAB',
-    description: 'B20-LAB Token Launchpad',
-    url: 'https://b20-lab.com',
+    name: 'B20- Exchange',
+    description: 'B20- Exchange Intelligence Hub',
+    url: 'https://b20-exchange.com', // Updated for branding consistency
     icons: ['https://avatars.githubusercontent.com/u/37784886']
 };
 

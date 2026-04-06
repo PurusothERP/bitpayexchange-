@@ -8,8 +8,8 @@ import ChatBox from "@/components/ChatBox";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "B20-LAB | Token Launchpad",
-  description: "Deploy and launch your own tokens on BNB Smart Chain with B20-LAB",
+  title: "B20- Exchange | Intelligence Hub",
+  description: "Institutional-grade market data, Traders Hub, and automated high-yield staking on BNB Smart Chain.",
 };
 
 export default function RootLayout({ children }) {

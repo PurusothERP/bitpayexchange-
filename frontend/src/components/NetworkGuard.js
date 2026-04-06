@@ -58,7 +58,7 @@ export default function NetworkGuard({ children }) {
                 <div className="flex items-center gap-2 text-sm font-bold">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span>
-                        Wrong network detected! B20-LAB runs on <strong>BNB Smart Chain</strong>. You are on chain ID {chainId}.
+                        Wrong network detected! B20- Exchange runs on <strong>BNB Smart Chain</strong>. You are on chain ID {chainId}.
                     </span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">

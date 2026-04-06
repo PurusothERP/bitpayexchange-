@@ -232,60 +232,52 @@ export default function Home() {
 
   const services = [
     {
-      icon: '✨',
-      title: 'AI Token Architect',
-      desc: 'Brainstorm and draft complete token plans with our Claude-powered AI Agent.',
-      features: ['One-prompt tokenomics', 'Professional taglines', 'Contextual branding', 'Auto-import to launch'],
-      gradient: 'from-blue-500/10 to-blue-600/5 border-blue-400/30',
+      icon: '🧠',
+      title: 'B20AI Intelligence',
+      desc: 'Deep neural market analysis, volatility metrics, and institutional sentiment modeling powered by the B20 market brain.',
+      features: ['6-Month Volatility Scans', '52-Week High/Low Data', 'Sentiment Modeling', 'Global Liquidity Heatmaps'],
+      gradient: 'from-indigo-500/10 to-indigo-600/5 border-indigo-400/30',
       delay: 0,
     },
     {
-      icon: '🛡️',
-      title: 'ML Security Suite',
-      desc: 'Integrated Machine Learning to protect creators and investors from copycats.',
-      features: ['Mimic token detection', 'Intelligence scoring', 'Similarity algorithms', 'Risk grading system'],
-      gradient: 'from-emerald-500/10 to-emerald-600/5 border-emerald-400/30',
+      icon: '🎯',
+      title: 'Traders Hub',
+      desc: 'The center of market velocity. Categorized navigation for Meme Elite, Top Gainers, and Whale Tracking.',
+      features: ['Real-time 24h Velocity', 'Elite Holding Analytics', 'Direct Spot Integration', 'Trending Category Alerts'],
+      gradient: 'from-amber-500/10 to-amber-600/5 border-amber-400/30',
       delay: 0.1,
     },
     {
-      icon: '💵',
-      title: 'Fiat Buy & Sell',
-      desc: 'Seamlessly convert your local currency into crypto using our integrated premium fiat gateway.',
-      features: ['Credit/Debit Cards', 'Bank Transfers', 'Instant Verification', 'Global Support'],
-      gradient: 'from-amber-500/10 to-amber-600/5 border-amber-400/30',
+      icon: '🌿',
+      title: 'Yield Intelligence',
+      desc: 'Automated multi-protocol staking aggregator scanning the highest audited APY opportunities across BSC.',
+      features: ['High-Yield Vaults', 'Multi-Protocol Support', 'Instant Stake Execution', 'Protocol Fee Automation'],
+      gradient: 'from-emerald-500/10 to-emerald-600/5 border-emerald-400/30',
       delay: 0.2,
     },
     {
-      icon: '⚡',
-      title: 'B20 Lite Exchange',
-      desc: 'High-speed token swaps powered by the deepest PancakeSwap liquidity across the BNB ecosystem.',
-      features: ['Zero Markup', 'Slippage Control', 'Multi-token Routing', 'Pro Charts Included'],
+      icon: '✨',
+      title: 'Ask Nuera AI',
+      desc: 'Your personal neural assistant. Get deep technical scans, deployment advice, and market intelligence in real-time.',
+      features: ['Technical Oracle Scans', 'Smart Contract Audits', 'Market Logic Training', '24/7 Neural Support'],
       gradient: 'from-rose-500/10 to-rose-600/5 border-rose-500/30',
       delay: 0.3,
     },
     {
       icon: '📊',
-      title: 'Bonding Curve Launch',
-      desc: 'Automated price discovery that rewards early adopters and ensures fairness.',
-      features: ['Fair price discovery', 'No insider allocations', 'Auto-PancakeSwap listing', 'Permanent liquidity lock'],
-      gradient: 'from-amber-500/10 to-amber-600/5 border-amber-400/30',
+      title: 'Bonding Curve 2.0',
+      desc: 'Advanced price discovery mechanism that rewards early adopters and ensures institutional-grade liquidity.',
+      features: ['Fair price discovery', 'Automatic DEX Listing', 'Permanent Liquidity Lock', 'Whale Proof Logic'],
+      gradient: 'from-violet-500/10 to-violet-600/5 border-violet-400/30',
       delay: 0.4,
     },
     {
       icon: '💎',
-      title: 'Instant DApp Website',
-      desc: 'Every token gets a dedicated, high-converting claim and trade page automatically.',
-      features: ['Mobile-optimized', 'Direct DEX connection', 'Social media integration', 'Live trade tracking'],
-      gradient: 'from-rose-500/10 to-rose-600/5 border-rose-400/30',
+      title: 'B20AI Nexus Listing',
+      desc: 'Launch your project into the B20- Exchange ecosystem with automated listing and neural marketing support.',
+      features: ['Instant DApp Generation', 'Verified Badge Access', 'Governance Voting', 'Community Analytics'],
+      gradient: 'from-blue-500/10 to-blue-600/5 border-blue-400/30',
       delay: 0.5,
-    },
-    {
-      icon: '💳',
-      title: 'B20CARD Neo-Banking',
-      desc: 'The ultimate bridge between your B20 assets and the real world. Spend crypto anywhere.',
-      features: ['Virtual & Physical Variants', 'Instant Load from Exchange', '60M+ Merchants Worldwide', '1.5% Standard Fee'],
-      gradient: 'from-amber-500/10 to-amber-600/5 border-amber-500/30',
-      delay: 0.6,
     },
   ];
 
@@ -332,13 +324,13 @@ export default function Home() {
 
             {/* Headline */}
             <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-6 leading-tight">
-              Launch Your Crypto Token{' '}
-              <span className="text-red-gradient">in 2 Minutes</span>
+              B20- Exchange{' '}
+              <span className="text-red-gradient">Intelligence Hub</span>
             </h1>
 
             <p className="text-gray-600 text-xl max-w-3xl mx-auto mb-6 leading-relaxed font-medium">
-              B20-LAB is an AI-powered Web3 launchpad that allows anyone to create, launch, and trade
-              crypto tokens instantly with automated blockchain infrastructure.
+              Institutional-grade market data, Traders Hub elite navigation, and automated high-yield staking. 
+              The ultimate AI-powered ecosystem for the BNB Smart Chain.
             </p>
 
             {/* Highlights */}
@@ -445,7 +437,7 @@ export default function Home() {
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-indigo-500">Neura AI is here to lead.</span>
                 </h2>
                 <p className="text-gray-400 text-lg leading-relaxed max-w-xl">
-                  Deploying a token can be complex. Neura AI is integrated throughout B20-LAB to guide you through fees, smart contract logic, and listing strategies.
+                  Deploying and participating in the ecosystem can be complex. Neura AI is integrated throughout B20- Exchange to guide you through fees, market intelligence, and institutional staking.
                 </p>
               </div>
 
@@ -687,7 +679,7 @@ export default function Home() {
               Automated <span className="text-red-gradient">Price Discovery</span>
             </h2>
             <p className="text-gray-600 text-lg max-w-2xl mx-auto">
-              B20-LAB's bonding curve mechanism ensures fair and transparent price formation from the very first trade.
+              B20- Exchange's bonding curve mechanism ensures fair and transparent price formation from the very first trade.
             </p>
           </div>
 
@@ -756,7 +748,7 @@ export default function Home() {
                 <div className="flex-1 space-y-6">
                     <h2 className="text-5xl font-black text-gray-900 leading-tight">Native Liquidity for <span className="text-red-gradient">Smooth Trading</span></h2>
                     <p className="text-gray-500 text-lg font-medium tracking-tight leading-relaxed">
-                        Every token launched on B20-LAB starts with native trading enabled. Our protocol handles the complex math of the bonding curve while you focus on growth.
+                        Every token launched on B20- Exchange starts with native trading enabled. Our protocol handles the complex math of the bonding curve while you focus on growth.
                     </p>
                 </div>
             </div>
@@ -782,7 +774,7 @@ export default function Home() {
                 <div className="flex-1 space-y-6">
                     <h2 className="text-5xl font-black text-gray-900 leading-tight">Total <span className="text-red-gradient">Automation</span></h2>
                     <p className="text-gray-500 text-lg font-medium tracking-tight leading-relaxed">
-                        Say goodbye to manual configuration errors. From metadata pinning to treasury routing, B20-LAB's AI agent ensures your launch is flawless every time.
+                        Say goodbye to manual configuration errors. From metadata pinning to treasury routing, B20- Exchange's AI agent ensures your launch is flawless every time.
                     </p>
                 </div>
             </div>
@@ -824,7 +816,7 @@ export default function Home() {
                 <div className="flex-1 space-y-8">
                     <h2 className="text-5xl md:text-7xl font-black text-gray-900 leading-tight">Your Token. <br/> <span className="text-red-gradient">Our Liquidity.</span></h2>
                     <p className="text-gray-500 text-xl font-bold tracking-tight leading-relaxed uppercase">
-                        B20-LAB isn't just a launchpad; it's a growth engine. We provide the infrastructure for your token to thrive in the competitive BSC market.
+                        B20- Exchange isn't just a launchpad; it's a growth engine. We provide the infrastructure for your token to thrive in the competitive BSC market.
                     </p>
                     <div className="p-6 bg-rose-500/5 border border-rose-500/10 rounded-2xl">
                         <p className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] mb-2">Priority Listing Service</p>
@@ -844,7 +836,7 @@ export default function Home() {
                         <SectionBadge icon="🛡️" text="Audit-less Trust" />
                         <h3 className="text-4xl md:text-5xl font-black mb-6 text-gray-900 uppercase">Transparency</h3>
                         <p className="text-gray-600 text-lg leading-relaxed mb-8">
-                            B20-LAB is built on pure blockchain logic. No hidden controls, no admin privileges, just code.
+                            B20- Exchange is built on pure blockchain logic. No hidden controls, no admin privileges, just code.
                         </p>
                         <div className="grid grid-cols-1 gap-4">
                             {['On-chain Auditability', 'Zero Manipulation', 'Public Treasury Tracking'].map(f => (
@@ -874,7 +866,7 @@ export default function Home() {
             Industry's <span className="text-red-gradient">Most Affordable</span> Launch
           </h2>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto mb-12">
-            B20-LAB provides one of the lowest token deployment fees in the market, making crypto creation accessible to everyone — creators, communities, and serious projects.
+            B20- Exchange provides one of the lowest token deployment fees in the market, making crypto creation accessible to everyone — creators, communities, and serious projects.
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {[
@@ -908,7 +900,7 @@ export default function Home() {
               Pure <span className="text-red-gradient">Blockchain Identity</span>
             </h2>
             <p className="text-gray-600 text-lg max-w-3xl mx-auto">
-              We believe in the integrity of the blockchain. Every token deployed through B20-LAB receives a unique identifier generated naturally by network mechanics. We do not manipulate or "brand" contract addresses with artificial series, as forced patterns can reduce project credibility.
+              We believe in the integrity of the blockchain. Every token deployed through B20- Exchange receives a unique identifier generated naturally by network mechanics. We do not manipulate or "brand" contract addresses with artificial series, as forced patterns can reduce project credibility.
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-4 max-w-4xl mx-auto mb-8">
@@ -978,7 +970,7 @@ export default function Home() {
           <div>
             <SectionBadge icon="🚀" text="The B20 Edge" />
             <h2 className="text-5xl md:text-7xl font-black mb-8 leading-tight">
-              Why the Best Choose <span className="text-red-gradient">B20-LAB</span>
+              Why the Best Choose <span className="text-red-gradient">B20- Exchange</span>
             </h2>
             <div className="space-y-6">
                 {[
@@ -1029,7 +1021,7 @@ export default function Home() {
               <span className="text-red-gradient">Crypto Project</span> Today
             </h2>
             <p className="text-gray-600 text-xl mb-10 font-medium">
-              Join thousands of creators who have launched their tokens on B20-LAB.
+              Join thousands of creators who have launched their tokens on B20- Exchange.
               Deploy in under 2 minutes. No coding. No complexity.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

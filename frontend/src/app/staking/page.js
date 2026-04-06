@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { useWallet } from '@/context/WalletContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -233,9 +234,11 @@ function StakeCard({ stake, onRequestRelease, releasing }) {
     );
 }
 
-// ── Main Staking Page ─────────────────────────────────────────────────────────
-export default function StakingPage() {
+// ── Inner Staking Page ───────────────────────────────────────────────────────
+function StakingContent() {
     const { account, connectWallet, signer } = useWallet();
+    const searchParams = useSearchParams();
+    const tokenQuery = searchParams.get('token');
 
     const [tokens, setTokens] = useState([]);
     const [myStakes, setMyStakes] = useState([]);
@@ -303,6 +306,15 @@ export default function StakingPage() {
                 });
 
                 setTokens(combined);
+
+                // Auto-select token if provided in query
+                if (tokenQuery) {
+                    const found = combined.find(t => t.symbol?.toLowerCase() === tokenQuery.toLowerCase());
+                    if (found) {
+                        setSelectedToken(found);
+                        setTokenSearch(found.symbol);
+                    }
+                }
             } catch (err) {
                 console.error("Failed to load tokens for staking", err);
             } finally {
@@ -926,5 +938,14 @@ export default function StakingPage() {
                 </motion.div>
             </section>
         </main>
+    );
+}
+
+// ── Main Export with Suspense ────────────────────────────────────────────────
+export default function StakingPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Loading Staking Protocol...</div>}>
+            <StakingContent />
+        </Suspense>
     );
 }

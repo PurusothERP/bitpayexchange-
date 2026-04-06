@@ -10,7 +10,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 export default function ChatBox() {
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([
-        { role: 'assistant', content: 'Greetings! I am Neura AI, your intelligent guide to the B20-LAB ecosystem. How can I assist you today?' }
+        { role: 'assistant', content: 'Greetings! I am Neura AI, your intelligent guide to the B20- Exchange ecosystem. How can I assist you today?' }
     ]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);

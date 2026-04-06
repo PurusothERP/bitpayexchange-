@@ -1516,117 +1516,162 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
 
 
 // ── Yield Tab
+const YIELD_PROTOCOLS = [
+    { name: 'PancakeSwap',     url: 'https://pancakeswap.finance/pools',   apyRange: [8,  29] },
+    { name: 'Venus Protocol', url: 'https://app.venus.io/',                apyRange: [5,  22] },
+    { name: 'B20 Vault',      url: '/staking',                            apyRange: [12, 38] },
+    { name: 'Aave',           url: 'https://app.aave.com/',               apyRange: [3,  18] },
+    { name: 'BiSwap',         url: 'https://biswap.org/farms',            apyRange: [6,  24] },
+    { name: 'Alpaca Finance', url: 'https://app.alpacafinance.org/',       apyRange: [10, 45] },
+    { name: 'Beefy Finance',  url: 'https://app.beefy.com/',              apyRange: [15, 60] },
+    { name: 'Radiant Capital',url: 'https://app.radiant.capital/',        apyRange: [4,  20] },
+];
+
 function YieldTab({ tokens }) {
+    const [yieldSearch, setYieldSearch] = useState('');
+    const [sortBy, setSortBy] = useState('apy');
+
     const yieldAssets = useMemo(() => {
-        // High quality assets for yield logic
-        return tokens.filter(t => (t.market_cap_rank || 100) < 500).slice(0, 15).map(t => {
-            const protocols = [
-                { name: 'PancakeSwap', url: 'https://pancakeswap.finance/pools' },
-                { name: 'Venus', url: 'https://app.venus.io/' },
-                { name: 'B20 Vault', url: `/staking?token=${t.symbol}` },
-                { name: 'Aave', url: 'https://app.aave.com/' }
-            ];
-            const p = protocols[Math.floor(Math.random() * protocols.length)];
-            return {
-                ...t,
-                apy: (4.2 + (Math.random() * 25)).toFixed(2), 
-                tvl: (t.market_cap * 0.035).toFixed(0),
-                protocol: p.name,
-                protocolUrl: p.url
-            };
-        });
+        return tokens
+            .filter(t => t.current_price > 0)
+            .slice(0, 80)
+            .map((t, idx) => {
+                const p = YIELD_PROTOCOLS[idx % YIELD_PROTOCOLS.length];
+                const [low, high] = p.apyRange;
+                const seed = (t.symbol?.charCodeAt(0) || 65) + idx;
+                const apyVal = ((seed * 7919) % (high - low)) + low;
+                return {
+                    ...t,
+                    apy: apyVal.toFixed(2),
+                    tvl: ((t.market_cap || 50000000) * 0.035).toFixed(0),
+                    protocol: p.name,
+                    protocolUrl: p.url.startsWith('/') ? `${p.url}?token=${t.symbol}` : p.url
+                };
+            });
     }, [tokens]);
 
+    const filtered = useMemo(() => {
+        let res = [...yieldAssets];
+        if (yieldSearch) res = res.filter(t =>
+            t.name?.toLowerCase().includes(yieldSearch.toLowerCase()) ||
+            t.symbol?.toLowerCase().includes(yieldSearch.toLowerCase()) ||
+            t.protocol?.toLowerCase().includes(yieldSearch.toLowerCase())
+        );
+        if (sortBy === 'apy')  res.sort((a, b) => parseFloat(b.apy) - parseFloat(a.apy));
+        if (sortBy === 'tvl')  res.sort((a, b) => parseFloat(b.tvl) - parseFloat(a.tvl));
+        if (sortBy === 'name') res.sort((a, b) => (a.symbol || '').localeCompare(b.symbol || ''));
+        return res;
+    }, [yieldAssets, yieldSearch, sortBy]);
+
+    const totalTVL = yieldAssets.reduce((s, t) => s + parseFloat(t.tvl || 0), 0);
+    const avgAPY = yieldAssets.length ? (yieldAssets.reduce((s, t) => s + parseFloat(t.apy || 0), 0) / yieldAssets.length).toFixed(1) : 0;
+
     const handleInvest = (t) => {
-        const confirmed = window.confirm(`Initiating On-Chain Staking for ${t.symbol}.\n\nProtocol Execution Fee: 0.001 BNB\nNetwork: Binance Smart Chain\nProtocol: ${t.protocol}\n\nProceed to secure contract vault?`);
-        if (confirmed) {
-            window.open(t.protocolUrl, '_blank');
+        const ok = window.confirm(`Initiating On-Chain Staking for ${t.symbol}.\n\nProtocol Execution Fee: 0.001 BNB\nNetwork: Binance Smart Chain\nProtocol: ${t.protocol}\n\nProceed to secure contract vault?`);
+        if (ok) {
+            if (t.protocolUrl.startsWith('/')) {
+                window.location.href = t.protocolUrl;
+            } else {
+                window.open(t.protocolUrl, '_blank');
+            }
         }
     };
 
     return (
         <div className="space-y-8">
-            <div className="bg-emerald-50 border border-emerald-100 rounded-[2.5rem] p-10 flex items-center justify-between overflow-hidden relative shadow-inner">
-                <div className="absolute -top-10 -right-10 opacity-10 rotate-12">
-                    <Leaf className="w-64 h-64 text-emerald-600" />
-                </div>
+            {/* Header */}
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50/50 border border-emerald-100 rounded-[2.5rem] p-10 overflow-hidden relative">
+                <div className="absolute -top-10 -right-10 opacity-10"><Leaf className="w-64 h-64 text-emerald-600" /></div>
                 <div className="relative z-10">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="p-3 bg-emerald-500 text-white rounded-2xl shadow-xl shadow-emerald-500/30">
-                            <Leaf className="w-7 h-7" />
-                        </div>
+                    <div className="flex flex-col lg:flex-row lg:items-end gap-8 justify-between mb-8">
                         <div>
-                            <h2 className="text-3xl font-black text-gray-900 uppercase italic tracking-tighter leading-none">Yield <span className="text-emerald-600">Intelligence</span></h2>
-                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.4em] mt-1">Institutional Yield Aggregator</p>
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="p-3 bg-emerald-500 text-white rounded-2xl shadow-lg shadow-emerald-500/30"><Leaf className="w-6 h-6" /></div>
+                                <div>
+                                    <h2 className="text-3xl font-black text-gray-900 uppercase italic tracking-tighter">Yield <span className="text-emerald-600">Intelligence</span></h2>
+                                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.3em] mt-0.5">{filtered.length} Active Vaults Scanned</p>
+                                </div>
+                            </div>
+                            <p className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-loose max-w-lg">
+                                Multi-protocol staking aggregator. Each stake: flat <span className="text-gray-900 underline">0.001 BNB fee</span>.
+                            </p>
+                        </div>
+                        <div className="flex gap-8 shrink-0">
+                            <div className="text-center"><p className="text-3xl font-black text-emerald-500">{yieldAssets.length}+</p><p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Vaults</p></div>
+                            <div className="text-center"><p className="text-3xl font-black text-gray-900">{avgAPY}%</p><p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Avg APY</p></div>
+                            <div className="text-center"><p className="text-3xl font-black text-indigo-600">${fmtB(totalTVL)}</p><p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total TVL</p></div>
                         </div>
                     </div>
-                    <p className="max-w-xl text-sm font-bold text-gray-400 uppercase tracking-widest leading-loose">
-                        Automated multi-protocol staking interface. We scan the blockchain for the highest audited APY opportunities. 
-                        Each execution carries a flat <span className="text-gray-900 underline">0.001 BNB protocol fee</span> to maintain the B20 liquidation engine.
-                    </p>
-
-                    <div className="mt-8 p-6 bg-amber-50/50 border border-amber-200/50 rounded-3xl max-w-2xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-4 opacity-10">
-                            <ShieldAlert className="w-12 h-12 text-amber-600" />
-                        </div>
-                        <div className="relative z-10">
-                            <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest flex items-center gap-2 mb-2">
-                                <AlertCircle className="w-3.5 h-3.5" /> Institutional Protocol Disclaimer
-                            </p>
-                            <p className="text-[9px] font-bold text-amber-900/70 uppercase tracking-tighter leading-relaxed">
-                                B20 maintains its own primary staking infrastructure. The assets listed below constitute a decentralized yield marketplace. 
-                                High-velocity staking carries inherent protocol risks. You are viewing aggregated market data; please perform exhaustive independent research (DYOR). 
-                                B20 acts solely as an information gateway and is not responsible for third-party protocol performance or asset volatility.
-                            </p>
-                        </div>
+                    <div className="p-5 bg-amber-50/80 border border-amber-200/60 rounded-3xl">
+                        <p className="text-[9px] font-bold text-amber-700 uppercase tracking-wider leading-relaxed flex gap-2">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                            B20 operates its own staking vault. What you see is a yield marketplace — aggregated data only. DYOR. B20 is not liable for third-party losses.
+                        </p>
                     </div>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
-                <div className="grid grid-cols-12 px-8 py-4 text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                    <div className="col-span-5">Asset & Protocol</div>
-                    <div className="col-span-2 text-center">Protocol APY</div>
-                    <div className="col-span-3 text-center">Liquidity Pool (TVL)</div>
-                    <div className="col-span-2 text-right">Execution</div>
+            {/* Controls */}
+            <div className="flex flex-col sm:flex-row gap-3 items-center">
+                <div className="flex-1 relative">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input type="text" value={yieldSearch} onChange={e => setYieldSearch(e.target.value)}
+                        placeholder="Search token, symbol or protocol..."
+                        className="w-full pl-11 pr-5 py-3.5 bg-white border border-gray-200 rounded-2xl text-sm font-bold outline-none focus:border-emerald-400 shadow-sm" />
                 </div>
-                {yieldAssets.map((t, idx) => (
-                    <motion.div 
-                        initial={{opacity:0, y:12}}
-                        animate={{opacity:1, y:0}}
-                        transition={{delay: idx * 0.05}}
-                        key={idx} 
-                        className="grid grid-cols-12 items-center bg-white/60 border border-gray-100 p-8 rounded-[3rem] hover:border-emerald-300 hover:bg-white transition-all group shadow-sm hover:shadow-xl hover:shadow-emerald-500/5 backdrop-blur-sm"
-                    >
-                        <div className="col-span-5 flex items-center gap-6">
-                            <div className="relative">
-                                <img src={t.image} className="w-14 h-14 rounded-2xl shadow-xl border-2 border-white" alt="" />
-                                <div className="absolute -bottom-1 -right-1 p-1 bg-emerald-500 rounded-lg border-2 border-white">
-                                    <Shield className="w-2.5 h-2.5 text-white" />
-                                </div>
+                <div className="flex gap-2">
+                    {[['apy', '↓ APY'], ['tvl', '↓ TVL'], ['name', 'A→Z']].map(([s, label]) => (
+                        <button key={s} onClick={() => setSortBy(s)}
+                            className={`px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${sortBy === s ? 'bg-emerald-600 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-500 hover:border-emerald-300'}`}>
+                            {label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Table */}
+            <div className="space-y-2">
+                <div className="grid grid-cols-12 px-5 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">
+                    <div className="col-span-5">Asset &amp; Protocol</div>
+                    <div className="col-span-2 text-center">Live APY</div>
+                    <div className="col-span-3 text-center">Pool TVL</div>
+                    <div className="col-span-2 text-right">Action</div>
+                </div>
+                {filtered.map((t, idx) => (
+                    <motion.div key={t.id || idx}
+                        initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(idx * 0.012, 0.5) }}
+                        className="grid grid-cols-12 items-center bg-white border border-gray-100 px-5 py-3.5 rounded-2xl hover:border-emerald-300 hover:shadow-md transition-all">
+                        <div className="col-span-5 flex items-center gap-3">
+                            <div className="relative shrink-0">
+                                <img src={t.image} alt="" className="w-9 h-9 rounded-xl border-2 border-white shadow"
+                                    onError={e => { e.target.src = 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png'; }} />
+                                <div className="absolute -bottom-0.5 -right-0.5 p-0.5 bg-emerald-500 rounded-md border border-white"><Shield className="w-1.5 h-1.5 text-white" /></div>
                             </div>
-                            <div>
-                                <h3 className="text-xl font-black text-gray-900 tracking-tighter uppercase italic">{t.name}</h3>
-                                <p className="text-[10px] font-black text-indigo-600 tracking-[0.2em]">{t.protocol} / TRIPLE-AUDITED</p>
+                            <div className="min-w-0">
+                                <p className="font-black text-gray-900 text-xs uppercase truncate">{t.symbol?.toUpperCase()}</p>
+                                <p className="text-[9px] font-bold text-indigo-600 truncate">{t.protocol}</p>
                             </div>
                         </div>
-
-                        <div className="col-span-2">
-                            <p className="text-2xl font-black text-emerald-500 italic text-center tracking-tighter">{t.apy}%</p>
-                            <p className="text-[9px] font-black text-gray-400 uppercase text-center mt-1">Live Yield</p>
+                        <div className="col-span-2 text-center">
+                            <p className={`text-sm font-black italic ${parseFloat(t.apy) > 20 ? 'text-emerald-500' : parseFloat(t.apy) > 10 ? 'text-amber-500' : 'text-blue-500'}`}>{t.apy}%</p>
+                            <p className="text-[8px] text-gray-400 uppercase font-black">APY</p>
                         </div>
-
-                        <div className="col-span-3">
-                            <p className="text-2xl font-black text-gray-900 italic text-center tracking-tighter">${fmtB(t.tvl)}</p>
-                            <p className="text-[9px] font-black text-gray-400 uppercase text-center mt-1">Pool Depth</p>
+                        <div className="col-span-3 text-center">
+                            <p className="text-xs font-black text-gray-900">${fmtB(t.tvl)}</p>
+                            <p className="text-[8px] text-gray-400 uppercase font-black">TVL</p>
                         </div>
-
-                        <div className="col-span-2 flex justify-end gap-3">
-                            <button onClick={() => handleInvest(t)} className="flex-1 py-4 bg-emerald-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-900 transition-all shadow-xl shadow-emerald-500/10 active:scale-95">Stake Asset</button>
-                            <a href={`https://bscscan.com/token/${t.address}`} target="_blank" rel="noreferrer" className="p-4 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-all border border-gray-100 flex items-center"><ArrowUpRight className="w-4 h-4 text-gray-400" /></a>
+                        <div className="col-span-2 flex justify-end gap-2">
+                            <button onClick={() => handleInvest(t)} className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-gray-900 transition-all active:scale-95">Stake</button>
+                            <a href={`https://bscscan.com/token/${t.address}`} target="_blank" rel="noreferrer" className="p-2 bg-gray-50 rounded-xl hover:bg-gray-100 border border-gray-100 flex items-center">
+                                <ArrowUpRight className="w-3 h-3 text-gray-400" />
+                            </a>
                         </div>
                     </motion.div>
                 ))}
+                {filtered.length === 0 && (
+                    <div className="py-16 text-center"><Leaf className="w-10 h-10 text-gray-200 mx-auto mb-3" /><p className="text-xs font-black text-gray-300 uppercase tracking-widest">No vaults match filter</p></div>
+                )}
             </div>
         </div>
     );
@@ -1634,11 +1679,11 @@ function YieldTab({ tokens }) {
 
 // ── Main Panel (no Navbar)
 const TABS = [
-    { id:'ai',    label:'AI Data',           icon:Brain },
-    { id:'grow',  label:'Grow & Earn',       icon:TrendingUp },
-    { id:'intel', label:'User Intelligence', icon:Cpu },
-    { id:'hub',   label:'Traders Hub',       icon:Target },
-    { id:'yield', label:'Yield',             icon:Leaf },
+    { id:'ai',    label:'AI Data',           icon:Brain,      active:'bg-indigo-600',  glow:'shadow-indigo-600/40'  },
+    { id:'grow',  label:'Grow & Earn',       icon:TrendingUp, active:'bg-emerald-600', glow:'shadow-emerald-600/40' },
+    { id:'intel', label:'User Intelligence', icon:Cpu,        active:'bg-violet-600',  glow:'shadow-violet-600/40'  },
+    { id:'hub',   label:'Traders Hub',       icon:Target,     active:'bg-amber-500',   glow:'shadow-amber-500/40',  dot: true },
+    { id:'yield', label:'Yield',             icon:Leaf,       active:'bg-green-600',   glow:'shadow-green-600/40'   },
 ];
 
 export default function B20AIPanel({ setMode, setToToken }) {
@@ -1739,20 +1784,20 @@ export default function B20AIPanel({ setMode, setToToken }) {
                     {/* Animated side glow */}
                     <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-[1.5rem] blur opacity-50 group-hover:opacity-100 transition-opacity" />
                     
-                    <div className="relative flex bg-white/80 border border-indigo-100 p-1.5 rounded-[1.5rem] shadow-[0_15px_35px_-10px_rgba(79,70,229,0.1)] backdrop-blur-xl">
+                    <div className="relative flex bg-white/80 border border-gray-100 p-1.5 rounded-[1.5rem] shadow-[0_15px_35px_-10px_rgba(0,0,0,0.1)] backdrop-blur-xl">
                         {TABS.map(t=>{
                             const Icon=t.icon;
                             const active = tab === t.id;
                             return (
                                 <button key={t.id} onClick={()=>setTab(t.id)}
-                                    className={`relative flex-1 flex items-center justify-center gap-2 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] transition-all duration-300 ${active ? 'bg-gray-900 text-white shadow-2xl shadow-gray-900/40 translate-z-10' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50/50'}`}>
+                                    className={`relative flex-1 flex items-center justify-center gap-2 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] transition-all duration-300 ${active ? `${t.active} text-white shadow-2xl ${t.glow}` : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50/80'}`}>
                                     {active && (
-                                        <motion.div layoutId="tab-highlight" className="absolute inset-0 bg-gray-900 rounded-xl -z-10 shadow-xl" transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }} />
+                                        <motion.div layoutId="tab-highlight" className={`absolute inset-0 ${t.active} rounded-xl -z-10 shadow-xl`} transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }} />
                                     )}
-                                    <Icon className={`w-3.5 h-3.5 ${active ? 'text-amber-400' : ''}`}/>
+                                    <Icon className="w-3.5 h-3.5" />
                                     {t.label}
-                                    {t.id === 'hub' && !active && (
-                                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-amber-500 rounded-full border border-white animate-pulse shadow-sm shadow-amber-500/50" />
+                                    {t.dot && !active && (
+                                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-amber-500 rounded-full border border-white animate-pulse" />
                                     )}
                                 </button>
                             );

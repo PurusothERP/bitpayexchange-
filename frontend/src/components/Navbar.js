@@ -67,10 +67,10 @@ export default function Navbar() {
                     <div className="flex items-center gap-8">
                         <Link href="/" className="flex items-center gap-2 group shrink-0">
                             <div className="w-12 h-12 shrink-0 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
-                                <img src="/logo-final.png" alt="B20- Exchnage Logo" className="w-full h-full object-contain" />
+                                <img src="/logo-final.png" alt="B20- Exchange Logo" className="w-full h-full object-contain" />
                             </div>
                             <span className="text-2xl font-black tracking-tighter text-gray-900 text-red-gradient drop-shadow-md whitespace-nowrap">
-                                B20-<span className="text-rose-500">Exchnage</span>
+                                B20-<span className="text-rose-500">Exchange</span>
                             </span>
                         </Link>
 
@@ -152,7 +152,7 @@ export default function Navbar() {
                                 <div className="p-1.5 bg-white/10 rounded-full border border-white/5 group-hover:border-amber-500/30 group-hover:bg-amber-500/20 transition-colors duration-300">
                                     <Activity className="w-3.5 h-3.5 text-white group-hover:text-amber-400 transition-colors" />
                                 </div>
-                                <span className="tracking-wide text-xs">Exchnage</span>
+                                <span className="tracking-wide text-xs">Exchange</span>
                             </Link>
 
                             <Link href="/services" className="nav-link flex items-center gap-2 hover:text-rose-500 transition-colors">

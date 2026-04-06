@@ -234,7 +234,7 @@ export default function Home() {
     {
       icon: '🧠',
       title: 'AI Driven Data & Scan',
-      desc: 'Deep neural market analysis, volatility metrics, and institutional sentiment modeling powered by the B20- Exchnage market brain.',
+      desc: 'Deep neural market analysis, volatility metrics, and institutional sentiment modeling powered by the B20- Exchange market brain.',
       features: ['6-Month Volatility Scans', '52-Week High/Low Data', 'Sentiment Modeling', 'Global Liquidity Heatmaps'],
       gradient: 'from-indigo-500/10 to-indigo-600/5 border-indigo-400/30',
       delay: 0,
@@ -508,7 +508,7 @@ export default function Home() {
                 <span className="text-red-gradient">Data & Scanning.</span>
               </h2>
               <p className="text-gray-500 text-xl font-medium leading-relaxed max-w-xl">
-                B20- Exchnage isn't just a platform; it's a sentient market observer. Our Nuera AI engine scans thousands of data points to deliver institutional-grade intelligence to your fingertips.
+                B20- Exchange isn't just a platform; it's a sentient market observer. Our Nuera AI engine scans thousands of data points to deliver institutional-grade intelligence to your fingertips.
               </p>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

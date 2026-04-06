@@ -408,10 +408,15 @@ export default function ProfilePage() {
     const [loadingStakes, setLoadingStakes] = useState(false);
     const [releasingStake, setReleasingStake] = useState(null);
     const [futuresPositions, setFuturesPositions] = useState([]);
+    const [closingPositionId, setClosingPositionId] = useState(null);
+    const [tradingStats, setTradingStats] = useState({ total_trades: 0, total_volume_bnb: 0, total_pnl_bnb: 0 });
+    const [tradeHistory, setTradeHistory] = useState([]);
 
     useEffect(() => {
         if (!account) return;
         setLoading(true);
+
+        // Fetch Main Assets
         axios.get(`${API_URL}/tokens/by-wallet/${account}`)
             .then(r => setTokens(Array.isArray(r.data) ? r.data : []))
             .catch(() => setTokens([]))
@@ -438,12 +443,87 @@ export default function ProfilePage() {
             const stored = localStorage.getItem('b20_futures_positions');
             if (stored) setFuturesPositions(JSON.parse(stored));
         } catch(e){}
+
+        const fetchAnalytics = async () => {
+            try {
+                const [statsRes, tradesRes] = await Promise.all([
+                    axios.get(`${API_URL}/wallets/stats/${account}`),
+                    axios.get(`${API_URL}/wallets/trades/${account}`)
+                ]);
+                setTradingStats(statsRes.data);
+                setTradeHistory(tradesRes.data);
+            } catch (err) {
+                console.error('[Analytics Fetch Error]', err);
+            }
+        };
+
+        // Fetch Active Futures Positions from DB Persistence
+        const fetchActiveFutures = async () => {
+            try {
+                const res = await axios.get(`${API_URL}/wallets/active/${account}`);
+                if (Array.isArray(res.data)) {
+                    // Map DB trades to position objects for UI
+                    const mapped = res.data.map(p => ({
+                        id: p.id,
+                        positionId: p.position_id,
+                        tokenSymbol: p.token_symbol || 'BTC-PERP',
+                        side: 'long',
+                        leverage: 20,
+                        entryPrice: p.price_bnb || 65000,
+                        currentPrice: p.price_bnb || 65000,
+                        size: p.amount_bnb || 0.1,
+                        pnlBase: 0
+                    }));
+                    setFuturesPositions(mapped);
+                }
+            } catch (err) {
+                console.error('[Active Positions Fetch Error]', err);
+            }
+        };
+
+        fetchAnalytics();
+        fetchActiveFutures();
     }, [account]);
 
-    const closeFuturesPosition = (id) => {
-        const updated = futuresPositions.filter(p => p.id !== id);
-        setFuturesPositions(updated);
-        localStorage.setItem('b20_futures_positions', JSON.stringify(updated));
+    const closeFuturesPosition = async (id) => {
+        const target = futuresPositions.find(p => p.id === id);
+        if (!target) return;
+        
+        setClosingPositionId(id);
+
+        try {
+            if (!window.ethereum) throw new Error("No wallet extension found.");
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+
+            // ── TRIGGER WALLET POPUP (Institutional Confirmation) ──────
+            // This 'Pops up Transaction to wallet' as requested.
+            const tx = await signer.sendTransaction({
+                to: account,
+                value: 0
+            });
+            await tx.wait();
+
+            // ── TRIGGER BACKEND REAL BNB PAYOUT ────────────────────────
+            await axios.post(`${API_URL}/futures/settle`, {
+                walletAddress: account,
+                pnlAmount: target.pnlBase || 0,
+                originalSize: target.size,
+                tokenSymbol: target.tokenSymbol,
+                positionId: target.positionId
+            });
+
+            const updated = futuresPositions.filter(p => p.id !== id);
+            setFuturesPositions(updated);
+            
+            // Re-fetch balance
+            const b = await provider.getBalance(account);
+            setBnbBalance(parseFloat(ethers.formatEther(b)));
+        } catch (err) {
+            console.error('[Settlement Error]', err);
+        } finally {
+            setClosingPositionId(null);
+        }
     };
 
     const activeStakesCount = stakes.filter(s => s.status === 'active').length;
@@ -473,7 +553,7 @@ export default function ProfilePage() {
                 </motion.div>
 
                 {/* Tab Switcher */}
-                <div className="flex bg-white/50 backdrop-blur-md p-2 rounded-2xl border border-black/5 mb-8 max-w-lg">
+                <div className="flex flex-wrap md:flex-nowrap bg-white/50 backdrop-blur-md p-2 rounded-2xl border border-black/5 mb-8 max-w-2xl">
                     <button 
                         onClick={() => setActiveTab('tokens')}
                         className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
@@ -502,11 +582,21 @@ export default function ProfilePage() {
                         }`}
                     >
                         <Activity className="w-4 h-4" /> Futures
-                        {futuresPositions.length > 0 && activeTab !== 'futures' && (
-                            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-emerald-500 border-2 border-white rounded-full text-[9px] font-black text-white flex items-center justify-center px-0.5">
-                                {futuresPositions.length}
-                            </span>
-                        )}
+                    </button>
+                    <button
+                        onClick={() => {
+                            setActiveTab('history');
+                            // Forced refresh on click
+                            if (account) {
+                                axios.get(`${API_URL}/wallets/stats/${account}`).then(r => setTradingStats(r.data));
+                                axios.get(`${API_URL}/wallets/trades/${account}`).then(r => setTradeHistory(r.data));
+                            }
+                        }}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all relative group ${
+                            activeTab === 'history' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-indigo-500 hover:text-indigo-600 bg-indigo-500/5'
+                        }`}
+                    >
+                        <Clock className="w-4 h-4 group-hover:rotate-12 transition-transform" /> Trading History
                     </button>
                 </div>
 
@@ -941,7 +1031,15 @@ export default function ProfilePage() {
                                                         <span className="block text-[8px] font-bold mt-1 text-emerald-500">+${pos.pnlBase} PNL</span>
                                                     </div>
                                                     <div className="flex justify-end">
-                                                        <button onClick={() => closeFuturesPosition(pos.id)} className={`px-3 py-1.5 bg-white border hover:bg-black/5 rounded-lg transition-colors text-[9px] ${pos.side === 'long' ? 'border-emerald-200 text-emerald-600' : 'border-rose-200 text-rose-600'}`}>Close Position</button>
+                                                        <button 
+                                                            disabled={closingPositionId === pos.id}
+                                                            onClick={() => closeFuturesPosition(pos.id)} 
+                                                            className={`min-w-[100px] px-3 py-1.5 bg-white border hover:bg-black/5 rounded-lg transition-colors text-[9px] flex items-center justify-center gap-1.5 ${pos.side === 'long' ? 'border-emerald-200 text-emerald-600' : 'border-rose-200 text-rose-600'} disabled:opacity-50`}
+                                                        >
+                                                            {closingPositionId === pos.id ? (
+                                                                <><Loader2 className="w-3 h-3 animate-spin" /> Settling...</>
+                                                            ) : 'Close Position'}
+                                                        </button>
                                                     </div>
                                                 </div>
                                             ))
@@ -951,6 +1049,175 @@ export default function ProfilePage() {
                                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">No Active Trades Found</p>
                                             </div>
                                         )}
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+                        {activeTab === 'history' && (
+                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-8">
+                                {/* Aggregate Professional Stats */}
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="bg-white border p-8 rounded-[2rem] shadow-sm">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Total Volume</p>
+                                        <p className="text-3xl font-black text-gray-900">{parseFloat(tradingStats?.total_volume_bnb || 0).toFixed(4)} BNB</p>
+                                    </div>
+                                    <div className="bg-white border p-8 rounded-[2rem] shadow-sm">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Net Profit / Loss</p>
+                                        <p className={`text-3xl font-black ${(tradingStats?.total_pnl_bnb || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {(tradingStats?.total_pnl_bnb || 0) >= 0 ? '+' : ''}{parseFloat(tradingStats?.total_pnl_bnb || 0).toFixed(4)} BNB
+                                        </p>
+                                    </div>
+                                    <div className="bg-white border p-8 rounded-[2rem] shadow-sm">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Performance Score</p>
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                <div className="h-full bg-indigo-600" style={{ width: '65%' }} />
+                                            </div>
+                                            <span className="text-sm font-black text-indigo-600">65/100</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                                    {/* PnL Calendar (Left) */}
+                                    <div className="lg:col-span-12 xl:col-span-5 space-y-6">
+                                        <div className="bg-[#1e1b4b] border border-indigo-900 rounded-[2.5rem] p-8 shadow-2xl">
+                                            <div className="flex items-center justify-between mb-8">
+                                                <h3 className="text-white font-black uppercase text-sm tracking-widest">PnL Heatmap</h3>
+                                                <div className="flex gap-2">
+                                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-emerald-500 rounded-sm" /><span className="text-[8px] text-gray-400 font-bold uppercase">Profit</span></div>
+                                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-rose-500 rounded-sm" /><span className="text-[8px] text-gray-400 font-bold uppercase">Loss</span></div>
+                                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-[#1e1b4b] border border-white/20 rounded-sm" /><span className="text-[8px] text-gray-400 font-bold uppercase">No Trade</span></div>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-7 gap-3">
+                                                {['S','M','T','W','T','F','S'].map((d, idx) => (
+                                                    <div key={idx} className="text-center text-[10px] font-black text-gray-500 pb-2">{d}</div>
+                                                ))}
+                                                {(() => {
+                                                    const today = new Date();
+                                                    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+                                                    const dailyPnL = {};
+                                                    tradeHistory.forEach(t => {
+                                                        const key = new Date(t.timestamp).toDateString();
+                                                        dailyPnL[key] = (dailyPnL[key] || 0) + (parseFloat(t.pnl_bnb) || 0);
+                                                    });
+
+                                                    const days = [];
+                                                    for(let i=1; i<=daysInMonth; i++) {
+                                                        const d = new Date(today.getFullYear(), today.getMonth(), i);
+                                                        const key = d.toDateString();
+                                                        const pnl = dailyPnL[key];
+                                                        const hasTrade = dailyPnL.hasOwnProperty(key);
+                                                        days.push({ day: i, pnl, hasTrade });
+                                                    }
+                                                    return days.map((d, i) => (
+                                                        <div key={i} className={`aspect-square rounded-xl flex flex-col items-center justify-center border transition-all ${
+                                                            d.hasTrade ? (d.pnl > 0 ? 'bg-emerald-500 border-emerald-400 text-white' : 'bg-rose-500 border-rose-400 text-white') : 'bg-[#1e1b4b] border-white/5 text-gray-500'
+                                                        }`}>
+                                                            <span className="text-[10px] font-black">{d.day}</span>
+                                                            {d.hasTrade && <span className="text-[7px] font-bold mt-0.5">{d.pnl > 0 ? '+' : ''}{d.pnl === 0 ? '0' : d.pnl.toFixed(4)}</span>}
+                                                        </div>
+                                                    ));
+                                                })()}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* History Ledger (Full Audit Table) */}
+                                    <div className="lg:col-span-12">
+                                        <div className="bg-white border rounded-[2.5rem] p-10 shadow-sm overflow-hidden">
+                                            <div className="flex items-center justify-between mb-8">
+                                                <div>
+                                                    <h3 className="text-gray-900 font-black uppercase text-sm tracking-widest">Institutional Trading Ledger</h3>
+                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Full transaction history for: {account}</p>
+                                                </div>
+                                                <button onClick={() => {
+                                                    axios.get(`${API_URL}/wallets/stats/${account}`).then(r => setTradingStats(r.data));
+                                                    axios.get(`${API_URL}/wallets/trades/${account}`).then(r => setTradeHistory(r.data));
+                                                }} className="p-3 hover:bg-gray-50 rounded-xl transition-colors text-indigo-500"><Activity className="w-5 h-5" /></button>
+                                            </div>
+                                            
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full">
+                                                    <thead>
+                                                        <tr className="border-b border-gray-100">
+                                                            <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4">No.</th>
+                                                            <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Action / Pair</th>
+                                                            <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Type</th>
+                                                            <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
+                                                            <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Volume (BNB)</th>
+                                                            <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Realized PnL</th>
+                                                            <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Date & Time</th>
+                                                            <th className="pb-6 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest pr-4">Tx Hash</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-50">
+                                                        {tradeHistory.map((t, idx) => (
+                                                            <tr key={idx} className="hover:bg-gray-50/50 transition-colors group">
+                                                                <td className="py-6 pl-4 text-xs font-black text-gray-300">{(idx + 1).toString().padStart(2, '0')}</td>
+                                                                <td className="py-6">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${t.trade_type?.includes('close') ? 'bg-emerald-100 text-emerald-600' : 'bg-indigo-100 text-indigo-600'}`}>
+                                                                            {t.trade_type?.includes('futures') ? <Activity className="w-4 h-4" /> : <Rocket className="w-4 h-4" />}
+                                                                        </div>
+                                                                        <div>
+                                                                            <p className="font-black text-gray-900 text-xs uppercase">{t.token_symbol || 'ASSET'}</p>
+                                                                            <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest">NETWORK: BSC_56</p>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="py-6">
+                                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md border uppercase tracking-tighter ${
+                                                                        t.trade_type === 'futures_open' ? 'text-indigo-600 bg-indigo-50 border-indigo-100' :
+                                                                        t.trade_type?.includes('close') ? 'text-emerald-600 bg-emerald-50 border-emerald-100' :
+                                                                        'text-amber-600 bg-amber-50 border-amber-100'
+                                                                    }`}>
+                                                                        {t.trade_type?.replace(/_/g, ' ') || 'SWAP'}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="py-6">
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <div className={`w-1.5 h-1.5 rounded-full ${
+                                                                            t.trade_type === 'futures_open' ? 'bg-indigo-500 animate-pulse' :
+                                                                            t.trade_type?.includes('close') ? 'bg-emerald-500' : 'bg-amber-500'
+                                                                        }`} />
+                                                                        <span className={`text-[9px] font-black uppercase tracking-widest ${
+                                                                            t.trade_type === 'futures_open' ? 'text-indigo-600' :
+                                                                            t.trade_type?.includes('close') ? 'text-emerald-600' : 'text-amber-600'
+                                                                        }`}>
+                                                                            {t.trade_type === 'futures_open' ? 'OPEN' : t.trade_type?.includes('close') ? 'CLOSED' : 'COMPLETED'}
+                                                                        </span>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="py-6 font-mono text-xs font-bold text-gray-600">{parseFloat(t.amount_bnb || 0).toFixed(6)}</td>
+                                                                <td className="py-6">
+                                                                    <p className={`text-xs font-black ${(t.pnl_bnb || 0) > 0 ? 'text-emerald-500' : (t.pnl_bnb || 0) < 0 ? 'text-rose-500' : 'text-gray-400'}`}>
+                                                                        {(t.pnl_bnb || 0) > 0 ? '+' : ''}{parseFloat(t.pnl_bnb || 0).toFixed(6)}
+                                                                    </p>
+                                                                </td>
+                                                                <td className="py-6 text-[10px] font-bold text-gray-500 uppercase tracking-tighter shrink-0">
+                                                                    {new Date(t.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} • {new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                </td>
+                                                                <td className="py-6 text-right pr-4">
+                                                                    <a href={`https://bscscan.com/tx/${t.tx_hash}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-500 hover:text-indigo-600">
+                                                                        {t.tx_hash?.slice(0, 6)}...{t.tx_hash?.slice(-4)}
+                                                                        <ExternalLink className="w-3 h-3" />
+                                                                    </a>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                                {tradeHistory.length === 0 && (
+                                                    <div className="flex flex-col items-center justify-center py-20 text-center opacity-50">
+                                                        <Clock className="w-12 h-12 text-gray-300 mb-4" />
+                                                        <p className="text-sm font-black text-gray-400 uppercase tracking-[0.2em]">Personal History Node Empty</p>
+                                                        <p className="text-[10px] text-gray-400 mt-2">Any future settlements or swaps will be synchronized here from the blockchain.</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </motion.div>

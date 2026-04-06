@@ -116,4 +116,61 @@ router.post('/heartbeat', async (req, res) => {
     }
 });
 
+// ── GET /api/wallets/stats/:address ──────────────────────────────────────────
+// Returns aggregate trading stats (Total Volume, Profit/Loss)
+router.get('/stats/:address', async (req, res) => {
+    const { address } = req.params;
+    try {
+        const stats = await db.query(`
+            SELECT 
+                COUNT(*) as total_trades,
+                COALESCE(SUM(amount_bnb), 0) as total_volume_bnb,
+                COALESCE(SUM(pnl_bnb), 0) as total_pnl_bnb
+            FROM trades 
+            WHERE LOWER(trader_wallet) = LOWER(?)
+        `, [address]);
+        res.json(stats.rows[0] || { total_trades: 0, total_volume_bnb: 0, total_pnl_bnb: 0 });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+});
+
+// ── GET /api/wallets/trades/:address ──────────────────────────────────────────
+// Returns last 100 trades for the profile history and calendar
+router.get('/trades/:address', async (req, res) => {
+    const { address } = req.params;
+    try {
+        const trades = await db.query(`
+            SELECT * FROM trades 
+            WHERE LOWER(trader_wallet) = LOWER(?) 
+            ORDER BY timestamp DESC LIMIT 100
+        `, [address]);
+        res.json(trades.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch trades' });
+    }
+});
+
+// ── GET /api/futures/active/:address ─────────────────────────────────────────
+// Returns currently unclosed futures positions by checking position_id links
+router.get('/active/:address', async (req, res) => {
+    const { address } = req.params;
+    try {
+        const active = await db.query(`
+            SELECT * FROM trades 
+            WHERE LOWER(trader_wallet) = LOWER(?) 
+            AND trade_type = 'futures_open'
+            AND position_id NOT IN (
+                SELECT position_id FROM trades 
+                WHERE LOWER(trader_wallet) = LOWER(?) 
+                AND trade_type = 'futures_close'
+                AND position_id IS NOT NULL
+            )
+        `, [address, address]);
+        res.json(active.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch active positions' });
+    }
+});
+
 module.exports = router;

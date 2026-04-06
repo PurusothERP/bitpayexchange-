@@ -8,7 +8,7 @@ import ChatBox from "@/components/ChatBox";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "B20- Exchange | Intelligence Hub",
+  title: "B20- Exchnage | Intelligence Hub",
   description: "Institutional-grade market data, Traders Hub, and automated high-yield staking on BNB Smart Chain.",
 };
 

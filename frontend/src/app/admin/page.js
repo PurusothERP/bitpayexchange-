@@ -851,7 +851,7 @@ export default function AdminPage() {
                         { id: 'revenue_table', icon: <Receipt className="w-4 h-4" />, label: 'Excel Ledger (Revenue)', show: checkAccess('view_revenue') },
                         { id: 'tokens', icon: <Database className="w-4 h-4" />, label: 'Master Asset Ledger', show: checkAccess('manage_tokens') },
                         { id: 'launchpad', icon: <Rocket className="w-4 h-4" />, label: 'Launchpad Manager', show: checkAccess('manage_tokens') },
-                        { id: 'wallets', icon: <Users2 className="w-4 h-4" />, label: 'Connected Wallets', show: checkAccess('manage_wallets') },
+                        { id: 'wallets', icon: <Users className="w-4 h-4" />, label: 'Connected Wallets', show: checkAccess('manage_wallets') },
                         { id: 'fiat', icon: <DollarSign className="w-4 h-4" />, label: 'Fiat Management', show: checkAccess('manage_fiat') },
                         { id: 'staking', icon: <Lock className="w-4 h-4" />, label: 'Staking Management', show: checkAccess('manage_staking') },
                         { id: 'bulletin', icon: <Megaphone className="w-4 h-4" />, label: 'Bulletin Hub', show: checkAccess('manage_social') },

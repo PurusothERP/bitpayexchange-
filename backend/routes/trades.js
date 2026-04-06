@@ -67,7 +67,7 @@ router.get('/:tokenAddress/stats', async (req, res) => {
 // ── POST /api/trades/sync ────────────────────────────────────────────────────
 // Sync on-chain trade with DB
 router.post('/sync', async (req, res) => {
-    const { tokenAddress, buyerWallet, amount, amountBNB, priceBNB, txHash, tradeType } = req.body;
+    const { tokenAddress, tokenSymbol, buyerWallet, amount, amountBNB, priceBNB, txHash, tradeType, pnl_bnb, positionId } = req.body;
     
     try {
         // 1. Check if token is delisted
@@ -76,14 +76,14 @@ router.post('/sync', async (req, res) => {
             return res.status(403).json({ error: 'TOKEN DELISTED: Trading is permanently disabled for this asset.' });
         }
 
-        // 2. Insert trade (Dynamic fee tracking, default to 1% for bonding curve, 0.001% for exchange)
-        const feePercent = (tradeType === 'futures' || tradeType === 'spot_exchange') ? 0.00001 : 0.01;
-        const fee = feeBnb || parseFloat(amountBNB || 0) * feePercent;
+        // 2. Insert trade
+        const feePercent = (tradeType === 'futures' || tradeType === 'spot_exchange' || tradeType === 'futures_open') ? 0.00001 : 0.01;
+        const fee = parseFloat(amountBNB || 0) * feePercent;
         
         await db.query(`
-            INSERT INTO trades (token_address, trader_wallet, amount_tokens, amount_bnb, price_bnb, tx_hash, trade_type, fee_bnb)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `, [tokenAddress, buyerWallet, amount, amountBNB, priceBNB, txHash, tradeType || 'buy', fee]);
+            INSERT INTO trades (token_address, token_symbol, trader_wallet, amount_tokens, amount_bnb, price_bnb, tx_hash, trade_type, fee_bnb, pnl_bnb, position_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [tokenAddress, tokenSymbol || 'BNB', buyerWallet, amount, amountBNB, priceBNB, txHash, tradeType || 'buy', fee, pnl_bnb || 0, positionId]);
 
         // 2.5 Log to treasury_transfers for Admin Dashboard Inflow
         if (fee > 0) {

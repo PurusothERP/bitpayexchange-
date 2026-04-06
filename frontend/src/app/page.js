@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useWallet } from '@/context/WalletContext';
 import { useEffect, useState, useRef } from 'react';
-import { Sparkles, TrendingUp, Zap, ArrowRight, Brain, CheckCircle, Smartphone, Globe, Shield, MessageSquare, Rocket, CreditCard, Star, Activity } from 'lucide-react';
+import { Sparkles, TrendingUp, Zap, ArrowRight, Brain, CheckCircle, Smartphone, Globe, Shield, MessageSquare, Rocket, CreditCard, Star, Activity, Target, LayoutGrid, Waves, Layers, PieChart, Leaf } from 'lucide-react';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -233,8 +233,8 @@ export default function Home() {
   const services = [
     {
       icon: '🧠',
-      title: 'B20AI Intelligence',
-      desc: 'Deep neural market analysis, volatility metrics, and institutional sentiment modeling powered by the B20 market brain.',
+      title: 'AI Driven Data & Scan',
+      desc: 'Deep neural market analysis, volatility metrics, and institutional sentiment modeling powered by the B20- Exchnage market brain.',
       features: ['6-Month Volatility Scans', '52-Week High/Low Data', 'Sentiment Modeling', 'Global Liquidity Heatmaps'],
       gradient: 'from-indigo-500/10 to-indigo-600/5 border-indigo-400/30',
       delay: 0,
@@ -249,17 +249,17 @@ export default function Home() {
     },
     {
       icon: '🌿',
-      title: 'Yield Intelligence',
-      desc: 'Automated multi-protocol staking aggregator scanning the highest audited APY opportunities across BSC.',
-      features: ['High-Yield Vaults', 'Multi-Protocol Support', 'Instant Stake Execution', 'Protocol Fee Automation'],
+      title: 'Yielding Discovery',
+      desc: 'Automated multi-protocol stacking aggregator scanning the highest audited APY opportunities across BSC.',
+      features: ['High-Yield Vaults', 'Multi-Protocol Support', 'Instant Stacking Execution', 'Protocol Fee Automation'],
       gradient: 'from-emerald-500/10 to-emerald-600/5 border-emerald-400/30',
       delay: 0.2,
     },
     {
-      icon: '✨',
-      title: 'Ask Nuera AI',
-      desc: 'Your personal neural assistant. Get deep technical scans, deployment advice, and market intelligence in real-time.',
-      features: ['Technical Oracle Scans', 'Smart Contract Audits', 'Market Logic Training', '24/7 Neural Support'],
+      icon: '💎',
+      title: 'Stacking Protocol',
+      desc: 'Native B20 stacking engine. Lock assets to earn protocol fees and participate in ecosystem governance.',
+      features: ['Native Fee Sharing', 'Governance Rights', 'Instant Unstacking', 'Verified Security'],
       gradient: 'from-rose-500/10 to-rose-600/5 border-rose-500/30',
       delay: 0.3,
     },
@@ -272,10 +272,10 @@ export default function Home() {
       delay: 0.4,
     },
     {
-      icon: '💎',
-      title: 'B20AI Nexus Listing',
-      desc: 'Launch your project into the B20- Exchange ecosystem with automated listing and neural marketing support.',
-      features: ['Instant DApp Generation', 'Verified Badge Access', 'Governance Voting', 'Community Analytics'],
+      icon: '✨',
+      title: 'Ask Nuera AI',
+      desc: 'Your personal neural assistant. Get deep technical scans, deployment advice, and market intelligence in real-time.',
+      features: ['Technical Oracle Scans', 'Smart Contract Audits', 'Market Logic Training', '24/7 Neural Support'],
       gradient: 'from-blue-500/10 to-blue-600/5 border-blue-400/30',
       delay: 0.5,
     },
@@ -496,6 +496,74 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── SECTION: AI DRIVEN DATA & NEURAL SCAN ────────────────────────────────── */}
+      <section className="py-32 px-4 md:px-8 relative overflow-hidden bg-gray-50/30">
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-rose-500/5 blur-[120px] rounded-full -z-10" />
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col lg:flex-row items-center gap-16">
+            <div className="flex-1 space-y-8 text-left">
+              <SectionBadge icon={<Brain className="w-4 h-4 text-rose-500" />} text="Neural Intelligence Assistant" />
+              <h2 className="text-5xl md:text-7xl font-black text-gray-900 leading-tight">
+                AI Driven <br />
+                <span className="text-red-gradient">Data & Scanning.</span>
+              </h2>
+              <p className="text-gray-500 text-xl font-medium leading-relaxed max-w-xl">
+                B20- Exchnage isn't just a platform; it's a sentient market observer. Our Nuera AI engine scans thousands of data points to deliver institutional-grade intelligence to your fingertips.
+              </p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { title: 'Volatility Scans', icon: <Activity className="w-5 h-5 text-rose-500" />, desc: 'Predictive 24h risk modeling.' },
+                  { title: 'Mimic Detection', icon: <Shield className="w-5 h-5 text-rose-500" />, desc: 'Instant scam & copycat filtering.' },
+                  { title: 'Whale Tracking', icon: <Target className="w-5 h-5 text-rose-500" />, desc: 'Real-time large wallet monitoring.' },
+                  { title: 'Token Scoring', icon: <Star className="w-5 h-5 text-rose-500" />, desc: 'Algorithmic memorability ranking.' },
+                ].map((item, i) => (
+                  <div key={i} className="p-6 rounded-[2rem] bg-white border border-black/5 hover:border-rose-500/20 transition-all group">
+                     <div className="w-12 h-12 bg-rose-500/10 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                        {item.icon}
+                     </div>
+                     <h4 className="font-black text-gray-900 mb-1">{item.title}</h4>
+                     <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex-1 relative">
+                <motion.div 
+                   animate={{ y: [0, -20, 0] }}
+                   transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                   className="relative z-10 p-1 bg-gradient-to-br from-rose-500/20 to-indigo-500/20 rounded-[4rem] shadow-3xl"
+                >
+                    <div className="bg-[#0A0A0A] rounded-[3.8rem] overflow-hidden p-8 md:p-12 relative">
+                        <div className="absolute top-0 right-0 p-8 opacity-20"><Brain className="w-64 h-64 text-rose-500" /></div>
+                        <div className="relative z-10 space-y-6">
+                            <div className="flex items-center gap-3 mb-8">
+                                <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
+                                <span className="text-emerald-500 font-black text-xs uppercase tracking-[0.3em]">Processing Live Feed</span>
+                            </div>
+                            
+                            <div className="space-y-3">
+                                {[
+                                    { label: 'Market Sentiment', val: 'Bullish (88%)', color: 'bg-emerald-500/20 text-emerald-400' },
+                                    { label: 'Neural Complexity', val: 'Optimized', color: 'bg-indigo-500/20 text-indigo-400' },
+                                    { label: 'Liquidity Depth', val: 'Institutional', color: 'bg-amber-500/20 text-amber-400' }
+                                ].map((row, i) => (
+                                    <div key={i} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
+                                        <span className="text-gray-400 text-[10px] font-black uppercase tracking-widest">{row.label}</span>
+                                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${row.color}`}>{row.val}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </motion.div>
+                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-indigo-500/20 blur-[80px] rounded-full" />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── LAUNCHPAD EXPLORER (Nebula Terminal) ────────────────────────────────── */}
       <section className="py-24 px-4 md:px-8 relative overflow-hidden">
         <div className="absolute top-1/2 left-0 w-[600px] h-[600px] bg-amber-500/5 blur-[120px] rounded-full -z-10" />
@@ -560,6 +628,42 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── TRADERS HUB CATEGORIES ───────────────────────────────────────────────── */}
+      <section className="py-24 px-4 md:px-8 bg-black text-white relative">
+         <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+               <SectionBadge icon={<LayoutGrid className="w-4 h-4 text-amber-500" />} text="Velocity Terminal" />
+               <h2 className="text-5xl md:text-7xl font-black mb-6">Traders <span className="text-amber-500">Hub.</span></h2>
+               <p className="text-gray-400 text-xl font-medium max-w-2xl mx-auto uppercase tracking-tighter">Your gateway to the most volatile and profitable segments of the BNB Smart Chain.</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+               {[
+                  { title: 'Meme Elite', icon: '🚀', tag: 'High Velocity', color: 'from-rose-500/20 to-transparent', link: '/exchange?category=meme' },
+                  { title: 'Top Gainers', icon: '📈', tag: 'Momentum', color: 'from-emerald-500/20 to-transparent', link: '/exchange?category=gainers' },
+                  { title: 'Whale Alerts', icon: '🐋', tag: 'Institutional', color: 'from-blue-500/20 to-transparent', link: '/exchange?category=whales' }
+               ].map((card, i) => (
+                  <Link href={card.link} key={i}>
+                    <motion.div 
+                        whileHover={{ y: -10, borderColor: 'rgba(251, 191, 36, 0.4)' }}
+                        className={`p-10 rounded-[3rem] bg-gradient-to-br ${card.color} border-2 border-white/5 relative group overflow-hidden h-full flex flex-col`}
+                    >
+                        <div className="absolute top-0 right-0 p-8 opacity-5 scale-150 group-hover:rotate-12 transition-transform">
+                            <span className="text-[120px]">{card.icon}</span>
+                        </div>
+                        <span className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-6 inline-block">{card.tag}</span>
+                        <h3 className="text-3xl font-black mb-4">{card.title}</h3>
+                        <p className="text-gray-500 text-sm font-medium leading-relaxed mb-8">Direct neural routing into the {card.title.toLowerCase()} segment with real-time liquidity depth.</p>
+                        <div className="mt-auto flex items-center gap-3 text-white font-black text-xs uppercase tracking-widest group-hover:gap-5 transition-all">
+                           Explore Category <ArrowRight className="w-4 h-4 text-amber-500" />
+                        </div>
+                    </motion.div>
+                  </Link>
+               ))}
+            </div>
+         </div>
+      </section>
+
       {/* ── SERVICES SHOWCASE ──────────────────────────────────────────────────── */}
       <section className="py-24 px-4 md:px-8 bg-gray-50/50">
         <div className="max-w-7xl mx-auto">
@@ -575,6 +679,74 @@ export default function Home() {
           </div>
           
           <FeatureShowcase services={services} />
+        </div>
+      </section>
+
+      {/* ── YIELDING DISCOVERY & STACKING ─────────────────────────────────── */}
+      <section className="py-32 px-4 md:px-8 relative overflow-hidden bg-white">
+        <div className="absolute bottom-0 left-0 w-full h-[500px] bg-gradient-to-t from-emerald-500/5 to-transparent pointer-events-none" />
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col lg:flex-row-reverse items-center gap-24">
+            <div className="flex-1 space-y-10 text-left">
+              <div>
+                <SectionBadge icon={<Waves className="w-4 h-4 text-emerald-500" />} text="High-Yield Protocol" />
+                <h2 className="text-5xl md:text-7xl font-black text-gray-900 leading-tight mb-8">
+                  Yield <br />
+                  <span className="text-emerald-500">Discovery.</span>
+                </h2>
+                <p className="text-gray-500 text-xl font-medium leading-relaxed font-bold tracking-tight uppercase">
+                   Maximize your digital assets. Our Yielding Discovery hub scans the safest and highest APY vaults across the B20 ecosystem.
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                {[
+                  { title: 'Automated Stacking', desc: 'Single-click entry into institutional vaults.', icon: <Layers className="w-5 h-5 text-emerald-500" /> },
+                  { title: 'Real-time APR', icon: <TrendingUp className="w-5 h-5 text-emerald-500" />, desc: 'Live yield monitoring every 15 seconds.' },
+                  { title: 'Compound Rewards', icon: <Zap className="w-5 h-5 text-emerald-500" />, desc: 'Auto-compounding logic for growth.' }
+                ].map((item, i) => (
+                    <div key={i} className="flex gap-6 items-start p-6 rounded-3xl hover:bg-emerald-50 transition-colors">
+                        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg border border-emerald-100 shrink-0">
+                           {item.icon}
+                        </div>
+                        <div>
+                           <h4 className="font-black text-gray-900 text-lg mb-1">{item.title}</h4>
+                           <p className="text-gray-500 text-sm font-medium">{item.desc}</p>
+                        </div>
+                    </div>
+                ))}
+              </div>
+
+              <div className="pt-6">
+                 <Link href="/staking">
+                    <button className="px-10 py-5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl shadow-2xl shadow-emerald-600/20 flex items-center gap-4 transition-all active:scale-95 text-lg">
+                       Start Stacking Now <ArrowRight className="w-6 h-6" />
+                    </button>
+                 </Link>
+              </div>
+            </div>
+
+            <div className="flex-1 relative">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-4 pt-12">
+                         <div className="p-8 rounded-[3rem] bg-emerald-500 text-white shadow-2xl shadow-emerald-500/30">
+                            <Leaf className="w-10 h-10 mb-6" />
+                            <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-80">Avg. APY</p>
+                            <h4 className="text-5xl font-black mb-2">124%</h4>
+                            <p className="text-xs font-bold opacity-60">Across Meme Vaults</p>
+                         </div>
+                    </div>
+                    <div className="space-y-4">
+                         <div className="p-8 rounded-[3rem] bg-gray-900 text-white shadow-2xl">
+                             <PieChart className="w-10 h-10 mb-6 text-emerald-400" />
+                             <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60">Total Staked</p>
+                             <h4 className="text-3xl font-black mb-2">450.2M</h4>
+                             <p className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Native Tokens</p>
+                         </div>
+                    </div>
+                </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -1042,7 +1214,7 @@ export default function Home() {
                   🔍 Explore Launchpad
                 </motion.button>
               </Link>
-              <Link href="/trade">
+              <Link href="/exchange">
                 <motion.button
                   whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}
                   className="px-10 py-4 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 font-bold rounded-2xl border border-amber-500/20 text-lg"

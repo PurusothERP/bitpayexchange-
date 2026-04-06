@@ -144,12 +144,33 @@ export default function ListTokenPage() {
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-white/40 uppercase tracking-widest pl-2">Logo URL</label>
-                                        <input 
-                                            required type="url" placeholder="https://..."
-                                            value={formData.logo} onChange={e => setFormData({...formData, logo: e.target.value})}
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-rose-500/50 transition-all text-white" 
-                                        />
+                                        <label className="text-[10px] font-black text-white/40 uppercase tracking-widest pl-2 flex items-center justify-between shadow-sm">
+                                            Attach Logo
+                                            <span className="text-rose-500/60 font-black text-[8px]">512x512 PNG/JPEG ONLY</span>
+                                        </label>
+                                        <div className="relative group">
+                                            <input 
+                                                required type="text" placeholder="Logo IPFS or URL (e.g. https://...)"
+                                                value={formData.logo} onChange={e => setFormData({...formData, logo: e.target.value})}
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-rose-500/50 transition-all text-white pr-24" 
+                                            />
+                                            <div className="absolute right-2 top-2 bottom-2">
+                                                <label className="h-full px-4 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl flex items-center justify-center cursor-pointer transition-all text-[9px] font-black uppercase tracking-widest">
+                                                    Upload File
+                                                    <input 
+                                                        type="file" accept="image/png, image/jpeg" 
+                                                        className="hidden" 
+                                                        onChange={(e) => {
+                                                            const file = e.target.files[0];
+                                                            if (file) {
+                                                                console.log("File attached: " + file.name);
+                                                                // In a real app, this would upload to IPFS.
+                                                            }
+                                                        }}
+                                                    />
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 

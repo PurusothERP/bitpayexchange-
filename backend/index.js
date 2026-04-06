@@ -12,6 +12,7 @@ const stakingRoutes  = require('./routes/staking');
 const communityRoutes = require('./routes/community');
 const bulletinRoutes = require('./routes/bulletin');
 const adminRoutes    = require('./routes/admin');
+const futuresRoutes  = require('./routes/futures');
 const path           = require('path');
 const { startTreasuryAutomation } = require('./services/treasuryAutomation');
 const { startTokenVerifier }      = require('./services/tokenVerifier');
@@ -33,6 +34,7 @@ app.use('/api/staking',  stakingRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/bulletin', bulletinRoutes);
 app.use('/api/admin',    adminRoutes);
+app.use('/api/futures',   futuresRoutes);
 // Static serving for user-uploaded proofs
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

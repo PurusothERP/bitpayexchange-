@@ -105,6 +105,7 @@ contract DirectDexLaunchFactory is Ownable {
         TokenTemplate newToken = new TokenTemplate(
             name,
             symbol,
+            18,             // Default 18 decimals for direct launches
             fixedSupply,
             creator,
             address(this),

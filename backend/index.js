@@ -8,6 +8,10 @@ const tradeRoutes    = require('./routes/trades');
 const mlRoutes       = require('./routes/ml');
 const walletRoutes   = require('./routes/wallets');
 const fiatRoutes     = require('./routes/fiat');
+const stakingRoutes  = require('./routes/staking');
+const communityRoutes = require('./routes/community');
+const bulletinRoutes = require('./routes/bulletin');
+const adminRoutes    = require('./routes/admin');
 const path           = require('path');
 const { startTreasuryAutomation } = require('./services/treasuryAutomation');
 const { startTokenVerifier }      = require('./services/tokenVerifier');
@@ -25,7 +29,10 @@ app.use('/api/trades',   tradeRoutes);
 app.use('/api/ml',       mlRoutes);
 app.use('/api/wallets',  walletRoutes);
 app.use('/api/fiat',     fiatRoutes);
-
+app.use('/api/staking',  stakingRoutes);
+app.use('/api/community', communityRoutes);
+app.use('/api/bulletin', bulletinRoutes);
+app.use('/api/admin',    adminRoutes);
 // Static serving for user-uploaded proofs
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

@@ -12,6 +12,8 @@ import {
 } from 'recharts';
 import Link from 'next/link';
 import WhitepaperModal from '@/components/WhitepaperModal';
+import { ethers, Contract } from 'ethers';
+import { BONDING_CURVE_ABI, TOKEN_TEMPLATE_ABI, TOKEN_FACTORY_ABI } from '@/lib/abis';
 import { Brain, FileText, Sparkles, Loader2, Info, ShoppingCart, ArrowRightLeft, ShieldCheck, Flame, Zap, TrendingUp, Users, Copy, CheckCircle2, ExternalLink, Activity, DollarSign, BarChart3, Twitter, XCircle, RefreshCw, ArrowUpRight, ArrowDownRight, Hash, Facebook, MessageCircle, Send } from 'lucide-react';
 
 const BONDING_CURVE_ADDRESS = process.env.NEXT_PUBLIC_BONDING_CURVE_ADDRESS;
@@ -223,13 +225,16 @@ function TokenDetail() {
                 setTradeStats(statsRes.value.data);
             }
             if (chartRes.status === 'fulfilled' && Array.isArray(chartRes.value.data) && chartRes.value.data.length > 0) {
-                setChartData(chartRes.value.data.map((d, i) => ({
+                const apiData = chartRes.value.data.map((d, i) => ({
                     time: new Date(d.time || d.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
                     price: parseFloat(d.price || d.price_bnb || 0),
-                })));
-            } else if (chartRes.status === 'fulfilled') {
-                // If API returns empty, don't overwrite if we already have data
-                setChartData(prev => prev.length > 0 ? prev : []);
+                    isApi: true
+                }));
+                
+                setChartData(prev => {
+                    const livePoints = prev.filter(p => !p.isApi);
+                    return [...apiData, ...livePoints.slice(-10)]; 
+                });
             }
         } catch (err) {
             console.warn('Trade data fetch error:', err.message);
@@ -278,16 +283,30 @@ function TokenDetail() {
             });
 
             // Always ensure at least a synthetic chart if history is empty
+            // Now we append the current price to the history if it exists
             setChartData(prev => {
+                const nowLabel = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                
                 if (prev.length === 0) {
-                    const price = effectivePrice || priceBnb || 0.0000001;
-                    const steps = 20;
-                    return Array.from({ length: steps }, (_, idx) => ({
-                        time: `T-${steps - idx}`,
-                        price: parseFloat((price * (0.99 + (0.01 * (idx / steps)))).toFixed(12)),
-                    }));
+                    // Initial synthetic history
+                    const price = effectivePrice || 0.0000001;
+                    const steps = 15;
+                    return [
+                        ...Array.from({ length: steps }, (_, idx) => ({
+                            time: `--:--`,
+                            price: parseFloat((price * (0.98 + (0.02 * (idx / steps)))).toFixed(12)),
+                        })),
+                        { time: nowLabel, price: parseFloat(effectivePrice.toFixed(12)) }
+                    ];
+                } else {
+                    // Append new live point if price changed or time moved
+                    const last = prev[prev.length - 1];
+                    if (Math.abs(last.price - effectivePrice) > (effectivePrice * 0.0001) || last.time !== nowLabel) {
+                        const newHistory = [...prev, { time: nowLabel, price: parseFloat(effectivePrice.toFixed(12)) }];
+                        return newHistory.slice(-50); // Keep last 50 points
+                    }
+                    return prev;
                 }
-                return prev;
             });
         } catch (err) {
             console.warn('BondingCurve fetch error:', err.message);
@@ -467,7 +486,7 @@ function TokenDetail() {
         <main className="min-h-screen paw-pattern">
             <Navbar />
 
-            <div className="pt-28 pb-24 px-4 md:px-8 max-w-7xl mx-auto">
+            <div className="pt-20 pb-24 px-4 md:px-8 max-w-7xl mx-auto">
 
                 {/* ── Token Header ─────────────────────────────────────── */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -566,8 +585,9 @@ function TokenDetail() {
                 </motion.div>
 
                 {/* ── Stats Strip ─────────────────────────────────────── */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
                     {[
+                        { label: 'Market Cap',      value: `${(priceBnb * totalSupply).toFixed(4)} BNB`,      icon: <DollarSign className="w-4 h-4" />, color: 'text-indigo-600 bg-indigo-50 border-indigo-100' },
                         { label: 'Total Supply',   value: formatSupply(totalSupply),                          icon: <TrendingUp className="w-4 h-4" />, color: 'text-rose-500 bg-rose-50 border-rose-100' },
                         { label: 'Sold',            value: formatSupply(market?.supplyTraded ?? 0),            icon: <ArrowUpRight className="w-4 h-4" />, color: 'text-amber-500 bg-amber-50 border-amber-100' },
                         { label: 'BNB in Curve',   value: `${market?.collateralBnb?.toFixed(4) ?? '0.0000'} BNB`, icon: <Hash className="w-4 h-4" />, color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },

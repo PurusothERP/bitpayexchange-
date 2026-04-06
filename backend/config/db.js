@@ -34,9 +34,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
             else {
                 console.log('Tokens table ready.');
                 // Handle schema evolution for existing DBs
-                const cols = ['trust_status', 'is_delisted', 'last_trade_at', 'launch_type'];
+                const cols = ['trust_status', 'is_delisted', 'last_trade_at', 'launch_type', 'is_boosted'];
                 cols.forEach(col => {
-                    db.run(`ALTER TABLE tokens ADD COLUMN ${col} ${col === 'is_delisted' ? 'INTEGER DEFAULT 0' : 'TEXT'}`, (err) => {
+                    db.run(`ALTER TABLE tokens ADD COLUMN ${col} ${col === 'is_delisted' || col === 'is_boosted' ? 'INTEGER DEFAULT 0' : 'TEXT'}`, (err) => {
                         // ignore error if column already exists
                     });
                 });
@@ -148,6 +148,99 @@ const db = new sqlite3.Database(dbPath, (err) => {
         `, (err) => {
             if (err) console.error('Error creating fiat_transactions table:', err);
             else console.log('Fiat transactions table ready.');
+        });
+
+        // Staking records table
+        db.run(`
+            CREATE TABLE IF NOT EXISTS staking_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                wallet_address TEXT NOT NULL,
+                token_address TEXT NOT NULL,
+                token_symbol TEXT NOT NULL,
+                token_name TEXT DEFAULT '',
+                amount_tokens REAL NOT NULL,
+                period_days INTEGER NOT NULL,
+                apr REAL NOT NULL,
+                expected_reward REAL NOT NULL,
+                total_payout REAL DEFAULT 0,
+                tx_hash TEXT UNIQUE NOT NULL,
+                start_date DATETIME NOT NULL,
+                end_date DATETIME NOT NULL,
+                status TEXT DEFAULT 'active',
+                release_requested_at DATETIME,
+                released_at DATETIME,
+                admin_note TEXT DEFAULT '',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `, (err) => {
+            if (err) console.error('Error creating staking_records table:', err);
+            else console.log('Staking records table ready.');
+        });
+        // Announcements table
+        db.run(`
+            CREATE TABLE IF NOT EXISTS announcements (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                image_url TEXT DEFAULT '',
+                content TEXT NOT NULL,
+                likes INTEGER DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `, (err) => {
+            if (err) console.error('Error creating announcements table:', err);
+            else console.log('Announcements table ready.');
+        });
+
+        // Community posts table
+        db.run(`
+            CREATE TABLE IF NOT EXISTS community_posts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                wallet_address TEXT NOT NULL,
+                content TEXT NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `, (err) => {
+            if (err) console.error('Error creating community_posts table:', err);
+            else console.log('Community posts table ready.');
+        });
+
+        // Blocked users table
+        db.run(`
+            CREATE TABLE IF NOT EXISTS blocked_users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                wallet_address TEXT UNIQUE NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `, (err) => {
+            if (err) console.error('Error creating blocked_users table:', err);
+            else console.log('Blocked users table ready.');
+        });
+
+        // Admin Assistants (RBAC)
+        db.run(`
+            CREATE TABLE IF NOT EXISTS admin_assistants (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                wallet_address TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                permissions_json TEXT DEFAULT '[]',
+                last_login DATETIME,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `, (err) => {
+            if (err) console.error('Error creating admin_assistants table:', err);
+            else console.log('Admin assistants table ready.');
+        });
+
+        // Assistant Activity Log
+        db.run(`
+            CREATE TABLE IF NOT EXISTS assistant_activities (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                assistant_wallet TEXT NOT NULL,
+                activity TEXT NOT NULL,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `, (err) => {
+            if (err) console.error('Error creating assistant_activities table:', err);
+            else console.log('Assistant activities table ready.');
         });
     }
 });

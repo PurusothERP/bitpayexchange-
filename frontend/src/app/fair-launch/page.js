@@ -224,7 +224,7 @@ export default function FairLaunch() {
         <main className="min-h-screen bg-gray-50/70 p-pattern selection:bg-rose-500 selection:text-white pb-32">
             <Navbar />
             
-            <div className="pt-32 pb-24 px-4 md:px-8 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 relative z-10">
+            <div className="pt-20 pb-24 px-4 md:px-8 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 relative z-10">
                 {/* Background Decor */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-rose-500/5 rounded-full blur-[150px] -z-10 animate-pulse" />
 

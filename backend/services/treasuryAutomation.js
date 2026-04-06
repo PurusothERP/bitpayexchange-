@@ -29,6 +29,11 @@ const FACTORY_ABI = [
     'event FeeCollected(address indexed user, uint256 amount, string reason)'
 ];
 
+const DIRECT_FACTORY_ABI = [
+    'event TokenCreatedDirect(address indexed tokenAddress, string name, string symbol, uint256 supply, address indexed creator, uint256 deploymentFee, uint256 liquidityBnb)',
+    'event LiquidityAdded(address indexed tokenAddress, address indexed caller, uint256 tokenAmount, uint256 bnbAdded)'
+];
+
 const INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 
 let provider;
@@ -36,6 +41,7 @@ let signer;
 let bondingCurveContract;
 let bondingCurveReadOnly;
 let factoryReadOnly;
+let directFactoryReadOnly;
 
 function initProvider() {
     provider = new ethers.JsonRpcProvider(process.env.BSC_RPC_URL || 'https://bsc-dataseed.binance.org');
@@ -57,6 +63,13 @@ function initProvider() {
         FACTORY_ABI,
         provider
     );
+    if (process.env.DIRECT_FACTORY_ADDRESS) {
+        directFactoryReadOnly = new ethers.Contract(
+            process.env.DIRECT_FACTORY_ADDRESS,
+            DIRECT_FACTORY_ABI,
+            provider
+        );
+    }
 }
 
 // ── Record a trade event to SQLite ─────────────────────────────────────────────
@@ -286,6 +299,34 @@ function startEventListeners() {
         });
 
         console.log('[Indexer] Event listeners active (TokenCreated, TokenUpgraded, Permission, FeeCollected on Factory)');
+    }
+
+    if (directFactoryReadOnly) {
+        directFactoryReadOnly.on('TokenCreatedDirect', async (token, name, symbol, supply, creator, fee, liquidity, event) => {
+            try {
+                const amountBnb = parseFloat(ethers.formatEther(fee));
+                const txHash = event?.log?.transactionHash || 'unknown_direct_' + Date.now();
+                const feeWallet = process.env.FEE_WALLET || '';
+                if (feeWallet && amountBnb > 0) {
+                    await recordTreasuryTransfer({
+                        amountBnb,
+                        sourceContract: process.env.DIRECT_FACTORY_ADDRESS,
+                        destinationAddress: feeWallet,
+                        txHash,
+                        transfer_type: 'creation_fee_direct'
+                    });
+                }
+            } catch (err) {
+                console.error('[Indexer] TokenCreatedDirect event error:', err.message);
+            }
+        });
+
+        directFactoryReadOnly.on('LiquidityAdded', async (token, caller, tokens, bnb, event) => {
+             // Optional: Log liquidity additions if needed for analytics
+             console.log(`[Indexer] Liquidity Added: ${ethers.formatEther(bnb)} BNB for ${token}`);
+        });
+
+        console.log('[Indexer] Event listeners active (TokenCreatedDirect, LiquidityAdded on Direct Factory)');
     }
 }
 

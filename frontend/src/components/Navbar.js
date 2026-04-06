@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { useWallet } from '@/context/WalletContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { Wallet, Rocket, Activity, Image as ImageIcon, Menu, X, FileText, ArrowRightLeft, ChevronDown, Coins, ShieldCheck, Shield, Sparkles, DollarSign } from 'lucide-react';
+import axios from 'axios';
+import { Wallet, Rocket, Activity, Image as ImageIcon, Menu, X, FileText, ArrowRightLeft, ChevronDown, Coins, ShieldCheck, Shield, Sparkles, DollarSign, CreditCard, Lock } from 'lucide-react';
 
 export default function Navbar() {
     const { account, connectWallet, disconnectWallet, isConnecting } = useWallet();
@@ -13,33 +14,41 @@ export default function Navbar() {
     const TREASURY = '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
     const isAdmin = account && account.toLowerCase() === TREASURY;
 
-    // ── Auto-Disconnect Session Safety ────────────────────────────────────────
-    // Monitors user activity and automatically disconnects the wallet after 15m 
-    // of inactivity to prevent unauthorized access if a user leaves their tab open.
+    // ── Auto-Disconnect Session Safety + Live Heartbeat ────────────────────────
     useEffect(() => {
         if (!account) return;
 
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
+        // 1. Session Heartbeat (Pulse Online Status Every 60s)
+        const heartbeatInterval = setInterval(() => {
+            axios.post(`${API_URL}/wallets/heartbeat`, { wallet_address: account })
+                .catch(() => {}); // silent fail if network temp down
+        }, 60000);
+
+        // 2. Inactivity Monitor (Disconnect after 15m)
         let timeoutId;
-        const SESSION_TIMEOUT = 15 * 60 * 1000; // 15 Minutes
+        const SESSION_TIMEOUT = 15 * 60 * 1000; 
 
         const resetTimer = () => {
             if (timeoutId) clearTimeout(timeoutId);
             timeoutId = setTimeout(() => {
-                console.warn('[Session] Inactivity detected. Auto-disconnecting wallet for safety.');
                 disconnectWallet();
-                // Optional: show a notification or alert to the user
-                alert("Session expired due to inactivity. Wallet disconnected.");
+                alert("Session expired due to inactivity. Wallet disconnected for protocol security.");
             }, SESSION_TIMEOUT);
         };
 
-        const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
-        activityEvents.forEach(evt => document.addEventListener(evt, resetTimer));
-        
-        resetTimer(); // Initialize timer
+        const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+        events.forEach(evt => document.addEventListener(evt, resetTimer));
+        resetTimer();
+
+        // Immediate initial heartbeat
+        axios.post(`${API_URL}/wallets/heartbeat`, { wallet_address: account }).catch(() => {});
 
         return () => {
+            clearInterval(heartbeatInterval);
             if (timeoutId) clearTimeout(timeoutId);
-            activityEvents.forEach(evt => document.removeEventListener(evt, resetTimer));
+            events.forEach(evt => document.removeEventListener(evt, resetTimer));
         };
     }, [account, disconnectWallet]);
 
@@ -56,11 +65,11 @@ export default function Navbar() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
                     <div className="flex items-center gap-8">
-                        <Link href="/" className="flex items-center gap-2 group">
-                            <div className="w-12 h-12 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
+                        <Link href="/" className="flex items-center gap-2 group shrink-0">
+                            <div className="w-12 h-12 shrink-0 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
                                 <img src="/logo-final.png" alt="B20-LAB Logo" className="w-full h-full object-contain" />
                             </div>
-                            <span className="text-2xl font-black tracking-tighter text-gray-900 text-red-gradient drop-shadow-md">
+                            <span className="text-2xl font-black tracking-tighter text-gray-900 text-red-gradient drop-shadow-md whitespace-nowrap">
                                 B20-<span className="text-rose-500">LAB</span>
                             </span>
                         </Link>
@@ -136,17 +145,19 @@ export default function Navbar() {
                             <Link href="/launch" className="nav-link flex items-center gap-2 hover:text-rose-500 transition-colors">
                                 <Coins className="w-4 h-4" /> Launchpad
                             </Link>
-                            <Link href="/fiat" className="nav-link flex items-center gap-2 text-emerald-600 font-bold hover:text-emerald-700 transition-colors">
-                                <DollarSign className="w-4 h-4" /> Fiat
+                            <Link href="/cards" className="nav-link flex items-center gap-2 text-amber-600 font-black hover:text-amber-700 transition-colors">
+                                <CreditCard className="w-4 h-4" /> Cards
                             </Link>
-                            <Link href="/trade" className="nav-link flex items-center gap-2 text-rose-600 hover:text-rose-700 transition-colors">
-                                <Activity className="w-4 h-4" /> Trade
+                            <Link href="/exchange" className="group relative flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-gray-900 to-black text-white font-black shadow-[0_15px_30px_-5px_rgba(245,158,11,0.3)] hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.5)] border border-white/10 hover:border-amber-500/50 transition-all duration-300 hover:-translate-y-1 active:scale-95">
+                                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none" />
+                                <div className="p-1.5 bg-white/10 rounded-full border border-white/5 group-hover:border-amber-500/30 group-hover:bg-amber-500/20 transition-colors duration-300">
+                                    <Activity className="w-3.5 h-3.5 text-white group-hover:text-amber-400 transition-colors" />
+                                </div>
+                                <span className="tracking-wide">Exchange</span>
                             </Link>
+
                             <Link href="/services" className="nav-link flex items-center gap-2 hover:text-rose-500 transition-colors">
                                 <FileText className="w-4 h-4" /> Services
-                            </Link>
-                            <Link href="/dex" className="nav-link flex items-center gap-2 hover:text-rose-500 transition-colors">
-                                <ArrowRightLeft className="w-4 h-4" /> DEX
                             </Link>
                             <Link href="/profile" className="nav-link flex items-center gap-2 hover:text-rose-500 transition-colors">
                                 <Wallet className="w-4 h-4" /> Profile
@@ -224,17 +235,18 @@ export default function Navbar() {
                             <Link href="/launch" className="block px-3 py-3 rounded-md text-base font-medium text-gray-900 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
                                 <Coins className="w-5 h-5 text-gray-600" /> Launchpad
                             </Link>
-                            <Link href="/fiat" className="block px-3 py-3 rounded-md text-base font-medium text-emerald-600 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
-                                <DollarSign className="w-5 h-5 text-emerald-500" /> Fiat Buy & Sell
+                            <Link href="/cards" className="block px-3 py-3 rounded-md text-base font-bold text-amber-600 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
+                                <CreditCard className="w-5 h-5 text-amber-500" /> B20 Cards
                             </Link>
-                            <Link href="/trade" className="block px-3 py-3 rounded-md text-base font-medium text-rose-600 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
-                                <Activity className="w-5 h-5 text-rose-500" /> Trade
+                            <Link href="/exchange" className="group relative block mx-3 my-2 px-4 py-3 rounded-xl bg-gradient-to-r from-gray-900 to-black border border-white/5 shadow-xl font-bold text-white flex items-center gap-3 transition-all hover:border-amber-500/30 active:scale-95" onClick={() => setIsMobileMenuOpen(false)}>
+                                <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-amber-600 opacity-10 rounded-xl pointer-events-none" />
+                                <div className="p-1.5 bg-white/10 rounded-lg shadow-sm border border-white/10 group-hover:bg-amber-500/20 group-hover:border-amber-500/40 transition-all">
+                                    <Activity className="w-5 h-5 text-amber-400 group-hover:text-amber-500" />
+                                </div>
+                                <span className="flex-1 tracking-wide">B20 Exchange</span>
                             </Link>
                             <Link href="/services" className="block px-3 py-3 rounded-md text-base font-medium text-gray-900 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
                                 <FileText className="w-5 h-5 text-rose-500" /> Services
-                            </Link>
-                            <Link href="/dex" className="block px-3 py-3 rounded-md text-base font-medium text-gray-900 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
-                                <ArrowRightLeft className="w-5 h-5 text-rose-500" /> DEX
                             </Link>
                             <Link href="/profile" className="block px-3 py-3 rounded-md text-base font-medium text-gray-900 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
                                 <Wallet className="w-5 h-5 text-rose-500" /> My Profile

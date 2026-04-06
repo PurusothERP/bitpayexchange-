@@ -76,8 +76,10 @@ router.post('/sync', async (req, res) => {
             return res.status(403).json({ error: 'TOKEN DELISTED: Trading is permanently disabled for this asset.' });
         }
 
-        // 2. Insert trade (1% fee tracking)
-        const fee = parseFloat(amountBNB || 0) * 0.01;
+        // 2. Insert trade (Dynamic fee tracking, default to 1% for bonding curve, 0.001% for exchange)
+        const feePercent = (tradeType === 'futures' || tradeType === 'spot_exchange') ? 0.00001 : 0.01;
+        const fee = feeBnb || parseFloat(amountBNB || 0) * feePercent;
+        
         await db.query(`
             INSERT INTO trades (token_address, trader_wallet, amount_tokens, amount_bnb, price_bnb, tx_hash, trade_type, fee_bnb)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -87,8 +89,8 @@ router.post('/sync', async (req, res) => {
         if (fee > 0) {
             await db.query(`
                 INSERT INTO treasury_transfers (amount_bnb, source_contract, destination_address, tx_hash, transfer_type)
-                VALUES (?, ?, ?, ?, 'trading_fee')
-            `, [fee, tokenAddress, '0x6451ee4def4a8b8fbc2c64301a79e267de378935', txHash]);
+                VALUES (?, ?, ?, ?, ?)
+            `, [fee, tokenAddress, process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935', txHash, tradeType === 'futures' ? 'futures_fee' : 'trading_fee']);
         }
 
         // 3. Update token's last trade activity

@@ -485,7 +485,10 @@ export const TOKEN_TEMPLATE_ABI = [
   "function transfer(address to, uint256 amount) returns (bool)",
   "function allowance(address owner, address spender) view returns (uint256)",
   "function approve(address spender, uint256 amount) returns (bool)",
-  "function transferFrom(address from, address to, uint256 amount) returns (bool)"
+  "function transferFrom(address from, address to, uint256 amount) returns (bool)",
+  "function mint(address to, uint256 amount) external",
+  "function burn(uint256 amount) external",
+  "constructor(string name_, string symbol_, uint8 decimals_, uint256 fixedSupply, address _creator, address bondingCurve_, address feeWallet_)"
 ];
 
 // ─── Direct Launch Factory ABI ──────────────────────────────────────────────
@@ -552,3 +555,31 @@ export const DIRECT_LAUNCH_FACTORY_ABI = [
   }
 ];
 
+// ─── PancakeSwap V2 Router ABI ──────────────────────────────────────────────
+export const PANCAKE_ROUTER_ABI = [
+  "function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)",
+  "function swapExactETHForTokensSupportingFeeOnTransferTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable",
+  "function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)",
+  "function swapExactTokensForETHSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external",
+  "function swapExactTokensForTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)",
+  "function swapExactTokensForTokensSupportingFeeOnTransferTokens(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external",
+  "function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts)",
+  "function WETH() external pure returns (address)",
+  "function factory() external pure returns (address)"
+];
+
+
+// ─── ERC20 ABI ─────────────────────────────────────────────────────────────
+export const ERC20_ABI = [
+  "function name() view returns (string)",
+  "function symbol() view returns (string)",
+  "function decimals() view returns (uint8)",
+  "function totalSupply() view returns (uint256)",
+  "function balanceOf(address) view returns (uint256)",
+  "function allowance(address owner, address spender) view returns (uint256)",
+  "function approve(address spender, uint256 amount) returns (bool)",
+  "function transfer(address to, uint256 amount) returns (bool)",
+  "function transferFrom(address from, address to, uint256 amount) returns (bool)",
+  "event Transfer(address indexed from, address indexed to, uint256 value)",
+  "event Approval(address indexed owner, address indexed spender, uint256 value)"
+];

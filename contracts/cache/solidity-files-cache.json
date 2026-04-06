@@ -353,8 +353,8 @@
       ]
     },
     "/Users/purusothaman/Desktop/untitled folder 2/contracts/contracts/TokenTemplate.sol": {
-      "lastModificationDate": 1773920280449,
-      "contentHash": "cac6dafe4c1e3a9e90a7e2b6f928a6b4",
+      "lastModificationDate": 1774276575244,
+      "contentHash": "156999bceaa64ac26fe4a6b21da1e160",
       "sourceName": "contracts/TokenTemplate.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -393,8 +393,8 @@
       ]
     },
     "/Users/purusothaman/Desktop/untitled folder 2/contracts/contracts/TokenFactory.sol": {
-      "lastModificationDate": 1774005575798,
-      "contentHash": "0c48ad085d4c49e9237a1cdd8143ec24",
+      "lastModificationDate": 1774276618793,
+      "contentHash": "f885cb74e780031c0a1a86480d3c8940",
       "sourceName": "contracts/TokenFactory.sol",
       "solcConfig": {
         "version": "0.8.20",
@@ -477,8 +477,8 @@
       ]
     },
     "/Users/purusothaman/Desktop/untitled folder 2/contracts/contracts/DirectDexLaunchFactory.sol": {
-      "lastModificationDate": 1774255927486,
-      "contentHash": "bee38bdc41698f312c6e65bce125311c",
+      "lastModificationDate": 1774276625778,
+      "contentHash": "58095193ea314586b5eda053612839b8",
       "sourceName": "contracts/DirectDexLaunchFactory.sol",
       "solcConfig": {
         "version": "0.8.20",

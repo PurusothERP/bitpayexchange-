@@ -24,6 +24,10 @@ function normalizeLogo(url) {
 
 function normalizeToken(t) {
     const totalSold = t.liquidity_bnb ? (parseFloat(t.liquidity_bnb) / 1e18) : 0;
+    const price = parseFloat(t.price_bnb || 0);
+    const supply = parseFloat(t.total_supply || 1000000000);
+    const marketCap = price * supply;
+    
     let status = t.trust_status || 'Newly Launched Token';
     if (status === 'Newly Launched Token') {
         if (totalSold > 0.5) status = 'Highly Trusted';
@@ -42,6 +46,7 @@ function normalizeToken(t) {
         logo_url:             normalizeLogo(t.logo_url),
         ipfs_logo_url:        t.ipfs_logo_url || null,
         trust_status:         status,
+        market_cap:           marketCap,
         is_delisted:          isDelisted,
         delisting_soon:       delistingSoon,
         bscscan_verified:     t.bscscan_verified === 1,
@@ -243,12 +248,18 @@ router.post('/sync', upload.single('logo'), async (req, res) => {
         try {
             const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
             const isOwnerAdmin = (owner || '').toLowerCase() === TREASURY;
-            const creationFee = isOwnerAdmin ? 0 : 0.003;
             
-            await db.query(
-                'INSERT OR IGNORE INTO treasury_transfers (tx_hash, amount_bnb, transfer_type, source_contract, destination_address) VALUES (?, ?, ?, ?, ?)',
-                [txHash || `manual_${tokenAddress}_${Date.now()}`, creationFee, 'creation_fee', tokenAddress, TREASURY]
-            );
+            // Fees: Standard (0.007), Fair (0.007 + 0.002 trade), Meme (0.007)
+            // For logging purposes, we record the base creation fee here
+            // If it's a MEME token, the indexer (treasuryAutomation.js) catches the event and logs the fee.
+            // For STANDARD and FAIR, we log it here to ensure it is recorded.
+            if (!isOwnerAdmin && (launch_type === 'STANDARD' || launch_type === 'FAIR')) {
+                const creationFee = 0.007; 
+                await db.query(
+                    'INSERT OR IGNORE INTO treasury_transfers (tx_hash, amount_bnb, transfer_type, source_contract, destination_address) VALUES (?, ?, ?, ?, ?)',
+                    [txHash || `manual_${tokenAddress}_${Date.now()}`, creationFee, 'creation_fee', tokenAddress, TREASURY]
+                );
+            }
         } catch (feeErr) {
             console.warn('Failed to log creation fee to treasury:', feeErr.message);
         }
@@ -321,6 +332,30 @@ router.post('/status/request', async (req, res) => {
     } catch (error) {
         console.error('Status request failed:', error);
         res.status(500).json({ error: 'Request failed' });
+    }
+});
+
+// ─── POST /api/tokens/boost ──────────────────────────────────────────────────
+router.post('/boost', async (req, res) => {
+    const { contract_address, tx_hash } = req.body;
+    if (!contract_address || !tx_hash) return res.status(400).json({ error: 'Missing address/tx' });
+    
+    try {
+        const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+        
+        // Update DB
+        await db.query('UPDATE tokens SET is_boosted = 1 WHERE contract_address = ?', [contract_address]);
+
+        // Log fee (0.05 BNB for boosting)
+        await db.query(
+            'INSERT OR IGNORE INTO treasury_transfers (tx_hash, amount_bnb, transfer_type, source_contract, destination_address) VALUES (?, ?, ?, ?, ?)',
+            [tx_hash, 0.05, 'booster_fee', contract_address, TREASURY]
+        );
+
+        res.json({ success: true, message: 'Token boosted successfully' });
+    } catch (error) {
+        console.error('Boost error:', error);
+        res.status(500).json({ error: 'Boost failed' });
     }
 });
 
@@ -413,4 +448,25 @@ router.get('/verify-status/:address', async (req, res) => {
     }
 });
 
+// ─── POST /api/tokens/admin/verify-cycle ──────────────────────────────────
+// Admin only: Trigge BSCScan / Trust Wallet verification cycle manually
+router.post('/admin/verify-cycle', async (req, res) => {
+    const { wallet } = req.body;
+    const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+    
+    if (!wallet || wallet.toLowerCase() !== TREASURY) {
+        return res.status(403).json({ error: 'Admin only access' });
+    }
+
+    try {
+        const verifier = require('../services/tokenVerifier');
+        // Do not await, let it run in background
+        verifier.runVerificationCycle().then(() => console.log('[Admin] Manual cycle complete')).catch(e => console.warn('[Admin] Manual cycle err:', e));
+        res.json({ success: true, message: 'Verification cycle triggered in background' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to trigger verification cycle' });
+    }
+});
+
 module.exports = router;
+

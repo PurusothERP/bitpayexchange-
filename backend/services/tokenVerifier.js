@@ -14,7 +14,7 @@ const path   = require('path');
 const fs     = require('fs');
 const db     = require('../config/db');
 
-const BSCSCAN_API = 'https://api.bscscan.com/v2/api';
+const BSCSCAN_API = 'https://api.bscscan.com/api';
 const BSCSCAN_KEY = process.env.BSCSCAN_API_KEY || '2X6VV2BKDA4YPFPBZC56X2RIQSWM4M58YW';
 const ONE_HOUR_MS = 60 * 60 * 1000;
 

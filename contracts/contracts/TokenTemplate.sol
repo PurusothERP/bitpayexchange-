@@ -20,20 +20,23 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract TokenTemplate is ERC20, Ownable {
     /// @notice Human-friendly creator stored for display purposes (not privileged)
     address public creator;
+    uint8 private _decimals;
 
-    event TokenDeployed(string name, string symbol, uint256 supply, address indexed creator, address indexed bondingCurve);
+    event TokenDeployed(string name, string symbol, uint256 supply, uint8 decimals, address indexed creator, address indexed bondingCurve);
 
     /**
      * @param name_              Token name
      * @param symbol_            Token symbol
+     * @param decimals_          Token decimals
      * @param fixedSupply        Number of whole tokens (will be scaled by decimals())
      * @param _creator           Original wallet that initiated the launch (informational only)
-     * @param bondingCurve_      Address that becomes the Ownable owner AND receives 900M
+     * @param bondingCurve_      Address that becomes the Ownable owner AND receives 90M
      * @param feeWallet_         Treasury wallet that receives 100M tokens
      */
     constructor(
         string memory name_,
         string memory symbol_,
+        uint8 decimals_,
         uint256 fixedSupply,
         address _creator,
         address bondingCurve_,
@@ -44,16 +47,28 @@ contract TokenTemplate is ERC20, Ownable {
         require(feeWallet_   != address(0), "Invalid fee wallet");
 
         creator = _creator;
+        _decimals = decimals_;
 
         // Split supply 10% to Treasury, 90% to Curve
-        uint256 total = fixedSupply * 10 ** decimals();
+        uint256 total = fixedSupply * 10 ** uint256(decimals_);
         uint256 treasuryShare = total / 10;
         uint256 curveShare = total - treasuryShare;
 
-        _mint(feeWallet_, treasuryShare);
-        _mint(bondingCurve_, curveShare);
+        if (total > 0) {
+            _mint(feeWallet_, treasuryShare);
+            _mint(bondingCurve_, curveShare);
+        }
 
-        emit TokenDeployed(name_, symbol_, fixedSupply, _creator, bondingCurve_);
+        emit TokenDeployed(name_, symbol_, fixedSupply, decimals_, _creator, bondingCurve_);
+    }
+
+    function decimals() public view virtual override returns (uint8) {
+        return _decimals;
+    }
+
+    /// @notice Owner can mint more tokens (Unlimited supply support)
+    function mint(address to, uint256 amount) external onlyOwner {
+        _mint(to, amount);
     }
 
     /// @notice BondingCurve (as owner) can burn unsold tokens after migration

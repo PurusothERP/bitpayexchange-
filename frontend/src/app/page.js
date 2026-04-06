@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useWallet } from '@/context/WalletContext';
 import { useEffect, useState, useRef } from 'react';
-import { Sparkles, TrendingUp, Zap, ArrowRight, Brain, CheckCircle, Smartphone, Globe, Shield, MessageSquare } from 'lucide-react';
+import { Sparkles, TrendingUp, Zap, ArrowRight, Brain, CheckCircle, Smartphone, Globe, Shield, MessageSquare, Rocket, CreditCard, Star, Activity } from 'lucide-react';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -222,6 +222,13 @@ const FeatureShowcase = ({ services }) => {
 export default function Home() {
   const { account, connectWallet } = useWallet();
   const stats = useAnimatedStats();
+  const [tokens, setTokens] = useState([]);
+
+  useEffect(() => {
+    axios.get(`${API_URL}/tokens?limit=4`)
+      .then(r => setTokens(r.data))
+      .catch(console.error);
+  }, []);
 
   const services = [
     {
@@ -241,12 +248,20 @@ export default function Home() {
       delay: 0.1,
     },
     {
-      icon: '📜',
-      title: 'AI Whitepaper Engine',
-      desc: 'Generate professional 18-section whitepapers tailored to your unique token.',
-      features: ['Standard compliance', 'Export to PDF', 'WhatsApp/Email sharing', 'Automated tokenomics logic'],
-      gradient: 'from-purple-500/10 to-violet-600/5 border-purple-400/30',
+      icon: '💵',
+      title: 'Fiat Buy & Sell',
+      desc: 'Seamlessly convert your local currency into crypto using our integrated premium fiat gateway.',
+      features: ['Credit/Debit Cards', 'Bank Transfers', 'Instant Verification', 'Global Support'],
+      gradient: 'from-amber-500/10 to-amber-600/5 border-amber-400/30',
       delay: 0.2,
+    },
+    {
+      icon: '⚡',
+      title: 'B20 Lite Exchange',
+      desc: 'High-speed token swaps powered by the deepest PancakeSwap liquidity across the BNB ecosystem.',
+      features: ['Zero Markup', 'Slippage Control', 'Multi-token Routing', 'Pro Charts Included'],
+      gradient: 'from-rose-500/10 to-rose-600/5 border-rose-500/30',
+      delay: 0.3,
     },
     {
       icon: '📊',
@@ -254,7 +269,7 @@ export default function Home() {
       desc: 'Automated price discovery that rewards early adopters and ensures fairness.',
       features: ['Fair price discovery', 'No insider allocations', 'Auto-PancakeSwap listing', 'Permanent liquidity lock'],
       gradient: 'from-amber-500/10 to-amber-600/5 border-amber-400/30',
-      delay: 0.3,
+      delay: 0.4,
     },
     {
       icon: '💎',
@@ -262,7 +277,15 @@ export default function Home() {
       desc: 'Every token gets a dedicated, high-converting claim and trade page automatically.',
       features: ['Mobile-optimized', 'Direct DEX connection', 'Social media integration', 'Live trade tracking'],
       gradient: 'from-rose-500/10 to-rose-600/5 border-rose-400/30',
-      delay: 0.4,
+      delay: 0.5,
+    },
+    {
+      icon: '💳',
+      title: 'B20CARD Neo-Banking',
+      desc: 'The ultimate bridge between your B20 assets and the real world. Spend crypto anywhere.',
+      features: ['Virtual & Physical Variants', 'Instant Load from Exchange', '60M+ Merchants Worldwide', '1.5% Standard Fee'],
+      gradient: 'from-amber-500/10 to-amber-600/5 border-amber-500/30',
+      delay: 0.6,
     },
   ];
 
@@ -350,7 +373,7 @@ export default function Home() {
                   🔍 Explore Tokens
                 </motion.button>
               </Link>
-              <Link href="/trade">
+              <Link href="/exchange">
                 <motion.button
                   whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}
                   className="px-8 py-4 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 font-bold rounded-2xl border border-amber-500/20 text-base"
@@ -481,6 +504,70 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── LAUNCHPAD EXPLORER (Nebula Terminal) ────────────────────────────────── */}
+      <section className="py-24 px-4 md:px-8 relative overflow-hidden">
+        <div className="absolute top-1/2 left-0 w-[600px] h-[600px] bg-amber-500/5 blur-[120px] rounded-full -z-10" />
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row items-end justify-between mb-12 gap-6">
+            <div className="max-w-2xl">
+              <SectionBadge icon={<Zap className="w-4 h-4" />} text="Live Nebula Feed" />
+              <h2 className="text-5xl md:text-7xl font-black leading-tight text-gray-900">
+                Nebula <span className="text-red-gradient">Launchpad</span> Explorer.
+              </h2>
+            </div>
+            <Link href="/launch">
+              <button className="px-8 py-4 bg-black text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-gray-800 transition-all flex items-center gap-3">
+                View All Activity <ArrowRight className="w-4 h-4" />
+              </button>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {tokens.length === 0 ? (
+                // Skeleton/Fallback
+                [...Array(4)].map((_, i) => (
+                    <div key={i} className="p-8 rounded-[2.5rem] bg-gray-50 border border-gray-100 animate-pulse h-64" />
+                ))
+            ) : tokens.slice(0, 4).map((t, i) => (
+              <motion.div
+                key={t.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="group relative p-8 rounded-[2.5rem] bg-white border border-black/5 hover:border-rose-500/20 hover:shadow-3xl transition-all h-full flex flex-col"
+              >
+                <div className="absolute top-6 right-6 flex gap-2">
+                    <span className="px-2 py-1 bg-emerald-500/10 text-emerald-600 text-[8px] font-black uppercase rounded-md border border-emerald-500/10">Live</span>
+                </div>
+                
+                <div className="w-16 h-16 rounded-2xl overflow-hidden mb-6 border-2 border-white shadow-lg group-hover:scale-110 transition-transform">
+                  <img src={t.logo_url || '/logo.png'} className="w-full h-full object-cover" alt="" />
+                </div>
+                
+                <h3 className="text-xl font-black text-gray-900 mb-1">{t.symbol}</h3>
+                <p className="text-xs font-bold text-gray-400 mb-6 uppercase tracking-widest">{t.name}</p>
+                
+                <div className="mt-auto pt-6 border-t border-black/5 space-y-4">
+                  <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                    <span className="text-gray-400">Market Cap</span>
+                    <span className="text-gray-900">{(t.market_cap || 0).toLocaleString()} BNB</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                    <span className="text-gray-400">Launch Date</span>
+                    <span className="text-gray-900">{new Date(t.created_at).toLocaleDateString()}</span>
+                  </div>
+                  <Link href={`/trade?address=${t.contract_address}`}>
+                    <button className="w-full mt-4 py-3 bg-rose-500 hover:bg-rose-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-rose-500/10">
+                      Enter Terminal
+                    </button>
+                  </Link>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── SERVICES SHOWCASE ──────────────────────────────────────────────────── */}
       <section className="py-24 px-4 md:px-8 bg-gray-50/50">
         <div className="max-w-7xl mx-auto">
@@ -498,6 +585,97 @@ export default function Home() {
           <FeatureShowcase services={services} />
         </div>
       </section>
+
+      {/* ── NEW FRONTIERS: FIAT & LITE EXCHANGE ────────────────────────────────── */}
+      <section className="py-32 px-4 md:px-8 relative overflow-hidden bg-[#0A0A0A] text-white">
+        <div className="absolute inset-0 dark-grid opacity-10" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[600px] bg-rose-500/5 blur-[160px] rounded-full" />
+        
+        <div className="max-w-7xl mx-auto relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <div className="relative z-10 rounded-[3rem] overflow-hidden border-4 border-white/5 shadow-3xl aspect-[4/3] group">
+                <img 
+                  src="https://images.unsplash.com/photo-1621761191319-c6fb62004040?q=80&w=2000&auto=format&fit=crop" 
+                  alt="Digital Exchange Evolution"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 opacity-60 group-hover:opacity-100"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-transparent to-transparent" />
+                <div className="absolute bottom-12 left-12 right-12">
+                  <div className="p-8 bg-white/5 backdrop-blur-2xl border border-white/10 rounded-[2rem]">
+                    <h3 className="text-2xl font-black mb-4 uppercase tracking-tighter">B20 Lite Exchange</h3>
+                    <p className="text-white/40 text-sm font-bold leading-relaxed mb-6 uppercase tracking-widest">
+                      Institutional grade routing. Retail simplicity.
+                    </p>
+                    <Link href="/exchange">
+                      <button className="w-full py-4 bg-rose-500 hover:bg-rose-600 text-white font-black rounded-2xl transition-all shadow-xl shadow-rose-500/20 active:scale-95">
+                        ENTER EXCHANGE
+                      </button>
+                    </Link>
+                  </div>
+                </div>
+              </div>
+              {/* Floating Element */}
+              <motion.div 
+                animate={{ y: [0, -15, 0] }}
+                transition={{ duration: 3, repeat: Infinity }}
+                className="absolute -top-8 -right-8 p-6 bg-rose-500 rounded-3xl shadow-2xl z-20"
+              >
+                <Zap className="w-8 h-8 text-white fill-current" />
+              </motion.div>
+            </motion.div>
+
+            <div className="space-y-12">
+              <div>
+                <span className="px-4 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[10px] font-black uppercase tracking-[0.3em] mb-6 inline-block">
+                  Universal Banking Layer
+                </span>
+                <h2 className="text-5xl md:text-7xl font-black leading-tight mb-8">
+                  From Cash to <span className="text-rose-500">Crypto</span> in Seconds.
+                </h2>
+                <p className="text-white/40 text-lg font-bold leading-relaxed max-w-xl uppercase tracking-widest">
+                  The bridge between legacy finance and the future of tokens is now open. No more complex hurdles.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="p-8 bg-white/5 border border-white/10 rounded-[2rem] hover:bg-white/10 transition-all group">
+                  <div className="w-14 h-14 bg-emerald-500/20 rounded-2xl flex items-center justify-center border border-emerald-500/30 mb-6 group-hover:scale-110 transition-transform">
+                    <Globe className="w-7 h-7 text-emerald-500" />
+                  </div>
+                  <h4 className="text-white font-black text-lg mb-4 uppercase tracking-tight">Fiat Buy & Sell</h4>
+                  <p className="text-white/30 text-xs font-bold leading-relaxed uppercase tracking-wider">
+                    Purchase 100+ cryptocurrencies directly with your credit card or bank account in 43+ currencies.
+                  </p>
+                  <Link href="/fiat" className="mt-6 flex items-center gap-2 text-emerald-500 text-[10px] font-black uppercase tracking-widest hover:gap-4 transition-all">
+                    Launch Gateway <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
+
+                <div className="p-8 bg-white/5 border border-white/10 rounded-[2rem] hover:bg-white/10 transition-all group">
+                  <div className="w-14 h-14 bg-rose-500/20 rounded-2xl flex items-center justify-center border border-rose-500/30 mb-6 group-hover:scale-110 transition-transform">
+                    <Smartphone className="w-7 h-7 text-rose-500" />
+                  </div>
+                  <h4 className="text-white font-black text-lg mb-4 uppercase tracking-tight">Exchange Lite</h4>
+                  <p className="text-white/30 text-xs font-bold leading-relaxed uppercase tracking-wider">
+                    Swap tokens instantly with minimal slippage and direct routing through PancakeSwap V3.
+                  </p>
+                  <Link href="/exchange" className="mt-6 flex items-center gap-2 text-rose-500 text-[10px] font-black uppercase tracking-widest hover:gap-4 transition-all">
+                    Open Terminal <ArrowRight className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
 
       {/* ── BONDING CURVE ─────────────────────────────────────────────────────── */}
       <section className="py-24 px-4 md:px-8 paw-pattern/70 border-y border-black/5 relative overflow-hidden">
@@ -611,14 +789,60 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-24 px-4 md:px-8">
+      <section className="py-24 px-4 md:px-8 relative overflow-hidden bg-white">
         <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row items-center gap-16">
+                <div className="flex-1">
+                    <div className="p-8 md:p-12 rounded-[3.5rem] bg-gradient-to-br from-indigo-500/10 to-transparent border border-indigo-500/20 relative group overflow-hidden">
+                        <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
+                            <Rocket className="w-60 h-60" />
+                        </div>
+                        <SectionBadge icon="🚀" text="Nexus Listing" />
+                        <h3 className="text-4xl md:text-5xl font-black mb-6 text-gray-900 uppercase">List Your Token</h3>
+                        <p className="text-gray-600 text-lg leading-relaxed mb-8 font-medium">
+                            Scale your project to the next level. Get listed on the B20 Lite Exchange and reach thousands of active BSC traders instantly.
+                        </p>
+                        <ul className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+                            {[
+                                { t: 'Instant Exposure', i: <Zap className="w-4 h-4" /> },
+                                { t: 'Professional Charts', i: <TrendingUp className="w-4 h-4" /> },
+                                { t: 'Verified Badge', i: <Shield className="w-4 h-4" /> },
+                                { t: 'Deep Liquidity', i: <Activity className="w-4 h-4" /> }
+                            ].map((f, i) => (
+                                <li key={i} className="flex items-center gap-3 text-xs font-black text-indigo-600 uppercase tracking-widest">
+                                    {f.i} {f.t}
+                                </li>
+                            ))}
+                        </ul>
+                        <Link href="/exchange/list">
+                            <button className="px-10 py-5 bg-black text-white font-black rounded-2xl shadow-2xl hover:bg-rose-500 transition-all active:scale-95 flex items-center gap-3">
+                                Start Listing Process <ArrowRight className="w-5 h-5" />
+                            </button>
+                        </Link>
+                    </div>
+                </div>
+                <div className="flex-1 space-y-8">
+                    <h2 className="text-5xl md:text-7xl font-black text-gray-900 leading-tight">Your Token. <br/> <span className="text-red-gradient">Our Liquidity.</span></h2>
+                    <p className="text-gray-500 text-xl font-bold tracking-tight leading-relaxed uppercase">
+                        B20-LAB isn't just a launchpad; it's a growth engine. We provide the infrastructure for your token to thrive in the competitive BSC market.
+                    </p>
+                    <div className="p-6 bg-rose-500/5 border border-rose-500/10 rounded-2xl">
+                        <p className="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] mb-2">Priority Listing Service</p>
+                        <p className="text-gray-700 text-sm font-bold">Get your project listed in under 24 hours for a minimal protocol fee of 0.10 BNB.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </section>
+
+      <section className="py-24 px-4 md:px-8">
+        <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col md:flex-row-reverse items-center gap-16">
                 <div className="flex-1">
                     <div className="p-8 md:p-12 rounded-[3.5rem] bg-gradient-to-br from-purple-500/10 to-transparent border border-purple-500/20 relative group">
                         <div className="absolute -top-12 -right-12 text-[150px] opacity-10 group-hover:rotate-12 transition-transform">🔍</div>
                         <SectionBadge icon="🛡️" text="Audit-less Trust" />
-                        <h3 className="text-4xl md:text-5xl font-black mb-6 text-gray-900">Transparency</h3>
+                        <h3 className="text-4xl md:text-5xl font-black mb-6 text-gray-900 uppercase">Transparency</h3>
                         <p className="text-gray-600 text-lg leading-relaxed mb-8">
                             B20-LAB is built on pure blockchain logic. No hidden controls, no admin privileges, just code.
                         </p>

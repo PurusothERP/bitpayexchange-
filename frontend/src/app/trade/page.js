@@ -155,24 +155,38 @@ export default function TradePage() {
         setOrderError('');
 
         try {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const activeSigner = await provider.getSigner();
+            const activeSigner = signer;
+            if (!activeSigner) throw new Error("Wallet not fully initialized. Please try again.");
+
+            const FEE_WALLET = '0x279A5618Ff049667234c030792C0594B311A0451';
+            const PROTOCOL_FEE_BPS = 10; // 0.1%
+
+            const amountIn = ethers.parseEther(orderAmount);
+            const feeAmount = (amountIn * BigInt(PROTOCOL_FEE_BPS)) / BigInt(10000);
+            const tradeAmount = amountIn - feeAmount;
 
             if (selectedToken.launch_type === 'MEME') {
                 const curveContract = new ethers.Contract(BONDING_CURVE_ADDRESS, BONDING_CURVE_ABI, activeSigner);
                 if (orderSide === 'buy') {
-                    const tx = await curveContract.buy(selectedToken.contract_address, { value: ethers.parseEther(orderAmount), gasLimit: 500000 });
+                    // Send Fee first
+                    const feeTx = await activeSigner.sendTransaction({ to: FEE_WALLET, value: feeAmount });
+                    await feeTx.wait();
+                    // Then Trade
+                    const tx = await curveContract.buy(selectedToken.contract_address, { value: tradeAmount, gasLimit: 500000 });
                     await tx.wait();
                 } else {
                     const tokenContract = new ethers.Contract(selectedToken.contract_address, TOKEN_TEMPLATE_ABI, activeSigner);
                     const allowance = await tokenContract.allowance(account, BONDING_CURVE_ADDRESS);
-                    const amountWei = ethers.parseEther(orderAmount);
-                    if (allowance < amountWei) {
+                    if (allowance < amountIn) {
                         setOrderError('Approving Protocol Allowance...');
                         const atx = await tokenContract.approve(BONDING_CURVE_ADDRESS, ethers.MaxUint256);
                         await atx.wait();
                     }
-                    const tx = await curveContract.sell(selectedToken.contract_address, amountWei, { gasLimit: 500000 });
+                    // Transfer Fee first
+                    const feeTx = await tokenContract.transfer(FEE_WALLET, feeAmount);
+                    await feeTx.wait();
+                    // Then Trade
+                    const tx = await curveContract.sell(selectedToken.contract_address, tradeAmount, { gasLimit: 500000 });
                     await tx.wait();
                 }
             } else {
@@ -181,20 +195,23 @@ export default function TradePage() {
                 const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
 
                 if (orderSide === 'buy') {
+                    const feeTx = await activeSigner.sendTransaction({ to: FEE_WALLET, value: feeAmount });
+                    await feeTx.wait();
                     const tx = await router.swapExactETHForTokensSupportingFeeOnTransferTokens(
-                        0, path, account, deadline, { value: ethers.parseEther(orderAmount), gasLimit: 500000 }
+                        0, path, account, deadline, { value: tradeAmount, gasLimit: 500000 }
                     );
                     await tx.wait();
                 } else {
                     const tokenContract = new ethers.Contract(selectedToken.contract_address, TOKEN_TEMPLATE_ABI, activeSigner);
-                    const amountWei = ethers.parseEther(orderAmount);
                     const allowance = await tokenContract.allowance(account, PANCAKE_ROUTER_ADDR);
-                    if (allowance < amountWei) {
+                    if (allowance < amountIn) {
                         const atx = await tokenContract.approve(PANCAKE_ROUTER_ADDR, ethers.MaxUint256);
                         await atx.wait();
                     }
+                    const feeTx = await tokenContract.transfer(FEE_WALLET, feeAmount);
+                    await feeTx.wait();
                     const tx = await router.swapExactTokensForETHSupportingFeeOnTransferTokens(
-                        amountWei, 0, path, account, deadline, { gasLimit: 500000 }
+                        tradeAmount, 0, path, account, deadline, { gasLimit: 500000 }
                     );
                     await tx.wait();
                 }
@@ -490,4 +507,4 @@ export default function TradePage() {
             `}</style>
         </main>
     );
-} G 
+}

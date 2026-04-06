@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { useWallet } from '@/context/WalletContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,20 +8,32 @@ import {
     Activity, Rocket, ShieldCheck, Globe, Zap, 
     Layers, Loader2, Upload, CheckCircle2, Sparkles, 
     FileText, Network, Cpu, Settings, ExternalLink, BarChart3, Brain,
-    AlertTriangle, ShieldCheck, Copy, X, Search
+    AlertTriangle, Copy, X, Search
 } from 'lucide-react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
+import { ethers, ContractFactory } from 'ethers';
+import { TOKEN_TEMPLATE_ABI } from '@/lib/abis';
+import { TOKEN_TEMPLATE_BYTECODE } from '@/lib/bytecode';
 
 const DEPLOY_FEE = 0.005;
 const PROTOCOL_FEE = 0.002;
 const TOTAL_FEE = DEPLOY_FEE + PROTOCOL_FEE;
 
 export default function StandardAsset() {
-    const { account, connectWallet } = useWallet();
+    const { account, signer, connectWallet } = useWallet();
     const router = useRouter();
 
-    const [formData, setFormData] = useState({ name: '', symbol: '', decimals: '18', supply: '1000000000' });
+    const [formData, setFormData] = useState({
+        name: '',
+        symbol: '',
+        supply: '1000000000',
+        decimals: '18',
+        description: '',
+        twitter: '',
+        telegram: '',
+        website: ''
+    });
     const [logo, setLogo] = useState(null);
     const [logoPreview, setLogoPreview] = useState(null);
     const [status, setStatus] = useState('idle');
@@ -38,7 +50,7 @@ export default function StandardAsset() {
     const effectiveFee = isTreasury ? 0 : TOTAL_FEE;
 
     // ─── Proactive Mimic Detection Effect ───
-    useState(() => {
+    useEffect(() => {
         if (!formData.name && !formData.symbol) return;
         const timer = setTimeout(async () => {
             if (formData.name.length < 3 && formData.symbol.length < 2) return;
@@ -75,23 +87,74 @@ export default function StandardAsset() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!account) { connectWallet(); return; }
+        if (!account || !signer) { connectWallet(); return; }
         
         setStatus('uploading');
-        setError('Deploying standard asset... (Bypassing curve)');
+        setError('Step 1/3: Preparing transaction…');
         
         try {
-            // Logic for standard deployment...
-            setTimeout(() => {
-                setStatus('success');
-            }, 3000);
+            // 1. Send Protocol Fee
+            if (effectiveFee > 0) {
+                setError(`Step 1/3: Sending fee (${effectiveFee} BNB)…`);
+                const txFee = await signer.sendTransaction({
+                    to: FEE_WALLET,
+                    value: ethers.parseEther(effectiveFee.toString())
+                });
+                await txFee.wait();
+            }
+
+            // 2. Deploy TokenTemplate
+            setError('Step 2/3: Deploying contract to network…');
+            const factory = new ContractFactory(TOKEN_TEMPLATE_ABI, TOKEN_TEMPLATE_BYTECODE, signer);
+            
+            // Constructor args: string name, string symbol, uint8 decimals, uint256 fixedSupply, address creator, address bondingCurve, address feeWallet
+            // For standard, we set bondingCurve = creator (so they own it)
+            const decimalsNum = parseInt(formData.decimals) || 18;
+            const supplyNum = BigInt(formData.supply);
+            
+            const contract = await factory.deploy(
+                formData.name,
+                formData.symbol,
+                decimalsNum,
+                supplyNum,
+                account,
+                account, // BondingCurve = account (Direct ownership)
+                FEE_WALLET
+            );
+            
+            await contract.waitForDeployment();
+            const tokenAddress = await contract.getAddress();
+            const txHash = contract.deploymentTransaction()?.hash;
+
+            // 3. Sync with Backend
+            setError('Step 3/3: Syncing metadata & indexing…');
+            
+            const metaForm = new FormData();
+            metaForm.append('tokenAddress', tokenAddress);
+            metaForm.append('name', formData.name);
+            metaForm.append('symbol', formData.symbol);
+            metaForm.append('description', `Standard asset ${formData.name} deployed on BNB Chain.`);
+            metaForm.append('launch_type', 'STANDARD');
+            metaForm.append('tx_hash', txHash || 'direct_deploy');
+            metaForm.append('creator_wallet', account);
+            metaForm.append('total_supply', formData.supply);
+            if (logo) metaForm.append('logo', logo);
+
+            await axios.post(`${API_URL}/tokens/sync`, metaForm, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            setStatus('success');
+            setError('');
         } catch (err) {
+            console.error('[Deploy] Error:', err);
             if (err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
                 setError('Transaction was rejected by the user.');
             } else {
-                setError(err.reason || err.message || 'Unknown error occurred.');
+                setError(err.reason || err.message || 'Deployment failed. Check your balance.');
             }
             setStatus('error');
+            setTimeout(() => setStatus('idle'), 5000);
         }
     };
 
@@ -99,7 +162,7 @@ export default function StandardAsset() {
         <main className="min-h-screen bg-gray-50/70 p-pattern selection:bg-rose-500 selection:text-white pb-32">
             <Navbar />
             
-            <div className="pt-32 pb-24 px-4 md:px-8 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 relative z-10">
+            <div className="pt-10 pb-24 px-4 md:px-8 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 relative z-10">
                 {/* Background Atmosphere */}
                 <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-rose-500/5 rounded-full blur-[120px] -z-10 animate-pulse" />
                 <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[120px] -z-10" />
@@ -244,11 +307,11 @@ export default function StandardAsset() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-3">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Decimals</label>
-                                            <input type="number" readOnly value={formData.decimals} className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-6 py-4 font-bold text-gray-400 outline-none" />
+                                            <input type="number" value={formData.decimals} onChange={(e) => setFormData({...formData, decimals: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-bold text-gray-900 outline-none focus:bg-white focus:border-rose-500/30 transition-all shadow-sm" />
                                         </div>
                                         <div className="space-y-3">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Fixed Supply</label>
-                                            <input type="text" readOnly value={formData.supply} className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl px-6 py-4 font-bold text-gray-400 outline-none" />
+                                            <input type="number" value={formData.supply} onChange={(e) => setFormData({...formData, supply: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-bold text-gray-900 outline-none focus:bg-white focus:border-rose-500/30 transition-all shadow-sm" />
                                         </div>
                                     </div>
                                 </div>

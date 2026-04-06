@@ -100,4 +100,20 @@ router.post('/refresh-balances', async (req, res) => {
     }
 });
 
+// ── POST /api/wallets/heartbeat ──────────────────────────────────────────────
+// Lightweight ping from the frontend (Navbar) every 60s to track "Online Now"
+router.post('/heartbeat', async (req, res) => {
+    const { wallet_address } = req.body;
+    if (!wallet_address) return res.status(400).json({ error: 'Wallet required' });
+    try {
+        await db.query(
+            `UPDATE connected_wallets SET last_seen = CURRENT_TIMESTAMP WHERE LOWER(wallet_address) = LOWER(?)`,
+            [wallet_address]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Heartbeat failed' });
+    }
+});
+
 module.exports = router;

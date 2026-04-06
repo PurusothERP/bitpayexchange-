@@ -140,6 +140,7 @@ contract TokenFactory is Ownable {
         TokenTemplate newToken = new TokenTemplate(
             name,
             symbol,
+            18,             // Default 18 decimals for meme tokens
             fixedSupply,
             creator,
             bondingCurve,   // ← Token is owned BY BondingCurve from birth

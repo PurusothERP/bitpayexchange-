@@ -60,6 +60,7 @@ export default function B20Exchange() {
     const [orderType, setOrderType] = useState('market');
     const [tradeSide, setTradeSide] = useState('long');
     const [openPositions, setOpenPositions] = useState([]);
+    const [liquidityData, setLiquidityData] = useState([]);
 
     useEffect(() => {
         if (!account) {

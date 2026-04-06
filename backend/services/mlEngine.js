@@ -833,7 +833,7 @@ async function runNeuraChat(messages) {
     `;
 
     if (!process.env.ANTHROPIC_API_KEY) {
-        return { success: true, text: "I am currently in basic mode. How can I help you with B20- Exchnage today?" };
+        return { success: true, text: "I am currently in basic mode. How can I help you with B20- Exchange today?" };
     }
 
     try {

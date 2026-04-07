@@ -963,11 +963,11 @@ export default function B20Exchange() {
                             initial={{ opacity: 0, scale: 0.98 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 1.02 }}
-                            className="max-w-[1700px] mx-auto"
+                            className="max-w-[1750px] mx-auto px-4"
                         >
-                            <div className="grid grid-cols-1 lg:grid-cols-11 gap-6 font-sans">
-                                {/* Market List (2 Cols) */}
-                                 <div className="lg:col-span-2 bg-white shadow-3xl shadow-gray-200/40 border border-gray-100 rounded-[3rem] p-8 flex flex-col gap-8 overflow-hidden h-[850px] transition-all">
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 font-sans">
+                                {/* Market List (Max Expansion to 4 Cols) */}
+                                 <div className="lg:col-span-4 bg-white shadow-3xl shadow-gray-200/40 border border-gray-100 rounded-[3rem] p-8 flex flex-col gap-8 overflow-hidden h-[850px] transition-all">
                                      <div className="flex items-center justify-between">
                                          <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.3em] opacity-40">Trading Pairs</h3>
                                          <Activity className="w-3.5 h-3.5 text-gray-300" />
@@ -999,7 +999,7 @@ export default function B20Exchange() {
                                  </div>
 
                                 {/* Chart Area (6 Cols) */}
-                                <div className="lg:col-span-6 bg-white shadow-xl shadow-gray-100/50 border border-gray-100 rounded-[2.5rem] p-4 flex flex-col gap-4 h-[850px]">
+                                 <div className="lg:col-span-5 bg-white shadow-xl shadow-gray-100/50 border border-gray-100 rounded-[2.5rem] p-4 flex flex-col gap-4 h-[850px]">
                                     <div className="flex items-center justify-between px-6 py-4 bg-gray-50 rounded-[1.5rem] border border-gray-100">
                                         <div className="flex items-center gap-8">
                                             <div className="flex items-center gap-3">

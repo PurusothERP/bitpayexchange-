@@ -231,6 +231,54 @@ export default function AdminPage() {
     // Manual Token Listing
     const [listTokenData, setListTokenData] = useState({ name: '', symbol: '', contract_address: '', total_supply: '1000000000', liquidity_bnb: '10', bnb_price: '0.00001', logo_url: '' });
     const [isListingToken, setIsListingToken] = useState(false);
+    
+    // Auto Import System
+    const [isImporting, setIsImporting] = useState(false);
+    const [importAddress, setImportAddress] = useState('');
+    const importTokenDetails = async () => {
+        if (!importAddress || importAddress.length !== 42) {
+            alert('Please enter a valid BSC contract address (0x...)');
+            return;
+        }
+        setIsImporting(true);
+        try {
+            const dexRes = await axios.get(`https://api.dexscreener.com/latest/dex/tokens/${importAddress}`);
+            if (dexRes.data && dexRes.data.pairs && dexRes.data.pairs.length > 0) {
+                const pair = dexRes.data.pairs.find(p => p.chainId === 'bsc') || dexRes.data.pairs[0];
+                const tokenBase = pair.baseToken.address.toLowerCase() === importAddress.toLowerCase() ? pair.baseToken : pair.quoteToken;
+                
+                // Calculate supply if FDV exists: FDV (USD) / Price (USD)
+                let calculatedSupply = '1000000000';
+                if (pair.fdv && pair.priceUsd) {
+                    calculatedSupply = Math.floor(pair.fdv / parseFloat(pair.priceUsd)).toString();
+                }
+
+                setListTokenData(prev => ({
+                    ...prev,
+                    name: tokenBase.name || '',
+                    symbol: tokenBase.symbol || '',
+                    contract_address: tokenBase.address || importAddress,
+                    bnb_price: pair.priceNative || '0', 
+                    liquidity_bnb: (pair.liquidity && pair.liquidity.quote) ? pair.liquidity.quote.toString() : '0',
+                    total_supply: calculatedSupply,
+                    logo_url: pair.info?.imageUrl || prev.logo_url
+                }));
+                // Try to infer logo from trust wallet if missing
+                if (!pair.info?.imageUrl) {
+                    setListTokenData(prev => ({...prev, logo_url: `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/${importAddress}/logo.png`}));
+                }
+                alert(`Successfully imported: ${tokenBase.name} (${tokenBase.symbol}) from PancakeSwap details!`);
+            } else {
+                alert('Could not find active PancakeSwap liquidity pools for this token on DexScreener. Please fill details manually or verify address.');
+            }
+        } catch (error) {
+            console.error('Import error:', error);
+            alert('Error scanning blockchain for token details.');
+        } finally {
+            setIsImporting(false);
+        }
+    };
+    
     const handleListToken = async (e) => {
         e.preventDefault();
         setIsListingToken(true);
@@ -1031,8 +1079,30 @@ export default function AdminPage() {
                                     <Rocket className="w-10 h-10 text-cyan-500 icon-3d" />
                                 </div>
                                 <h2 className="text-3xl font-black text-gray-900 tracking-tighter mb-2">List Token to Exchange</h2>
-                                <p className="text-gray-500 font-bold mb-10 max-w-lg text-center">Manually add external or custom tokens to the B20 Exchange and Perpetual Futures platforms instantly.</p>
+                                <p className="text-gray-500 font-bold mb-8 max-w-lg text-center">Manually add external or custom tokens to the B20 Exchange and Perpetual Futures platforms instantly.</p>
                                 
+                                {/* Auto-Import Box */}
+                                <div className="w-full max-w-3xl mb-10 p-6 bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-100 rounded-[2rem]">
+                                    <label className="text-[10px] font-black text-blue-500 uppercase tracking-widest block mb-2 text-left">Auto-Import from PancakeSwap 🥞</label>
+                                    <div className="flex gap-4">
+                                        <input 
+                                            type="text" 
+                                            value={importAddress} 
+                                            onChange={e => setImportAddress(e.target.value)} 
+                                            className="w-full p-4 bg-white border border-blue-100 rounded-2xl outline-none focus:border-blue-500 font-mono font-bold text-gray-900 shadow-inner" 
+                                            placeholder="Paste Contract Address (0x...)" 
+                                        />
+                                        <button 
+                                            onClick={importTokenDetails} 
+                                            disabled={isImporting || !importAddress}
+                                            className="px-8 py-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black rounded-2xl shadow-xl shadow-blue-500/20 uppercase tracking-widest transition-all whitespace-nowrap"
+                                        >
+                                            {isImporting ? 'Scanning...' : 'Fetch Details'}
+                                        </button>
+                                    </div>
+                                    <p className="text-[9px] font-bold text-blue-400 mt-3 text-left">Powered by DexScreener On-Chain Engine.</p>
+                                </div>
+
                                 <form onSubmit={handleListToken} className="w-full max-w-3xl space-y-6 text-left">
                                     <div className="grid grid-cols-2 gap-6">
                                         <div>

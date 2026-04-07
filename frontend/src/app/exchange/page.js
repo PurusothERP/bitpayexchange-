@@ -65,7 +65,14 @@ export default function B20Exchange() {
     const [tradeSide, setTradeSide] = useState('long');
     const [openPositions, setOpenPositions] = useState([]);
     const [liquidityData, setLiquidityData] = useState([]);
-    const [cgTrending, setCgTrending] = useState([]);
+    const [cgTrending, setCgTrending] = useState([
+        { id: 'binancecoin', symbol: 'BNB', name: 'Binance Coin', image: 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png', current_price: 582, price_change_percentage_24h: 1.2 },
+        { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', image: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png', current_price: 3300, price_change_percentage_24h: 2.1 },
+        { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', image: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png', current_price: 65000, price_change_percentage_24h: -0.5 },
+        { id: 'pancakeswap-token', symbol: 'CAKE', name: 'PancakeSwap', image: 'https://assets.coingecko.com/coins/images/12614/small/pancakeswap.png', current_price: 3.45, price_change_percentage_24h: -1.5 },
+        { id: 'solana', symbol: 'SOL', name: 'Solana', image: 'https://assets.coingecko.com/coins/images/4128/small/solana.png', current_price: 180, price_change_percentage_24h: 5.2 },
+        { id: 'tether', symbol: 'USDT', name: 'Tether', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', current_price: 1, price_change_percentage_24h: 0.1 }
+    ]);
     const [marketSearch, setMarketSearch] = useState('');
     const [marketSort, setMarketSort] = useState('rank'); // 'rank', 'mcap', 'p_high', 'p_low', 'change'
 
@@ -1262,7 +1269,7 @@ export default function B20Exchange() {
                             className="max-w-[1600px] mx-auto space-y-12"
                         >
                             {/* Floating Institutional Alpha HUD - Global Trending */}
-                            <div className="relative overflow-hidden py-10 group -mx-8">
+                            <div className="relative overflow-hidden py-10 group -mx-8 min-h-[120px]">
                                 <div className="absolute left-0 top-0 bottom-0 w-64 bg-gradient-to-r from-transparent via-[#FDFDFD]/80 to-transparent z-10 pointer-events-none" />
                                 <div className="absolute right-0 top-0 bottom-0 w-64 bg-gradient-to-l from-transparent via-[#FDFDFD]/80 to-transparent z-10 pointer-events-none" />
                                 
@@ -1274,9 +1281,9 @@ export default function B20Exchange() {
                                 <motion.div 
                                     className="flex gap-20 whitespace-nowrap pl-72"
                                     animate={{ x: [0, -3000] }}
-                                    transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
+                                    transition={{ duration: 55, repeat: Infinity, ease: "linear" }}
                                 >
-                                    {[...cgTrending, ...cgTrending, ...cgTrending, ...cgTrending].map((t, idx) => (
+                                    {(cgTrending.length > 0 ? [...cgTrending, ...cgTrending, ...cgTrending, ...cgTrending] : []).map((t, idx) => (
                                         <div 
                                             key={`${t.id || t.address}-${idx}`}
                                             onClick={() => { setMode('spot'); setToToken(t); window.scrollTo({ top: 300, behavior: 'smooth' }); }}

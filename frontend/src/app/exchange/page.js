@@ -365,14 +365,32 @@ export default function B20Exchange() {
                 unique.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999));
                 setTokens(unique);
 
-                // Fetch Global Trending from CoinGecko
+                // 5. Global Alpha Discovery (CG Trending Sentinel)
                 try {
                     const trendRes = await axios.get('https://api.coingecko.com/api/v3/search/trending');
-                    const trendIds = trendRes.data.coins.map(c => c.item.symbol.toUpperCase());
-                    const matched = unique.filter(t => trendIds.includes(t.symbol.toUpperCase())).slice(0, 10);
-                    // Fallback to top volume if no direct matches in the list
-                    setCgTrending(matched.length > 0 ? matched : unique.sort((a,b) => (b.total_volume || 0) - (a.total_volume || 0)).slice(0, 10));
-                } catch(e) { console.warn('Trending Sentinel: Global discovery node offline.'); }
+                    const trendList = trendRes.data.coins || [];
+                    
+                    const resolvedTrending = trendList.slice(0, 15).map(c => {
+                        const item = c.item;
+                        // Map trending object to our standard institutional structure
+                        return {
+                            id: item.id,
+                            symbol: item.symbol.toUpperCase(),
+                            name: item.name,
+                            address: '0x0000000000000000000000000000000000000000', // Redirect to spot search if no local address
+                            image: item.small || item.large || item.thumb,
+                            current_price: item.data?.price || 0,
+                            price_change_percentage_24h: item.data?.price_change_percentage_24h?.usd || 0,
+                            market_cap_rank: item.market_cap_rank,
+                            isTrendingAlpha: true
+                        };
+                    });
+                    
+                    setCgTrending(resolvedTrending);
+                } catch(e) { 
+                    console.warn('Trending Sentinel Node Failure. Falling back to high-volume local assets.');
+                    setCgTrending(unique.sort((a,b) => (b.total_volume || 0) - (a.total_volume || 0)).slice(0, 12));
+                }
             } catch (err) {
                 console.error('Failed to fetch tokens', err);
             } finally {

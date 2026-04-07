@@ -66,6 +66,8 @@ export default function B20Exchange() {
     const [openPositions, setOpenPositions] = useState([]);
     const [liquidityData, setLiquidityData] = useState([]);
     const [cgTrending, setCgTrending] = useState([]);
+    const [marketSearch, setMarketSearch] = useState('');
+    const [marketSort, setMarketSort] = useState('rank'); // 'rank', 'mcap', 'p_high', 'p_low', 'change'
 
     useEffect(() => {
         if (!account) {
@@ -230,12 +232,31 @@ export default function B20Exchange() {
     const highVolume = useMemo(() => [...tokens].sort((a, b) => (b.total_volume || 0) - (a.total_volume || 0)).slice(0, 20), [tokens]);
 
     const displayTokens = useMemo(() => {
-        if (marketCategory === 'gainers') return gainers;
-        if (marketCategory === 'losers') return losers;
-        if (marketCategory === 'trending') return trending;
-        if (marketCategory === 'volume') return highVolume;
-        return tokens;
-    }, [marketCategory, tokens, gainers, losers, trending, highVolume]);
+        let list = [...tokens];
+        
+        // 1. Filter Category
+        if (marketCategory === 'gainers') list = list.sort((a, b) => (b.price_change_percentage_24h || 0) - (a.price_change_percentage_24h || 0)).slice(0, 50);
+        else if (marketCategory === 'losers') list = list.sort((a, b) => (a.price_change_percentage_24h || 0) - (b.price_change_percentage_24h || 0)).slice(0, 50);
+        else if (marketCategory === 'trending') list = list.filter(t => t.isB20 || t.market_cap_rank <= 100);
+        else if (marketCategory === 'volume') list = list.sort((a, b) => (b.total_volume || 0) - (a.total_volume || 0)).slice(0, 50);
+        
+        // 2. Search Filter
+        if (marketSearch) {
+            list = list.filter(t => 
+                t.symbol.toLowerCase().includes(marketSearch.toLowerCase()) || 
+                t.name.toLowerCase().includes(marketSearch.toLowerCase())
+            );
+        }
+
+        // 3. Sorting Engine
+        if (marketSort === 'rank') list.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999));
+        else if (marketSort === 'mcap') list.sort((a, b) => (b.market_cap || 0) - (a.market_cap || 0));
+        else if (marketSort === 'p_high') list.sort((a, b) => (b.current_price || 0) - (a.current_price || 0));
+        else if (marketSort === 'p_low') list.sort((a, b) => (a.current_price || 0) - (b.current_price || 0));
+        else if (marketSort === 'change') list.sort((a, b) => Math.abs(b.price_change_percentage_24h || 0) - Math.abs(a.price_change_percentage_24h || 0));
+        
+        return list;
+    }, [marketCategory, tokens, marketSearch, marketSort]);
 
     // Balances
     const [balances, setBalances] = useState({ from: '0.00', to: '0.00' });
@@ -1244,43 +1265,69 @@ export default function B20Exchange() {
                                 </motion.div>
                             </div>
 
-                            {/* Market Intelligence Filters */}
-                            <div className="flex flex-wrap items-center justify-between gap-6 px-4">
-                                <div className="flex bg-white shadow-xl shadow-gray-200/50 p-2 rounded-2xl border border-gray-100 italic font-black uppercase tracking-widest text-[10px]">
-                                    {[
-                                        { id: 'all', label: 'All Tokens', icon: <LayoutGrid className="w-3.5 h-3.5" /> },
-                                        { id: 'gainers', label: 'Top Gainers', icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> },
-                                        { id: 'losers', label: 'Top Losers', icon: <TrendingDown className="w-3.5 h-3.5 text-rose-500" /> },
-                                        { id: 'trending', label: 'Trending', icon: <Sparkles className="w-3.5 h-3.5 text-amber-500" /> },
-                                        { id: 'volume', label: 'High Volume', icon: <Activity className="w-3.5 h-3.5 text-blue-500" /> }
-                                    ].map(cat => (
-                                        <button 
-                                            key={cat.id}
-                                            onClick={() => setMarketCategory(cat.id)}
-                                            className={`px-6 py-3 rounded-xl flex items-center gap-2 transition-all ${marketCategory === cat.id ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900'}`}
-                                        >
-                                            {cat.icon} {cat.label}
-                                        </button>
-                                    ))}
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <div className="flex bg-white shadow-xl shadow-gray-200/50 p-2 rounded-2xl border border-gray-100">
-                                        <button 
-                                            onClick={() => setViewType('card')}
-                                            className={`p-2 rounded-xl transition-all ${viewType === 'card' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900'}`}
-                                        >
-                                            <LayoutGrid className="w-4 h-4" />
-                                        </button>
-                                        <button 
-                                            onClick={() => setViewType('list')}
-                                            className={`p-2 rounded-xl transition-all ${viewType === 'list' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900'}`}
-                                        >
-                                            <List className="w-4 h-4" />
-                                        </button>
+                            {/* Market Intelligence Filters & Advanced Search */}
+                            <div className="flex flex-col gap-10 px-4">
+                                <div className="flex flex-wrap items-center justify-between gap-8">
+                                    <div className="flex bg-white shadow-2xl shadow-gray-200/50 p-2.5 rounded-[2rem] border border-gray-100 italic font-black uppercase tracking-widest text-[10px]">
+                                        {[
+                                            { id: 'all', label: 'All', icon: <LayoutGrid className="w-3.5 h-3.5" /> },
+                                            { id: 'gainers', label: 'Gainers', icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> },
+                                            { id: 'losers', label: 'Losers', icon: <TrendingDown className="w-3.5 h-3.5 text-rose-500" /> },
+                                            { id: 'trending', label: 'Trending', icon: <Sparkles className="w-3.5 h-3.5 text-amber-500" /> },
+                                            { id: 'volume', label: 'Volume', icon: <Activity className="w-3.5 h-3.5 text-blue-500" /> }
+                                        ].map(cat => (
+                                            <button 
+                                                key={cat.id}
+                                                onClick={() => setMarketCategory(cat.id)}
+                                                className={`px-8 py-3.5 rounded-[1.5rem] flex items-center gap-2.5 transition-all ${marketCategory === cat.id ? 'bg-gray-900 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
+                                            >
+                                                {cat.icon} {cat.label}
+                                            </button>
+                                        ))}
                                     </div>
-                                    <div className="hidden md:flex items-center gap-4 px-6 py-3 bg-amber-500/5 border border-amber-500/10 rounded-2xl">
-                                        <Brain className="w-4 h-4 text-amber-500 animate-pulse" />
-                                        <span className="text-[10px] font-black uppercase text-amber-600 tracking-widest">Today's Suggestion: <span className="text-gray-900">B20 Utility Assets are trending +12%</span></span>
+
+                                    <div className="flex-1 max-w-lg relative group">
+                                        <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+                                            <Search className="w-4 h-4 text-gray-400 group-focus-within:text-amber-500 transition-colors" />
+                                        </div>
+                                        <input 
+                                            type="text"
+                                            value={marketSearch}
+                                            onChange={(e) => setMarketSearch(e.target.value)}
+                                            placeholder="SEARCH BY SYMBOL OR NAME (E.G. BNB, PEPE...)"
+                                            className="w-full bg-white shadow-2xl shadow-gray-200/50 border border-gray-100 rounded-[2rem] py-5 pl-14 pr-6 text-[10px] font-black uppercase tracking-widest outline-none focus:border-amber-500/50 transition-all placeholder:text-gray-300"
+                                        />
+                                    </div>
+
+                                    <div className="flex bg-white shadow-2xl shadow-gray-200/50 p-2.5 rounded-[2rem] border border-gray-100">
+                                        <div className="flex items-center gap-4 px-4 border-r border-gray-100 mr-2">
+                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sort By:</span>
+                                            <select 
+                                                value={marketSort}
+                                                onChange={(e) => setMarketSort(e.target.value)}
+                                                className="bg-transparent text-[10px] font-black uppercase tracking-widest text-gray-900 outline-none cursor-pointer"
+                                            >
+                                                <option value="rank">Institutional Rank</option>
+                                                <option value="mcap">Market Capitalization</option>
+                                                <option value="p_high">Price: High to Low</option>
+                                                <option value="p_low">Price: Low to High</option>
+                                                <option value="change">Highest Volatility</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button 
+                                                onClick={() => setViewType('card')}
+                                                className={`p-3 rounded-xl transition-all ${viewType === 'card' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900'}`}
+                                            >
+                                                <LayoutGrid className="w-4 h-4" />
+                                            </button>
+                                            <button 
+                                                onClick={() => setViewType('list')}
+                                                className={`p-3 rounded-xl transition-all ${viewType === 'list' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900'}`}
+                                            >
+                                                <List className="w-4 h-4" />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

@@ -2187,6 +2187,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
     const [discoveryResults, setDiscoveryResults] = useState([]);
     const [isDiscoveryOpen, setIsDiscoveryOpen] = useState(false);
     const [searchLoading, setSearchLoading] = useState(false);
+    const [customSearchTerm, setCustomSearchTerm] = useState('');
 
     useEffect(() => {
         const fetchInstitutionalData = async () => {
@@ -2551,45 +2552,47 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                                 type="text" 
                                                 placeholder="Terminal Search (Symbol or Address)..."
                                                 className="w-full pl-16 pr-8 py-5 bg-white border border-gray-100 rounded-2xl font-black text-xs outline-none focus:border-indigo-500/50 shadow-sm"
-                                                onKeyDown={async (e) => {
-                                                    if (e.key === 'Enter') {
-                                                        const query = e.target.value.toLowerCase();
-                                                        let match = tokens.find(t => t.symbol.toLowerCase() === query || t.name.toLowerCase() === query || t.address?.toLowerCase() === query);
-                                                        
-                                                        if (match) {
-                                                            if (customBucket.tokens.length < 7) {
-                                                                if (customBucket.tokens.find(x => x.symbol === match.symbol)) return alert('Already in bucket');
-                                                                setCustomBucket({ ...customBucket, tokens: [...customBucket.tokens, match] });
-                                                                e.target.value = '';
-                                                            } else {
-                                                                alert('Mission capacity reached (Max 7 Assets).');
-                                                            }
-                                                        } else {
-                                                            // NEXUS DYNAMIC DISCOVERY (COINGECKO FALLBACK)
-                                                            setSearchLoading(true);
-                                                            try {
-                                                                const sRes = await axios.get(`https://api.coingecko.com/api/v3/search?query=${query}`);
-                                                                const searchList = sRes.data.coins || [];
-                                                                
-                                                                if (searchList.length > 0) {
-                                                                    setDiscoveryResults(searchList.slice(0, 10)); // Top 10 results
-                                                                    setIsDiscoveryOpen(true);
-                                                                } else {
-                                                                    alert('Asset not discovered on B20 Nexus or BEP-20 network. Ensure valid symbol.');
-                                                                }
-                                                            } catch(err) { 
-                                                                console.warn('Nexus search fail', err);
-                                                                alert('Discovery Protocol Rate Limited. Please try again in a moment.');
-                                                            }
-                                                            setSearchLoading(false);
-                                                        }
+                                                value={customSearchTerm}
+                                                onChange={async (e) => {
+                                                    const query = e.target.value.toLowerCase();
+                                                    setCustomSearchTerm(e.target.value);
+                                                    if (query.length < 2) {
+                                                        setDiscoveryResults([]);
+                                                        setIsDiscoveryOpen(false);
+                                                        return;
                                                     }
+
+                                                    // Local Search First
+                                                    let match = tokens.find(t => 
+                                                        t.symbol.toLowerCase() === query || 
+                                                        t.address?.toLowerCase() === query
+                                                    );
+
+                                                    if (match) {
+                                                        // If exact local match, maybe don't pop global yet? 
+                                                        // But let's show anyway if the user wants "pop at time of typing"
+                                                    }
+
+                                                    // Debounced Global Discovery
+                                                    clearTimeout(window.searchTimer);
+                                                    window.searchTimer = setTimeout(async () => {
+                                                        setSearchLoading(true);
+                                                        try {
+                                                            const sRes = await axios.get(`https://api.coingecko.com/api/v3/search?query=${query}`);
+                                                            const searchList = sRes.data.coins || [];
+                                                            if (searchList.length > 0) {
+                                                                setDiscoveryResults(searchList.slice(0, 8));
+                                                                setIsDiscoveryOpen(true);
+                                                            }
+                                                        } catch(err) { console.warn('Global search fail', err); }
+                                                        setSearchLoading(false);
+                                                    }, 500);
                                                 }}
                                             />
                                         </div>
                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-5 text-center flex items-center justify-center gap-2">
                                             {searchLoading ? <Loader2 className="w-3 h-3 animate-spin text-indigo-500" /> : <Info className="w-3 h-3" />}
-                                            {searchLoading ? 'Executing Global Discovery Protocol...' : 'Press Enter to deploy asset to blueprint'}
+                                            {searchLoading ? 'Executing Global Discovery Protocol...' : 'Type asset name or symbol for instant discovery'}
                                         </p>
                                     </div>
                                     
@@ -2601,6 +2604,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                         onSelect={async (coin) => {
                                             if (customBucket.tokens.length >= 7) return alert('Mission capacity reached.');
                                             setIsDiscoveryOpen(false);
+                                            setCustomSearchTerm('');
                                             setSearchLoading(true);
                                             try {
                                                 const dRes = await axios.get(`https://api.coingecko.com/api/v3/coins/${coin.id}`);

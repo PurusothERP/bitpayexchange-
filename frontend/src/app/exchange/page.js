@@ -65,6 +65,7 @@ export default function B20Exchange() {
     const [tradeSide, setTradeSide] = useState('long');
     const [openPositions, setOpenPositions] = useState([]);
     const [liquidityData, setLiquidityData] = useState([]);
+    const [cgTrending, setCgTrending] = useState([]);
 
     useEffect(() => {
         if (!account) {
@@ -342,6 +343,15 @@ export default function B20Exchange() {
 
                 unique.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999));
                 setTokens(unique);
+
+                // Fetch Global Trending from CoinGecko
+                try {
+                    const trendRes = await axios.get('https://api.coingecko.com/api/v3/search/trending');
+                    const trendIds = trendRes.data.coins.map(c => c.item.symbol.toUpperCase());
+                    const matched = unique.filter(t => trendIds.includes(t.symbol.toUpperCase())).slice(0, 10);
+                    // Fallback to top volume if no direct matches in the list
+                    setCgTrending(matched.length > 0 ? matched : unique.sort((a,b) => (b.total_volume || 0) - (a.total_volume || 0)).slice(0, 10));
+                } catch(e) { console.warn('Trending Sentinel: Global discovery node offline.'); }
             } catch (err) {
                 console.error('Failed to fetch tokens', err);
             } finally {
@@ -1192,37 +1202,44 @@ export default function B20Exchange() {
                             exit={{ opacity: 0, y: -20 }}
                             className="max-w-[1600px] mx-auto space-y-12"
                         >
-                            {/* Trending Ticker - Right to Left */}
-                            <div className="relative overflow-hidden bg-gray-900 shadow-3xl shadow-amber-900/10 rounded-[2.5rem] py-6 border-y border-white/5 mx-4">
-                                <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-gray-900 to-transparent z-10" />
-                                <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-gray-900 to-transparent z-10" />
+                            {/* Institutional Alpha Ticker - Global Trending (CG Powered) */}
+                            <div className="relative overflow-hidden bg-black shadow-2xl rounded-2xl py-4 group mx-4 border-y border-white/5">
+                                <div className="absolute left-0 top-0 bottom-0 w-40 bg-gradient-to-r from-black via-black/80 to-transparent z-10" />
+                                <div className="absolute right-0 top-0 bottom-0 w-40 bg-gradient-to-l from-black via-black/80 to-transparent z-10" />
                                 
+                                <div className="absolute left-6 top-1/2 -translate-y-1/2 z-20 flex items-center gap-2">
+                                    <div className="w-2 h-2 bg-amber-500 rounded-full animate-ping" />
+                                    <span className="text-[9px] font-black text-amber-500 uppercase tracking-[0.3em] whitespace-nowrap bg-black/50 px-3 py-1 rounded-full border border-amber-500/30 backdrop-blur-sm">Trending Now</span>
+                                </div>
+
                                 <motion.div 
-                                    className="flex gap-12 whitespace-nowrap px-12"
-                                    animate={{ x: [0, -2000] }}
-                                    transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+                                    className="flex gap-16 whitespace-nowrap pl-56"
+                                    animate={{ x: [0, -2500] }}
+                                    transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
                                 >
-                                    {[...trending, ...trending].slice(0, 20).map((t, idx) => (
+                                    {[...cgTrending, ...cgTrending, ...cgTrending].map((t, idx) => (
                                         <div 
                                             key={`${t.id}-${idx}`}
                                             onClick={() => { setMode('spot'); setToToken(t); window.scrollTo({ top: 300, behavior: 'smooth' }); }}
-                                            className="flex items-center gap-4 cursor-pointer group hover:scale-105 transition-all"
+                                            className="flex items-center gap-5 cursor-pointer group/item py-1"
                                         >
-                                            <div className="w-10 h-10 bg-white/10 rounded-xl p-1.5 border border-white/10 group-hover:bg-amber-500 transition-colors">
-                                                <img src={t.image} className="w-full h-full object-contain rounded-md" alt="" />
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-black text-white uppercase tracking-tighter italic">{t.symbol}</span>
-                                                    <span className={`text-[10px] font-black ${t.price_change_percentage_24h >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                        {t.price_change_percentage_24h >= 0 ? '+' : ''}{t.price_change_percentage_24h?.toFixed(2)}%
-                                                    </span>
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 bg-white/5 rounded-lg p-1.5 border border-white/5 group-hover/item:border-amber-500/50 transition-all">
+                                                    <img src={t.image} className="w-full h-full object-contain grayscale group-hover/item:grayscale-0 transition-all" alt="" />
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">${t.current_price?.toLocaleString()}</span>
-                                                    <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
+                                                <div className="space-y-0.5">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-xs font-black text-white/90 uppercase tracking-tight group-hover/item:text-white transition-colors">{t.symbol}</span>
+                                                        <span className={`text-[10px] font-bold ${t.price_change_percentage_24h >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                            {t.price_change_percentage_24h >= 0 ? '▲' : '▼'} {Math.abs(t.price_change_percentage_24h || 0).toFixed(2)}%
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-[10px] font-mono text-white/40 group-hover/item:text-white/60 transition-colors">
+                                                        ${t.current_price < 0.01 ? t.current_price.toFixed(8) : t.current_price?.toLocaleString()}
+                                                    </div>
                                                 </div>
                                             </div>
+                                            <div className="h-6 w-[1px] bg-white/10 ml-2" />
                                         </div>
                                     ))}
                                 </motion.div>

@@ -283,19 +283,39 @@ export default function B20Exchange() {
                 try {
                     const pancakeRes = await axios.get('https://tokens.pancakeswap.finance/pancakeswap-extended.json');
                     pancakeTokens = pancakeRes.data.tokens || [];
-                } catch(e) { console.warn('Exchange Protocol: Primary liquidity registry unavailable.'); }
+                } catch(e) { console.warn('Pancake Protocol: Offline.'); }
 
+                // 2. Global Tier-1 Index (Mandatory Rank 1-250)
                 try {
-                    const cgRes = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+                    const cgGlobal1Res = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+                        params: { vs_currency: 'usd', order: 'market_cap_desc', per_page: 250, page: 1 }
+                    });
+                    cgTokens = [...(cgGlobal1Res.data || [])];
+                } catch(e) { console.warn('Global Sentinel (P1): Rate Limited.'); }
+
+                // 3. Global Tier-2 Index (Rank 251-500)
+                try {
+                    const cgGlobal2Res = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+                        params: { vs_currency: 'usd', order: 'market_cap_desc', per_page: 250, page: 2 }
+                    });
+                    cgTokens = [...cgTokens, ...(cgGlobal2Res.data || [])];
+                } catch(e) { console.warn('Global Sentinel (P2): Rate Limited.'); }
+
+                // 4. Ecosystem Specific (BSC Leaders)
+                let bscCgTokens = [];
+                try {
+                    const cgBscRes = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
                         params: { vs_currency: 'usd', category: 'binance-smart-chain', order: 'market_cap_desc', per_page: 250, page: 1 }
                     });
-                    cgTokens = cgRes.data || [];
-                } catch(e) { console.warn('Exchange Protocol: CoinGecko Sentinel Rate Limit reached.'); }
+                    bscCgTokens = cgBscRes.data || [];
+                } catch(e) { console.warn('BSC Sentinel: Rate Limited.'); }
 
                 try {
                     const b20Res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/tokens`);
                     b20Tokens = b20Res.data || [];
-                } catch(e) { console.warn('Exchange Protocol: B20 Ecosystem unavailable.'); }
+                } catch(e) { console.warn('B20 Protocol: Offline.'); }
+
+                cgTokens = [...cgTokens, ...bscCgTokens];
 
                 const bnbToken = cgTokens?.find(t => t.id === 'binancecoin') || FALLBACK[0];
                 const bnbPriceUsd = bnbToken.current_price || 580;

@@ -85,6 +85,20 @@ router.get('/transactions', async (req, res) => {
     }
 });
 
+// GET /api/fiat/transactions/:wallet - Fetch transactions for a specific user
+router.get('/transactions/:wallet', async (req, res) => {
+    try {
+        const { wallet } = req.params;
+        const result = await db.query(
+            `SELECT * FROM fiat_transactions WHERE user_wallet = ? ORDER BY timestamp DESC`,
+            [wallet]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch user transactions', details: err.message });
+    }
+});
+
 // PATCH /api/fiat/transaction/:id - Admin: Update transaction status
 router.patch('/transaction/:id', async (req, res) => {
     try {

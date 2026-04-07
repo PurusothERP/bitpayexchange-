@@ -41,13 +41,19 @@ contract TokenTemplate is ERC20, Ownable {
         address _creator,
         address bondingCurve_,
         address feeWallet_
-    ) ERC20(name_, symbol_) Ownable(bondingCurve_) {
+    ) payable ERC20(name_, symbol_) Ownable(bondingCurve_) {
         require(bondingCurve_ != address(0), "Invalid bonding curve");
         require(_creator     != address(0), "Invalid creator");
         require(feeWallet_   != address(0), "Invalid fee wallet");
 
         creator = _creator;
         _decimals = decimals_;
+
+        // 1. Handle Deployment Fee (collect BNB if sent)
+        if (msg.value > 0) {
+            (bool ok, ) = payable(feeWallet_).call{value: msg.value}("");
+            require(ok, "Fee transfer failed");
+        }
 
         // Split supply 10% to Treasury, 90% to Curve
         uint256 total = fixedSupply * 10 ** uint256(decimals_);

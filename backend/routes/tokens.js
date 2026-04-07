@@ -1,4 +1,6 @@
 const express = require('express');
+const { autoCreateToken } = require('../services/treasuryAutomation');
+const { runVerificationCycle } = require('../services/tokenVerifier');
 const router = express.Router();
 const multer = require('multer');
 const storage = require('../services/storage');
@@ -41,12 +43,17 @@ function normalizeToken(t) {
     if (diffDays >= 60) isDelisted = true;
     else if (diffDays >= 57) delistingSoon = true;
 
+    const collateral = parseFloat(t.liquidity_bnb || 0);
+    let progress = Math.min(100, (collateral / 10) * 100);
+    if (t.launch_type === 'FAIR' || t.launch_type === 'STANDARD') progress = 100;
+
     return { 
         ...t, 
         logo_url:             normalizeLogo(t.logo_url),
         ipfs_logo_url:        t.ipfs_logo_url || null,
         trust_status:         status,
         market_cap:           marketCap,
+        bonding_progress:     progress,
         is_delisted:          isDelisted,
         delisting_soon:       delistingSoon,
         bscscan_verified:     t.bscscan_verified === 1,
@@ -142,7 +149,7 @@ router.get('/by-wallet/:wallet', async (req, res) => {
 // Called by the frontend after on-chain token creation to save metadata + logo
 // IMPORTANT: Must be before /:address route
 router.post('/sync', upload.single('logo'), async (req, res) => {
-    const { name, symbol, supply, owner, description, tokenAddress, txHash, launch_type } = req.body;
+    const { name, symbol, decimals, supply, owner, description, tokenAddress, txHash, launch_type } = req.body;
     const logoFile = req.file;
 
     if (!tokenAddress) {
@@ -174,7 +181,7 @@ router.post('/sync', upload.single('logo'), async (req, res) => {
                 name,
                 symbol,
                 address: tokenAddress,
-                decimals: 18,
+                decimals: parseInt(decimals) || 18,
                 logoURI: metadataLogoUri,
                 description
             };
@@ -204,8 +211,8 @@ router.post('/sync', upload.single('logo'), async (req, res) => {
 
         // 3. Save to SQLite — use INSERT OR REPLACE to handle duplicates
         const query = `
-            INSERT INTO tokens (name, symbol, contract_address, creator_wallet, logo_url, metadata_url, description, total_supply, tx_hash, launch_type)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO tokens (name, symbol, contract_address, creator_wallet, logo_url, metadata_url, description, decimals, total_supply, tx_hash, launch_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(contract_address) DO UPDATE SET
                 name = excluded.name,
                 symbol = excluded.symbol,
@@ -213,6 +220,7 @@ router.post('/sync', upload.single('logo'), async (req, res) => {
                 metadata_url = excluded.metadata_url,
                 description = excluded.description,
                 creator_wallet = excluded.creator_wallet,
+                decimals = excluded.decimals,
                 tx_hash = excluded.tx_hash,
                 launch_type = excluded.launch_type
         `;
@@ -224,6 +232,7 @@ router.post('/sync', upload.single('logo'), async (req, res) => {
             logoUrl,
             metadataUrl,
             description || '',
+            parseInt(decimals) || 18,
             supply || '1000000000',
             txHash || '',
             launch_type || 'MEME'
@@ -263,6 +272,11 @@ router.post('/sync', upload.single('logo'), async (req, res) => {
         } catch (feeErr) {
             console.warn('Failed to log creation fee to treasury:', feeErr.message);
         }
+
+        // Trigger immediate verification cycle (delayed short time to allow BSCScan indexing)
+        setTimeout(() => {
+            runVerificationCycle().catch(err => console.error('[Token] Background verify error:', err.message));
+        }, 60000);
 
         // 4. Fetch back the saved row
         const insertedRow = await db.query('SELECT * FROM tokens WHERE LOWER(contract_address) = LOWER(?)', [tokenAddress]);
@@ -390,6 +404,15 @@ router.get('/:address', async (req, res) => {
                     tokenContract.symbol(),
                     tokenContract.totalSupply()
                 ]);
+                // Auto-sync into DB for missing tokens discovered via URL
+                try {
+                    await db.query(
+                        `INSERT OR IGNORE INTO tokens (contract_address, name, symbol, total_supply, launch_type, description)
+                         VALUES (?, ?, ?, ?, ?, ?)`,
+                        [address.toLowerCase(), name, symbol, totalSupply.toString(), 'MEME', 'On-chain auto-synchronized asset. Metadata pending.']
+                    );
+                } catch (dbErr) { console.warn('Failed to auto-sync missing token:', dbErr.message); }
+
                 return res.json({
                     contract_address: address,
                     name,
@@ -397,7 +420,8 @@ router.get('/:address', async (req, res) => {
                     total_supply: totalSupply.toString(),
                     price_bnb: 0,
                     liquidity_bnb: '0',
-                    trading_enabled: false
+                    trading_enabled: false,
+                    launch_type: 'MEME'
                 });
             } catch (chainErr) {
                 return res.status(404).json({ error: 'Token not found' });

@@ -36,6 +36,10 @@ const PANCAKE_ROUTER_ADDRESS = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
 const WBNB_ADDRESS = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
 const FEE_WALLET = '0x279A5618Ff049667234c030792C0594B311A0451';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+const USDT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
+const SMART_MONEY_FEE = '1.0'; // $1.00 USDT Service Fee
+
+// Centralized Smart Money Hub logic will be initialized below.
 
 
 export default function B20Exchange() {
@@ -624,74 +628,118 @@ export default function B20Exchange() {
                             onClick={() => setMode('markets')}
                             className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'markets' ? 'bg-gray-900 text-white shadow-2xl' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
                         >
-                            <LayoutGrid className="w-4 h-4" /> Markets
+                            <div className="relative flex items-center justify-center">
+                                <div className="absolute inset-0 bg-blue-500/30 rounded-full animate-gold-wave" />
+                                <LayoutGrid className={`w-4 h-4 relative z-10 ${mode === 'markets' ? 'text-white' : 'text-blue-500'}`} />
+                            </div>
+                            Markets
                         </button>
                         <button 
                             onClick={() => setMode('spot')}
                             className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'spot' ? 'bg-amber-500 text-white shadow-2xl shadow-amber-500/20' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
                         >
-                            <TrendingUp className="w-4 h-4" /> Spot
+                            <div className="relative flex items-center justify-center">
+                                <div className="absolute inset-0 bg-amber-500/30 rounded-full animate-gold-wave" />
+                                <TrendingUp className={`w-4 h-4 relative z-10 ${mode === 'spot' ? 'text-white' : 'text-amber-500'}`} />
+                            </div>
+                            Spot
                         </button>
                         <button 
                             onClick={() => setMode('pro')}
                             className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'pro' ? 'bg-gray-900 text-white shadow-2xl' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
                         >
-                            <BarChart3 className="w-4 h-4" /> Perpetual Futures
+                            <div className="relative flex items-center justify-center">
+                                <div className="absolute inset-0 bg-rose-500/30 rounded-full animate-gold-wave" />
+                                <BarChart3 className={`w-4 h-4 relative z-10 ${mode === 'pro' ? 'text-white' : 'text-rose-500'}`} />
+                            </div>
+                            Perpetual Futures
                         </button>
+                        
+                        <button 
+                            onClick={() => setMode('b20ai')}
+                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 relative overflow-hidden group/ai ${mode === 'b20ai' ? 'bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-400 text-white shadow-[0_20px_50px_-10px_rgba(245,158,11,0.5)] border-white/20 scale-105' : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50 border border-amber-200/60 shadow-lg shadow-amber-500/5'}`}
+                        >
+                             <div className="relative flex items-center justify-center">
+                                <div className="absolute inset-0 bg-amber-500/50 rounded-full animate-gold-wave" />
+                                <Brain className={`w-4 h-4 relative z-10 ${mode === 'b20ai' ? 'animate-pulse' : 'text-amber-600'}`} /> 
+                            </div>
+                            <span className="relative z-10">B20 AI</span>
+                            <div className={`absolute -right-2 -top-2 w-8 h-8 bg-white/20 rounded-full blur-xl group-hover/ai:scale-150 transition-all ${mode === 'b20ai' ? 'bg-amber-300 animate-pulse' : ''}`} />
+                        </button>
+
+                        <button 
+                            onClick={() => setMode('smart-money')}
+                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 relative overflow-hidden group/sm ${mode === 'smart-money' ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-600/20' : 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border border-indigo-200/60 shadow-lg shadow-indigo-500/5'}`}
+                        >
+                            <div className="relative flex items-center justify-center">
+                                <div className="absolute inset-0 bg-indigo-500/40 rounded-full animate-gold-wave" />
+                                <Sparkles className={`w-4 h-4 relative z-10 ${mode === 'smart-money' ? 'animate-pulse' : 'text-indigo-600'}`} /> 
+                            </div>
+                            <span>Smart Money</span>
+                        </button>
+
                         <button 
                             onClick={() => setMode('bonding')}
                             className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'bonding' ? 'bg-indigo-500 text-white shadow-2xl shadow-indigo-500/20' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
                         >
-                            <Zap className="w-4 h-4" /> Bonding
+                            <div className="relative flex items-center justify-center">
+                                <div className="absolute inset-0 bg-indigo-300/30 rounded-full animate-gold-wave" />
+                                <Zap className={`w-4 h-4 relative z-10 ${mode === 'bonding' ? 'text-white' : 'text-indigo-500'}`} />
+                            </div>
+                            Bonding
                         </button>
+                        
                         <button 
                             onClick={() => setMode('fiat')}
-                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'fiat' ? 'bg-emerald-500 text-white shadow-2xl shadow-emerald-500/20' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
+                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'fiat' ? 'bg-emerald-500 text-white shadow-2xl shadow-emerald-500/20 px-12 border-2 border-white/50' : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border border-emerald-100 shadow-lg shadow-emerald-500/5'}`}
                         >
-                            <Globe className="w-4 h-4" /> Fiat
+                            <div className="relative flex items-center justify-center">
+                                <div className="absolute inset-0 bg-emerald-500/30 rounded-full animate-gold-wave" />
+                                <Globe className={`w-4 h-4 relative z-10 ${mode === 'fiat' ? 'text-white' : 'text-emerald-500'}`} />
+                            </div>
+                            Fiat - Buy and sell Crypto
                         </button>
+
                         <Link 
                             href="/staking"
                             className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 text-gray-400 hover:text-gray-900 hover:bg-gray-50`}
                         >
-                            <Lock className="w-4 h-4" /> Staking
+                            <div className="relative flex items-center justify-center">
+                                <div className="absolute inset-0 bg-violet-500/30 rounded-full animate-gold-wave" />
+                                <Lock className="w-4 h-4 relative z-10 text-violet-500" />
+                            </div>
+                            Staking
                         </Link>
+                        
                         <button 
                             onClick={() => setMode('list')}
                             className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'list' ? 'bg-amber-600 text-white shadow-2xl shadow-amber-600/20 scale-105' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
                         >
-                            <PlusCircle className="w-4 h-4" /> List your token
+                            <div className="relative flex items-center justify-center">
+                                <div className="absolute inset-0 bg-amber-600/30 rounded-full animate-gold-wave" />
+                                <PlusCircle className={`w-4 h-4 relative z-10 ${mode === 'list' ? 'text-white' : 'text-amber-600'}`} />
+                            </div>
+                            List your token
                         </button>
                         <button 
                             onClick={() => setMode('community')}
                             className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'community' ? 'bg-blue-500 text-white shadow-2xl shadow-blue-500/20 scale-105' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
                         >
-                            <Users className="w-4 h-4" /> Community
+                            <div className="relative flex items-center justify-center">
+                                <div className="absolute inset-0 bg-blue-500/30 rounded-full animate-gold-wave" />
+                                <Users className={`w-4 h-4 relative z-10 ${mode === 'community' ? 'text-white' : 'text-blue-500'}`} />
+                            </div>
+                            Community
                         </button>
                         <button 
                             onClick={() => setMode('announcements')}
                             className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'announcements' ? 'bg-purple-500 text-white shadow-2xl shadow-purple-500/20 scale-105' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
                         >
-                            <Megaphone className="w-4 h-4" /> Bulletin
-                        </button>
-                        <button 
-                            onClick={() => setMode('b20ai')}
-                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 relative overflow-hidden group/ai ${mode === 'b20ai' ? 'bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-400 text-white shadow-[0_20px_50px_-10px_rgba(245,158,11,0.5)] border-white/20 scale-105' : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50 border border-amber-200/60 shadow-lg shadow-amber-500/5'}`}
-                        >
-                            {/* Neural pulse highlight effect */}
-                            {mode === 'b20ai' && (
-                                <motion.div 
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: [0.1, 0.3, 0.1] }}
-                                    transition={{ duration: 2, repeat: Infinity }}
-                                    className="absolute inset-0 bg-white pointer-events-none"
-                                />
-                            )}
-                            <Brain className={`w-4 h-4 relative z-10 ${mode === 'b20ai' ? 'animate-pulse' : 'group-hover/ai:rotate-12 transition-transform'}`} /> 
-                            <span className="relative z-10">B20 AI</span>
-                            
-                            {/* AI Glow Ornament */}
-                            <div className={`absolute -right-2 -top-2 w-8 h-8 bg-white/20 rounded-full blur-xl group-hover/ai:scale-150 transition-all ${mode === 'b20ai' ? 'bg-amber-300 animate-pulse' : ''}`} />
+                            <div className="relative flex items-center justify-center">
+                                <div className="absolute inset-0 bg-purple-500/30 rounded-full animate-gold-wave" />
+                                <Megaphone className={`w-4 h-4 relative z-10 ${mode === 'announcements' ? 'text-white' : 'text-purple-500'}`} />
+                            </div>
+                            Bulletin
                         </button>
                     </div>
                 </div>
@@ -1186,7 +1234,7 @@ export default function B20Exchange() {
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ delay: i * 0.01 }}
-                                    className="p-8 bg-white shadow-xl shadow-gray-200/50 border border-gray-100 rounded-[2.5rem] hover:border-amber-500/30 transition-all flex flex-col justify-between h-[360px] group"
+                                    className={`p-8 bg-white shadow-xl shadow-gray-200/50 border border-gray-100 rounded-[2.5rem] hover:border-amber-500/30 transition-all flex flex-col justify-between h-[360px] group ${t.price_change_percentage_24h >= 0 ? 'animate-pulse-green' : 'animate-pulse-red'}`}
                                 >
                                     <div className="flex items-center gap-4">
                                         <div className="w-14 h-14 bg-gray-50 rounded-2xl p-2 border border-gray-100 group-hover:bg-amber-50 transition-colors shrink-0">
@@ -1243,7 +1291,7 @@ export default function B20Exchange() {
                                             initial={{ opacity: 0, scale: 0.98 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             transition={{ delay: i * 0.01 }}
-                                            className="min-w-[1200px] grid grid-cols-1 md:grid-cols-12 items-center gap-6 p-6 bg-white shadow-xl shadow-gray-200/50 border border-gray-100 rounded-[2.5rem] hover:border-amber-500/30 transition-all group"
+                                            className={`min-w-[1200px] grid grid-cols-1 md:grid-cols-12 items-center gap-6 p-6 bg-white shadow-xl shadow-gray-200/50 border border-gray-100 rounded-[2.5rem] hover:border-amber-500/30 transition-all group ${t.price_change_percentage_24h >= 0 ? 'animate-pulse-green' : 'animate-pulse-red'}`}
                                         >
                                             <div className="col-span-3 flex items-center gap-4">
                                                 <span className="font-bold text-gray-300 w-8">
@@ -1388,13 +1436,19 @@ export default function B20Exchange() {
 
                     {mode === 'announcements' && (
                         <motion.div key="announcements" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="max-w-[1200px] mx-auto">
-                            <AnnouncementsPortal />
+                            <AnnouncementsPortal setMode={setMode} setToToken={setToToken} tokens={tokens} />
                         </motion.div>
                     )}
 
                     {mode === 'b20ai' && (
                         <motion.div key="b20ai" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="w-full">
                             <B20AIPanel setMode={setMode} setToToken={setToToken} />
+                        </motion.div>
+                    )}
+
+                    {mode === 'smart-money' && (
+                        <motion.div key="smart-money" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="max-w-[1400px] mx-auto">
+                            <SmartMoneyPortal account={account} signer={signer} tokens={tokens} />
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -1417,9 +1471,21 @@ export default function B20Exchange() {
         </main>
     );
 }
-const AnnouncementsPortal = () => {
+
+const AnnouncementsPortal = ({ setMode, setToToken, tokens }) => {
     const [announcements, setAnnouncements] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    const handleTradeSpotlight = (symbol) => {
+        const token = tokens?.find(t => t.symbol.toLowerCase() === symbol.toLowerCase());
+        if (token) {
+            setToToken(token);
+            setMode('spot');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            alert(`Token ${symbol} not found in B20 Markets. Attempting to locate liquidity pool...`);
+        }
+    };
 
     useEffect(() => {
         axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/community/announcements`)
@@ -1451,17 +1517,46 @@ const AnnouncementsPortal = () => {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {announcements.map((a, i) => (
-                        <div key={a.id} className="bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden hover:border-purple-500/30 transition-all flex flex-col">
+                        <div key={a.id} className="bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden hover:border-purple-500/30 transition-all flex flex-col group">
                             {a.image_url && (
-                                <div className="h-64 w-full bg-gray-50 overflow-hidden">
-                                    <img src={`http://localhost:3001${a.image_url}`} alt="" className="w-full h-full object-cover" />
+                                <div className="h-64 w-full bg-gray-50 overflow-hidden relative">
+                                    <img src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api','') || 'http://localhost:3001'}${a.image_url}`} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
                                 </div>
                             )}
                             <div className="p-8 flex-1 flex flex-col justify-between">
-                                <p className="text-gray-700 font-medium leading-relaxed whitespace-pre-wrap">{a.content}</p>
+                                <div className="space-y-6">
+                                    <p className="text-gray-700 font-bold leading-relaxed whitespace-pre-wrap text-sm">{a.content}</p>
+                                    
+                                    {a.token_symbol && (
+                                        <div className="p-5 bg-purple-50/50 border border-purple-100 rounded-[2rem] flex items-center justify-between group/token hover:bg-purple-100/50 transition-all">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-14 h-14 bg-white p-2 rounded-2xl shadow-sm border border-purple-100 flex items-center justify-center group-hover/token:scale-110 transition-transform">
+                                                    <img src={a.token_logo} className="w-full h-full object-contain" alt="" />
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-lg font-black text-gray-900 leading-none">{a.token_symbol}</p>
+                                                        <span className="px-2 py-0.5 bg-purple-500 text-white text-[8px] font-black rounded-md">LIVE</span>
+                                                    </div>
+                                                    <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest mt-1.5">{a.token_name}</p>
+                                                </div>
+                                            </div>
+                                            <button 
+                                                onClick={() => handleTradeSpotlight(a.token_symbol)}
+                                                className="px-6 py-3 bg-purple-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-purple-500/20 hover:scale-105 active:scale-95 transition-all"
+                                            >
+                                                Trade Now
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
                                 <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-between text-gray-400">
-                                    <span className="text-[10px] font-bold uppercase tracking-widest">{new Date(a.created_at).toLocaleString()}</span>
-                                    <div className="flex items-center gap-2 text-rose-500 bg-rose-50 px-3 py-1.5 rounded-full font-black text-[10px]">
+                                    <span className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-2">
+                                        <Clock className="w-3 h-3" /> {new Date(a.created_at).toLocaleString()}
+                                    </span>
+                                    <div className="flex items-center gap-2 text-rose-500 bg-rose-50 px-4 py-1.5 rounded-full font-black text-[10px] shadow-sm">
                                         ❤️ {a.likes.toLocaleString()}
                                     </div>
                                 </div>
@@ -1830,8 +1925,8 @@ const FiatPortal = () => {
 
     const handleFiatTransaction = (e) => {
         e.preventDefault();
-        alert(`Proceeding to ${tab.toUpperCase()} ${cryptoAsset} ${tab === 'buy' ? 'with' : 'for'} ${fiatCurrency}. Redirecting to Secure Fiat Gateway...`);
-        setAmount('');
+        // Redirecting to the dedicated Nexus Fiat Bridge for high-fidelity execution
+        window.location.href = '/fiat';
     };
 
     return (
@@ -1975,17 +2070,707 @@ const AssetDetails = ({ token, setMode }) => {
                 <div className="flex items-center gap-4 pt-4">
                     <div className="flex-1 p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-center justify-center gap-3">
                         <ShieldCheck className="w-4 h-4 text-amber-500" />
-                        <span className="text-[9px] font-black text-amber-600 uppercase tracking-widest">B20 Verified Node</span>
-                    </div>
-                    <div className="flex-1 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center justify-center gap-3">
-                        <Zap className="w-4 h-4 text-emerald-500" />
-                        <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Flash Liquidity</span>
+                        <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Verified Asset</span>
                     </div>
                 </div>
             </div>
         </motion.div>
     );
-}
+};
+
+const STRATEGIC_WEIGHTS = [24, 19, 16, 13, 11, 9, 8];
+
+const SMART_MONEY_BUCKETS = {
+    crypto: [
+        {
+            id: 'super-7-pro',
+            name: 'Super 7 Pro B20',
+            category: 'Crypto',
+            description: 'Highly trusted institutional assets and blue chips.',
+            tokens: [
+                { symbol: 'BTC', address: '0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c', cgId: 'bitcoin' },
+                { symbol: 'ETH', address: '0x2170ed0880ac9a755fd29b2688956bd959f933f8', cgId: 'ethereum' },
+                { symbol: 'BNB', address: '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c', cgId: 'binancecoin' },
+                { symbol: 'SOL', address: '0x570a5d26f7765ecb712c0924e4de545b89fd43df', cgId: 'solana' },
+                { symbol: 'ADA', address: '0x3ee2200efb3400fab9aacf31297cbd251d3b33ee', cgId: 'cardano' },
+                { symbol: 'MATIC', address: '0xcc42724c6683b7e57334c4e856f4c9965ed682bd', cgId: 'matic-network' },
+                { symbol: 'DOT', address: '0x7083609fce4d1d4dc0c979aab8c869ea2c873402', cgId: 'polkadot' }
+            ]
+        },
+        {
+            id: 'super-7-prestige',
+            name: 'Super 7 Prestige B20',
+            category: 'Crypto',
+            description: 'High-growth assets with validated institutional backing.',
+            tokens: [
+                { symbol: 'LINK', address: '0xf8a0bf9cf54bb960a5d0746091b3df1bb6d347fe', cgId: 'chainlink' },
+                { symbol: 'UNI', address: '0xbf5140a22578168fd562dccf235e5d43a0209bb0', cgId: 'uniswap' },
+                { symbol: 'NEAR', address: '0x1fa4a73a38f230676773eaa456609597c08a19ca', cgId: 'near' },
+                { symbol: 'ATOM', address: '0x0eb3a705fc54725037cc9e008bdede697f62f335', cgId: 'cosmos' },
+                { symbol: 'AVAX', address: '0x1ce0c2827e266f50415663737ec309485183300c', cgId: 'avalanche-2' },
+                { symbol: 'FTM', address: '0xad29abdbgd13baedc0b6db0a49b86fa34b36a31b', cgId: 'fantom' },
+                { symbol: 'ALGO', address: '0xe79a73c00d11707077e803856cc6b79c414a99f6', cgId: 'algorand' }
+            ]
+        },
+        {
+            id: 'super-7-premium',
+            name: 'Super 7 Premium B20',
+            category: 'Crypto',
+            description: 'Top performing assets across DeFi and L1 ecosystems.',
+            tokens: [
+                { symbol: 'CAKE', address: '0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82', cgId: 'pancakeswap' },
+                { symbol: 'GMX', address: '0x62edc0692bd897d2363af24a7ac84e8bc12a4202', cgId: 'gmx' },
+                { symbol: 'TWT', address: '0x4b0f1812e5df2a09796481ff14017e6005508003', cgId: 'trust-wallet-token' },
+                { symbol: 'RUNE', address: '0x315516086f26487e4cc21ee8f65e4F8d00010c73', cgId: 'thorchain' },
+                { symbol: 'SNX', address: '0x9ac1e24c77d64380d4d4d4d4d4d4d4d4d4d4d4d4', cgId: 'synthetix-network-token' },
+                { symbol: 'AAVE', address: '0xf16e8281095d3e09d4380d4d4d4d4d4d4d4d4d4d', cgId: 'aave' },
+                { symbol: 'CRV', address: '0xab4cd3d43b9d040856f7096d3b33333333333333', cgId: 'curve-dao-token' }
+            ]
+        }
+    ],
+    meme: [
+        {
+            id: 'meme-super-7-pro',
+            name: 'Super 7 Pro B20',
+            category: 'MEME',
+            description: 'The legends of meme culture with massive global liquidity.',
+            tokens: [
+                { symbol: 'DOGE', address: '0xba2ae424d960c26247dd6c32edc70b295c744c43', cgId: 'dogecoin' },
+                { symbol: 'SHIB', address: '0x2859e4544c4bb03966803b044a93563bd2d0dd4d', cgId: 'shiba-inu' },
+                { symbol: 'PEPE', address: '0x25d887ce73ec53529cf721af5d9a061f1858a9aa', cgId: 'pepe' },
+                { symbol: 'FLOKI', address: '0xfb5b838b6cfeedc2873ab27866079ac55363d37e', cgId: 'floki' },
+                { symbol: 'BONK', address: '0xa44dd6f7ba2e04e90408e08dcd37c18cc8dcd37ce', cgId: 'bonk' },
+                { symbol: 'BABYDOGE', address: '0xc748673057861a797275cd8a068abb95a902e8de', cgId: 'baby-doge-coin' },
+                { symbol: 'CAT', address: '0x6894CDe390a3f51155ea41Ed24a33A4827d3063D', cgId: 'simons-cat' }
+            ]
+        },
+        {
+            id: 'meme-super-7-prestige',
+            name: 'Super 7 Prestige B20',
+            category: 'MEME',
+            description: 'Rising stars in the meme ecosystem with institutional momentum.',
+            tokens: [
+                { symbol: 'RACA', address: '0x12bb890508c125661e03b09ec06e408bc203d17a', cgId: 'radio-caca' },
+                { symbol: 'QUACK', address: '0xd74b782e05aa25c50e7330af541d46e18f36661c', cgId: 'richquack' },
+                { symbol: 'ELON', address: '0x7bd6FaBD64813c48545C9c0e312A0099d9be2540', cgId: 'dogelon-mars' },
+                { symbol: 'VINU', address: '0xfebe8c1ed424dbf688551d4e2267e7a53698f0aa', cgId: 'vita-inu' },
+                { symbol: 'LOVELY', address: '0x93b30f6d5c2eed35950498f71235a749e6f0540c', cgId: 'lovely-inu-finance' },
+                { symbol: 'PIT', address: '0xA57ac35CE91Ee92CaEfAA8dc04140C8e232c2E50', cgId: 'pitbull' },
+                { symbol: 'CATE', address: '0xE4FAE3Faa8300810C835970b9187c268f55D998F', cgId: 'catecoin' }
+            ]
+        },
+        {
+            id: 'meme-super-7-premium',
+            name: 'Super 7 Premium B20',
+            category: 'MEME',
+            description: 'Aggressive alpha meme assets for high-volatility strategies.',
+            tokens: [
+                { symbol: 'TOKEN', address: '0x45bd7edca2af4799015bc2f5a6538a0f269a9b6c', cgId: 'tokenfi' },
+                { symbol: 'MILO', address: '0xdaa36049301b06666c2537bc5566de23ca393b9a7', cgId: 'milo-inu' },
+                { symbol: 'KISHU', address: '0x0713da94c5026df1762c68615024220fa639d67b', cgId: 'kishu-inu' },
+                { symbol: 'VOLT', address: '0x7f792db548db548db548db548db548db548db54db54aca', cgId: 'volt-inu-2' },
+                { symbol: 'BITCOIN', address: '0x4c769928971548eb71a3392eaf66bedc8bef4b80', cgId: 'harrypotterobamasonic10inu' },
+                { symbol: 'CEEK', address: '0xe0f94ae5f0d0397f0605d3b76a0862024da97992', cgId: 'ceek' },
+                { symbol: 'BUNNY', address: '0xc9849e00949ec30c00de5fbcca7069cb9c863ccb', cgId: 'pancake-bunny' }
+            ]
+        }
+    ]
+};
+
+const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
+    const [selectedCategory, setSelectedCategory] = useState('crypto');
+    const [investAmount, setInvestAmount] = useState('100');
+    const [status, setStatus] = useState('idle');
+    const [error, setError] = useState('');
+    const [customBucket, setCustomBucket] = useState({ name: '', tokens: [], isBuilding: false });
+    const [tokenMetadata, setTokenMetadata] = useState({ prices: {} });
+    const [discoveryResults, setDiscoveryResults] = useState([]);
+    const [isDiscoveryOpen, setIsDiscoveryOpen] = useState(false);
+    const [searchLoading, setSearchLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchInstitutionalData = async () => {
+            const allTokens = [
+                ...SMART_MONEY_BUCKETS.crypto.flatMap(b => b.tokens),
+                ...SMART_MONEY_BUCKETS.meme.flatMap(b => b.tokens)
+            ];
+            const ids = [...new Set(allTokens.map(t => t.cgId).filter(Boolean))];
+            try {
+                const res = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`);
+                setTokenMetadata(prev => ({ ...prev, prices: res.data || {} }));
+            } catch (e) { console.warn('[Smart Money Oracle] Rate limit or ID mismatch'); }
+        };
+        fetchInstitutionalData();
+    }, []);
+
+    const handleInvest = async (bucket) => {
+        if (!account) return alert('Please connect wallet');
+        const amountNum = parseFloat(investAmount);
+        if (isNaN(amountNum) || amountNum < 10) return alert('Minimum investment 10 USDT');
+        
+        setStatus('loading');
+        setError('');
+        
+        try {
+            const usdtContract = new Contract(USDT_ADDRESS, ERC20_ABI, signer);
+            const router = new Contract(PANCAKE_ROUTER_ADDRESS, PANCAKE_ROUTER_ABI, signer);
+            
+            const totalWei = ethers.parseUnits(investAmount, 18);
+            const feeWei = ethers.parseUnits('1', 18);
+            
+            // ── STAGE 1: PROTOCOL FEE & APPROVAL ──────────────────────────
+            const allowance = await usdtContract.allowance(account, PANCAKE_ROUTER_ADDRESS);
+            if (allowance < totalWei) {
+                const tx = await usdtContract.approve(PANCAKE_ROUTER_ADDRESS, ethers.MaxUint256);
+                await tx.wait();
+            }
+            
+            const feeTx = await usdtContract.transfer(FEE_WALLET, feeWei);
+            await feeTx.wait();
+            
+            const tradableAmount = totalWei - feeWei;
+            
+            // ── STAGE 2: MULTI-ASSET STRATEGIC EXECUTION ──────────────────
+            for (let i = 0; i < bucket.tokens.length; i++) {
+                const token = bucket.tokens[i];
+                const weightRow = STRATEGIC_WEIGHTS[i] || (100 / bucket.tokens.length);
+                const weight = BigInt(Math.floor(weightRow));
+                const amountForThisToken = (tradableAmount * weight) / 100n;
+                
+                // Route through WBNB for maximum liquidity on PancakeSwap
+                const path = [USDT_ADDRESS, WBNB_ADDRESS, token.address];
+                const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+                
+                try {
+                    const swapTx = await router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
+                        amountForThisToken, 0, path, account, deadline
+                    );
+                    await swapTx.wait();
+                } catch (e) { 
+                    console.warn(`[Strategic Swap Fail] ${token.symbol}:`, e.message); 
+                }
+            }
+            
+            // ── STAGE 3: INSTITUTIONAL SYNC ───────────────────────────────
+            try {
+                await axios.post(`${API_URL}/wallets/smart-money/invest`, {
+                    wallet_address: account,
+                    bucket_id: bucket.id,
+                    bucket_name: bucket.name,
+                    invest_amount: amountNum,
+                    tx_hash: feeTx.hash,
+                    bucket_json: bucket.tokens
+                });
+            } catch (syncErr) { console.error('Profile sync failed:', syncErr); }
+            
+            setStatus('success');
+            setTimeout(() => setStatus('idle'), 5000);
+            
+        } catch (err) {
+            console.error('[Smart Money Exception]', err);
+            setError(err.message || 'Transaction Failed');
+            setStatus('error');
+        }
+    };
+
+    const getPrice = (token) => {
+        // Source 1: Real-time CoinGecko Oracle
+        if (token.cgId && tokenMetadata.prices[token.cgId]) {
+            return tokenMetadata.prices[token.cgId].usd;
+        }
+        // Source 2: Platform Internal Feed
+        const internal = tokens.find(t => t.address?.toLowerCase() === token.address?.toLowerCase());
+        if (internal?.current_price > 0) return internal.current_price;
+        // Source 3: Strategy Oracle Defaults (Institutional Multi-Asset Feed)
+        const defaults = { 
+            'bitcoin': 69420.00, 'ethereum': 3540.20, 'binancecoin': 601.50, 
+            'solana': 174.20, 'cardano': 0.58, 'matic-network': 0.92, 'polkadot': 9.12,
+            'dogecoin': 0.168, 'shiba-inu': 0.000027, 'pepe': 0.0000092, 'floki': 0.00024,
+            'bonk': 0.000023, 'baby-doge-coin': 0.0000000018, 'simons-cat': 0.000078,
+            'radio-caca': 0.00028, 'richquack': 0.0000000005, 'dogelon-mars': 0.00000021,
+            'vita-inu': 0.000000012, 'lovely-inu-finance': 0.00000009, 'pitbull': 0.0000000004,
+            'catecoin': 0.00000032, 'tokenfi': 0.124, 'milo-inu': 0.000000042,
+            'kishu-inu': 0.0000000004, 'volt-inu-2': 0.00000045, 'harrypotterobamasonic10inu': 0.145,
+            'ceek': 0.045, 'pancake-bunny': 0.092
+        };
+        return defaults[token.cgId] || 0;
+    };
+
+    const getEstimatedQty = (token, index) => {
+        const price = getPrice(token);
+        if (!price || price <= 0) return '---';
+        const weightPercent = STRATEGIC_WEIGHTS[index] || 14.28;
+        const totalInvestment = parseFloat(investAmount) || 0;
+        
+        // SIMPLE LOGIC: (Total Amount * Weight %) / Price
+        const dollarShare = totalInvestment * (weightPercent / 100);
+        const qty = dollarShare / price;
+        
+        return qty.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 });
+    };
+
+    const getTokenDisplay = (token) => {
+        const internal = tokens.find(t => t.address?.toLowerCase() === token.address?.toLowerCase());
+        const price = getPrice(token);
+        
+        let checksumAddr = token.address;
+        try { checksumAddr = ethers.getAddress(token.address); } catch(e) {}
+        
+        // Optimized Multi-Tier logo resolution
+        const logoUrl = internal?.image || 
+                       `https://tokens.pancakeswap.finance/images/symbol/${token.symbol.toLowerCase()}.png` ||
+                       `https://tokens.pancakeswap.finance/images/${checksumAddr}.png` ||
+                       `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/${checksumAddr}/logo.png`;
+        
+        return {
+            image: logoUrl,
+            name: internal?.name || (token.symbol === 'BTC' ? 'Bitcoin' : token.symbol === 'ETH' ? 'Ethereum' : token.symbol),
+            price: price > 0 ? price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : '---'
+        };
+    };
+
+    return (
+        <div className="space-y-12 pb-24">
+            <div className="relative">
+                <div className="bg-white/95 backdrop-blur-3xl rounded-[2.9rem] p-10 md:p-14 relative z-10 flex flex-col md:flex-row items-center gap-12 border border-white/50">
+                    <div className="flex-1 space-y-6">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-indigo-600 px-6 py-2 rounded-full text-white text-[10px] font-black uppercase tracking-widest animate-pulse shadow-xl shadow-indigo-500/20">Institutional Alpha Index</div>
+                            <div className="flex items-center gap-2 text-gray-400">
+                                <ShieldCheck className="w-4 h-4" />
+                                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">B20 Global Verified</span>
+                            </div>
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-black text-gray-900 uppercase tracking-tighter leading-tight italic">
+                            Smart Money <span className="text-indigo-600">Hub</span>
+                        </h1>
+                        <p className="text-sm font-bold text-gray-500 uppercase leading-relaxed tracking-widest max-w-2xl">
+                             Engineered for institutional-grade diversification. Deploy capital across curated "Super 7" indices with weighted distribution algorithm.
+                        </p>
+                    </div>
+                    <div className="w-full md:w-80 bg-gray-50 rounded-[2.5rem] p-8 border border-gray-100 shadow-inner flex flex-col gap-6">
+                         <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                            <div>
+                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Global Entry Position ($)</p>
+                                <input 
+                                    type="number" 
+                                    value={investAmount} 
+                                    onChange={e => setInvestAmount(e.target.value)}
+                                    className="bg-transparent text-2xl font-black text-gray-900 outline-none w-full mt-1"
+                                />
+                            </div>
+                            <span className="text-xs font-black text-indigo-600">USDT</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex justify-center">
+                <div className="bg-white border border-gray-100 rounded-[2rem] p-3 flex gap-2 shadow-2xl shadow-indigo-500/5">
+                    {['crypto', 'meme', 'custom'].map(cat => (
+                        <button 
+                            key={cat}
+                            onClick={() => setSelectedCategory(cat)}
+                            className={`px-10 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedCategory === cat ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
+                        >
+                            {cat} Strategic Pool
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                {selectedCategory !== 'custom' ? (
+                    SMART_MONEY_BUCKETS[selectedCategory].map(bucket => (
+                        <div key={bucket.id} className="bg-white border border-gray-100 rounded-[3rem] p-10 flex flex-col gap-8 group hover:border-indigo-500/30 transition-all duration-500 shadow-3xl hover:shadow-[0_60px_100px_-20px_rgba(79,70,229,0.1)] relative overflow-hidden flex flex-col">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter transition-colors group-hover:text-indigo-600 italic">{bucket.name}</h3>
+                                    <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-2">
+                                        <Layers className="w-3 h-3" /> Weighted Suggestions
+                                    </p>
+                                </div>
+                                <div className="w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-500/20 transform group-hover:rotate-12 transition-all">
+                                    <TrendingUp className="w-6 h-6" />
+                                </div>
+                            </div>
+
+                            <p className="text-[11px] font-bold text-gray-400 uppercase leading-relaxed tracking-widest min-h-[40px] italic pr-4 border-l-2 border-gray-100 pl-4">
+                                "{bucket.description}"
+                            </p>
+
+                            <div className="flex-1 space-y-3">
+                                {bucket.tokens.map((token, idx) => {
+                                    const display = getTokenDisplay(token);
+                                    const weight = STRATEGIC_WEIGHTS[idx] || 10;
+                                    return (
+                                        <div key={token.symbol} className="p-4 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-between hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-indigo-100">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 bg-white p-1.5 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center">
+                                                    <img 
+                                                        src={display.image} 
+                                                        className="w-full h-full object-contain" 
+                                                        alt="" 
+                                                        onError={(e) => {
+                                                            e.target.onerror = null;
+                                                            e.target.src = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/info/logo.png';
+                                                        }}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-xs font-black text-gray-900 leading-none">{token.symbol}</p>
+                                                        <span className="text-[8px] font-black text-emerald-600 bg-white px-2 py-0.5 rounded border border-emerald-100 shadow-sm">{weight}%</span>
+                                                    </div>
+                                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mt-1.5 truncate max-w-[80px]">{display.name}</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-[10px] font-black text-gray-900 uppercase tracking-widest bg-gray-100/50 px-3 py-1.5 rounded-lg border border-gray-100">
+                                                    ${((parseFloat(investAmount) || 0) * (weight / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="pt-8 border-t border-gray-50">
+                                <button 
+                                    onClick={() => handleInvest(bucket)}
+                                    disabled={status === 'loading'}
+                                    className="w-full py-6 bg-gray-900 text-white rounded-[2rem] text-[11px] font-black uppercase tracking-[0.25em] shadow-2xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 active:scale-95 group/btn"
+                                >
+                                    {status === 'loading' ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Execute Strategic Trade <Zap className="w-4 h-4 ml-2 fill-white animate-pulse" /></>}
+                                </button>
+                                <div className="flex justify-between items-center px-6 mt-4">
+                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Protocol Fee: $1.00 USDT</span>
+                                    <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Insured Entry</span>
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    <div className="lg:col-span-3 bg-white border border-gray-100 rounded-[3rem] p-12 md:p-20 shadow-3xl flex flex-col items-center justify-center gap-10 min-h-[500px] text-center border-t-8 border-indigo-500/20">
+                        {!customBucket.isBuilding ? (
+                            <div className="space-y-10">
+                                <div className="w-28 h-28 bg-indigo-50 rounded-[3rem] flex items-center justify-center text-indigo-400 border border-indigo-100 shadow-inner mx-auto relative">
+                                    <div className="absolute -top-2 -right-2 w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-xl border-4 border-white">+</div>
+                                    <Sparkles className="w-12 h-12" />
+                                </div>
+                                <div className="space-y-4 max-w-xl">
+                                    <h3 className="text-4xl font-black text-gray-900 uppercase tracking-tighter italic">B20 Custom Alpha Protocol</h3>
+                                    <p className="text-sm font-bold text-gray-400 uppercase tracking-[0.25em] leading-relaxed">
+                                        Architect your proprietary index. Choose up to 7 global assets, optimize weights, and execute a unified trade mission.
+                                    </p>
+                                </div>
+                                <button onClick={() => setCustomBucket({ ...customBucket, isBuilding: true, tokens: [] })} className="px-16 py-6 bg-indigo-600 text-white rounded-[2rem] text-xs font-black uppercase tracking-[0.3em] shadow-2xl shadow-indigo-600/30 hover:scale-105 active:scale-95 transition-all">
+                                    Initialize Strategic Builder
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-16 animate-in fade-in slide-in-from-bottom-8 duration-700 text-left">
+                                <div className="space-y-8">
+                                    <div className="flex items-center gap-5 border-b border-gray-100 pb-8">
+                                        <div className="w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-2xl shadow-indigo-500/30">
+                                            <LayoutGrid className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest leading-none">Strategic Mission Config</p>
+                                            <h4 className="text-2xl font-black text-gray-900 uppercase tracking-tighter mt-2 italic text-left">Custom Bucket Blueprint</h4>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="space-y-8">
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 block ml-2">Bucket Identifier</label>
+                                            <input 
+                                                type="text" 
+                                                placeholder="e.g. ALPHA_TERMINAL_01"
+                                                value={customBucket.name}
+                                                onChange={e => setCustomBucket({ ...customBucket, name: e.target.value })}
+                                                className="w-full bg-gray-50 border border-gray-200 rounded-3xl px-8 py-6 font-black text-sm outline-none focus:bg-white focus:border-indigo-500/30 transition-all shadow-sm"
+                                            />
+                                        </div>
+
+                                        <button 
+                                            onClick={() => handleInvest(customBucket)}
+                                            disabled={status === 'loading' || customBucket.tokens.length === 0}
+                                            className="w-full py-8 bg-indigo-600 text-white rounded-[2.5rem] text-[11px] font-black uppercase tracking-[0.3em] shadow-2xl shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-4 disabled:opacity-50 h-[90px] mt-10 active:scale-95"
+                                        >
+                                            {status === 'loading' ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Launch Trade Mission <Rocket className="w-5 h-5 ml-2 fill-white animate-bounce" /></>}
+                                        </button>
+                                        
+                                        <button onClick={() => setCustomBucket({ ...customBucket, isBuilding: false })} className="w-full text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-rose-500 transition-colors py-4">Terminate Config</button>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-6 bg-gray-50/50 p-10 rounded-[4rem] border border-gray-100 shadow-inner">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Selected Assets ({customBucket.tokens.length}/7)</p>
+                                        <div className="flex items-center gap-2 bg-indigo-50 px-4 py-1.5 rounded-full border border-indigo-100 font-black text-[9px] text-indigo-600 uppercase tracking-widest">
+                                            <Sparkles className="w-3 h-3" /> Equal Weighting
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3 min-h-[300px]">
+                                        {customBucket.tokens.length === 0 ? (
+                                            <div className="flex flex-col items-center justify-center py-24 text-gray-300 gap-6 opacity-30">
+                                                <Layout className="w-16 h-16" />
+                                                <p className="text-xs font-black uppercase tracking-[0.3em] italic">Search and pin tokens below</p>
+                                            </div>
+                                        ) : (
+                                            customBucket.tokens.map(t => (
+                                                <div key={t.symbol} className="flex items-center justify-between p-5 bg-white rounded-3xl border border-gray-100 shadow-sm animate-in slide-in-from-right-8 transition-all hover:scale-[1.02]">
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="w-12 h-12 bg-gray-50 rounded-2xl p-2 border border-blue-50">
+                                                            <img src={t.image} className="w-full h-full object-contain" alt="" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-black text-gray-900 leading-none">{t.symbol}</p>
+                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1.5">{t.name}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-4">
+                                                        <div className="text-right mr-4">
+                                                            <p className="text-[10px] font-black text-emerald-500 uppercase">14.28%</p>
+                                                        </div>
+                                                        <button onClick={() => setCustomBucket({ ...customBucket, tokens: customBucket.tokens.filter(x => x.symbol !== t.symbol) })} className="p-3 text-gray-200 hover:text-rose-500 transition-colors bg-gray-50 rounded-xl">
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+
+                                    <div className="pt-8 border-t border-gray-200">
+                                        <div className="relative group">
+                                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-indigo-500 transition-colors" />
+                                            <input 
+                                                type="text" 
+                                                placeholder="Terminal Search (Symbol or Address)..."
+                                                className="w-full pl-16 pr-8 py-5 bg-white border border-gray-100 rounded-2xl font-black text-xs outline-none focus:border-indigo-500/50 shadow-sm"
+                                                onKeyDown={async (e) => {
+                                                    if (e.key === 'Enter') {
+                                                        const query = e.target.value.toLowerCase();
+                                                        let match = tokens.find(t => t.symbol.toLowerCase() === query || t.name.toLowerCase() === query || t.address?.toLowerCase() === query);
+                                                        
+                                                        if (match) {
+                                                            if (customBucket.tokens.length < 7) {
+                                                                if (customBucket.tokens.find(x => x.symbol === match.symbol)) return alert('Already in bucket');
+                                                                setCustomBucket({ ...customBucket, tokens: [...customBucket.tokens, match] });
+                                                                e.target.value = '';
+                                                            } else {
+                                                                alert('Mission capacity reached (Max 7 Assets).');
+                                                            }
+                                                        } else {
+                                                            // NEXUS DYNAMIC DISCOVERY (COINGECKO FALLBACK)
+                                                            setSearchLoading(true);
+                                                            try {
+                                                                const sRes = await axios.get(`https://api.coingecko.com/api/v3/search?query=${query}`);
+                                                                const searchList = sRes.data.coins || [];
+                                                                
+                                                                if (searchList.length > 0) {
+                                                                    setDiscoveryResults(searchList.slice(0, 10)); // Top 10 results
+                                                                    setIsDiscoveryOpen(true);
+                                                                } else {
+                                                                    alert('Asset not discovered on B20 Nexus or BEP-20 network. Ensure valid symbol.');
+                                                                }
+                                                            } catch(err) { 
+                                                                console.warn('Nexus search fail', err);
+                                                                alert('Discovery Protocol Rate Limited. Please try again in a moment.');
+                                                            }
+                                                            setSearchLoading(false);
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-5 text-center flex items-center justify-center gap-2">
+                                            {searchLoading ? <Loader2 className="w-3 h-3 animate-spin text-indigo-500" /> : <Info className="w-3 h-3" />}
+                                            {searchLoading ? 'Executing Global Discovery Protocol...' : 'Press Enter to deploy asset to blueprint'}
+                                        </p>
+                                    </div>
+                                    
+                                    {/* Global Discovery Pop-up */}
+                                    <DiscoveryPopup 
+                                        isOpen={isDiscoveryOpen}
+                                        onClose={() => setIsDiscoveryOpen(false)}
+                                        results={discoveryResults}
+                                        onSelect={async (coin) => {
+                                            if (customBucket.tokens.length >= 7) return alert('Mission capacity reached.');
+                                            setIsDiscoveryOpen(false);
+                                            setSearchLoading(true);
+                                            try {
+                                                const dRes = await axios.get(`https://api.coingecko.com/api/v3/coins/${coin.id}`);
+                                                const addr = dRes.data.platforms?.['binance-smart-chain'];
+                                                if (addr) {
+                                                    const match = {
+                                                        symbol: dRes.data.symbol.toUpperCase(),
+                                                        name: dRes.data.name,
+                                                        address: addr,
+                                                        image: dRes.data.image.small,
+                                                        cgId: coin.id,
+                                                        current_price: dRes.data.market_data.current_price.usd
+                                                    };
+                                                    if (customBucket.tokens.find(x => x.symbol === match.symbol)) {
+                                                        alert('Already in bucket');
+                                                    } else {
+                                                        setCustomBucket({ ...customBucket, tokens: [...customBucket.tokens, match] });
+                                                    }
+                                                } else {
+                                                    alert('Selected asset has no verified BSC liquidity source.');
+                                                }
+                                            } catch(err) {
+                                                console.error('Coin detail fetch fail', err);
+                                            }
+                                            setSearchLoading(false);
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Disclaimer Section */}
+            <div className="bg-rose-50/50 border border-rose-100 rounded-[3rem] p-10 md:p-14 space-y-10 relative overflow-hidden backdrop-blur-sm">
+                 <div className="absolute -top-10 -right-10 opacity-5 pointer-events-none rotate-12">
+                     <AlertTriangle className="w-96 h-96 text-rose-500" />
+                 </div>
+                 <div className="flex items-center gap-6 border-b border-rose-100 pb-10 relative z-10">
+                     <div className="w-16 h-16 bg-rose-500 text-white rounded-2xl flex items-center justify-center shadow-2xl shadow-rose-500/20">
+                         <Info className="w-8 h-8" />
+                     </div>
+                     <div>
+                         <h3 className="text-3xl font-black text-rose-900 uppercase tracking-tighter italic">Institutional Advisory & Risk Disclosure</h3>
+                         <p className="text-[10px] font-black text-rose-500 uppercase tracking-[0.3em] mt-2">B20 Global Regulatory Protocol Compliance</p>
+                     </div>
+                 </div>
+                 
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12 relative z-10">
+                     <div className="space-y-6">
+                         <div className="flex gap-5">
+                             <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center shrink-0"><Brain className="w-5 h-5 text-rose-600" /></div>
+                             <div>
+                                 <h5 className="font-black text-rose-900 text-xs uppercase tracking-widest mb-1">AI Intelligence Suggesions</h5>
+                                 <p className="text-[10px] font-bold text-rose-700/80 leading-relaxed uppercase tracking-widest">
+                                     Every strategic bucket provided is a B20 AI Intelligence system suggestion. These algorithms analyze real-time market liquidity and volume but do not constitute financial advice. Investors must conduct independent due diligence (DYOR) before any capital deployment.
+                                 </p>
+                             </div>
+                         </div>
+                         <div className="flex gap-5">
+                             <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center shrink-0"><ShieldCheck className="w-5 h-5 text-rose-600" /></div>
+                             <div>
+                                 <h5 className="font-black text-rose-900 text-xs uppercase tracking-widest mb-1">Non-Custodial execution</h5>
+                                 <p className="text-[10px] font-bold text-rose-700/80 leading-relaxed uppercase tracking-widest">
+                                     B20 Global utilizes a non-custodial pipeline. Following a successful buy mission, all assets are directly moved to your local wallet. B20 does not hold, custody, or manage your investment assets at any point during the strategy lifespan.
+                                 </p>
+                             </div>
+                         </div>
+                     </div>
+                     
+                     <div className="space-y-6">
+                         <div className="flex gap-5">
+                             <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center shrink-0"><AlertTriangle className="w-5 h-5 text-rose-600" /></div>
+                             <div>
+                                 <h5 className="font-black text-rose-900 text-xs uppercase tracking-widest mb-1">Market Volatility Warning</h5>
+                                 <p className="text-[10px] font-bold text-rose-700/80 leading-relaxed uppercase tracking-widest">
+                                     Strategic investment buckets involve high-risk assets, particularly in the MEME category. B20 Global assumes zero responsibility for any capital profit or loss incurred through these suggestions. Market dynamics can result in 100% loss of deployed capital.
+                                 </p>
+                             </div>
+                         </div>
+                         <div className="flex gap-5">
+                             <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center shrink-0"><Globe className="w-5 h-5 text-rose-600" /></div>
+                             <div>
+                                 <h5 className="font-black text-rose-900 text-xs uppercase tracking-widest mb-1">Fee Settlement</h5>
+                                 <p className="text-[10px] font-bold text-rose-700/80 leading-relaxed uppercase tracking-widest">
+                                     A flat institutional fee of $1.00 USDT is applied to each bucket transaction to cover node computation and AI optimization. This fee is non-refundable and separate from network gas costs.
+                                 </p>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+                 
+                 <div className="pt-10 border-t border-rose-100 text-center relative z-10">
+                     <p className="text-[9px] font-black text-rose-400 uppercase tracking-[0.4em] italic">Secure Strategic Terminal • B20 Layer Intelligence</p>
+                 </div>
+            </div>
+
+            {status === 'success' && (
+                <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} className="fixed bottom-12 right-12 bg-emerald-500 text-white p-8 rounded-[2.5rem] shadow-2xl z-[300] flex items-center gap-6 border-4 border-white">
+                    <div className="p-3 bg-white/20 rounded-2xl shadow-inner">
+                        <CheckCircle2 className="w-8 h-8" />
+                    </div>
+                    <div>
+                        <p className="text-xl font-black uppercase tracking-tighter italic">Mission Success!</p>
+                        <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest">Assets deployed directly to your wallet terminal.</p>
+                    </div>
+                </motion.div>
+            )}
+        </div>
+    );
+};
+
+const DiscoveryPopup = ({ isOpen, onClose, results, onSelect }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 z-[400] flex items-center justify-center p-6 backdrop-blur-3xl bg-black/20">
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                className="w-full max-w-[500px] bg-white rounded-[3rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border border-gray-100 overflow-hidden flex flex-col max-h-[70vh] font-sans"
+            >
+                <div className="p-8 border-b border-gray-50 bg-gray-50/50">
+                    <div className="flex items-center justify-between">
+                         <div>
+                            <h3 className="text-xl font-black text-gray-900 uppercase tracking-tighter">Global Discovery</h3>
+                            <p className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-1">Multi-Node Search Results</p>
+                         </div>
+                        <button onClick={onClose} className="w-10 h-10 rounded-full hover:bg-white flex items-center justify-center transition-colors shadow-sm">
+                            <X className="w-5 h-5 text-gray-400" />
+                        </button>
+                    </div>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                    {results.map((coin) => (
+                        <div 
+                            key={coin.id}
+                            onClick={() => onSelect(coin)}
+                            className="flex items-center justify-between p-5 hover:bg-indigo-50 rounded-2xl cursor-pointer transition-all border border-transparent hover:border-indigo-100 group"
+                        >
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-white rounded-xl p-1 shadow-sm border border-gray-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                    <img src={coin.large || coin.thumb} className="w-full h-full object-contain rounded-lg" alt="" />
+                                </div>
+                                <div>
+                                    <p className="font-black text-gray-900 uppercase text-xs">{coin.symbol}</p>
+                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{coin.name}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">#{coin.market_cap_rank || '?'}</span>
+                                <div className="px-4 py-1.5 bg-gray-900 text-white rounded-lg text-[8px] font-black uppercase opacity-0 group-hover:opacity-100 transition-opacity">Select</div>
+                            </div>
+                        </div>
+                    ))}
+                    {results.length === 0 && (
+                        <div className="text-center py-20 text-gray-400 font-bold uppercase tracking-widest text-xs italic">
+                            No matching assets discovered.
+                        </div>
+                    )}
+                </div>
+                <div className="p-6 bg-gray-50 border-t border-gray-100 text-center">
+                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest leading-relaxed">
+                        Data provided by CoinGecko Sentinel Layer. Assets must be available on BSC (BEP-20) network.
+                    </p>
+                </div>
+            </motion.div>
+        </div>
+    );
+};
 
 const TokenSelector = ({ isOpen, onClose, onSelect, tokens, searchTerm, setSearchTerm }) => {
     if (!isOpen) return null;

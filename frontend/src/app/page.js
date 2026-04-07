@@ -860,7 +860,7 @@ export default function Home() {
               { icon: '📊', title: 'Demand-Driven Pricing', desc: 'Price increases automatically as more people buy the token — rewarding early believers.' },
               { icon: '⚖️', title: 'Fair Distribution', desc: 'No pre-sales or insider allocations. Everyone buys at the on-chain price at the time of purchase.' },
               { icon: '💧', title: 'Automated Liquidity', desc: 'Collateral from bonding curve sales automatically flows into PancakeSwap liquidity pools.' },
-              { icon: '🥞', title: 'PancakeSwap Listing', desc: 'Once the curve reaches 0.01 BNB collateral, the token auto-migrates to PancakeSwap for infinite scale.' },
+              { icon: '🥞', title: 'PancakeSwap Listing', desc: 'Once the curve reaches 10 BNB collateral, 9 BNB is sent to Treasury and 1 BNB seeds PancakeSwap liquidity.' },
             ].map((item, i) => (
               <motion.div
                 key={i}
@@ -1042,9 +1042,9 @@ export default function Home() {
           </p>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             {[
-              { icon: '🚀', label: 'Deployment Fee', value: '0.005 BNB', sub: 'Fixed Deployment Logic', color: 'border-rose-500/30 bg-rose-500/5' },
-              { icon: '🏛️', label: 'Protocol Fee', value: '0.002 BNB', sub: 'System Governance', color: 'border-amber-500/30 bg-amber-500/5' },
-              { icon: '💧', label: 'Liquidity Protocol', value: '0.01 BNB', sub: 'Mandatory Initial Buy', color: 'border-indigo-500/30 bg-indigo-500/5' },
+              { icon: '🚀', label: 'Deployment Fee', value: '0.003 BNB', sub: 'One-time platform fee', color: 'border-rose-500/30 bg-rose-500/5' },
+              { icon: '🏛️', label: 'Protocol Fee', value: '0.002 BNB', sub: 'Network governance', color: 'border-amber-500/30 bg-amber-500/5' },
+              { icon: '💧', label: 'Initial Liquidity', value: '0.05 BNB', sub: 'Mandatory creator buy', color: 'border-indigo-500/30 bg-indigo-500/5' },
               { icon: '🤖', label: 'Anti-Bot Shield', value: 'FREE', sub: 'Sniper protection active', color: 'border-emerald-500/30 bg-emerald-500/5' },
               { icon: '🧠', label: 'AI Security', value: 'FREE', sub: 'ML-powered audit log', color: 'border-purple-500/30 bg-purple-500/5' },
             ].map((f, i) => (

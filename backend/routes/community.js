@@ -34,14 +34,14 @@ router.get('/announcements', async (req, res) => {
 // POST announcement (admin only, but we assume dashboard calls it directly)
 router.post('/announcements', upload.single('image'), async (req, res) => {
     try {
-        const { content } = req.body;
+        const { content, token_symbol, token_name, token_logo } = req.body;
         const imageUrl = req.file ? `/uploads/${req.file.filename}` : '';
         // Random likes between 1400 and 1900
         const randomLikes = Math.floor(Math.random() * (1900 - 1400 + 1)) + 1400;
 
         await db.query(
-            "INSERT INTO announcements (image_url, content, likes) VALUES (?, ?, ?)",
-            [imageUrl, content, randomLikes]
+            "INSERT INTO announcements (image_url, content, likes, token_symbol, token_name, token_logo) VALUES (?, ?, ?, ?, ?, ?)",
+            [imageUrl, content, randomLikes, token_symbol || '', token_name || '', token_logo || '']
         );
         res.status(201).json({ success: true, message: "Announcement created" });
     } catch (err) {

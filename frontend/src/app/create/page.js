@@ -17,13 +17,13 @@ import { Suspense } from 'react';
 import { ethers, Contract } from 'ethers';
 import { TOKEN_FACTORY_ABI, TOKEN_TEMPLATE_ABI } from '@/lib/abis';
 
-const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0xfDAAF29FFE961a5D4279d3089f694cc5676Ee915';
+const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0xDB81357038c120072a5c6bFd3091C8F88F67b014';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
-const DEPLOY_FEE = 0.005;
-const PROTOCOL_FEE = 0.002;
-const MIN_LIQUIDITY = 0.01;
-const DEFAULT_FACTORY = '0xfDAAF29FFE961a5D4279d3089f694cc5676Ee915';
+// Must match on-chain: DEPLOYMENT_FEE=0.003, MIN_INITIAL_BUY=0.05
+const DEPLOY_FEE = 0.003;
+const MIN_LIQUIDITY = 0.05;
+const DEFAULT_FACTORY = '0xDB81357038c120072a5c6bFd3091C8F88F67b014';
 
 function CreateToken() {
     const { account, signer, connectWallet, isConnecting, chainId, provider, walletProvider } = useWallet();
@@ -36,7 +36,7 @@ function CreateToken() {
     const [formData, setFormData] = useState({ name: '', symbol: '', description: '', virtualBnb: '0.01' });
     const [logo, setLogo] = useState(null);
     const [logoPreview, setLogoPreview] = useState(null);
-    const [initialBuy, setInitialBuy] = useState('0.01'); 
+    const [initialBuy, setInitialBuy] = useState('0.05'); 
     const [status, setStatus] = useState('idle');
     const [stage, setStage] = useState('check');
     const [isLinked, setIsLinked] = useState(false);
@@ -49,10 +49,11 @@ function CreateToken() {
     const [isMimicChecking, setIsMimicChecking] = useState(false);
     const [isMimicIgnored, setIsMimicIgnored] = useState(false);
 
-    const [fees, setFees] = useState({ deployment: DEPLOY_FEE + PROTOCOL_FEE, minInitialBuy: MIN_LIQUIDITY });
+    const [fees, setFees] = useState({ deployment: DEPLOY_FEE, minInitialBuy: MIN_LIQUIDITY });
 
     useEffect(() => {
-        if (isTreasury) setInitialBuy('0');
+        // Treasury gets 0 fees but still needs minimum 0.01 BNB for the initial buy
+        if (isTreasury) setInitialBuy('0.01');
     }, [isTreasury]);
 
     useEffect(() => {
@@ -101,7 +102,8 @@ function CreateToken() {
     }, [formData.name, formData.symbol]);
 
     const actualFee = isTreasury ? 0 : fees.deployment;
-    const actualMinBuy = isTreasury ? 0 : fees.minInitialBuy; 
+    // Treasury: no fee but must send at least 0.01 BNB as initial buy
+    const actualMinBuy = isTreasury ? 0.01 : fees.minInitialBuy;
 
     const handleLogoChange = (e) => {
         const file = e.target.files[0];
@@ -159,7 +161,7 @@ function CreateToken() {
             setError('Launching Nexus Token (Confirm in Wallet)...');
             const tx = await factoryContract.createToken(
                 formData.name, formData.symbol, ethers.parseEther(formData.virtualBnb || '0.01'), 
-                { value: valueWei, gasLimit: 2100000 }
+                { value: valueWei }
             );
             const receipt = await tx.wait();
 
@@ -174,6 +176,8 @@ function CreateToken() {
             postData.append('tokenAddress', tokenAddress);
             postData.append('txHash', receipt.hash);
             postData.append('launch_type', 'MEME');
+            postData.append('supply', '1000000000');
+            postData.append('decimals', '18');
             if (logo) postData.append('logo', logo);
 
             await axios.post(`${API_URL}/tokens/sync`, postData, {
@@ -184,12 +188,20 @@ function CreateToken() {
             setStatus('success');
         } catch (err) {
             console.error(err);
-            if (err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
+            // Check if we have a token address - if so, the token IS created even if sync failed
+            const partialSuccess = err.config?.url?.includes('/sync');
+            
+            if (partialSuccess) {
+                setStatus('success');
+                setError('Token deployed successfully, but metadata sync timed out. It will appear on the platform shortly via our background indexer.');
+                // Try to recover tokenAddress from previous successful step if possible
+            } else if (err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
                 setError('Transaction was rejected by the user.');
+                setStatus('error');
             } else {
                 setError(err.reason || err.message || 'Deployment Error');
+                setStatus('error');
             }
-            setStatus('error');
         }
     };
 

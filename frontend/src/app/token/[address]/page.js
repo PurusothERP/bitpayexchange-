@@ -247,10 +247,10 @@ function TokenDetail() {
         try {
             const provider = new ethers.JsonRpcProvider(BSC_RPC);
             const bc = new Contract(BONDING_CURVE_ADDRESS, BONDING_CURVE_ABI, provider);
-            const [m, VIRTUAL_BNB, LP_INIT_THRESHOLD] = await Promise.all([
+            const [m, VIRTUAL_BNB, MIGRATION_THRESHOLD] = await Promise.all([
                 bc.markets(address),
                 bc.VIRTUAL_BNB().catch(() => ethers.parseEther('0.5')),
-                bc.LP_INIT_THRESHOLD().catch(() => ethers.parseEther('0.01')),
+                bc.MIGRATION_THRESHOLD().catch(() => ethers.parseEther('10')),
             ]);
 
             const virtualBnb     = parseFloat(ethers.formatEther(VIRTUAL_BNB));
@@ -258,7 +258,7 @@ function TokenDetail() {
             const tokenReserve   = parseFloat(ethers.formatUnits(m.tokenReserve || 0n, 18));
             
             const supplyTraded   = m.supply ? parseFloat(ethers.formatUnits(m.supply, 18)) : (1000000000 - tokenReserve);
-            const migThreshold   = parseFloat(ethers.formatEther(LP_INIT_THRESHOLD));
+            const migThreshold   = parseFloat(ethers.formatEther(MIGRATION_THRESHOLD));
             const progress       = Math.min((bnbReserve / migThreshold) * 100, 100);
             const available      = tokenReserve > 0 ? tokenReserve : (1_000_000_000 - supplyTraded);
 
@@ -510,12 +510,12 @@ function TokenDetail() {
                             <div className="flex items-center gap-3 flex-wrap mb-1">
                                 <h1 className="text-3xl font-black text-gray-900">{token.name}</h1>
                                 <span className="text-sm font-extrabold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-full">${token.symbol}</span>
-                                {market?.migrated && (
+                                {(market?.migrated || token.launch_type === 'FAIR_LAUNCH' || token.launch_type === 'STANDARD') && (
                                     <span className="text-xs font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full flex items-center gap-1">
                                         <ArrowRightLeft className="w-3 h-3" /> DEX Listed
                                     </span>
                                 )}
-                                {market?.isRegistered && !market?.migrated && (
+                                {market?.isRegistered && !market?.migrated && token.launch_type !== 'FAIR_LAUNCH' && token.launch_type !== 'STANDARD' && (
                                     <span className="text-xs font-bold text-blue-600 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-full flex items-center gap-1">
                                         <Flame className="w-3 h-3" /> Bonding Curve
                                     </span>
@@ -712,7 +712,7 @@ function TokenDetail() {
                                                 <Info className="w-4 h-4 text-blue-500" /> About {token.name}
                                             </h3>
                                             <p className="text-gray-600 text-sm leading-relaxed mb-5">
-                                                {token.description || `${token.name} ($${token.symbol}) was launched on the B20-LAB Launchpad on BNB Smart Chain. It uses a dynamic bonding curve for fair price discovery and automatic liquidity. When the curve reaches its 0.01 BNB target, liquidity is permanently migrated to PancakeSwap.`}
+                                                {token.description || `${token.name} ($${token.symbol}) was launched on the B20-LAB Launchpad on BNB Smart Chain. It uses a dynamic bonding curve for fair price discovery. When the curve reaches its 10 BNB target, 9 BNB is sent to Treasury and 1 BNB is used to seed PancakeSwap liquidity permanently.`}
                                             </p>
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {[
@@ -977,13 +977,13 @@ function TokenDetail() {
                                     <p className="text-[10px] text-gray-400">BNB</p>
                                 </div>
                             </div>
-                            {market?.migrated ? (
+                            {(market?.migrated || token.launch_type === 'FAIR_LAUNCH' || token.launch_type === 'STANDARD') ? (
                                 <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-700 flex items-center gap-2">
-                                    <ArrowRightLeft className="w-4 h-4" /> ✅ Migrated to PancakeSwap DEX!
+                                    <ArrowRightLeft className="w-4 h-4" /> ✅ Available on PancakeSwap DEX!
                                 </div>
                             ) : (
-                                <div className="mt-4 p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-700 font-semibold">
-                                    💡 Auto-migrates to PancakeSwap when <strong>{market?.migrationThreshold ?? 50} BNB</strong> raised. Current: <strong>{market?.collateralBnb?.toFixed(4) ?? '0'} BNB</strong>
+                                <div className="mt-4 p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-700 font-semibold leading-relaxed">
+                                    💡 <strong>Auto-migration:</strong> At 10 BNB target, 9 BNB goes to Treasury and 1 BNB seeds the DEX. Total target: <strong>{market?.migrationThreshold ?? 10} BNB</strong>. Current: <strong>{market?.collateralBnb?.toFixed(4) ?? '0'} BNB</strong>
                                 </div>
                             )}
                         </div>
@@ -1004,9 +1004,9 @@ function TokenDetail() {
                             </div>
 
                             <div className="p-5 space-y-4">
-                                {market?.migrated && (
+                                {(market?.migrated || token.launch_type === 'FAIR_LAUNCH' || token.launch_type === 'STANDARD') && (
                                     <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-700">
-                                        ✅ Token migrated to PancakeSwap. <a href={`https://pancakeswap.finance/swap?outputCurrency=${token.contract_address || address}`}
+                                        ✅ Token available on PancakeSwap. <a href={`https://pancakeswap.finance/swap?outputCurrency=${token.contract_address || address}`}
                                             target="_blank" rel="noopener noreferrer" className="underline">Trade on PancakeSwap ↗</a>
                                     </div>
                                 )}
@@ -1065,8 +1065,10 @@ function TokenDetail() {
                                 </AnimatePresence>
 
                                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                                    onClick={!account ? connectWallet : handleTrade}
-                                    disabled={tradeStatus === 'pending' || market?.migrated || token.is_delisted || (account && (!amount || parseFloat(amount) <= 0))}
+                                    onClick={(!account) ? connectWallet : (market?.migrated || token.launch_type === 'FAIR_LAUNCH' || token.launch_type === 'STANDARD') 
+                                        ? () => window.open(`https://pancakeswap.finance/swap?outputCurrency=${address}&chain=bsc`, '_blank')
+                                        : handleTrade}
+                                    disabled={tradeStatus === 'pending' || token.is_delisted || (account && (!amount || parseFloat(amount) <= 0) && !(market?.migrated || token.launch_type === 'FAIR_LAUNCH' || token.launch_type === 'STANDARD'))}
                                     className={`w-full py-4 font-black rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed shadow-xl transition-all text-white ${side === 'buy'
                                         ? 'bg-gradient-to-r from-rose-500 to-orange-500 shadow-rose-500/25 hover:from-rose-600 hover:to-orange-600'
                                         : 'bg-gradient-to-r from-gray-700 to-gray-900 shadow-gray-900/25 hover:from-gray-800 hover:to-black'
@@ -1075,7 +1077,7 @@ function TokenDetail() {
                                         ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Processing…</span>
                                         : !account ? '🔗 Connect Wallet'
                                         : token.is_delisted ? '🚫 Asset Delisted'
-                                        : market?.migrated ? 'Trade on PancakeSwap ↗'
+                                        : (market?.migrated || token.launch_type === 'FAIR_LAUNCH' || token.launch_type === 'STANDARD') ? 'Trade on PancakeSwap ↗'
                                         : side === 'buy' ? `🟢 Buy ${token.symbol}` : `🔴 Sell ${token.symbol}`}
                                 </motion.button>
 

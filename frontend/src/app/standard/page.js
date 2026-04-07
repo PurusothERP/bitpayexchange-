@@ -12,11 +12,12 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
-import { ethers, ContractFactory } from 'ethers';
-import { TOKEN_TEMPLATE_ABI } from '@/lib/abis';
+import { ethers } from 'ethers';
+import { TOKEN_FACTORY_ABI, TOKEN_TEMPLATE_ABI } from '@/lib/abis';
 import { TOKEN_TEMPLATE_BYTECODE } from '@/lib/bytecode';
 
-const DEPLOY_FEE = 0.005;
+// Treasury: free (effectiveFee = 0). Regular wallets: 0.003 + 0.002 = 0.005 BNB
+const DEPLOY_FEE = 0.003;
 const PROTOCOL_FEE = 0.002;
 const TOTAL_FEE = DEPLOY_FEE + PROTOCOL_FEE;
 
@@ -45,7 +46,7 @@ export default function StandardAsset() {
 
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
-    const FEE_WALLET = '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
+    const FEE_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
     const isTreasury = account?.toLowerCase() === FEE_WALLET.toLowerCase();
     const effectiveFee = isTreasury ? 0 : TOTAL_FEE;
 
@@ -90,54 +91,66 @@ export default function StandardAsset() {
         if (!account || !signer) { connectWallet(); return; }
         
         setStatus('uploading');
-        setError('Step 1/3: Preparing transaction…');
-        
         try {
-            // 1. Send Protocol Fee
-            if (effectiveFee > 0) {
-                setError(`Step 1/3: Sending fee (${effectiveFee} BNB)…`);
-                const txFee = await signer.sendTransaction({
-                    to: FEE_WALLET,
-                    value: ethers.parseEther(effectiveFee.toString())
-                });
-                await txFee.wait();
-            }
-
-            // 2. Deploy TokenTemplate
-            setError('Step 2/3: Deploying contract to network…');
-            const factory = new ContractFactory(TOKEN_TEMPLATE_ABI, TOKEN_TEMPLATE_BYTECODE, signer);
+            console.log('[Deploy] Starting Standard Asset launch (Factory Mode)...');
             
-            // Constructor args: string name, string symbol, uint8 decimals, uint256 fixedSupply, address creator, address bondingCurve, address feeWallet
-            // For standard, we set bondingCurve = creator (so they own it)
+            // 1. Initialize Factory Contract
+            const FACTORY_ADDR = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0x4598AD4E828cb64A53246765f60D9912AEA1b11A';
+            const factoryContract = new ethers.Contract(FACTORY_ADDR, TOKEN_FACTORY_ABI, signer);
+
+            // 2. Prepare Params
             const decimalsNum = parseInt(formData.decimals) || 18;
             const supplyNum = BigInt(formData.supply);
+            const valueWei = ethers.parseEther(effectiveFee.toFixed(18));
             
-            const contract = await factory.deploy(
+            console.log('[Deploy] Factory Params:', {
+                name: formData.name,
+                symbol: formData.symbol,
+                decimals: decimalsNum,
+                supply: supplyNum.toString(),
+                fee: effectiveFee
+            });
+
+            // 3. Execute Transaction
+            setError('Launching Nexus Token (Confirm in Wallet)...');
+            
+            const tx = await factoryContract.createTokenStandard(
                 formData.name,
                 formData.symbol,
                 decimalsNum,
                 supplyNum,
-                account,
-                account, // BondingCurve = account (Direct ownership)
-                FEE_WALLET
+                { value: valueWei }
             );
             
-            await contract.waitForDeployment();
-            const tokenAddress = await contract.getAddress();
-            const txHash = contract.deploymentTransaction()?.hash;
+            setError('Factory is generating contract…');
+            const receipt = await tx.wait();
+
+            // 4. Extract Token Address from StandardTokenCreated event
+            const event = receipt.logs.find(x => {
+                try {
+                    const parsed = factoryContract.interface.parseLog(x);
+                    return parsed?.name === 'StandardTokenCreated';
+                } catch (e) { return false; }
+            });
+            
+            const parsedEvent = event ? factoryContract.interface.parseLog(event) : null;
+            const tokenAddress = parsedEvent ? parsedEvent.args.tokenAddress : null;
+
+            console.log('[Deploy] Success:', tokenAddress);
 
             // 3. Sync with Backend
             setError('Step 3/3: Syncing metadata & indexing…');
             
             const metaForm = new FormData();
-            metaForm.append('tokenAddress', tokenAddress);
+            metaForm.append('tokenAddress', tokenAddress || 'pending');
             metaForm.append('name', formData.name);
             metaForm.append('symbol', formData.symbol);
-            metaForm.append('description', `Standard asset ${formData.name} deployed on BNB Chain.`);
+            metaForm.append('description', `Standard asset ${formData.name} deployed on BNB Chain via Factory.`);
             metaForm.append('launch_type', 'STANDARD');
-            metaForm.append('tx_hash', txHash || 'direct_deploy');
-            metaForm.append('creator_wallet', account);
-            metaForm.append('total_supply', formData.supply);
+            metaForm.append('txHash', tx.hash);
+            metaForm.append('owner', account);
+            metaForm.append('supply', formData.supply);
+            metaForm.append('decimals', formData.decimals);
             if (logo) metaForm.append('logo', logo);
 
             await axios.post(`${API_URL}/tokens/sync`, metaForm, {

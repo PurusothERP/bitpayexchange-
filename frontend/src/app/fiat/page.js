@@ -9,12 +9,17 @@ import {
     Smartphone, Mail, User, QRCode, Copy, Upload, 
     CheckCircle2, AlertTriangle, Clock, Landmark, CreditCard,
     ArrowUpRight, ArrowDownLeft, Loader2, Info, Check,
-    Brain, Zap, Sparkles
+    Brain, Zap, Sparkles, RefreshCw
 } from 'lucide-react';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const TREASURY_WALLET = '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
+const USDT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
+const ERC20_ABI = ['function transfer(address to, uint256 amount) returns (bool)', 'function decimals() view returns (uint8)'];
+
+import { ethers, Contract } from 'ethers';
+import Link from 'next/link';
 
 export default function FiatPage() {
     const { account, connectWallet } = useWallet();
@@ -23,6 +28,9 @@ export default function FiatPage() {
     const [status, setStatus] = useState('idle'); // 'idle', 'submitting', 'success', 'error'
     const [error, setError] = useState('');
     const [timer, setTimer] = useState(0);
+    const [userTransactions, setUserTransactions] = useState([]);
+    const [loadingTransactions, setLoadingTransactions] = useState(false);
+    const [onChainTxHash, setOnChainTxHash] = useState('');
 
     // Form Data
     const [userDetails, setUserDetails] = useState({
@@ -87,6 +95,23 @@ export default function FiatPage() {
         return () => clearInterval(interval);
     }, [fetchBnbRate]);
 
+    const fetchUserTransactions = useCallback(async () => {
+        if (!account) return;
+        setLoadingTransactions(true);
+        try {
+            const res = await axios.get(`${API_URL}/fiat/transactions/${account}`);
+            setUserTransactions(res.data);
+        } catch (err) {
+            console.error('Failed to fetch user transactions:', err);
+        } finally {
+            setLoadingTransactions(false);
+        }
+    }, [account]);
+
+    useEffect(() => {
+        fetchUserTransactions();
+    }, [fetchUserTransactions, status]);
+
     // Calculate Fiat Amount
     useEffect(() => {
         const qty = parseFloat(amount) || 0;
@@ -149,8 +174,48 @@ export default function FiatPage() {
         setStep(step + 1);
     };
 
+    const handleCryptoTransfer = async () => {
+        if (!account) return alert('Connect wallet first');
+        setStatus('submitting');
+        setError('');
+        try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            
+            if (asset === 'BNB') {
+                const val = ethers.parseEther(amount.toString());
+                const tx = await signer.sendTransaction({
+                    to: TREASURY_WALLET,
+                    value: val
+                });
+                await tx.wait();
+                setOnChainTxHash(tx.hash);
+            } else {
+                const usdtContract = new Contract(USDT_ADDRESS, ERC20_ABI, signer);
+                const val = ethers.parseUnits(amount.toString(), 18);
+                const tx = await usdtContract.transfer(TREASURY_WALLET, val);
+                await tx.wait();
+                setOnChainTxHash(tx.hash);
+            }
+            setStep(4);
+            setStatus('idle');
+        } catch (err) {
+            setError(err.reason || err.message || 'On-chain transfer failed');
+            setStatus('error');
+        }
+    };
+
     const handleSubmit = async () => {
         if (!proofFile) return alert('Please upload payment proof screenshot.');
+        
+        if (activeTab === 'sell') {
+            if (bankDetails.method === 'UPI' && !bankDetails.upiId) {
+                return alert('Please enter your target UPI ID for withdrawal.');
+            }
+            if (bankDetails.method === 'BANK' && (!bankDetails.accNumber || !bankDetails.ifscCode || !bankDetails.accHolderName)) {
+                return alert('Please enter complete bank account details for withdrawal.');
+            }
+        }
         
         setStatus('submitting');
         try {
@@ -167,12 +232,14 @@ export default function FiatPage() {
             
             if (activeTab === 'sell') {
                 formData.append('bank_details', JSON.stringify(bankDetails));
+                if (onChainTxHash) formData.append('on_chain_tx', onChainTxHash);
             }
 
             await axios.post(`${API_URL}/fiat/transaction`, formData);
             
             setStatus('success');
             setTimer(15 * 60); // 15 minutes
+            fetchUserTransactions();
         } catch (err) {
             setError(err.response?.data?.error || err.message);
             setStatus('error');
@@ -270,6 +337,14 @@ export default function FiatPage() {
                                 }`}
                             >
                                 <ArrowUpRight className="w-5 h-5" /> Sell Crypto
+                            </button>
+                            <button 
+                                onClick={() => setActiveTab('history')}
+                                className={`flex-1 py-4 rounded-[2.2rem] font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
+                                    activeTab === 'history' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20' : 'text-gray-500 hover:text-gray-300'
+                                }`}
+                            >
+                                <Clock className="w-5 h-5" /> History
                             </button>
                         </div>
 
@@ -409,7 +484,13 @@ export default function FiatPage() {
                                                 </div>
                                                 <div className="flex gap-4">
                                                     <button onClick={() => setStep(2)} className="flex-1 py-5 bg-white/5 text-gray-500 rounded-2xl font-black uppercase tracking-widest hover:bg-white/10 transition-all border border-white/5">Back</button>
-                                                    <button onClick={nextStep} className="flex-[2] py-5 bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-emerald-500/20 hover:bg-emerald-600 transition-all">I Have Executed Transfer</button>
+                                                    {activeTab === 'sell' ? (
+                                                        <button onClick={handleCryptoTransfer} className="flex-[2] py-5 bg-indigo-500 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/20 hover:bg-indigo-600 transition-all flex items-center justify-center gap-2">
+                                                            <ArrowUpRight className="w-5 h-5" /> Execute Sell Order
+                                                        </button>
+                                                    ) : (
+                                                        <button onClick={nextStep} className="flex-[2] py-5 bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-emerald-500/20 hover:bg-emerald-600 transition-all">I Have Executed Transfer</button>
+                                                    )}
                                                 </div>
                                             </div>
                                         )}
@@ -518,6 +599,57 @@ export default function FiatPage() {
                                         <h3 className="text-3xl font-black text-white mb-4 tracking-tighter uppercase italic">Channel Disturbance</h3>
                                         <p className="text-gray-500 mb-12 font-medium max-w-xs mx-auto leading-relaxed">{error || 'Unknown protocol failure occurred during bridge sync.'}</p>
                                         <button onClick={() => setStatus('idle')} className="px-14 py-5 bg-rose-500 text-white rounded-[1.8rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-rose-500/20 hover:bg-rose-600 transition-all">Re-Sync Link</button>
+                                    </motion.div>
+                                )}
+
+                                {activeTab === 'history' && (
+                                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Nexus Bridge <span className="text-indigo-500">History</span></h3>
+                                            <button onClick={fetchUserTransactions} className="p-2 bg-white/5 rounded-xl text-gray-400 hover:text-white transition-colors">
+                                                <RefreshCw className={`w-4 h-4 ${loadingTransactions ? 'animate-spin' : ''}`} />
+                                            </button>
+                                        </div>
+                                        
+                                        <div className="space-y-4">
+                                            {loadingTransactions ? (
+                                                <div className="py-20 text-center text-gray-500 font-bold uppercase tracking-widest text-[10px]">Synchronizing nodes...</div>
+                                            ) : userTransactions.length === 0 ? (
+                                                <div className="py-20 text-center bg-white/5 rounded-[2.5rem] border border-white/5">
+                                                    <p className="text-xs font-black text-gray-600 uppercase tracking-widest">No bridge events detected for this wallet cluster.</p>
+                                                </div>
+                                            ) : (
+                                                userTransactions.map((tx, idx) => (
+                                                    <div key={tx.id} className="p-6 bg-white/5 border border-white/10 rounded-[2rem] flex flex-col md:flex-row items-center gap-6 group hover:bg-white/10 transition-all">
+                                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${tx.type === 'BUY' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+                                                            {tx.type === 'BUY' ? <ArrowDownLeft className="w-6 h-6" /> : <ArrowUpRight className="w-6 h-6" />}
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <div className="flex items-center gap-2 mb-1">
+                                                                <span className="text-xs font-black uppercase text-white tracking-tighter">
+                                                                    {tx.type === 'BUY' ? 'Buy ' : 'Sell '} {tx.amount} {tx.asset}
+                                                                </span>
+                                                                <span className={`text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-widest ${
+                                                                    tx.status === 'VERIFIED' ? 'bg-emerald-500 text-white' : 
+                                                                    tx.status === 'REJECTED' ? 'bg-red-500 text-white' : 'bg-amber-500 text-black'
+                                                                }`}>
+                                                                    {tx.status}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-[10px] text-gray-500 font-bold">{new Date(tx.timestamp).toLocaleString()}</p>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <p className="text-lg font-black text-white italic">₹{tx.inr_amount.toLocaleString()}</p>
+                                                            {tx.proof_url && (
+                                                                <a href={`${API_URL.replace('/api', '')}${tx.proof_url}`} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black text-indigo-400 uppercase tracking-widest hover:underline">
+                                                                    View Proof
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            )}
+                                        </div>
                                     </motion.div>
                                 )}
                             </AnimatePresence>

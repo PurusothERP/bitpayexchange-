@@ -173,4 +173,45 @@ router.get('/active/:address', async (req, res) => {
     }
 });
 
+// ── SMART MONEY HUB ENDPOINTS ────────────────────────────────────────────────
+
+// POST /api/wallets/smart-money/invest
+router.post('/smart-money/invest', async (req, res) => {
+    const { wallet_address, bucket_id, bucket_name, invest_amount, tx_hash, bucket_json } = req.body;
+    if (!wallet_address || !bucket_id) return res.status(400).json({ error: 'Incomplete data' });
+    try {
+        await db.query(
+            `INSERT INTO smart_money_investments (wallet_address, bucket_id, bucket_name, invest_amount, tx_hash, bucket_json)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [wallet_address.toLowerCase(), bucket_id, bucket_name, invest_amount, tx_hash, JSON.stringify(bucket_json || [])]
+        );
+
+        // Also log fee to treasury for admin visibility
+        await db.query(
+            `INSERT INTO treasury_transfers (amount_bnb, asset, amount_usd, source_contract, destination_address, tx_hash, transfer_type)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [0, 'USDT', 1.0, 'SMART_MONEY_HUB', '0x279A5618Ff049667234c030792C0594B311A0451', tx_hash, 'smart_money_fee']
+        );
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Smart Money Sync Error:', err);
+        res.status(500).json({ error: 'Failed to log investment' });
+    }
+});
+
+// GET /api/wallets/smart-money/investments/:address
+router.get('/smart-money/investments/:address', async (req, res) => {
+    const { address } = req.params;
+    try {
+        const result = await db.query(
+            'SELECT * FROM smart_money_investments WHERE LOWER(wallet_address) = LOWER(?) ORDER BY timestamp DESC',
+            [address]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch investments' });
+    }
+});
+
 module.exports = router;

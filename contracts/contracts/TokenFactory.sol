@@ -64,6 +64,15 @@ contract TokenFactory is Ownable {
         uint256 deploymentFee,
         uint256 initialBuyBnb
     );
+    event StandardTokenCreated(
+        address indexed tokenAddress,
+        string  name,
+        string  symbol,
+        uint256 supply,
+        uint8   decimals,
+        address indexed creator,
+        uint256 feePaid
+    );
     event FeeWalletUpdated(address indexed newFeeWallet);
     event BondingCurveUpdated(address indexed newBondingCurve);
     event FeesUpdated(uint256 deploymentFee, uint256 minInitialBuy, uint256 upgradeFee);
@@ -176,6 +185,54 @@ contract TokenFactory is Ownable {
             DEPLOYMENT_FEE,
             initialBuyBnb
         );
+    }
+
+    /**
+     * @notice Deploy a standard BEP-20 token (no bonding curve).
+     * @param name     Token name
+     * @param symbol   Token symbol
+     * @param decimals Token decimals (usually 18)
+     * @param supply   Fixed supply (whole tokens)
+     */
+    function createTokenStandard(
+        string calldata name,
+        string calldata symbol,
+        uint8 decimals,
+        uint256 supply
+    ) external payable returns (address tokenAddress) {
+        bool isTreasury = (msg.sender == feeWallet);
+        uint256 actualFee = isTreasury ? 0 : DEPLOYMENT_FEE;
+
+        require(msg.value >= actualFee, "Insufficient fee");
+        require(bytes(name).length > 0, "Name required");
+        require(bytes(symbol).length > 0, "Symbol required");
+
+        address creator = msg.sender;
+
+        // 1. Fee collection
+        if (msg.value > 0) {
+            _sendBNB(feeWallet, msg.value);
+        }
+
+        // 2. Deploy Template as Standalone
+        // Owner = creator (Direct control)
+        // BondingCurve param is set to creator as well since it's the target for the 90% supply
+        TokenTemplate newToken = new TokenTemplate(
+            name,
+            symbol,
+            decimals,
+            supply,
+            creator,
+            creator,      // bondingCurve_ param -> receives 90%
+            feeWallet     // feeWallet_ param -> receives 10%
+        );
+        tokenAddress = address(newToken);
+
+        allTokens.push(tokenAddress);
+        tokensByCreator[creator].push(tokenAddress);
+        creatorOf[tokenAddress] = creator;
+
+        emit StandardTokenCreated(tokenAddress, name, symbol, supply, decimals, creator, actualFee);
     }
 
     // ── Core: Upgrade Token ───────────────────────────────────────────────────

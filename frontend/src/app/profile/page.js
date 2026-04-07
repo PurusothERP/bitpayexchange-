@@ -65,7 +65,19 @@ function TokenCard({ token, index, account }) {
     const [releaseError, setReleaseError] = useState('');
 
     const isFairLaunch = token.launch_type === 'FAIR' || token.launch_type === 'FAIR_LAUNCH';
-    const isOwner = account?.toLowerCase() === token.owner?.toLowerCase();
+    const isOwner = account?.toLowerCase() === (token.owner || token.creator_wallet || '').toLowerCase();
+    
+    // Fetch locked tokens from factory
+    const [lockedBalance, setLockedBalance] = useState('0');
+    useEffect(() => {
+        if (isFairLaunch && isOwner && window.ethereum) {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const factory = new ethers.Contract(DIRECT_FACTORY, ['function tokensLocked(address) view returns (uint256)'], provider);
+            factory.tokensLocked(token.contract_address).then(bal => {
+                setLockedBalance(ethers.formatEther(bal));
+            }).catch(e => console.warn('Failed to fetch locked balance:', e.message));
+        }
+    }, [isFairLaunch, isOwner, token.contract_address]);
 
     const isAdmin = account?.toLowerCase() === ADMIN_WALLET.toLowerCase();
 
@@ -346,33 +358,80 @@ function TokenCard({ token, index, account }) {
                         <ArrowUpRight className="w-4 h-4" />
                     </a>
                 </div>
-                {/* Token Release Panel - Fair Launch only */}
+                {/* B20-Vault Strategic Hub - Fair Launch only */}
                 {isFairLaunch && isOwner && (
-                    <div className="mt-4">
+                    <div className="mt-6 pt-5 border-t border-emerald-100">
                         {!isReleasing ? (
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.01, y: -2 }}
+                                whileTap={{ scale: 0.98 }}
                                 onClick={() => setIsReleasing(true)}
-                                className="w-full flex items-center justify-between px-4 py-2.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 font-bold text-xs rounded-xl transition-all group"
+                                className="w-full flex items-center justify-between px-6 py-5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-[1.5rem] shadow-xl shadow-emerald-600/20 group transition-all duration-300 overflow-hidden relative"
                             >
-                                <span className="flex items-center gap-2"><Unlock className="w-4 h-4" /> Release Additional Tokens to PancakeSwap</span>
-                                <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                            </button>
-                        ) : (
-                            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="p-4 bg-emerald-50/80 border border-emerald-200 rounded-xl space-y-3">
-                                <div className="flex items-center justify-between mb-2">
-                                    <p className="text-xs font-black text-emerald-800 uppercase tracking-widest flex items-center gap-1.5"><PlusCircle className="w-4 h-4" /> Expand Liquidity Pool</p>
-                                    <button onClick={() => setIsReleasing(false)} className="text-gray-400 hover:text-gray-600"><span className="text-lg leading-none">&times;</span></button>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1 block">Tokens to Release</label>
-                                        <input type="number" placeholder="e.g. 50000000" value={releaseTokens} onChange={e => setReleaseTokens(e.target.value)}
-                                            className="w-full bg-white border border-emerald-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:border-emerald-400 transition-all" />
+                                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                <span className="relative z-10 flex items-center gap-4">
+                                    <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                                        <Unlock className="w-5 h-5" />
                                     </div>
-                                    <div>
-                                        <label className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-1 block">BNB Liquidity to Pair</label>
-                                        <input type="number" step="0.01" placeholder="e.g. 0.05" value={releaseLiqBnb} onChange={e => setReleaseLiqBnb(e.target.value)}
-                                            className="w-full bg-white border border-emerald-200 rounded-lg px-3 py-2 text-sm font-bold text-gray-900 outline-none focus:border-emerald-400 transition-all" />
+                                    <div className="text-left">
+                                        <div className="leading-none mb-1">Vault Liquidity Expansion</div>
+                                        <div className="text-[8px] opacity-70 font-bold">Release your remaining capacity to PancakeSwap</div>
+                                    </div>
+                                </span>
+                                <div className="relative z-10 bg-white/10 group-hover:bg-white/20 px-4 py-2 rounded-2xl border border-white/10 backdrop-blur-md flex items-center gap-3 transition-all">
+                                    <div className="text-right">
+                                        <div className="text-[8px] opacity-70 leading-none mb-0.5 uppercase">Locked Supply</div>
+                                        <div className="text-xs font-black">{Number(lockedBalance).toLocaleString()} ${token.symbol}</div>
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                </div>
+                            </motion.button>
+                        ) : (
+                            <motion.div 
+                                initial={{ opacity: 0, y: 15, scale: 0.98 }} 
+                                animate={{ opacity: 1, y: 0, scale: 1 }} 
+                                className="p-6 bg-gradient-to-br from-emerald-50/50 via-white to-emerald-50/30 border-2 border-emerald-500/20 rounded-[2.5rem] shadow-2xl shadow-emerald-500/10 space-y-5"
+                            >
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-4 border-b border-emerald-100">
+                                    <div className="flex items-center gap-5">
+                                        <div className="w-16 h-16 bg-emerald-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-emerald-600/30 ring-4 ring-emerald-50">
+                                            <PlusCircle className="w-8 h-8 text-white" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.25em] leading-none mb-2 flex items-center gap-2">
+                                                Vault Distribution <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                            </h4>
+                                            <div className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-lg uppercase tracking-tight">Available Balance</span>
+                                                    <span className="text-xl font-black text-gray-900 tracking-tight">{Number(lockedBalance).toLocaleString()} ${token.symbol}</span>
+                                                </div>
+                                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">
+                                                    Total Institutional Capacity: <span className="text-gray-600">1,000,000,000 ${token.symbol}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => setIsReleasing(false)} className="w-12 h-12 flex items-center justify-center rounded-2xl hover:bg-black/5 text-gray-300 hover:text-gray-900 transition-all duration-300 group">
+                                        <span className="text-3xl font-light group-hover:rotate-90 transition-transform">&times;</span>
+                                    </button>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] text-gray-400 font-black uppercase tracking-widest ml-1">Tokens to Release</label>
+                                        <div className="relative">
+                                            <input type="number" placeholder="0.00" value={releaseTokens} onChange={e => setReleaseTokens(e.target.value)}
+                                                className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-4 text-sm font-black text-gray-900 outline-none focus:border-emerald-500/30 focus:bg-emerald-500/5 transition-all shadow-inner" />
+                                            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-[9px] font-black text-emerald-600 uppercase tracking-widest">${token.symbol}</div>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[9px] text-gray-400 font-black uppercase tracking-widest ml-1">BNB Liquidity to Pair</label>
+                                        <div className="relative">
+                                            <input type="number" step="0.01" placeholder="0.00" value={releaseLiqBnb} onChange={e => setReleaseLiqBnb(e.target.value)}
+                                                className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-4 text-sm font-black text-gray-900 outline-none focus:border-emerald-500/30 focus:bg-emerald-500/5 transition-all shadow-inner" />
+                                            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-[9px] font-black text-amber-500 uppercase tracking-widest">BNB</div>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="p-3 bg-white/70 rounded-xl border border-emerald-100 text-[10px] font-bold text-gray-600 space-y-1.5">
@@ -411,6 +470,8 @@ export default function ProfilePage() {
     const [closingPositionId, setClosingPositionId] = useState(null);
     const [tradingStats, setTradingStats] = useState({ total_trades: 0, total_volume_bnb: 0, total_pnl_bnb: 0 });
     const [tradeHistory, setTradeHistory] = useState([]);
+    const [smartMoneyInvestments, setSmartMoneyInvestments] = useState([]);
+    const [loadingSmartMoney, setLoadingSmartMoney] = useState(false);
 
     useEffect(() => {
         if (!account) return;
@@ -483,6 +544,13 @@ export default function ProfilePage() {
 
         fetchAnalytics();
         fetchActiveFutures();
+
+        // Fetch Smart Money Strategic Investments
+        setLoadingSmartMoney(true);
+        axios.get(`${API_URL}/wallets/smart-money/investments/${account}`)
+            .then(res => setSmartMoneyInvestments(res.data))
+            .catch(err => console.error('[Smart Money Fetch Error]', err))
+            .finally(() => setLoadingSmartMoney(false));
     }, [account]);
 
     const closeFuturesPosition = async (id) => {
@@ -584,19 +652,20 @@ export default function ProfilePage() {
                         <Activity className="w-4 h-4" /> Futures
                     </button>
                     <button
-                        onClick={() => {
-                            setActiveTab('history');
-                            // Forced refresh on click
-                            if (account) {
-                                axios.get(`${API_URL}/wallets/stats/${account}`).then(r => setTradingStats(r.data));
-                                axios.get(`${API_URL}/wallets/trades/${account}`).then(r => setTradeHistory(r.data));
-                            }
-                        }}
+                        onClick={() => setActiveTab('history')}
                         className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all relative group ${
                             activeTab === 'history' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-indigo-500 hover:text-indigo-600 bg-indigo-500/5'
                         }`}
                     >
                         <Clock className="w-4 h-4 group-hover:rotate-12 transition-transform" /> Trading History
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('smartmoney')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all relative group ${
+                            activeTab === 'smartmoney' ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/20' : 'text-amber-500 hover:text-amber-600 bg-amber-500/5'
+                        }`}
+                    >
+                        <TrendingUp className="w-4 h-4 group-hover:rotate-12 transition-transform" /> Smart Money
                     </button>
                 </div>
 
@@ -1220,6 +1289,116 @@ export default function ProfilePage() {
                                         </div>
                                     </div>
                                 </div>
+                            </motion.div>
+                        )}
+                        {activeTab === 'smartmoney' && (
+                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                                <div className="flex items-center justify-between mb-8">
+                                    <div>
+                                        <h2 className="text-xl font-black text-gray-900 flex items-center gap-2 uppercase tracking-tighter italic">
+                                            <TrendingUp className="w-6 h-6 text-amber-500" /> Strategic Hub <span className="text-amber-500">Portfolio</span>
+                                            <span className="ml-1 text-sm font-bold text-gray-400 bg-black/5 px-3 py-1 rounded-full">{smartMoneyInvestments.length}</span>
+                                        </h2>
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Institutional weighting deployment history</p>
+                                    </div>
+                                    <Link href="/exchange" className="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-amber-500/20 flex items-center gap-2">
+                                        <TrendingUp className="w-4 h-4" /> Invest More
+                                    </Link>
+                                </div>
+
+                                {loadingSmartMoney ? (
+                                    <div className="flex flex-col items-center justify-center py-24 gap-4">
+                                        <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Retrieving Strategy Data...</p>
+                                    </div>
+                                ) : smartMoneyInvestments.length === 0 ? (
+                                    <div className="bg-white border border-black/8 rounded-[3rem] p-20 text-center shadow-sm relative overflow-hidden backdrop-blur-xl">
+                                         <div className="absolute inset-0 bg-gradient-to-br from-amber-50/50 to-transparent pointer-events-none" />
+                                        <div className="w-24 h-24 rounded-[2rem] bg-amber-50 flex items-center justify-center mx-auto mb-8 shadow-inner ring-4 ring-amber-50/50 relative z-10">
+                                            <TrendingUp className="w-10 h-10 text-amber-400" />
+                                        </div>
+                                        <h3 className="text-2xl font-black text-gray-900 mb-2 uppercase italic relative z-10">No Strategic Deployments</h3>
+                                        <p className="text-xs text-gray-500 font-bold max-w-sm mx-auto mb-10 leading-relaxed uppercase tracking-widest opacity-60 relative z-10">
+                                            You haven't deployed capital into the B20 Smart Money indices yet. Start building your weighted institutional portfolio today.
+                                        </p>
+                                        <Link href="/exchange" className="relative z-10 inline-flex items-center gap-3 px-10 py-4 bg-amber-600 hover:bg-amber-700 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest transition-all shadow-2xl shadow-amber-500/30">
+                                            <TrendingUp className="w-4 h-4" /> Go to Smart Money Hub
+                                        </Link>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
+                                        {smartMoneyInvestments.map((inv, idx) => (
+                                            <motion.div
+                                                key={inv.id}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: idx * 0.05 }}
+                                                className="bg-white border border-black/5 rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl hover:border-amber-500/20 transition-all group overflow-hidden relative"
+                                            >
+                                                <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform">
+                                                    <TrendingUp className="w-24 h-24 text-amber-600" />
+                                                </div>
+                                                
+                                                <div className="flex items-center justify-between mb-8 relative z-10">
+                                                    <div className="space-y-1">
+                                                        <div className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
+                                                            Institutional Alpha Index
+                                                        </div>
+                                                        <h4 className="text-2xl font-black text-gray-900 uppercase tracking-tighter italic">{inv.bucket_name}</h4>
+                                                    </div>
+                                                    <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-100 shadow-sm">
+                                                        <TrendingUp className="w-6 h-6 text-amber-600" />
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-2 mb-8 bg-gray-50/30 p-4 rounded-3xl border border-black/3">
+                                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-2">Bucket Composition</p>
+                                                    <div className="flex flex-wrap gap-4">
+                                                        {(inv.bucket_json ? JSON.parse(inv.bucket_json) : []).map(token => (
+                                                            <div key={token.symbol} className="flex items-center gap-3 px-5 py-2.5 bg-white border border-black/5 rounded-[1.5rem] shadow-sm group/token hover:border-amber-200 transition-all">
+                                                                <div className="w-8 h-8 rounded-xl bg-gray-50 p-1.5 border border-black/5 shrink-0">
+                                                                     <img src={token.image} className="w-full h-full object-contain" alt="" />
+                                                                </div>
+                                                                <div>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-[10px] font-black text-gray-900 uppercase">{token.symbol}</span>
+                                                                        <span className="text-[8px] font-black text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 italic">14.28%</span>
+                                                                    </div>
+                                                                    <p className="text-[8px] font-bold text-gray-400 font-mono truncate max-w-[100px]">{token.address}</p>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4 mb-8 relative z-10">
+                                                    <div className="bg-black/3 rounded-2xl p-5 border border-black/5">
+                                                        <div className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Total Invested</div>
+                                                        <div className="text-2xl font-black text-gray-900 leading-none">${parseFloat(inv.invest_amount).toFixed(2)}</div>
+                                                        <div className="text-[9px] font-bold text-gray-400 mt-2 uppercase">USDT (BSC Mainnet)</div>
+                                                    </div>
+                                                    <div className="bg-black/3 rounded-2xl p-5 border border-black/5">
+                                                        <div className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Deployed At</div>
+                                                        <div className="text-lg font-black text-gray-900 leading-none">{new Date(inv.timestamp).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</div>
+                                                        <div className="text-[9px] font-bold text-gray-400 mt-2 uppercase">{new Date(inv.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-between bg-emerald-50/50 border border-emerald-100 rounded-2xl px-6 py-4 relative z-10">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                                        <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Self-Custodial Sync</span>
+                                                    </div>
+                                                    {inv.tx_hash && (
+                                                        <a href={`https://bscscan.com/tx/${inv.tx_hash}`} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black text-amber-600 border-b border-amber-200 uppercase tracking-widest hover:text-amber-700 transition-colors">
+                                                            View Transaction
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                )}
                             </motion.div>
                         )}
                     </>

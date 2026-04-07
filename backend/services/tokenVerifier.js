@@ -12,9 +12,10 @@
 const axios  = require('axios');
 const path   = require('path');
 const fs     = require('fs');
+require('dotenv').config();
 const db     = require('../config/db');
 
-const BSCSCAN_API = 'https://api.bscscan.com/api';
+const BSCSCAN_API = 'https://api.etherscan.io/v2/api';
 const BSCSCAN_KEY = process.env.BSCSCAN_API_KEY || '2X6VV2BKDA4YPFPBZC56X2RIQSWM4M58YW';
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
@@ -28,13 +29,11 @@ function readContract(filename) {
 // ── 1. Check BSCScan verification status ────────────────────
 async function checkVerificationStatus(contractAddress) {
     try {
-        const res = await axios.get(BSCSCAN_API, {
+        const res = await axios.get(`${BSCSCAN_API}?chainid=56&apikey=${BSCSCAN_KEY}`, {
             params: {
-                chainid: '56',
                 module:  'contract',
                 action:  'getsourcecode',
                 address: contractAddress,
-                apikey:  BSCSCAN_KEY
             },
             timeout: 10000
         });
@@ -80,7 +79,7 @@ async function submitVerification(contractAddress, contractName, sourceCode, con
 
         const params = new URLSearchParams(body);
 
-        const res = await axios.post(BSCSCAN_API, params.toString(), {
+        const res = await axios.post(`${BSCSCAN_API}?chainid=56&apikey=${BSCSCAN_KEY}`, params.toString(), {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             timeout: 15000
         });
@@ -101,13 +100,11 @@ async function submitVerification(contractAddress, contractName, sourceCode, con
 // ── 3. Check status of a pending verification GUID ──────────
 async function checkGuidStatus(guid) {
     try {
-        const res = await axios.get(BSCSCAN_API, {
+        const res = await axios.get(`${BSCSCAN_API}?chainid=56&apikey=${BSCSCAN_KEY}`, {
             params: {
-                chainid: '56',
                 module:  'contract',
                 action:  'checkverifystatus',
                 guid,
-                apikey:  BSCSCAN_KEY
             },
             timeout: 10000
         });
@@ -158,7 +155,7 @@ async function runVerificationCycle() {
     try {
         const result = await db.query(`
             SELECT id, contract_address, name, symbol, creator_wallet AS creator_address,
-                   logo_url, description, launch_type,
+                   logo_url, description, launch_type, decimals, total_supply,
                    is_verified, bscscan_verified, verify_guid,
                    last_verified_at, tw_pr_status, created_at
             FROM tokens
@@ -213,17 +210,41 @@ async function runVerificationCycle() {
                 const { ethers } = require('ethers');
                 const abiCoder = new ethers.AbiCoder();
                 
-                // Construct args based on launch type
-                const BC_ADDR  = process.env.BONDING_CURVE_ADDRESS || '0x279A5618Ff049667234c030792C0594B311A0451';
-                const DF_ADDR  = process.env.DIRECT_FACTORY_ADDRESS || '0x319C8c9efBF2742331e687DE8caf54B9944895A7';
-                const FEE_ADDR = process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
+                // Fetch current contract addresses from ENV
+                const BC_ADDR  = process.env.BONDING_CURVE_ADDRESS;
+                const DF_ADDR  = process.env.DIRECT_FACTORY_ADDRESS;
+                const FEE_ADDR = process.env.FEE_WALLET;
                 
-                const ownerAddr = (token.launch_type === 'FAIR') ? DF_ADDR : BC_ADDR;
+                if (!BC_ADDR || !DF_ADDR || !FEE_ADDR) {
+                    console.warn('[Verifier] ⚠️ Missing ENV addresses (BONDING_CURVE, DIRECT_FACTORY, or FEE_WALLET). Skipping submission.');
+                    continue;
+                }
+
+                let ownerAddr;
+                if (token.launch_type === 'FAIR' || token.launch_type === 'FAIR_LAUNCH') {
+                    ownerAddr = DF_ADDR;
+                } else if (token.launch_type === 'STANDARD') {
+                    ownerAddr = token.creator_address;
+                } else {
+                    ownerAddr = BC_ADDR;
+                }
                 
-                // TokenTemplate(string name_, string symbol_, uint256 fixedSupply, address _creator, address bondingCurve_, address feeWallet_)
+                // constructor(string name_, string symbol_, uint8 decimals_, uint256 fixedSupply, address _creator, address bondingCurve_, address feeWallet_)
+                // Ensure supply is parsed to BigInt correctly
+                const rawSupply = token.total_supply?.toString() || '1000000000';
+                const finalSupply = rawSupply.includes('e') ? BigInt(parseFloat(rawSupply)) : BigInt(rawSupply.replace(/[,_]/g, ''));
+
                 const encodedArgs = abiCoder.encode(
-                    ['string', 'string', 'uint256', 'address', 'address', 'address'],
-                    [token.name, token.symbol, 1000000000n, token.creator_address, ownerAddr, FEE_ADDR]
+                    ['string', 'string', 'uint8', 'uint256', 'address', 'address', 'address'],
+                    [
+                        token.name, 
+                        token.symbol, 
+                        parseInt(token.decimals) || 18,
+                        finalSupply,
+                        token.creator_address, 
+                        ownerAddr, 
+                        FEE_ADDR
+                    ]
                 ).replace('0x', '');
 
                 await new Promise(r => setTimeout(r, 300));

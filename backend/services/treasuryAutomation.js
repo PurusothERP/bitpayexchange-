@@ -6,7 +6,7 @@
 
 const { ethers } = require('ethers');
 const db = require('../config/db');
-require('dotenv').config();
+const { runVerificationCycle } = require('./tokenVerifier');
 
 const BONDING_CURVE_ABI = [
     'event Buy(address indexed token, address indexed user, uint256 bnbIn, uint256 tokensOut)',
@@ -24,6 +24,7 @@ const BONDING_CURVE_ABI = [
 
 const FACTORY_ABI = [
     'event TokenCreated(address indexed tokenAddress, string name, string symbol, uint256 supply, address indexed creator, uint256 deploymentFee, uint256 initialBuyBnb)',
+    'event StandardTokenCreated(address indexed tokenAddress, string name, string symbol, uint256 supply, uint8 decimals, address indexed creator, uint256 feePaid)',
     'event TokenUpgraded(address indexed tokenAddress, address indexed creator, uint256 feePaid)',
     'event PermissionGranted(address indexed user, bool status)',
     'event FeeCollected(address indexed user, uint256 amount, string reason)'
@@ -81,10 +82,11 @@ async function recordTrade({ tokenAddress, trader, tradeType, amountTokens, amou
             [tokenAddress, trader, tradeType, amountTokens, amountBnb, priceBnb, feeBnb, txHash, blockNumber]
         );
 
-        // Update price in tokens table
+        // Update price and cumulative liquidity in tokens table
+        const delta = (tradeType === 'buy') ? amountBnb : -amountBnb;
         await db.query(
-            `UPDATE tokens SET price_bnb = ? WHERE contract_address = ?`,
-            [priceBnb, tokenAddress]
+            `UPDATE tokens SET price_bnb = ?, liquidity_bnb = CAST(COALESCE(liquidity_bnb, '0') AS REAL) + ? WHERE LOWER(contract_address) = LOWER(?)`,
+            [priceBnb, delta, tokenAddress]
         );
 
         // Record price history
@@ -117,7 +119,47 @@ async function recordTreasuryTransfer({ amountBnb, sourceContract, destinationAd
     }
 }
 
-// ── Listen to live BondingCurve events ─────────────────────────────────────────
+async function autoCreateToken({ tokenAddress, name, symbol, supply, creator, txHash, launchType, decimals }) {
+    try {
+        const result = await db.query(
+            `INSERT INTO tokens (contract_address, name, symbol, total_supply, creator_wallet, tx_hash, launch_type, description, decimals)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(contract_address) DO UPDATE SET
+                name = COALESCE(tokens.name, excluded.name),
+                symbol = COALESCE(tokens.symbol, excluded.symbol),
+                creator_wallet = COALESCE(tokens.creator_wallet, excluded.creator_wallet),
+                launch_type = COALESCE(tokens.launch_type, excluded.launch_type),
+                decimals = COALESCE(tokens.decimals, excluded.decimals)`,
+            [
+                tokenAddress.toLowerCase(), 
+                name || 'Unknown', 
+                symbol || 'UNKNOWN', 
+                supply ? ethers.formatUnits(supply, parseInt(decimals) || 18) : '1000000000', 
+                creator, 
+                txHash, 
+                launchType || 'MEME',
+                'Legacy asset synchronized via chain indexer.',
+                parseInt(decimals) || 18
+            ]
+        );
+        
+        const isNew = result.changes > 0;
+        console.log(`[Indexer] Auto-created token record for ${tokenAddress.slice(0, 10)}… (${launchType})`);
+
+        // Execute immediate verification logic if newly created
+        if (isNew) {
+            console.log(`[Indexer] ⚡ Triggering immediate verification for ${tokenAddress}`);
+            setTimeout(() => {
+                runVerificationCycle().catch(e => console.error('[Indexer] Verify trigger error:', e.message));
+            }, 60000); // 60s delay to ensure BSCScan has the contract indexed
+        }
+
+        return result;
+    } catch (err) {
+        console.error('[Indexer] Error auto-creating token:', err.message);
+    }
+}
+
 function startEventListeners() {
     if (!bondingCurveReadOnly) return;
 
@@ -224,6 +266,14 @@ function startEventListeners() {
             try {
                 const amountBnb = parseFloat(ethers.formatEther(fee));
                 const txHash = event?.log?.transactionHash || 'unknown_dep_' + Date.now();
+                
+                // Index metadata automatically
+                await autoCreateToken({
+                    tokenAddress: token,
+                    name, symbol, supply, creator, txHash,
+                    launchType: 'MEME'
+                });
+
                 const feeWallet = process.env.FEE_WALLET || '';
                 if (feeWallet && amountBnb > 0) {
                     await recordTreasuryTransfer({
@@ -236,6 +286,33 @@ function startEventListeners() {
                 }
             } catch (err) {
                 console.error('[Indexer] TokenCreated event error:', err.message);
+            }
+        });
+
+        factoryReadOnly.on('StandardTokenCreated', async (token, name, symbol, supply, decimals, creator, fee, event) => {
+            try {
+                const amountBnb = parseFloat(ethers.formatEther(fee));
+                const txHash = event?.log?.transactionHash || 'unknown_std_' + Date.now();
+                
+                await autoCreateToken({
+                    tokenAddress: token,
+                    name, symbol, supply, creator, txHash,
+                    launchType: 'STANDARD',
+                    decimals: parseInt(decimals)
+                });
+
+                const feeWallet = process.env.FEE_WALLET || '';
+                if (feeWallet && amountBnb > 0) {
+                    await recordTreasuryTransfer({
+                        amountBnb,
+                        sourceContract: process.env.FACTORY_ADDRESS,
+                        destinationAddress: feeWallet,
+                        txHash,
+                        transferType: 'creation_fee_standard'
+                    });
+                }
+            } catch (err) {
+                console.error('[Indexer] StandardTokenCreated event error:', err.message);
             }
         });
 
@@ -306,6 +383,14 @@ function startEventListeners() {
             try {
                 const amountBnb = parseFloat(ethers.formatEther(fee));
                 const txHash = event?.log?.transactionHash || 'unknown_direct_' + Date.now();
+                
+                // Index metadata automatically
+                await autoCreateToken({
+                    tokenAddress: token,
+                    name, symbol, supply, creator, txHash,
+                    launchType: 'FAIR'
+                });
+
                 const feeWallet = process.env.FEE_WALLET || '';
                 if (feeWallet && amountBnb > 0) {
                     await recordTreasuryTransfer({
@@ -375,13 +460,71 @@ async function sweepBondingCurveToTreasury() {
     }
 }
 
+// ── Startup Scan (Historical Context) ───────────────────────────────────────
+async function scanRecentEvents() {
+    if (!provider) return;
+    try {
+        const currentBlock = await provider.getBlockNumber();
+        const fromBlock = currentBlock - 2000; // Scan last 2000 blocks (~2 hours)
+        console.log(`[Indexer] 🔍 Scanning historical events from block ${fromBlock} to ${currentBlock}…`);
+
+        // Scan Factory (MEME)
+        if (factoryReadOnly) {
+            const factoryFilter = factoryReadOnly.filters.TokenCreated();
+            const factoryEvents = await factoryReadOnly.queryFilter(factoryFilter, fromBlock, currentBlock);
+            for (const ev of factoryEvents) {
+                const [token, name, symbol, supply, creator] = ev.args;
+                await autoCreateToken({
+                    tokenAddress: token,
+                    name, symbol, supply, creator,
+                    txHash: ev.transactionHash,
+                    launchType: 'MEME'
+                });
+            }
+
+            // Scan Factory (STANDARD)
+            const standardFilter = factoryReadOnly.filters.StandardTokenCreated();
+            const standardEvents = await factoryReadOnly.queryFilter(standardFilter, fromBlock, currentBlock);
+            for (const ev of standardEvents) {
+                const [token, name, symbol, supply, decimals, creator] = ev.args;
+                await autoCreateToken({
+                    tokenAddress: token,
+                    name, symbol, supply, creator,
+                    txHash: ev.transactionHash,
+                    launchType: 'STANDARD'
+                });
+            }
+        }
+
+        // Scan Direct Factory (FAIR)
+        if (directFactoryReadOnly) {
+            const directFilter = directFactoryReadOnly.filters.TokenCreatedDirect();
+            const directEvents = await directFactoryReadOnly.queryFilter(directFilter, fromBlock, currentBlock);
+            for (const ev of directEvents) {
+                const [token, name, symbol, supply, creator] = ev.args;
+                await autoCreateToken({
+                    tokenAddress: token,
+                    name, symbol, supply, creator,
+                    txHash: ev.transactionHash,
+                    launchType: 'FAIR'
+                });
+            }
+        }
+        console.log(`[Indexer] ✅ Startup scan complete.`);
+    } catch (err) {
+        console.warn('[Indexer] Historical scan error:', err.message);
+    }
+}
+
 // ── Start everything ────────────────────────────────────────────────────────────
 function startTreasuryAutomation() {
     try {
         initProvider();
         startEventListeners();
 
-        // Run once on startup, then every 30m
+        // Background historical scan
+        setTimeout(scanRecentEvents, 5000);
+
         // Automated sweep disabled. Execute manually via Admin Panel.
         // setTimeout(sweepBondingCurveToTreasury, 5000);
         // setInterval(sweepBondingCurveToTreasury, INTERVAL_MS);

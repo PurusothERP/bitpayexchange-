@@ -76,7 +76,7 @@ function TokenCard({ token, index }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
             >
-                <GlassCard className="group p-6 h-full flex flex-col hover:scale-[1.02] active:scale-95">
+                <GlassCard className={`group p-6 h-full flex flex-col hover:scale-[1.02] active:scale-95 ${token.price_change >= 0 ? 'animate-pulse-green' : 'animate-pulse-red'}`}>
                     {/* Card Header: Logo + Badges */}
                     <div className="flex items-start justify-between mb-6">
                         <div className="relative">
@@ -170,7 +170,7 @@ function ListView({ tokens }) {
                 </thead>
                 <tbody className="divide-y divide-zinc-100">
                     {tokens.map((token, index) => (
-                        <tr key={token.contract_address} className="group hover:bg-zinc-50/50 transition-colors">
+                        <tr key={token.contract_address} className={`group hover:bg-zinc-50/50 transition-colors ${token.price_change >= 0 ? 'animate-pulse-green' : 'animate-pulse-red'}`}>
                             <td className="px-8 py-6">
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 rounded-xl bg-zinc-100 border border-black/5 overflow-hidden shadow-sm">

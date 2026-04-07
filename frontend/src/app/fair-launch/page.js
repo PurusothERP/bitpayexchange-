@@ -15,11 +15,12 @@ import { ethers, Contract } from 'ethers';
 import { DIRECT_LAUNCH_FACTORY_ABI } from '@/lib/abis';
 import Link from 'next/link';
 
-const DIRECT_FACTORY = process.env.NEXT_PUBLIC_DIRECT_FACTORY_ADDRESS || '0x319C8c9efBF2742331e687DE8caf54B9944895A7';
+const DIRECT_FACTORY = process.env.NEXT_PUBLIC_DIRECT_FACTORY_ADDRESS || '0xbe3EA5f2AE5b278796AbCFbd1078EF88dd0d70F5';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
-const DEPLOY_FEE = 0.005;
-const PROTOCOL_FEE = 0.002;
+// Must match on-chain: DEPLOYMENT_FEE=0.003, MIN_INITIAL_LIQUIDITY=0.01, firstTradeAmount=0.002
+const DEPLOY_FEE = 0.003;
+const PROTOCOL_FEE = 0;
 const FIRST_TRADE_FEE = 0.002;
 const LIQUIDITY_MANDATORY = 0.01;
 const MAX_LIQUIDATE = 900000000;
@@ -170,16 +171,18 @@ export default function FairLaunch() {
             const factory = new ethers.Contract(DIRECT_FACTORY, DIRECT_LAUNCH_FACTORY_ABI, activeSigner);
             
             const userLiq = Math.max(parseFloat(initialLiquidity) || 0, LIQUIDITY_MANDATORY);
-            const actualFee = isTreasury ? 0 : (DEPLOY_FEE + PROTOCOL_FEE);
+            // Treasury: 0 fees, just 0.01 BNB min liquidity
+            // Regular: DEPLOY_FEE(0.003) + FIRST_TRADE_FEE(0.002) + userLiquidity
+            const actualFee = isTreasury ? 0 : DEPLOY_FEE;
             const firstTradeObj = isTreasury ? 0 : FIRST_TRADE_FEE;
-            const actualLiquidity = userLiq; // Treasury and normal users respect the chosen initial liquidity
+            const actualLiquidity = isTreasury ? Math.max(userLiq, 0.01) : userLiq;
             const totalToPay = actualFee + firstTradeObj + actualLiquidity;
             
             const reqTokens = ethers.parseEther(tokensToLiquidate.toString() || MAX_LIQUIDATE.toString());
 
             const tx = await factory.createTokenDirect(
                 formData.name, formData.symbol, reqTokens,
-                { value: ethers.parseEther(totalToPay.toFixed(18)), gasLimit: 2500000 }
+                { value: ethers.parseEther(totalToPay.toFixed(18)) }
             );
             const receipt = await tx.wait();
 
@@ -193,6 +196,9 @@ export default function FairLaunch() {
             postData.append('owner', account);
             postData.append('tokenAddress', tokenAddress);
             postData.append('launch_type', 'FAIR');
+            postData.append('supply', (parseFloat(tokensToLiquidate) || MAX_LIQUIDATE).toString());
+            postData.append('decimals', '18');
+            postData.append('txHash', receipt.hash);
             if (logo) postData.append('logo', logo);
 
             await axios.post(`${API_URL}/tokens/sync`, postData);
@@ -201,12 +207,17 @@ export default function FairLaunch() {
             setStatus('success');
         } catch (err) {
             console.error(err);
-            if (err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
+            const partialSuccess = err.config?.url?.includes('/sync');
+            if (partialSuccess) {
+                setStatus('success');
+                setError('Fair Launch created on-chain, but metadata sync timed out (Backend Sync Delay). Your token will appear on the explore page shortly via blockchain indexing.');
+            } else if (err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
                 setError('Transaction was rejected by the user.');
+                setStatus('error');
             } else {
-                setError(err.reason || err.message || 'Unknown error occurred.');
+                setError(err.reason || err.message || 'Deployment Error');
+                setStatus('error');
             }
-            setStatus('error');
         }
     };
 
@@ -417,9 +428,21 @@ export default function FairLaunch() {
                                             />
                                             <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase text-gray-400 tracking-widest">/ 900M Max</div>
                                         </div>
-                                        <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider ml-2 leading-relaxed">
-                                            Minimum Liquidity applies. If you allocate less than 900M tokens to the Dex, the remaining un-listed tokens are held locked directly inside the Launch Factory for future releases.
-                                        </p>
+                                        <div className="mt-6 p-5 rounded-[2rem] bg-indigo-50 border border-indigo-100 flex items-start gap-4 shadow-sm group hover:border-indigo-300 transition-all">
+                                            <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center shrink-0 border border-indigo-200 shadow-inner group-hover:bg-indigo-500 group-hover:text-white transition-colors duration-500">
+                                                <ShieldCheck className="w-6 h-6 text-indigo-600 group-hover:text-white transition-colors" />
+                                            </div>
+                                            <div className="space-y-1.5 flex-1 pt-0.5">
+                                                <h5 className="text-[10px] font-black text-indigo-900 uppercase tracking-[0.2em] flex items-center gap-2">
+                                                    Institutional Vault Protocol Active <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                </h5>
+                                                <p className="text-[10px] text-indigo-700/70 font-bold leading-relaxed uppercase tracking-tight">
+                                                    Your total token capacity is <span className="text-indigo-900 font-black">1,000,000,000 $TOKEN</span>. 
+                                                    You are only required to allocate your desired initial liquidity pool amount today. 
+                                                    The remaining balance will be securely held in the <span className="text-indigo-900 font-black">B20-Factory Vault</span> and can be released for additional liquidity pairs at any time via your <span className="text-indigo-900 underline underline-offset-2 font-black">Project Profile</span>.
+                                                </p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

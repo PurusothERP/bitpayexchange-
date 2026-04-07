@@ -18,6 +18,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 logo_url TEXT DEFAULT '',
                 metadata_url TEXT DEFAULT '',
                 description TEXT DEFAULT '',
+                decimals INTEGER DEFAULT 18,
                 total_supply TEXT DEFAULT '1000000000',
                 tx_hash TEXT DEFAULT '',
                 price_bnb REAL DEFAULT 0,
@@ -34,9 +35,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
             else {
                 console.log('Tokens table ready.');
                 // Handle schema evolution for existing DBs
-                const cols = ['trust_status', 'is_delisted', 'last_trade_at', 'launch_type', 'is_boosted'];
+                const cols = ['decimals', 'trust_status', 'is_delisted', 'last_trade_at', 'launch_type', 'is_boosted'];
                 cols.forEach(col => {
-                    db.run(`ALTER TABLE tokens ADD COLUMN ${col} ${col === 'is_delisted' || col === 'is_boosted' ? 'INTEGER DEFAULT 0' : 'TEXT'}`, (err) => {
+                    db.run(`ALTER TABLE tokens ADD COLUMN ${col} ${col === 'is_delisted' || col === 'is_boosted' ? 'INTEGER DEFAULT 0' : (col === 'decimals' ? 'INTEGER DEFAULT 18' : 'TEXT')}`, (err) => {
                         // ignore error if column already exists
                     });
                 });
@@ -56,7 +57,13 @@ const db = new sqlite3.Database(dbPath, (err) => {
             )
         `, (err) => {
             if (err) console.error('Error creating treasury_transfers table:', err);
-            else console.log('Treasury transfers table ready.');
+            else {
+                console.log('Treasury transfers table ready.');
+                // Schema evolution
+                ['asset', 'amount_usd'].forEach(col => {
+                    db.run(`ALTER TABLE treasury_transfers ADD COLUMN ${col} ${col === 'amount_usd' ? 'REAL DEFAULT 0' : 'TEXT DEFAULT "BNB"'}`, () => {});
+                });
+            }
         });
 
         // On-chain trade events (Buy / Sell)
@@ -183,11 +190,20 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 image_url TEXT DEFAULT '',
                 content TEXT NOT NULL,
                 likes INTEGER DEFAULT 0,
+                token_symbol TEXT DEFAULT '',
+                token_name TEXT DEFAULT '',
+                token_logo TEXT DEFAULT '',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `, (err) => {
             if (err) console.error('Error creating announcements table:', err);
-            else console.log('Announcements table ready.');
+            else {
+                console.log('Announcements table ready.');
+                // Schema evolution
+                ['token_symbol', 'token_name', 'token_logo'].forEach(col => {
+                    db.run(`ALTER TABLE announcements ADD COLUMN ${col} TEXT DEFAULT ''`, () => {});
+                });
+            }
         });
 
         // Community posts table
@@ -241,6 +257,28 @@ const db = new sqlite3.Database(dbPath, (err) => {
         `, (err) => {
             if (err) console.error('Error creating assistant_activities table:', err);
             else console.log('Assistant activities table ready.');
+        });
+
+        // Smart Money Strategic Investments
+        db.run(`
+            CREATE TABLE IF NOT EXISTS smart_money_investments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                wallet_address TEXT NOT NULL,
+                bucket_id TEXT NOT NULL,
+                bucket_name TEXT NOT NULL,
+                invest_amount REAL NOT NULL,
+                asset_currency TEXT DEFAULT 'USDT',
+                tx_hash TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `, (err) => {
+            if (err) console.error('Error creating smart_money_investments table:', err);
+            else {
+                console.log('Smart money investments table ready.');
+                ['bucket_json'].forEach(col => {
+                    db.run(`ALTER TABLE smart_money_investments ADD COLUMN ${col} TEXT DEFAULT '[]'`, () => {});
+                });
+            }
         });
     }
 });

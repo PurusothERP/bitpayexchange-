@@ -128,6 +128,7 @@ function FeeBadge({ type }) {
         'daily_sweep_pending': { label: 'DAILY SWEEP PENDING', color: 'text-orange-600 bg-orange-50 border-orange-100 animate-pulse' },
         'migration_fee':     { label: 'MIGRATION FEE',        color: 'text-purple-600 bg-purple-50 border-purple-100' },
         'upgrade_fee':       { label: 'TOKEN UPGRADE FEE',    color: 'text-indigo-600 bg-indigo-50 border-indigo-100' },
+        'smart_money_fee':   { label: 'SMART MONEY FEE',     color: 'text-cyan-600 bg-cyan-50 border-cyan-100' },
     };
     const cfg = (type && labels[type.toLowerCase()]) || { label: (type || 'UNKNOWN').toUpperCase().replace(/_/g, ' '), color: 'text-gray-600 bg-gray-50 border-gray-100' };
     return (
@@ -178,6 +179,7 @@ function StatHologram({ icon, label, value, sub, color = "rose", delay = 0, onCl
                         {value.split(' ')[0]}
                     </p>
                     {value.includes('BNB') && <span className="text-xs font-bold text-white/40 mb-1">BNB</span>}
+                    {value.includes('USDT') && <span className="text-xs font-bold text-white/40 mb-1">USDT</span>}
                 </div>
             </div>
 
@@ -456,6 +458,7 @@ export default function AdminPage() {
         const migrationFeeTotal = transfers.filter(t => t.transfer_type === 'migration_fee').reduce((s, x) => s + (x.amount_bnb || 0), 0);
         const upgradeFeeTotal   = transfers.filter(t => t.transfer_type === 'upgrade_fee').reduce((s, x) => s + (x.amount_bnb || 0), 0);
         const sweepTotal       = transfers.filter(t => t.transfer_type === 'daily_sweep').reduce((s, x) => s + (x.amount_bnb || 0), 0);
+        const smartMoneyFee    = transfers.filter(t => t.transfer_type === 'smart_money_fee').length; // $1.00 each
         const wpUSD           = (stats.wp?.paid_count || 0) * 2;
         
         // Standard Token & Other potential fee categories
@@ -479,6 +482,7 @@ export default function AdminPage() {
             sweep:      sweepTotal,
             aiAgent:    aiAgentFeeTotal,
             futures:    futuresFeeTotal,
+            smartMoney: smartMoneyFee,
             wpUSD:      wpUSD,
             totalBNB:   totalEstimatedInflow || 0.000001, // Prevent div by zero
             totalWP:    stats.wp?.paid_count || 0
@@ -726,6 +730,12 @@ export default function AdminPage() {
                         sub="Status Boosts" delay={0.7}
                         onClick={() => setSelectedCategory({ category: 'upgrade_fee', title: 'Token Upgrade Audit', color: 'indigo' })}
                     />
+                    <StatHologram 
+                        icon={<Brain className="w-5 h-5" />} color="cyan"
+                        label="Smart Money Hub" value={`${econ?.smartMoney}.00 USDT`}
+                        sub="Strategic Fees" delay={0.8}
+                        onClick={() => setSelectedCategory({ category: 'smart_money_fee', title: 'Smart Money Audit', color: 'cyan' })}
+                    />
                 </div>
 
                 {/* ── Drill-down Overlay ── */}
@@ -781,7 +791,9 @@ export default function AdminPage() {
                                                         </div>
                                                     </td>
                                                     <td className="py-7 text-xs font-black text-gray-800">{fullDateTime(t.timestamp)}</td>
-                                                    <td className="py-7 text-right pr-4 font-black text-gray-900">+{formatBNB(t.amount_bnb)} BNB</td>
+                                                    <td className="py-7 text-right pr-4 font-black text-gray-900">
+                                                        +{t.transfer_type === 'smart_money_fee' ? '1.00 USDT' : `${formatBNB(t.amount_bnb)} BNB`}
+                                                    </td>
                                                 </tr>
                                             ))}
                                         </tbody>
@@ -2136,22 +2148,33 @@ function AdminAnnouncements() {
     const [image, setImage] = useState(null);
     const [status, setStatus] = useState('idle');
     const [activeBulletins, setActiveBulletins] = useState([]);
+    
+    // CG Search states
+    const [tokenSearch, setTokenSearch] = useState('');
+    const [cgList, setCgList] = useState([]);
+    const [selectedToken, setSelectedToken] = useState(null);
 
     const fetchBulletins = async () => {
         try {
             const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/community/announcements`);
-            // Show all stored bulletins including ones older than 24h for admin control
             setActiveBulletins(res.data);
         } catch (err) {
             console.error('Fetch bulletins failed:', err);
         }
     };
 
+    const handleSearch = async (val) => {
+        setTokenSearch(val);
+        if (val.length < 2) { setCgList([]); return; }
+        try {
+            const res = await axios.get('https://api.coingecko.com/api/v3/search', { params: { query: val } });
+            setCgList(res.data.coins?.slice(0, 7) || []);
+        } catch (err) { console.warn('CG Search Limit'); }
+    };
+
     useEffect(() => {
         fetchBulletins();
-        const intervalId = setInterval(() => {
-            fetchBulletins();
-        }, 15000);
+        const intervalId = setInterval(fetchBulletins, 15000);
         return () => clearInterval(intervalId);
     }, []);
 
@@ -2163,10 +2186,18 @@ function AdminAnnouncements() {
             formData.append('content', content);
             if (image) formData.append('image', image);
             
+            if (selectedToken) {
+                formData.append('token_symbol', selectedToken.symbol);
+                formData.append('token_name', selectedToken.name);
+                formData.append('token_logo', selectedToken.large || selectedToken.thumb);
+            }
+            
             await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/community/announcements`, formData);
             alert('Bulletin Broadcast Hosted Successfully!');
             setContent('');
             setImage(null);
+            setSelectedToken(null);
+            setTokenSearch('');
             fetchBulletins();
         } catch (err) {
             console.error(err);
@@ -2200,38 +2231,92 @@ function AdminAnnouncements() {
                          </div>
                     </div>
                     
-                    <div className="space-y-6 max-w-2xl">
-                        <div>
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Bulletin Content</label>
-                            <textarea 
-                                value={content}
-                                onChange={(e) => setContent(e.target.value)}
-                                placeholder="Announce partnerships, AMAs, listings..." 
-                                className="w-full h-40 bg-gray-50 border border-gray-200 rounded-2xl p-6 font-medium text-sm outline-none focus:bg-white focus:border-purple-500/50 transition-all resize-none shadow-sm"
-                            />
-                        </div>
-                        
-                        <div>
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Attach Banner (Optional)</label>
-                            <div className="relative group">
-                                <div className="w-full h-32 bg-gray-50 border border-dashed border-gray-300 rounded-2xl flex items-center justify-center overflow-hidden transition-all group-hover:border-purple-500/50 cursor-pointer text-gray-400 group-hover:text-purple-500">
-                                    {image ? (
-                                        <img src={URL.createObjectURL(image)} alt="" className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="flex flex-col items-center gap-2">
-                                            <ImageIcon className="w-6 h-6" />
-                                            <span className="text-[10px] uppercase font-bold tracking-widest">Click to Upload JPG/PNG</span>
-                                        </div>
-                                    )}
-                                    <input type="file" onChange={(e) => setImage(e.target.files[0])} accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                        <div className="space-y-6">
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Bulletin Content</label>
+                                <textarea 
+                                    value={content}
+                                    onChange={(e) => setContent(e.target.value)}
+                                    placeholder="Announce partnerships, AMAs, listings..." 
+                                    className="w-full h-40 bg-gray-50 border border-gray-200 rounded-2xl p-6 font-medium text-sm outline-none focus:bg-white focus:border-purple-500/50 transition-all resize-none shadow-sm"
+                                />
+                            </div>
+                            
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Attach Banner (Optional)</label>
+                                <div className="relative group">
+                                    <div className="w-full h-32 bg-gray-50 border border-dashed border-gray-300 rounded-2xl flex items-center justify-center overflow-hidden transition-all group-hover:border-purple-500/50 cursor-pointer text-gray-400 group-hover:text-purple-500">
+                                        {image ? (
+                                            <img src={URL.createObjectURL(image)} alt="" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="flex flex-col items-center gap-2">
+                                                <ImageIcon className="w-6 h-6" />
+                                                <span className="text-[10px] uppercase font-bold tracking-widest">Click to Upload JPG/PNG</span>
+                                            </div>
+                                        )}
+                                        <input type="file" onChange={(e) => setImage(e.target.files[0])} accept="image/*" className="absolute inset-0 opacity-0 cursor-pointer" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div className="pt-4 border-t border-gray-100">
-                            <button onClick={handlePost} disabled={status === 'loading'} className="px-10 py-5 bg-purple-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-purple-500/20 hover:bg-purple-600 transition-all w-full flex items-center justify-center gap-2 disabled:opacity-50">
-                                {status === 'loading' ? 'Broadcasting...' : 'Broadcast to Network'} <Rocket className="w-4 h-4 ml-2" />
-                            </button>
+                        <div className="space-y-6">
+                            <div>
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Spotlight Asset (CoinGecko Search)</label>
+                                <div className="relative">
+                                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input 
+                                        type="text" 
+                                        value={tokenSearch}
+                                        onChange={(e) => handleSearch(e.target.value)}
+                                        placeholder="e.g. BTC, ETH, PEPE..."
+                                        className="w-full pl-12 pr-6 py-4 bg-gray-50 border border-gray-200 rounded-2xl font-bold text-sm outline-none focus:bg-white focus:border-purple-500/50" 
+                                    />
+                                    
+                                    {cgList.length > 0 && (
+                                        <div className="absolute top-full left-0 right-0 z-50 mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl p-2 flex flex-col gap-1 max-h-[300px] overflow-y-auto">
+                                            {cgList.map(c => (
+                                                <div key={c.id} onClick={() => { setSelectedToken(c); setCgList([]); setTokenSearch(c.name); }} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl cursor-pointer transition-all border border-transparent hover:border-gray-100 group">
+                                                    <div className="flex items-center gap-3">
+                                                        <img src={c.thumb} className="w-8 h-8 rounded-lg" alt="" />
+                                                        <div>
+                                                            <p className="text-xs font-black text-gray-900">{c.symbol}</p>
+                                                            <p className="text-[10px] font-bold text-gray-400">{c.name}</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-[10px] font-black text-gray-300 group-hover:text-purple-500">Pick</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {selectedToken && (
+                                <div className="p-6 bg-purple-50 border border-purple-100 rounded-3xl flex items-center justify-between shadow-xl shadow-purple-500/5 animate-in fade-in zoom-in duration-300">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-16 h-16 bg-white p-2 rounded-2xl shadow-inner border border-purple-100">
+                                            <img src={selectedToken.large || selectedToken.thumb} className="w-full h-full object-contain" alt="" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xl font-black text-gray-900 tracking-tighter">{selectedToken.symbol}</p>
+                                            <p className="text-[10px] font-black text-purple-500 uppercase tracking-widest">{selectedToken.name}</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => setSelectedToken(null)} className="p-2 text-gray-300 hover:text-rose-500 transition-colors"><X className="w-5 h-5" /></button>
+                                </div>
+                            )}
+
+                            <div className="pt-4">
+                                <button onClick={handlePost} disabled={status === 'loading'} className="px-10 py-5 bg-purple-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-purple-500/20 hover:bg-purple-600 transition-all w-full flex items-center justify-center gap-2 disabled:opacity-50 h-[70px]">
+                                    {status === 'loading' ? (
+                                        <Loader2 className="w-6 h-6 animate-spin" />
+                                    ) : (
+                                        <>Broadcasting Global Bulletin <Rocket className="w-4 h-4 ml-2" /></>
+                                    )}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </GlassCard>
@@ -2243,12 +2328,13 @@ function AdminAnnouncements() {
                         <h4 className="text-xl font-black text-gray-900 tracking-tight uppercase">Master Broadcast Ledger</h4>
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Found {activeBulletins.length} Active Global Announcements</p>
                     </div>
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto min-h-[400px]">
                         <table className="w-full">
                             <thead className="bg-gray-50/50">
                                 <tr>
                                     <th className="px-10 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">#</th>
                                     <th className="px-10 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Announcement Content</th>
+                                    <th className="px-10 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Spotlight Asset</th>
                                     <th className="px-10 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Engagement</th>
                                     <th className="px-10 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Inception</th>
                                     <th className="px-10 py-6 text-right text-[11px] font-black text-gray-400 uppercase tracking-widest pr-10">Control</th>
@@ -2256,7 +2342,7 @@ function AdminAnnouncements() {
                             </thead>
                             <tbody className="divide-y divide-black/5">
                                 {activeBulletins.length === 0 ? (
-                                    <tr><td colSpan="5" className="px-10 py-20 text-center text-gray-400 font-bold uppercase tracking-widest">No Active Broadcasts</td></tr>
+                                    <tr><td colSpan="6" className="px-10 py-20 text-center text-gray-400 font-bold uppercase tracking-widest">No Active Broadcasts</td></tr>
                                 ) : (
                                     activeBulletins.map((b, i) => (
                                         <tr key={b.id} className="hover:bg-gray-50/80 transition-all group">
@@ -2264,15 +2350,24 @@ function AdminAnnouncements() {
                                             <td className="px-10 py-8">
                                                 <div className="flex items-center gap-4">
                                                     {b.image_url && <img src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}${b.image_url}`} className="w-12 h-12 rounded-xl object-cover shadow-sm" />}
-                                                    <p className="text-xs font-bold text-gray-900 line-clamp-2 max-w-md">{b.content}</p>
+                                                    <p className="text-xs font-bold text-gray-900 line-clamp-2 max-w-sm">{b.content}</p>
                                                 </div>
+                                            </td>
+                                            <td className="px-10 py-8">
+                                                {b.token_symbol ? (
+                                                    <div className="flex items-center gap-3">
+                                                        <img src={b.token_logo} className="w-8 h-8 rounded-lg shadow-sm" />
+                                                        <div>
+                                                            <p className="text-[10px] font-black text-gray-900">{b.token_symbol}</p>
+                                                            <p className="text-[9px] font-bold text-gray-400">{b.token_name}</p>
+                                                        </div>
+                                                    </div>
+                                                ) : <span className="text-[10px] text-gray-300 font-bold">NONE</span>}
                                             </td>
                                             <td className="px-10 py-8">
                                                 <span className="text-[10px] font-black text-purple-600 uppercase tracking-widest bg-purple-100 px-3 py-1 rounded-full">{b.likes} LIKES</span>
                                             </td>
-                                            <td className="px-10 py-8">
-                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{new Date(b.created_at).toLocaleString()}</span>
-                                            </td>
+                                            <td className="px-10 py-8 text-xs font-black text-gray-400 uppercase">{timeAgo(b.created_at)}</td>
                                             <td className="px-10 py-8 text-right pr-10">
                                                 <button onClick={() => handleDelete(b.id)} className="p-3 bg-red-50 text-red-500 hover:bg-rose-500 hover:text-white rounded-xl transition-all shadow-sm">
                                                     <Trash2 className="w-4 h-4" />

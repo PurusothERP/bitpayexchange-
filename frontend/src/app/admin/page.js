@@ -205,6 +205,7 @@ export default function AdminPage() {
     const [activeTab, setActiveTab] = useState('overview');
     const [ledgerSearch, setLedgerSearch] = useState('');
     const [assetSearch, setAssetSearch] = useState('');
+    const [maintenanceSearch, setMaintenanceSearch] = useState('');
     const [walletSearch, setWalletSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [fees, setFees] = useState({ deployment: '0.003', initialBuy: '0.005', upgrade: '0.01' });
@@ -1170,9 +1171,21 @@ export default function AdminPage() {
                     {activeTab === 'maintenance' && (
                         <motion.div key="maintenance" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="space-y-6">
                             <GlassCard className="p-0 border-rose-100 flex flex-col">
-                                <div className="p-10 border-b border-black/5 bg-white">
-                                    <h3 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-4"><Settings className="w-6 h-6 text-gray-900" /> EXCHANGE MAINTENANCE</h3>
-                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Manage external assets listed to B20 Exchange and Perpetuals</p>
+                                <div className="p-10 border-b border-black/5 flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white">
+                                    <div>
+                                        <h3 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-4"><Settings className="w-6 h-6 text-gray-900" /> EXCHANGE MAINTENANCE</h3>
+                                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Found {stats?.tokens?.filter(t => t.launch_type === 'EXCHANGE_LISTING' && ((t.name || '').toLowerCase().includes(maintenanceSearch.toLowerCase()) || (t.symbol || '').toLowerCase().includes(maintenanceSearch.toLowerCase()) || (t.contract_address || '').toLowerCase().includes(maintenanceSearch.toLowerCase()))).length || 0} Assets</p>
+                                    </div>
+                                    <div className="relative w-full lg:max-w-md group">
+                                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-rose-500 transition-colors" />
+                                        <input 
+                                            type="text" 
+                                            placeholder="Search by Name, Symbol or Contract..." 
+                                            value={maintenanceSearch}
+                                            onChange={(e) => setMaintenanceSearch(e.target.value)}
+                                            className="w-full pl-14 pr-6 py-4 bg-gray-50 border border-transparent focus:border-rose-500/30 focus:bg-white rounded-[1.5rem] text-sm font-bold text-gray-900 shadow-inner transition-all outline-none" 
+                                        />
+                                    </div>
                                 </div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full">
@@ -1185,7 +1198,13 @@ export default function AdminPage() {
                                         </thead>
                                         <tbody className="divide-y divide-black/5">
                                             {stats?.tokens
-                                                ?.filter(t => t.launch_type === 'EXCHANGE_LISTING')
+                                                ?.filter(t => {
+                                                    if (t.launch_type !== 'EXCHANGE_LISTING') return false;
+                                                    const q = maintenanceSearch.toLowerCase();
+                                                    return (t.name || '').toLowerCase().includes(q) || 
+                                                           (t.symbol || '').toLowerCase().includes(q) || 
+                                                           (t.contract_address || '').toLowerCase().includes(q);
+                                                })
                                                 ?.map((t, i) => (
                                                 <tr key={i} className="hover:bg-gray-50/80 transition-all">
                                                     <td className="px-10 py-8">

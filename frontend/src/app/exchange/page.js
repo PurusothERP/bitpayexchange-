@@ -891,29 +891,36 @@ export default function B20Exchange() {
                         >
                             <div className="grid grid-cols-1 lg:grid-cols-11 gap-6 font-sans">
                                 {/* Market List (2 Cols) */}
-                                <div className="lg:col-span-2 bg-white shadow-xl shadow-gray-100/50 border border-gray-100 rounded-[2.5rem] p-6 flex flex-col gap-6 overflow-hidden h-[850px]">
-                                     <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em] opacity-50">Global Markets</h3>
-                                     <div className="space-y-1 overflow-y-auto pr-2 custom-scrollbar flex-1">
-                                         {tokens.slice(0, 40).map(t => (
+                                 <div className="lg:col-span-2 bg-white shadow-3xl shadow-gray-200/40 border border-gray-100 rounded-[3rem] p-8 flex flex-col gap-8 overflow-hidden h-[850px] transition-all">
+                                     <div className="flex items-center justify-between">
+                                         <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.3em] opacity-40">Trading Pairs</h3>
+                                         <Activity className="w-3.5 h-3.5 text-gray-300" />
+                                     </div>
+                                     <div className="space-y-2 overflow-y-auto pr-2 -mr-2 custom-scrollbar flex-1">
+                                         {tokens.slice(0, 50).map(t => (
                                              <div 
-                                                key={t.id} 
+                                                key={t.id || t.address} 
                                                 onClick={() => setToToken(t)}
-                                                className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${toToken?.id === t.id ? 'bg-amber-50 border-amber-200' : 'bg-transparent border-transparent hover:bg-gray-50'}`}
+                                                className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between group ${toToken?.id === t.id || toToken?.address === t.address ? 'bg-amber-50 border-amber-200 shadow-sm' : 'bg-transparent border-transparent hover:bg-gray-50'}`}
                                              >
-                                                <div className="flex items-center gap-3">
-                                                    <img src={t.image} className="w-5 h-5 rounded-md" alt="" />
-                                                    <div>
-                                                        <p className="text-[10px] font-black text-gray-900 uppercase tracking-tighter">{t.symbol}/BNB</p>
-                                                        <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">${t.current_price?.toLocaleString()}</p>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-9 h-9 bg-white shadow-sm rounded-xl p-1.5 border border-gray-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                        <img src={t.image} className="w-full h-full object-contain rounded-md" alt="" />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <p className="text-[11px] font-black text-gray-900 uppercase tracking-tight">{t.symbol}/BNB</p>
+                                                        <p className="text-[9px] font-bold text-gray-400 font-mono tracking-tighter">${t.current_price < 0.01 ? t.current_price.toFixed(6) : t.current_price?.toLocaleString()}</p>
                                                     </div>
                                                 </div>
-                                                <span className={`text-[9px] font-bold ${t.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                    {t.price_change_percentage_24h?.toFixed(2)}%
-                                                </span>
+                                                <div className="text-right flex flex-col items-end gap-1">
+                                                    <span className={`text-[10px] font-black ${t.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'} bg-white px-2 py-0.5 rounded-lg border border-gray-50 shadow-sm`}>
+                                                        {t.price_change_percentage_24h >= 0 ? '+' : ''}{t.price_change_percentage_24h?.toFixed(2)}%
+                                                    </span>
+                                                </div>
                                              </div>
                                          ))}
                                      </div>
-                                </div>
+                                 </div>
 
                                 {/* Chart Area (6 Cols) */}
                                 <div className="lg:col-span-6 bg-white shadow-xl shadow-gray-100/50 border border-gray-100 rounded-[2.5rem] p-4 flex flex-col gap-4 h-[850px]">

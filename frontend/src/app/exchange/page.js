@@ -2554,23 +2554,25 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                                 className="w-full pl-16 pr-8 py-5 bg-white border border-gray-100 rounded-2xl font-black text-xs outline-none focus:border-indigo-500/50 shadow-sm"
                                                 value={customSearchTerm}
                                                 onChange={async (e) => {
-                                                    const query = e.target.value.toLowerCase();
+                                                    const query = e.target.value.toLowerCase().trim();
                                                     setCustomSearchTerm(e.target.value);
+                                                    
                                                     if (query.length < 2) {
                                                         setDiscoveryResults([]);
                                                         setIsDiscoveryOpen(false);
                                                         return;
                                                     }
 
-                                                    // Local Search First
-                                                    let match = tokens.find(t => 
-                                                        t.symbol.toLowerCase() === query || 
-                                                        t.address?.toLowerCase() === query
-                                                    );
-
-                                                    if (match) {
-                                                        // If exact local match, maybe don't pop global yet? 
-                                                        // But let's show anyway if the user wants "pop at time of typing"
+                                                    // Local Search Optimization (Immediate addition for exact local matches)
+                                                    let exactLocal = tokens.find(t => t.symbol.toLowerCase() === query || t.address?.toLowerCase() === query);
+                                                    if (exactLocal) {
+                                                        if (customBucket.tokens.length < 7 && !customBucket.tokens.find(x => x.symbol === exactLocal.symbol)) {
+                                                            setCustomBucket(prev => ({ ...prev, tokens: [...prev.tokens, exactLocal] }));
+                                                            setCustomSearchTerm('');
+                                                            setDiscoveryResults([]);
+                                                            setIsDiscoveryOpen(false);
+                                                            return;
+                                                        }
                                                     }
 
                                                     // Debounced Global Discovery
@@ -2586,7 +2588,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                                             }
                                                         } catch(err) { console.warn('Global search fail', err); }
                                                         setSearchLoading(false);
-                                                    }, 500);
+                                                    }, 600);
                                                 }}
                                             />
                                         </div>
@@ -2608,7 +2610,11 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                             setSearchLoading(true);
                                             try {
                                                 const dRes = await axios.get(`https://api.coingecko.com/api/v3/coins/${coin.id}`);
-                                                const addr = dRes.data.platforms?.['binance-smart-chain'];
+                                                
+                                                // Handle potential missing platforms or market data
+                                                const platforms = dRes.data.platforms || {};
+                                                const addr = platforms['binance-smart-chain'] || platforms['smart-chain'];
+                                                
                                                 if (addr) {
                                                     const match = {
                                                         symbol: dRes.data.symbol.toUpperCase(),
@@ -2616,18 +2622,23 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                                         address: addr,
                                                         image: dRes.data.image.small,
                                                         cgId: coin.id,
-                                                        current_price: dRes.data.market_data.current_price.usd
+                                                        current_price: dRes.data.market_data?.current_price?.usd || 0
                                                     };
                                                     if (customBucket.tokens.find(x => x.symbol === match.symbol)) {
-                                                        alert('Already in bucket');
+                                                        alert('Asset already initialized in your custom deployment.');
                                                     } else {
-                                                        setCustomBucket({ ...customBucket, tokens: [...customBucket.tokens, match] });
+                                                        setCustomBucket(prev => ({ ...prev, tokens: [...prev.tokens, match] }));
                                                     }
                                                 } else {
-                                                    alert('Selected asset has no verified BSC liquidity source.');
+                                                    alert('NETWORK MISMATCH: Selected asset does not exist on the BEP-20 (BSC) network. Please choose an asset with a verified BSC contract.');
                                                 }
                                             } catch(err) {
                                                 console.error('Coin detail fetch fail', err);
+                                                if (err.response?.status === 429) {
+                                                    alert('PROTOCOL SECURED: Discovery rate limit reached. Please wait 60 seconds for the node to stabilize.');
+                                                } else {
+                                                    alert('DISCOVERY FAILED: Unable to retrieve institutional metadata for this asset.');
+                                                }
                                             }
                                             setSearchLoading(false);
                                         }}

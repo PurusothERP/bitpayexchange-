@@ -292,42 +292,45 @@ export default function B20Exchange() {
                     pancakeTokens = pancakeRes.data.tokens || [];
                 } catch(e) { console.warn('Pancake Protocol: Offline.'); }
 
-                // 2. Global Tier-1 Index (Mandatory Rank 1-250)
+                // 2. Global Token Index (Rank 1-1000) + BSC Leaders — concurrent fetch
                 try {
-                    const cgGlobal1Res = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
-                        params: { vs_currency: 'usd', order: 'market_cap_desc', per_page: 250, page: 1 }
-                    });
-                    cgTokens = [...(cgGlobal1Res.data || [])];
-                } catch(e) { console.warn('Global Sentinel (P1): Rate Limited.'); }
-
-                // 3. Global Tier-2 Index (Rank 251-500)
-                try {
-                    const cgGlobal2Res = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
-                        params: { vs_currency: 'usd', order: 'market_cap_desc', per_page: 250, page: 2 }
-                    });
-                    cgTokens = [...cgTokens, ...(cgGlobal2Res.data || [])];
-                } catch(e) { console.warn('Global Sentinel (P2): Rate Limited.'); }
-
-                // 4. Ecosystem Specific (BSC Leaders)
-                let bscCgTokens = [];
-                try {
-                    const cgBscRes = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
-                        params: { vs_currency: 'usd', category: 'binance-smart-chain', order: 'market_cap_desc', per_page: 250, page: 1 }
-                    });
-                    bscCgTokens = cgBscRes.data || [];
-                } catch(e) { console.warn('BSC Sentinel: Rate Limited.'); }
+                    const [pg1, pg2, pg3, pg4, pgBsc] = await Promise.all([
+                        axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+                            params: { vs_currency: 'usd', order: 'market_cap_desc', per_page: 250, page: 1, sparkline: false }
+                        }),
+                        axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+                            params: { vs_currency: 'usd', order: 'market_cap_desc', per_page: 250, page: 2, sparkline: false }
+                        }),
+                        axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+                            params: { vs_currency: 'usd', order: 'market_cap_desc', per_page: 250, page: 3, sparkline: false }
+                        }),
+                        axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+                            params: { vs_currency: 'usd', order: 'market_cap_desc', per_page: 250, page: 4, sparkline: false }
+                        }),
+                        axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+                            params: { vs_currency: 'usd', category: 'binance-smart-chain', order: 'market_cap_desc', per_page: 250, page: 1, sparkline: false }
+                        }).catch(() => ({ data: [] }))
+                    ]);
+                    cgTokens = [
+                        ...(pg1.data || []),
+                        ...(pg2.data || []),
+                        ...(pg3.data || []),
+                        ...(pg4.data || []),
+                        ...(pgBsc.data || [])
+                    ];
+                } catch(e) { console.warn('Global Index: Rate Limited — using cached data.'); }
 
                 try {
                     const b20Res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/tokens`);
                     b20Tokens = b20Res.data || [];
                 } catch(e) { console.warn('B20 Protocol: Offline.'); }
 
-                cgTokens = [...cgTokens, ...bscCgTokens];
+                // BSC tokens are already merged inside cgTokens via pgBsc above
 
                 const bnbToken = cgTokens?.find(t => t.id === 'binancecoin') || FALLBACK[0];
                 const bnbPriceUsd = bnbToken.current_price || 580;
 
-                const enrichedPancake = pancakeTokens.slice(0, 300).map((pt, i) => {
+                const enrichedPancake = pancakeTokens.slice(0, 500).map((pt, i) => {
                     const cgToken = cgTokens?.find(ct => ct.symbol.toLowerCase() === pt.symbol.toLowerCase());
                     return {
                         id: pt.address,
@@ -766,6 +769,17 @@ export default function B20Exchange() {
                         </button>
                         
                         <button 
+                            onClick={() => setMode('web3')}
+                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 relative overflow-hidden group/w3 ${mode === 'web3' ? 'bg-gray-900 text-white shadow-2xl scale-105' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
+                        >
+                            <div className="relative flex items-center justify-center">
+                                <div className="absolute inset-0 bg-emerald-500/30 rounded-full animate-gold-wave" />
+                                <Globe className={`w-4 h-4 relative z-10 ${mode === 'web3' ? 'text-white' : 'text-emerald-500'}`} />
+                            </div>
+                            Web3 Portal (Pancake Hub)
+                        </button>
+
+                        <button 
                             onClick={() => setMode('fiat')}
                             className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'fiat' ? 'bg-emerald-500 text-white shadow-2xl shadow-emerald-500/20 px-12 border-2 border-white/50' : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border border-emerald-100 shadow-lg shadow-emerald-500/5'}`}
                         >
@@ -773,7 +787,7 @@ export default function B20Exchange() {
                                 <div className="absolute inset-0 bg-emerald-500/30 rounded-full animate-gold-wave" />
                                 <Globe className={`w-4 h-4 relative z-10 ${mode === 'fiat' ? 'text-white' : 'text-emerald-500'}`} />
                             </div>
-                            Fiat - Buy and sell Crypto
+                            Fiat - Buy/Sell
                         </button>
 
                         <Link 
@@ -966,83 +980,130 @@ export default function B20Exchange() {
                             className="max-w-[1750px] mx-auto px-4"
                         >
                             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 font-sans">
-                                {/* Market List (Max Expansion to 4 Cols) */}
-                                 <div className="lg:col-span-4 bg-white shadow-3xl shadow-gray-200/40 border border-gray-100 rounded-[3rem] p-8 flex flex-col gap-8 overflow-hidden h-[850px] transition-all">
-                                     <div className="flex items-center justify-between">
-                                         <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.3em] opacity-40">Trading Pairs</h3>
-                                         <Activity className="w-3.5 h-3.5 text-gray-300" />
-                                     </div>
-                                     <div className="space-y-2 overflow-y-auto pr-2 -mr-2 custom-scrollbar flex-1">
-                                         {tokens.slice(0, 50).map(t => (
-                                             <div 
+                                {/* 1. Market Hub Sidebar (4-Col) */}
+                                <div className="lg:col-span-4 bg-white shadow-3xl shadow-gray-200/40 border border-gray-100 rounded-[3rem] p-8 flex flex-col gap-8 h-[850px]">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.3em] opacity-40">Asset Registry</h3>
+                                        <Activity className="w-4 h-4 text-gray-300" />
+                                    </div>
+                                    <div className="space-y-2 overflow-y-auto pr-2 custom-scrollbar flex-1">
+                                        {tokens.slice(0, 50).map(t => (
+                                            <div 
                                                 key={t.id || t.address} 
                                                 onClick={() => setToToken(t)}
-                                                className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between group ${toToken?.id === t.id || toToken?.address === t.address ? 'bg-amber-50 border-amber-200 shadow-sm' : 'bg-transparent border-transparent hover:bg-gray-50'}`}
-                                             >
+                                                className={`p-5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between group ${toToken?.id === t.id || toToken?.address === t.address ? 'bg-amber-50 border-amber-200 shadow-sm' : 'bg-transparent border-transparent hover:bg-gray-50'}`}
+                                            >
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-9 h-9 bg-white shadow-sm rounded-xl p-1.5 border border-gray-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                    <div className="w-10 h-10 bg-white shadow-sm rounded-xl p-2 border border-gray-100 flex items-center justify-center group-hover:rotate-6 transition-transform">
                                                         <img src={t.image} className="w-full h-full object-contain rounded-md" alt="" />
                                                     </div>
-                                                    <div className="space-y-1">
-                                                        <p className="text-[11px] font-black text-gray-900 uppercase tracking-tight">{t.symbol}/BNB</p>
-                                                        <p className="text-[9px] font-bold text-gray-400 font-mono tracking-tighter">${t.current_price < 0.01 ? t.current_price.toFixed(6) : t.current_price?.toLocaleString()}</p>
+                                                    <div>
+                                                        <p className="text-xs font-black text-gray-900 uppercase tracking-tight">{t.symbol}/BNB</p>
+                                                        <p className="text-[10px] font-bold text-gray-400 font-mono tracking-tighter">${t.current_price < 0.01 ? t.current_price.toFixed(6) : t.current_price?.toLocaleString()}</p>
                                                     </div>
                                                 </div>
-                                                <div className="text-right flex flex-col items-end gap-1">
-                                                    <span className={`text-[10px] font-black ${t.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'} bg-white px-2 py-0.5 rounded-lg border border-gray-50 shadow-sm`}>
-                                                        {t.price_change_percentage_24h >= 0 ? '+' : ''}{t.price_change_percentage_24h?.toFixed(2)}%
-                                                    </span>
-                                                </div>
-                                             </div>
-                                         ))}
-                                     </div>
-                                 </div>
-
-                                {/* Chart Area (6 Cols) */}
-                                 <div className="lg:col-span-5 bg-white shadow-xl shadow-gray-100/50 border border-gray-100 rounded-[2.5rem] p-4 flex flex-col gap-4 h-[850px]">
-                                    <div className="flex items-center justify-between px-6 py-4 bg-gray-50 rounded-[1.5rem] border border-gray-100">
-                                        <div className="flex items-center gap-8">
-                                            <div className="flex items-center gap-3">
-                                                <img src={toToken?.image} className="w-9 h-9 rounded-xl shadow-sm" alt="" />
-                                                <div>
-                                                    <h2 className="text-xl font-black text-gray-900 uppercase tracking-tighter leading-none">{toToken?.symbol}/BNB</h2>
-                                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Cross • {leverage}x Leverage</p>
-                                                </div>
+                                                <span className={`text-[10px] font-black px-2 py-1 rounded-lg border border-gray-50 shadow-sm ${t.price_change_percentage_24h >= 0 ? 'text-emerald-500 bg-white' : 'text-rose-500 bg-white'}`}>
+                                                    {t.price_change_percentage_24h >= 0 ? '+' : ''}{t.price_change_percentage_24h?.toFixed(2)}%
+                                                </span>
                                             </div>
-                                            <div className="h-8 w-[1px] bg-gray-200" />
-                                            <div className="grid grid-cols-3 gap-6">
-                                                <div>
-                                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Index Price</p>
-                                                    <p className="text-sm font-black text-gray-900">${toToken?.current_price?.toLocaleString() || '---'}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">24h Change</p>
-                                                    <p className={`text-sm font-black ${toToken?.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                        {toToken?.price_change_percentage_24h?.toFixed(2) || '0.00'}%
-                                                    </p>
-                                                </div>
-                                                <div className="hidden xl:block">
-                                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Volume 24h</p>
-                                                    <p className="text-sm font-black text-gray-900">${(toToken?.total_volume / 1e6 || 0).toFixed(2)}M</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-                                            <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                                            <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">LIVE TRADING FEED</span>
-                                        </div>
-                                    </div>
-                                    <div className="flex-1 rounded-[1.5rem] overflow-hidden border border-gray-100 bg-[#FDFDFD]">
-                                        <iframe
-                                            key={toToken?.symbol}
-                                            src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_76231&symbol=BINANCE:${(toToken?.symbol || 'BNB').toUpperCase()}USDT&interval=D&theme=light&style=1&timezone=Etc%2FUTC&studies=[]&locale=en`}
-                                            width="100%" height="100%" frameBorder="0"
-                                        ></iframe>
+                                        ))}
                                     </div>
                                 </div>
 
-                                {/* Pro Trading Panel (3 Cols) */}
-                                <div className="lg:col-span-3 flex flex-col gap-6 h-[850px]">
+                                {/* 2. Trading Workspace (8-Col) */}
+                                <div className="lg:col-span-8 flex flex-col gap-6 h-[850px]">
+                                    <div className="bg-white shadow-xl shadow-gray-100/50 border border-gray-100 rounded-[3rem] p-6 flex flex-col gap-4 flex-1">
+                                        <div className="flex items-center justify-between px-6 py-4 bg-gray-50 rounded-[1.5rem] border border-gray-100">
+                                            <div className="flex items-center gap-6">
+                                                <div className="flex items-center gap-3">
+                                                    <img src={toToken?.image} className="w-9 h-9 rounded-xl shadow-sm" alt="" />
+                                                    <div>
+                                                        <h2 className="text-xl font-black text-gray-900 uppercase tracking-tighter leading-none">{toToken?.symbol}/BNB</h2>
+                                                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Cross • {leverage}x Leverage</p>
+                                                    </div>
+                                                </div>
+                                                <div className="h-8 w-[1px] bg-gray-200" />
+                                                <div className="grid grid-cols-3 gap-6">
+                                                    <div>
+                                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 opacity-50">Price</p>
+                                                        <p className="text-sm font-black text-gray-900">${toToken?.current_price?.toLocaleString() || '---'}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 opacity-50">24h</p>
+                                                        <p className={`text-sm font-black ${toToken?.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                            {toToken?.price_change_percentage_24h?.toFixed(2)}%
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-bounce" />
+                                                <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">LIVE HUD</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 rounded-[2.5rem] overflow-hidden border border-gray-100">
+                                            <iframe
+                                                key={toToken?.symbol}
+                                                src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_76231&symbol=BINANCE:${(toToken?.symbol || 'BNB').toUpperCase()}USDT&interval=D&theme=light&style=1&timezone=Etc%2FUTC&studies=[]&locale=en`}
+                                                width="100%" height="100%" frameBorder="0"
+                                            ></iframe>
+                                        </div>
+                                    </div>
+
+                                    {/* Horizontal Transaction Bar */}
+                                    <div className="bg-white shadow-2xl shadow-gray-200/40 border border-gray-100 rounded-[3rem] p-8">
+                                        <div className="flex flex-wrap lg:flex-nowrap items-center gap-10">
+                                            <div className="w-full lg:w-[200px] flex flex-col gap-3">
+                                                <div className="flex bg-gray-50 p-1 rounded-xl border border-gray-100">
+                                                    <button type="button" onClick={() => setOrderType('market')} className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${orderType === 'market' ? 'bg-white shadow-sm text-gray-900 border border-gray-100' : 'text-gray-400 hover:text-gray-900'}`}>Market</button>
+                                                    <button type="button" onClick={() => setOrderType('limit')} className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${orderType === 'limit' ? 'bg-white shadow-sm text-gray-900 border border-gray-100' : 'text-gray-400 hover:text-gray-900'}`}>Limit</button>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button type="button" onClick={() => setTradeSide('long')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${tradeSide === 'long' ? 'bg-emerald-500 text-white shadow-lg border-emerald-600' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>Long</button>
+                                                    <button type="button" onClick={() => setTradeSide('short')} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all ${tradeSide === 'short' ? 'bg-rose-500 text-white shadow-lg border-rose-600' : 'bg-gray-50 text-gray-400 border-gray-100'}`}>Short</button>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex-1 grid grid-cols-2 gap-10 px-6">
+                                                <div className="space-y-3">
+                                                    <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest px-1">Size ({fromToken.symbol})</label>
+                                                    <div className="relative">
+                                                        <input 
+                                                            type="number" value={orderSize} onChange={(e) => setOrderSize(e.target.value)} 
+                                                            className="w-full bg-gray-50 border border-gray-100 rounded-2xl p-5 text-lg font-black text-gray-900 outline-none transition-all focus:border-amber-500" 
+                                                            placeholder="0.00" 
+                                                        />
+                                                        <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] font-black text-gray-400">{fromToken?.symbol}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="space-y-4">
+                                                    <div className="flex justify-between px-1">
+                                                        <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Leverage</label>
+                                                        <span className="text-[14px] font-black text-gray-900">{leverage}x</span>
+                                                    </div>
+                                                    <input 
+                                                        type="range" min="1" max="100" value={leverage} onChange={(e) => setLeverage(e.target.value)} 
+                                                        className="w-full h-1.5 bg-gray-100 rounded-lg appearance-none cursor-pointer accent-amber-500" 
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div className="w-full lg:w-[250px] flex flex-col gap-2">
+                                                <button 
+                                                    onClick={placeMockFuturesOrder}
+                                                    disabled={swapStatus === 'loading'}
+                                                    className={`w-full py-6 rounded-[2rem] text-[11px] font-black uppercase tracking-[0.2em] shadow-2xl transition-all disabled:opacity-50 ${tradeSide === 'long' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}
+                                                >
+                                                    {swapStatus === 'loading' ? 'PROCESSING...' : `OPEN ${tradeSide.toUpperCase()}`}
+                                                </button>
+                                                <p className="text-[8px] font-bold text-gray-400 uppercase text-center tracking-widest">Fee: $1.00 USDT Logged</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 3. Terminal Analytics Panel (3-Col) */}
+                                <div className="lg:col-span-12 xl:col-span-3 flex flex-col gap-6">
                                     <div className="bg-white shadow-xl shadow-gray-100/50 border border-gray-100 rounded-[2.5rem] p-8 flex flex-col flex-1">
                                         <div className="flex bg-gray-50 p-1.5 rounded-2xl mb-8 border border-gray-100">
                                             <button type="button" onClick={() => setOrderType('market')} className={`flex-1 py-3 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${orderType === 'market' ? 'bg-white shadow-sm text-gray-900 border border-gray-100' : 'text-gray-400 hover:text-gray-900'}`}>Market</button>
@@ -1128,138 +1189,264 @@ export default function B20Exchange() {
                                 </div>
                             </div>
 
-                            {/* Bottom Row: Orderbook & Order History */}
+                            {/* Bottom Row: Orderbook & Top Holders */}
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
                                 {/* Orderbook */}
                                 <div className="bg-white shadow-xl shadow-gray-100/50 border border-gray-100 rounded-[2.5rem] p-6 lg:p-8">
                                     <div className="flex items-center justify-between mb-6">
-                                        <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em] opacity-50">Active Orderbook</h3>
+                                        <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em] opacity-50">Active Analytics Hub</h3>
                                         <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                                     </div>
                                     <div className="grid grid-cols-2 gap-6">
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between text-[8px] font-bold text-gray-400 uppercase tracking-widest px-2 mb-3"><span>Ask Price</span><span>Size</span></div>
-                                            {[1.05, 1.04, 1.03, 1.02, 1.01].map((p, idx) => (
-                                                <div key={'ask'+idx} className="flex justify-between items-center text-[10px] font-mono px-3 py-1.5 rounded-lg bg-rose-500/5 hover:bg-rose-500/10 cursor-default">
-                                                    <span className="text-rose-500 font-black">${((toToken?.current_price || 1) * p).toFixed(4)}</span>
-                                                    <span className="text-gray-900 text-[10px] font-bold">{Math.floor(Math.random() * 5000) + 100}</span>
-                                                </div>
+                                        <div className="space-y-2 font-mono">
+                                            {[1.04, 1.03, 1.02, 1.01].map((p, i) => (
+                                                <div key={i} className="flex justify-between text-[10px] p-2 bg-rose-50/50 rounded-lg text-rose-500">${((toToken?.current_price || 1) * p).toFixed(4)}</div>
                                             ))}
                                         </div>
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between text-[8px] font-bold text-gray-400 uppercase tracking-widest px-2 mb-3"><span>Bid Price</span><span>Size</span></div>
-                                            {[0.99, 0.98, 0.97, 0.96, 0.95].map((p, idx) => (
-                                                <div key={'bid'+idx} className="flex justify-between items-center text-[10px] font-mono px-3 py-1.5 rounded-lg bg-emerald-500/5 hover:bg-emerald-500/10 cursor-default">
-                                                    <span className="text-emerald-500 font-black">${((toToken?.current_price || 1) * p).toFixed(4)}</span>
-                                                    <span className="text-gray-900 text-[10px] font-bold">{Math.floor(Math.random() * 5000) + 100}</span>
-                                                </div>
+                                        <div className="space-y-2 font-mono">
+                                            {[0.99, 0.98, 0.97, 0.96].map((p, i) => (
+                                                <div key={i} className="flex justify-between text-[10px] p-2 bg-emerald-50/50 rounded-lg text-emerald-500">${((toToken?.current_price || 1) * p).toFixed(4)}</div>
                                             ))}
                                         </div>
                                     </div>
                                 </div>
-                                {/* Buying History */}
-                                <div className="lg:col-span-2 bg-white shadow-xl shadow-gray-100/50 border border-gray-100 rounded-[2.5rem] p-6 lg:p-8 flex flex-col">
-                                    <div className="flex items-center justify-between mb-6">
-                                        <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em] opacity-50">Position & Order History</h3>
-                                        <div className="flex gap-4 text-[9px] font-black uppercase tracking-widest">
-                                            <button className="text-gray-900 border-b-2 border-gray-900 pb-1">Open Orders ({openPositions.length})</button>
-                                            <button className="text-gray-400 hover:text-gray-900 transition-colors">Trade History</button>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-6 text-[9px] font-bold text-gray-400 uppercase tracking-widest p-4 bg-gray-50 rounded-2xl mb-2 items-center">
-                                        <div>Time</div>
-                                        <div>Pair</div>
-                                        <div>Type / Side</div>
-                                        <div>Entry Price</div>
-                                        <div className="text-right">Amount / PNL</div>
-                                        <div className="text-right">Action</div>
-                                    </div>
-                                    <div className="space-y-3">
-                                        {openPositions.length > 0 ? (
-                                            openPositions.map((pos) => (
-                                                <div key={pos.id} className={`grid grid-cols-6 text-[10px] font-black text-gray-900 uppercase tracking-widest p-4 border rounded-2xl items-center shadow-sm ${pos.side === 'long' ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-rose-500/20 bg-rose-500/5'}`}>
-                                                    <div className="text-gray-400 text-[9px]">{pos.time}</div>
-                                                    <div className="flex items-center gap-2">
-                                                        <img src={pos.image} className="w-5 h-5 rounded hover:scale-110 transition-transform" /> 
-                                                        {pos.tokenSymbol}/BNB
-                                                    </div>
-                                                    <div>
-                                                        <span className={`${pos.side === 'long' ? 'bg-emerald-500 border-emerald-200' : 'bg-rose-500 border-rose-200'} text-white px-3 py-1 rounded border`}>{pos.type} {pos.side} {pos.leverage}x</span>
-                                                    </div>
-                                                    <div className="font-mono">${Number(pos.price).toLocaleString()}</div>
-                                                    <div className={`text-right font-mono ${pos.side === 'long' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                        +{pos.size} 
-                                                        <span className="block text-[8px] font-bold mt-1 text-emerald-500">+${pos.pnlBase} PNL</span>
-                                                    </div>
-                                                    <div className="flex justify-end">
-                                                        <button onClick={() => closePosition(pos.id)} className={`px-3 py-1.5 bg-white border hover:bg-black/5 rounded-lg transition-colors text-[9px] ${pos.side === 'long' ? 'border-emerald-200 text-emerald-600' : 'border-rose-200 text-rose-600'}`}>Close</button>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="flex-1 flex flex-col items-center justify-center text-center opacity-50 pt-8 pb-4">
-                                                <History className="w-8 h-8 text-gray-300 mb-3" />
-                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">No Active Positions</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Analytics Row: Price History & Holders */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-                                <div className="bg-white shadow-xl shadow-gray-100/50 border border-gray-100 rounded-[2.5rem] p-6 lg:p-8">
-                                    <div className="flex items-center justify-between mb-6">
-                                        <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em] opacity-50">Last 10 Days Price History</h3>
+                                <div className="lg:col-span-2 bg-white shadow-xl shadow-gray-100/50 border border-gray-100 rounded-[2.5rem] p-8 flex flex-col h-[350px]">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-widest opacity-40">Deployment Status</h3>
                                         <Activity className="w-4 h-4 text-emerald-500" />
                                     </div>
-                                    <div className="space-y-2">
-                                        <div className="grid grid-cols-3 text-[8px] font-bold text-gray-400 uppercase tracking-widest px-2 mb-3">
-                                            <div>Date</div><div>Closing Price</div><div className="text-right">Change</div>
-                                        </div>
-                                        {[...Array(10)].map((_, i) => {
-                                            const d = new Date(); d.setDate(d.getDate() - i);
-                                            const change = (Math.random() * 10 - 5).toFixed(2);
-                                            return (
-                                                <div key={i} className="grid grid-cols-3 items-center text-[10px] font-mono px-3 py-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
-                                                    <span className="font-bold text-gray-500">{d.toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}</span>
-                                                    <span className="font-black text-gray-900">${((toToken?.current_price || 1) * (1 + (change/100))).toFixed(4)}</span>
-                                                    <span className={`text-right font-black ${change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>{change >= 0 ? '+' : ''}{change}%</span>
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3">
+                                        {openPositions.length > 0 ? openPositions.map(pos => (
+                                            <div key={pos.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                                <div className="flex items-center gap-4">
+                                                    <img src={pos.image} className="w-8 h-8 rounded-lg" />
+                                                    <span className="text-xs font-black uppercase">{pos.tokenSymbol}/BNB</span>
+                                                    <span className={`text-[9px] font-black px-2 py-0.5 rounded ${pos.side === 'long' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>{pos.side} {pos.leverage}x</span>
                                                 </div>
-                                            )
-                                        })}
-                                    </div>
-                                </div>
-
-                                <div className="bg-white shadow-xl shadow-gray-100/50 border border-gray-100 rounded-[2.5rem] p-6 lg:p-8">
-                                    <div className="flex items-center justify-between mb-6">
-                                        <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em] opacity-50">Top 10 Token Holders</h3>
-                                        <Users className="w-4 h-4 text-amber-500" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <div className="grid grid-cols-4 text-[8px] font-bold text-gray-400 uppercase tracking-widest px-2 mb-3">
-                                            <div>Rank</div><div className="col-span-2">Blockchain Wallet</div><div className="text-right">Percentage</div>
-                                        </div>
-                                        {[...Array(10)].map((_, i) => {
-                                            const hash = '0x' + Array(40).fill(0).map(() => Math.floor(Math.random() * 16).toString(16)).join('');
-                                            const pct = (30 / (i + 1.5)).toFixed(2);
-                                            return (
-                                                <div key={i} className="grid grid-cols-4 items-center text-[10px] font-mono px-3 py-2.5 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer">
-                                                    <span className="font-black text-gray-400">#{i + 1}</span>
-                                                    <a href={`https://bscscan.com/address/${hash}`} target="_blank" rel="noreferrer" className="col-span-2 font-black text-amber-600 hover:underline">
-                                                        {hash.substring(0, 8)}...{hash.substring(36)}
-                                                    </a>
-                                                    <span className="text-right font-black text-gray-900">{pct}%</span>
-                                                </div>
-                                            )
-                                        })}
+                                                <button onClick={() => closePosition(pos.id)} className="text-[10px] font-black text-amber-600 uppercase hover:underline">Settle</button>
+                                            </div>
+                                        )) : <div className="text-center py-10 text-[10px] font-black uppercase opacity-20 letter-spacing-[0.2em]">Zero Active Deployments</div>}
                                     </div>
                                 </div>
                             </div>
                         </motion.div>
                     )}
 
+                    {mode === 'web3' && (
+                        <motion.div 
+                            key="web3"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 1.05 }}
+                            className="max-w-[1600px] mx-auto px-4 space-y-10"
+                        >
+                            {/* Header */}
+                            <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-8 px-2">
+                                <div>
+                                    <div className="flex items-center gap-3 mb-4">
+                                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.4em]">Web3 Pancake Explorer // BSC Mainnet Live</span>
+                                    </div>
+                                    <h1 className="text-5xl md:text-7xl font-black text-gray-900 uppercase tracking-tighter leading-none mb-4">Pancake <span className="text-amber-500">Hub</span></h1>
+                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">500+ Indexed Assets · Contract Discovery · Instant Buy/Sell</p>
+                                </div>
+                                <div className="flex items-center gap-3 px-6 py-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
+                                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{displayTokens.length} Assets Indexed</span>
+                                </div>
+                            </div>
+
+                            {/* Filters, Search & View Toggle Row */}
+                            <div className="flex flex-col gap-6 bg-white shadow-2xl shadow-gray-100/80 border border-gray-100 rounded-[2.5rem] p-6">
+                                {/* Row 1: Category Filters */}
+                                <div className="flex flex-wrap items-center justify-between gap-4">
+                                    <div className="flex bg-gray-50 p-1.5 rounded-[1.5rem] border border-gray-100 font-black uppercase tracking-widest text-[10px] gap-1 flex-wrap">
+                                        {[
+                                            { id: 'all', label: 'All Tokens', icon: <Globe className="w-3.5 h-3.5" /> },
+                                            { id: 'gainers', label: 'Gainers', icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> },
+                                            { id: 'losers', label: 'Losers', icon: <TrendingDown className="w-3.5 h-3.5 text-rose-500" /> },
+                                            { id: 'trending', label: 'Trending', icon: <Sparkles className="w-3.5 h-3.5 text-amber-500" /> },
+                                            { id: 'volume', label: 'High Volume', icon: <Activity className="w-3.5 h-3.5 text-blue-500" /> },
+                                        ].map(cat => (
+                                            <button
+                                                key={cat.id}
+                                                onClick={() => setMarketCategory(cat.id)}
+                                                className={`px-6 py-3 rounded-[1.2rem] flex items-center gap-2.5 transition-all ${marketCategory === cat.id ? 'bg-gray-900 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900 hover:bg-white'}`}
+                                            >
+                                                {cat.icon} {cat.label}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {/* Sort & View Toggle */}
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3">
+                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Sort:</span>
+                                            <select
+                                                value={marketSort}
+                                                onChange={(e) => setMarketSort(e.target.value)}
+                                                className="bg-transparent text-[10px] font-black uppercase tracking-widest text-gray-900 outline-none cursor-pointer"
+                                            >
+                                                <option value="rank">Global Rank</option>
+                                                <option value="mcap">Market Cap</option>
+                                                <option value="p_high">Price: High → Low</option>
+                                                <option value="p_low">Price: Low → High</option>
+                                                <option value="change">Highest Volatility</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex bg-gray-50 border border-gray-100 p-1.5 rounded-2xl gap-1">
+                                            <button
+                                                onClick={() => setViewType('card')}
+                                                className={`p-3 rounded-xl transition-all ${viewType === 'card' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900'}`}
+                                            >
+                                                <LayoutGrid className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => setViewType('list')}
+                                                className={`p-3 rounded-xl transition-all ${viewType === 'list' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900'}`}
+                                            >
+                                                <List className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Row 2: Search Bar */}
+                                <div className="relative group/search">
+                                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within/search:text-amber-500 transition-colors" />
+                                    <input
+                                        type="text"
+                                        placeholder="SEARCH BY NAME, SYMBOL OR PASTE CONTRACT ADDRESS (0x...)..."
+                                        value={marketSearch}
+                                        onChange={(e) => setMarketSearch(e.target.value)}
+                                        className="w-full bg-gray-50 border border-gray-100 rounded-[1.5rem] py-5 pl-16 pr-6 text-[10px] font-black uppercase tracking-widest outline-none focus:bg-white focus:border-amber-500/50 focus:shadow-xl focus:shadow-amber-500/5 transition-all placeholder:text-gray-200"
+                                    />
+                                    {marketSearch && (
+                                        <button
+                                            onClick={() => setMarketSearch('')}
+                                            className="absolute right-6 top-1/2 -translate-y-1/2 w-6 h-6 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-gray-500 transition-all"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="flex items-center justify-between px-2">
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                        Showing <span className="text-gray-900">{displayTokens.length}</span> assets
+                                    </p>
+                                    {marketSearch.length > 30 && (
+                                        <button
+                                            onClick={() => handleSelectToken({ address: marketSearch, symbol: 'CUSTOM', name: 'Contract Import', image: 'https://cdn-icons-png.flaticon.com/512/2584/2584687.png', current_price: 0, price_change_percentage_24h: 0 })}
+                                            className="flex items-center gap-2 px-6 py-3 bg-amber-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-amber-500/20 hover:bg-amber-600 transition-all"
+                                        >
+                                            <Rocket className="w-3.5 h-3.5" /> Import Contract
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Asset Grid View */}
+                            {viewType === 'card' && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
+                                    {displayTokens.map((t, i) => (
+                                        <motion.div
+                                            key={i}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: Math.min(i * 0.015, 0.3) }}
+                                            className="bg-white border border-gray-100 rounded-[2.5rem] p-6 hover:shadow-2xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all group relative overflow-hidden"
+                                        >
+                                            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-gray-50 to-transparent rounded-bl-[3rem] opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            <div className="flex items-center justify-between mb-6">
+                                                <div className="flex items-center gap-3">
+                                                    <img src={t.image} className="w-10 h-10 rounded-xl group-hover:scale-110 transition-transform" />
+                                                    <div>
+                                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{t.symbol}</p>
+                                                        <p className="text-xs font-black text-gray-900 capitalize truncate max-w-[80px]">{t.name}</p>
+                                                    </div>
+                                                </div>
+                                                <span className={`text-[9px] font-black px-2.5 py-1.5 rounded-xl ${t.price_change_percentage_24h >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                                                    {t.price_change_percentage_24h >= 0 ? '▲' : '▼'} {Math.abs(t.price_change_percentage_24h?.toFixed(2))}%
+                                                </span>
+                                            </div>
+                                            <div className="mb-6">
+                                                <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-1">Price</p>
+                                                <p className="text-xl font-black text-gray-900 group-hover:text-amber-500 transition-colors font-mono">
+                                                    ${t.current_price < 0.01 ? t.current_price?.toFixed(6) : t.current_price?.toLocaleString()}
+                                                </p>
+                                            </div>
+                                            <div className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mb-6">
+                                                MCap: ${t.market_cap ? (t.market_cap / 1e9).toFixed(2) + 'B' : '—'}
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => { setMode('spot'); setToToken(t); }} className="flex-1 py-3.5 bg-emerald-500 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 transition-all hover:bg-emerald-600">Buy</button>
+                                                <button onClick={() => { setMode('spot'); setFromToken(t); }} className="flex-1 py-3.5 bg-rose-500 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-rose-500/20 active:scale-95 transition-all hover:bg-rose-600">Sell</button>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Asset List View */}
+                            {viewType === 'list' && (
+                                <div className="bg-white border border-gray-100 rounded-[2.5rem] overflow-hidden shadow-xl shadow-gray-100/50">
+                                    {/* List Header */}
+                                    <div className="grid grid-cols-12 text-[9px] font-black text-gray-400 uppercase tracking-widest p-5 border-b border-gray-50 bg-gray-50/80 items-center">
+                                        <div className="col-span-1">#</div>
+                                        <div className="col-span-3">Asset</div>
+                                        <div className="col-span-2 text-right">Price</div>
+                                        <div className="col-span-2 text-right">24h Change</div>
+                                        <div className="col-span-2 text-right">Market Cap</div>
+                                        <div className="col-span-2 text-right">Actions</div>
+                                    </div>
+                                    <div className="divide-y divide-gray-50">
+                                        {displayTokens.map((t, i) => (
+                                            <motion.div
+                                                key={i}
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                transition={{ delay: Math.min(i * 0.01, 0.2) }}
+                                                className="grid grid-cols-12 items-center px-5 py-4 hover:bg-gray-50/80 transition-colors group"
+                                            >
+                                                <div className="col-span-1 text-[10px] font-black text-gray-300">
+                                                    {t.market_cap_rank || i + 1}
+                                                </div>
+                                                <div className="col-span-3 flex items-center gap-3">
+                                                    <img src={t.image} className="w-9 h-9 rounded-xl group-hover:scale-110 transition-transform" />
+                                                    <div>
+                                                        <p className="text-xs font-black text-gray-900 uppercase">{t.symbol}</p>
+                                                        <p className="text-[9px] font-bold text-gray-400 capitalize truncate max-w-[80px]">{t.name}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="col-span-2 text-right font-mono text-[11px] font-black text-gray-900">
+                                                    ${t.current_price < 0.01 ? t.current_price?.toFixed(6) : t.current_price?.toLocaleString()}
+                                                </div>
+                                                <div className={`col-span-2 text-right text-[11px] font-black ${t.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                    {t.price_change_percentage_24h >= 0 ? '+' : ''}{t.price_change_percentage_24h?.toFixed(2)}%
+                                                </div>
+                                                <div className="col-span-2 text-right font-mono text-[10px] font-bold text-gray-400">
+                                                    ${t.market_cap ? (t.market_cap / 1e9).toFixed(2) + 'B' : '—'}
+                                                </div>
+                                                <div className="col-span-2 flex justify-end gap-2">
+                                                    <button onClick={() => { setMode('spot'); setToToken(t); }} className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md shadow-emerald-500/20 active:scale-95 transition-all hover:bg-emerald-600">Buy</button>
+                                                    <button onClick={() => { setMode('spot'); setFromToken(t); }} className="px-4 py-2 bg-rose-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md shadow-rose-500/20 active:scale-95 transition-all hover:bg-rose-600">Sell</button>
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {displayTokens.length === 0 && (
+                                <div className="py-24 flex flex-col items-center justify-center text-center bg-white border border-gray-100 rounded-[3rem]">
+                                    <Search className="w-12 h-12 text-gray-200 mb-6" />
+                                    <p className="text-sm font-black text-gray-400 uppercase tracking-widest mb-2">No Assets Found</p>
+                                    <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Try searching by name, symbol or paste a contract address</p>
+                                </div>
+                            )}
+                        </motion.div>
+                    )}
                     {mode === 'markets' && (
                         <motion.div 
                             key="markets"

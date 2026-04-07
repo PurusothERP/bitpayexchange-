@@ -882,6 +882,7 @@ export default function AdminPage() {
                         { id: 'revenue_table', icon: <Receipt className="w-4 h-4" />, label: 'Excel Ledger (Revenue)', show: checkAccess('view_revenue') },
                         { id: 'tokens', icon: <Database className="w-4 h-4" />, label: 'Master Asset Ledger', show: checkAccess('manage_tokens') },
                         { id: 'list_token', icon: <Rocket className="w-4 h-4" />, label: 'List to Exchange', show: checkAccess('manage_tokens') },
+                        { id: 'maintenance', icon: <Settings className="w-4 h-4" />, label: 'Exchange Maintenance', show: checkAccess('manage_tokens') },
                         { id: 'launchpad', icon: <Rocket className="w-4 h-4" />, label: 'Launchpad Manager', show: checkAccess('manage_tokens') },
                         { id: 'wallets', icon: <Users className="w-4 h-4" />, label: 'Connected Wallets', show: checkAccess('manage_wallets') },
                         { id: 'fiat', icon: <DollarSign className="w-4 h-4" />, label: 'Fiat Management', show: checkAccess('manage_fiat') },
@@ -1071,6 +1072,72 @@ export default function AdminPage() {
                                         {isListingToken ? 'Deploying to Exchange...' : 'Confirm Listing'}
                                     </button>
                                 </form>
+                            </GlassCard>
+                        </motion.div>
+                    )}
+
+                    {activeTab === 'maintenance' && (
+                        <motion.div key="maintenance" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="space-y-6">
+                            <GlassCard className="p-0 border-rose-100 flex flex-col">
+                                <div className="p-10 border-b border-black/5 bg-white">
+                                    <h3 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-4"><Settings className="w-6 h-6 text-gray-900" /> EXCHANGE MAINTENANCE</h3>
+                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Manage external assets listed to B20 Exchange and Perpetuals</p>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead className="bg-gray-50/50">
+                                            <tr>
+                                                <th className="px-10 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Coin Identity</th>
+                                                <th className="px-10 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Base Price</th>
+                                                <th className="px-10 py-6 text-right text-[11px] font-black text-gray-400 uppercase tracking-widest pr-10">Visibility Control (ON/OFF)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-black/5">
+                                            {stats?.tokens
+                                                ?.filter(t => t.launch_type === 'EXCHANGE_LISTING')
+                                                ?.map((t, i) => (
+                                                <tr key={i} className="hover:bg-gray-50/80 transition-all">
+                                                    <td className="px-10 py-8">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className="w-12 h-12 rounded-2xl bg-white border border-black/5 p-1 shadow-inner overflow-hidden flex items-center justify-center">
+                                                                {t.logo_url ? <img src={t.logo_url} className="w-full h-full object-cover" /> : <div className="text-xl">🪙</div>}
+                                                            </div>
+                                                            <div>
+                                                                <p className="font-black text-gray-900 text-base mb-1 tracking-tight">{t.name}</p>
+                                                                <div className="flex items-center gap-2">
+                                                                    <p className="text-[10px] font-black text-rose-500">${t.symbol}</p>
+                                                                    <CopyButton text={t.contract_address} />
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-10 py-8">
+                                                        <p className="font-mono text-[14px] font-bold text-gray-900">{t.price_bnb} BNB</p>
+                                                    </td>
+                                                    <td className="px-10 py-8 text-right pr-10">
+                                                        <button 
+                                                            onClick={async () => {
+                                                                await axios.post(`${API_URL}/tokens/status/update`, {
+                                                                    contract_address: t.contract_address,
+                                                                    status: t.trust_status,
+                                                                    is_delisted: !t.is_delisted, // toggle
+                                                                    wallet: account
+                                                                });
+                                                                loadData();
+                                                            }}
+                                                            className={`text-[11px] font-black uppercase px-6 py-3 rounded-xl border transition-all ${t.is_delisted ? 'bg-red-50 text-red-600 border-red-200' : 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 border-emerald-600'}`}
+                                                        >
+                                                            {t.is_delisted ? 'OFF (Hidden)' : 'ON (Visible)'}
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {(stats?.tokens?.filter(t => t.launch_type === 'EXCHANGE_LISTING').length || 0) === 0 && (
+                                                <tr><td colSpan="3" className="px-10 py-12 text-center text-gray-400 font-bold text-sm">No external listings yet.</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
                             </GlassCard>
                         </motion.div>
                     )}

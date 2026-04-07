@@ -227,6 +227,25 @@ export default function AdminPage() {
     const [isAssistant, setIsAssistant] = useState(false);
     const [assistantPermissions, setAssistantPermissions] = useState([]);
     const [newAssistant, setNewAssistant] = useState({ wallet: '', name: '', permissions: [] });
+    
+    // Manual Token Listing
+    const [listTokenData, setListTokenData] = useState({ name: '', symbol: '', contract_address: '', total_supply: '1000000000', liquidity_bnb: '10', bnb_price: '0.00001', logo_url: '' });
+    const [isListingToken, setIsListingToken] = useState(false);
+    const handleListToken = async (e) => {
+        e.preventDefault();
+        setIsListingToken(true);
+        try {
+            await axios.post(`${API_URL}/tokens/admin/list`, { ...listTokenData, wallet: account });
+            alert('Token successfully listed to Exchange & Perpetuals!');
+            setListTokenData({ name: '', symbol: '', contract_address: '', total_supply: '1000000000', liquidity_bnb: '10', bnb_price: '0.00001', logo_url: '' });
+            loadData();
+            setActiveTab('tokens');
+        } catch (err) {
+            alert('Failed to list token: ' + (err.response?.data?.error || err.message));
+        } finally {
+            setIsListingToken(false);
+        }
+    };
 
     const isAdmin = account && account.toLowerCase() === TREASURY;
     const hasAccess = isAdmin || isAssistant;
@@ -862,6 +881,7 @@ export default function AdminPage() {
                         { id: 'overview', icon: <LayoutDashboard className="w-4 h-4" />, label: 'Revenue Overview', show: checkAccess('view_revenue') },
                         { id: 'revenue_table', icon: <Receipt className="w-4 h-4" />, label: 'Excel Ledger (Revenue)', show: checkAccess('view_revenue') },
                         { id: 'tokens', icon: <Database className="w-4 h-4" />, label: 'Master Asset Ledger', show: checkAccess('manage_tokens') },
+                        { id: 'list_token', icon: <Rocket className="w-4 h-4" />, label: 'List to Exchange', show: checkAccess('manage_tokens') },
                         { id: 'launchpad', icon: <Rocket className="w-4 h-4" />, label: 'Launchpad Manager', show: checkAccess('manage_tokens') },
                         { id: 'wallets', icon: <Users className="w-4 h-4" />, label: 'Connected Wallets', show: checkAccess('manage_wallets') },
                         { id: 'fiat', icon: <DollarSign className="w-4 h-4" />, label: 'Fiat Management', show: checkAccess('manage_fiat') },
@@ -999,6 +1019,58 @@ export default function AdminPage() {
                                         </tbody>
                                     </table>
                                 </div>
+                            </GlassCard>
+                        </motion.div>
+                    )}
+
+                    {activeTab === 'list_token' && (
+                        <motion.div key="list_token" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }} className="space-y-6">
+                            <GlassCard className="p-10 border-cyan-100 flex flex-col items-center">
+                                <div className="w-20 h-20 rounded-[2rem] bg-cyan-50 flex items-center justify-center mb-6 shadow-xl border border-cyan-100">
+                                    <Rocket className="w-10 h-10 text-cyan-500 icon-3d" />
+                                </div>
+                                <h2 className="text-3xl font-black text-gray-900 tracking-tighter mb-2">List Token to Exchange</h2>
+                                <p className="text-gray-500 font-bold mb-10 max-w-lg text-center">Manually add external or custom tokens to the B20 Exchange and Perpetual Futures platforms instantly.</p>
+                                
+                                <form onSubmit={handleListToken} className="w-full max-w-3xl space-y-6 text-left">
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Token Name</label>
+                                            <input required type="text" value={listTokenData.name} onChange={e => setListTokenData({...listTokenData, name: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-cyan-500 font-bold text-gray-900" placeholder="e.g. Wrapped BNB" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Token Symbol</label>
+                                            <input required type="text" value={listTokenData.symbol} onChange={e => setListTokenData({...listTokenData, symbol: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-cyan-500 font-bold text-gray-900" placeholder="e.g. WBNB" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Contract Address</label>
+                                        <input required type="text" value={listTokenData.contract_address} onChange={e => setListTokenData({...listTokenData, contract_address: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-cyan-500 font-mono font-bold text-gray-900" placeholder="0x..." />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Circulating Supply</label>
+                                            <input type="number" value={listTokenData.total_supply} onChange={e => setListTokenData({...listTokenData, total_supply: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-cyan-500 font-bold text-gray-900" placeholder="e.g. 1000000000" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Pancake Liquidity (BNB)</label>
+                                            <input type="number" step="0.01" value={listTokenData.liquidity_bnb} onChange={e => setListTokenData({...listTokenData, liquidity_bnb: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-cyan-500 font-bold text-gray-900" placeholder="e.g. 10" />
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-6">
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Current BNB Price</label>
+                                            <input type="number" step="0.00000001" value={listTokenData.bnb_price} onChange={e => setListTokenData({...listTokenData, bnb_price: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-cyan-500 font-bold text-gray-900" placeholder="e.g. 0.00001" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Logo URL (Optional)</label>
+                                            <input type="url" value={listTokenData.logo_url} onChange={e => setListTokenData({...listTokenData, logo_url: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-cyan-500 font-bold text-gray-900" placeholder="https://..." />
+                                        </div>
+                                    </div>
+                                    <button disabled={isListingToken} type="submit" className="w-full py-5 bg-cyan-500 hover:bg-cyan-600 text-white font-black rounded-2xl shadow-xl shadow-cyan-500/20 uppercase tracking-widest transition-all mt-4 disabled:opacity-50">
+                                        {isListingToken ? 'Deploying to Exchange...' : 'Confirm Listing'}
+                                    </button>
+                                </form>
                             </GlassCard>
                         </motion.div>
                     )}

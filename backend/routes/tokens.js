@@ -492,5 +492,64 @@ router.post('/admin/verify-cycle', async (req, res) => {
     }
 });
 
+// ─── POST /api/tokens/admin/list ──────────────────────────────────────────────
+// Admin only: Directly list external/custom tokens to the exchange
+router.post('/admin/list', async (req, res) => {
+    const { 
+        name, symbol, contract_address, total_supply, 
+        liquidity_bnb, bnb_price, logo_url, wallet 
+    } = req.body;
+    
+    const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+    if (!wallet || wallet.toLowerCase() !== TREASURY) {
+        return res.status(403).json({ error: 'Admin only access' });
+    }
+
+    if (!contract_address || !name || !symbol) {
+        return res.status(400).json({ error: 'Missing required token details (name, symbol, address)' });
+    }
+
+    try {
+        const query = `
+            INSERT INTO tokens (
+                name, symbol, contract_address, creator_wallet, 
+                logo_url, total_supply, liquidity_bnb, price_bnb, 
+                trust_status, launch_type, trading_enabled
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(contract_address) DO UPDATE SET
+                name = excluded.name,
+                symbol = excluded.symbol,
+                logo_url = excluded.logo_url,
+                total_supply = excluded.total_supply,
+                liquidity_bnb = excluded.liquidity_bnb,
+                price_bnb = excluded.price_bnb,
+                trust_status = excluded.trust_status,
+                trading_enabled = excluded.trading_enabled
+        `;
+        
+        const values = [
+            name,
+            symbol.toUpperCase(),
+            contract_address.toLowerCase(),
+            wallet, // admin listed
+            logo_url || 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png',
+            total_supply || '1000000000',
+            liquidity_bnb || '0',
+            bnb_price || 0,
+            'Highly Trusted', // Admins only add trusted tokens
+            'EXCHANGE_LISTING', 
+            1 // Trading enabled
+        ];
+
+        await db.query(query, values);
+
+        res.status(201).json({ success: true, message: 'Token directly listed to Exchange & Perpetuals' });
+    } catch (error) {
+        console.error('Admin token listing error:', error);
+        res.status(500).json({ error: 'Failed to list token', details: error.message });
+    }
+});
+
 module.exports = router;
 

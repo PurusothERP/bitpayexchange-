@@ -2506,15 +2506,15 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                     </div>
                                 </div>
 
-                                <div className="space-y-6 bg-gray-50/50 p-10 rounded-[4rem] border border-gray-100 shadow-inner">
-                                    <div className="flex items-center justify-between mb-4">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Selected Assets ({customBucket.tokens.length}/7)</p>
-                                        <div className="flex items-center gap-2 bg-indigo-50 px-4 py-1.5 rounded-full border border-indigo-100 font-black text-[9px] text-indigo-600 uppercase tracking-widest">
-                                            <Sparkles className="w-3 h-3" /> Equal Weighting
+                                    <div className="space-y-6 bg-gray-50/50 p-10 rounded-[4rem] border border-gray-100 shadow-inner overflow-hidden flex flex-col max-h-[700px]">
+                                        <div className="flex items-center justify-between mb-4 shrink-0">
+                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Selected Assets ({customBucket.tokens.length}/7)</p>
+                                            <div className="flex items-center gap-2 bg-indigo-50 px-4 py-1.5 rounded-full border border-indigo-100 font-black text-[9px] text-indigo-600 uppercase tracking-widest">
+                                                <Sparkles className="w-3 h-3" /> Equal Weighting
+                                            </div>
                                         </div>
-                                    </div>
 
-                                    <div className="space-y-3 min-h-[300px]">
+                                        <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar">
                                         {customBucket.tokens.length === 0 ? (
                                             <div className="flex flex-col items-center justify-center py-24 text-gray-300 gap-6 opacity-30">
                                                 <Layout className="w-16 h-16" />
@@ -2593,8 +2593,8 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                             />
                                         </div>
                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-5 text-center flex items-center justify-center gap-2">
-                                            {searchLoading ? <Loader2 className="w-3 h-3 animate-spin text-indigo-500" /> : <Info className="w-3 h-3" />}
-                                            {searchLoading ? 'Executing Global Discovery Protocol...' : 'Type asset name or symbol for instant discovery'}
+                                            {searchLoading ? <Loader2 className="w-3 h-3 animate-spin text-indigo-500" /> : (customBucket.tokens.length >= 7 ? <ShieldAlert className="w-3 h-3 text-amber-500" /> : <Info className="w-3 h-3" />)}
+                                            {searchLoading ? 'Executing Global Discovery Protocol...' : (customBucket.tokens.length >= 7 ? 'Mission Capacity Reached (7/7 Assets Locked)' : 'Type asset name or symbol for instant discovery')}
                                         </p>
                                     </div>
                                     

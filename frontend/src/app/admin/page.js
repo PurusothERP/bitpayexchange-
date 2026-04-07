@@ -279,13 +279,30 @@ export default function AdminPage() {
         }
     };
     
+    const [listTokenFile, setListTokenFile] = useState(null);
     const handleListToken = async (e) => {
         e.preventDefault();
         setIsListingToken(true);
         try {
-            await axios.post(`${API_URL}/tokens/admin/list`, { ...listTokenData, wallet: account });
+            const formData = new FormData();
+            formData.append('name', listTokenData.name);
+            formData.append('symbol', listTokenData.symbol);
+            formData.append('contract_address', listTokenData.contract_address);
+            formData.append('total_supply', listTokenData.total_supply);
+            formData.append('liquidity_bnb', listTokenData.liquidity_bnb);
+            formData.append('bnb_price', listTokenData.bnb_price);
+            formData.append('logo_url', listTokenData.logo_url);
+            formData.append('wallet', account);
+            if (listTokenFile) {
+                formData.append('logo', listTokenFile);
+            }
+
+            await axios.post(`${API_URL}/tokens/admin/list`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
             alert('Token successfully listed to Exchange & Perpetuals!');
             setListTokenData({ name: '', symbol: '', contract_address: '', total_supply: '1000000000', liquidity_bnb: '10', bnb_price: '0.00001', logo_url: '' });
+            setListTokenFile(null);
             loadData();
             setActiveTab('tokens');
         } catch (err) {
@@ -1134,8 +1151,12 @@ export default function AdminPage() {
                                             <input type="number" step="0.00000001" value={listTokenData.bnb_price} onChange={e => setListTokenData({...listTokenData, bnb_price: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-cyan-500 font-bold text-gray-900" placeholder="e.g. 0.00001" />
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Logo URL (Optional)</label>
-                                            <input type="url" value={listTokenData.logo_url} onChange={e => setListTokenData({...listTokenData, logo_url: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-cyan-500 font-bold text-gray-900" placeholder="https://..." />
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Logo Attachment OR URL</label>
+                                            <div className="space-y-2">
+                                                <input type="file" accept="image/*" onChange={e => setListTokenFile(e.target.files[0])} className="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-cyan-500 font-bold text-gray-900 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-cyan-50 file:text-cyan-600 hover:file:bg-cyan-100" />
+                                                <div className="text-center text-[9px] font-black text-gray-300 uppercase tracking-widest">- OR PASTE URL -</div>
+                                                <input type="url" value={listTokenData.logo_url} onChange={e => setListTokenData({...listTokenData, logo_url: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-cyan-500 font-bold text-gray-900 text-sm" placeholder="https://..." disabled={!!listTokenFile} />
+                                            </div>
                                         </div>
                                     </div>
                                     <button disabled={isListingToken} type="submit" className="w-full py-5 bg-cyan-500 hover:bg-cyan-600 text-white font-black rounded-2xl shadow-xl shadow-cyan-500/20 uppercase tracking-widest transition-all mt-4 disabled:opacity-50">

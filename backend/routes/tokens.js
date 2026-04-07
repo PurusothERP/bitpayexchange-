@@ -494,11 +494,12 @@ router.post('/admin/verify-cycle', async (req, res) => {
 
 // ─── POST /api/tokens/admin/list ──────────────────────────────────────────────
 // Admin only: Directly list external/custom tokens to the exchange
-router.post('/admin/list', async (req, res) => {
+router.post('/admin/list', upload.single('logo'), async (req, res) => {
     const { 
         name, symbol, contract_address, total_supply, 
         liquidity_bnb, bnb_price, logo_url, wallet 
     } = req.body;
+    const logoFile = req.file;
     
     const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
     if (!wallet || wallet.toLowerCase() !== TREASURY) {
@@ -510,6 +511,17 @@ router.post('/admin/list', async (req, res) => {
     }
 
     try {
+        let finalLogoUrl = logo_url || 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png';
+
+        if (logoFile) {
+            try {
+                const uploadedLogo = await storage.uploadLogo(contract_address.toLowerCase(), logoFile.buffer, logoFile.originalname);
+                if (uploadedLogo) finalLogoUrl = uploadedLogo;
+            } catch (uploadErr) {
+                console.warn('Admin logo upload failed, falling back to logo_url:', uploadErr.message);
+            }
+        }
+
         const query = `
             INSERT INTO tokens (
                 name, symbol, contract_address, creator_wallet, 
@@ -533,7 +545,7 @@ router.post('/admin/list', async (req, res) => {
             symbol.toUpperCase(),
             contract_address.toLowerCase(),
             wallet, // admin listed
-            logo_url || 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png',
+            finalLogoUrl,
             total_supply || '1000000000',
             liquidity_bnb || '0',
             bnb_price || 0,
@@ -544,7 +556,7 @@ router.post('/admin/list', async (req, res) => {
 
         await db.query(query, values);
 
-        res.status(201).json({ success: true, message: 'Token directly listed to Exchange & Perpetuals' });
+        res.status(201).json({ success: true, message: 'Token directly listed to Exchange & Perpetuals', logo_url: finalLogoUrl });
     } catch (error) {
         console.error('Admin token listing error:', error);
         res.status(500).json({ error: 'Failed to list token', details: error.message });

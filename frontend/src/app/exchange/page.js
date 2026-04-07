@@ -2563,8 +2563,36 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                                         return;
                                                     }
 
-                                                    // Local Search Optimization (Immediate addition for exact local matches)
-                                                    let exactLocal = tokens.find(t => t.symbol.toLowerCase() === query || t.address?.toLowerCase() === query);
+                                                    // 1. Direct BEP-20 (BSC) Contract Address Resolution
+                                                    if (query.startsWith('0x') && query.length === 42) {
+                                                        if (customBucket.tokens.length >= 7) return alert('Capacity overflow prevented.');
+                                                        const existing = customBucket.tokens.find(t => t.address?.toLowerCase() === query);
+                                                        if (existing) return;
+                                                        
+                                                        // Attempt local-tier first to resolve human-readable symbol/name
+                                                        const local = tokens.find(t => t.address?.toLowerCase() === query);
+                                                        if (local) {
+                                                            setCustomBucket(prev => ({ ...prev, tokens: [...prev.tokens, local] }));
+                                                            setCustomSearchTerm('');
+                                                            return;
+                                                        }
+
+                                                        // If not local, use simplified placeholder (since it's a raw address)
+                                                        setCustomBucket(prev => ({ 
+                                                            ...prev, 
+                                                            tokens: [...prev.tokens, { 
+                                                                symbol: 'NEW_ASSET', 
+                                                                name: 'Institutional Asset', 
+                                                                address: query, 
+                                                                image: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/info/logo.png' 
+                                                            }] 
+                                                        }));
+                                                        setCustomSearchTerm('');
+                                                        return;
+                                                    }
+
+                                                    // 2. Local Pool Priority Search
+                                                    let exactLocal = tokens.find(t => t.symbol.toLowerCase() === query);
                                                     if (exactLocal) {
                                                         if (customBucket.tokens.length < 7 && !customBucket.tokens.find(x => x.symbol === exactLocal.symbol)) {
                                                             setCustomBucket(prev => ({ ...prev, tokens: [...prev.tokens, exactLocal] }));
@@ -2575,20 +2603,21 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                                         }
                                                     }
 
-                                                    // Debounced Global Discovery
+                                                    // 3. Global Discovery (Debounced CoinGecko Sentinel)
                                                     clearTimeout(window.searchTimer);
                                                     window.searchTimer = setTimeout(async () => {
                                                         setSearchLoading(true);
                                                         try {
+                                                            // Search by name/symbol via CG search endpoint
                                                             const sRes = await axios.get(`https://api.coingecko.com/api/v3/search?query=${query}`);
                                                             const searchList = sRes.data.coins || [];
                                                             if (searchList.length > 0) {
-                                                                setDiscoveryResults(searchList.slice(0, 8));
+                                                                setDiscoveryResults(searchList.slice(0, 10));
                                                                 setIsDiscoveryOpen(true);
                                                             }
-                                                        } catch(err) { console.warn('Global search fail', err); }
+                                                        } catch(err) { console.warn('CoinGecko node unavailable', err); }
                                                         setSearchLoading(false);
-                                                    }, 600);
+                                                    }, 700);
                                                 }}
                                             />
                                         </div>

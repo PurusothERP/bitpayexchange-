@@ -1202,44 +1202,43 @@ export default function B20Exchange() {
                             exit={{ opacity: 0, y: -20 }}
                             className="max-w-[1600px] mx-auto space-y-12"
                         >
-                            {/* Institutional Alpha Ticker - Global Trending (CG Powered) */}
-                            <div className="relative overflow-hidden bg-black shadow-2xl rounded-2xl py-4 group mx-4 border-y border-white/5">
-                                <div className="absolute left-0 top-0 bottom-0 w-40 bg-gradient-to-r from-black via-black/80 to-transparent z-10" />
-                                <div className="absolute right-0 top-0 bottom-0 w-40 bg-gradient-to-l from-black via-black/80 to-transparent z-10" />
+                            {/* Floating Institutional Alpha HUD - Global Trending */}
+                            <div className="relative overflow-hidden py-10 group -mx-8">
+                                <div className="absolute left-0 top-0 bottom-0 w-64 bg-gradient-to-r from-transparent via-[#FDFDFD]/80 to-transparent z-10 pointer-events-none" />
+                                <div className="absolute right-0 top-0 bottom-0 w-64 bg-gradient-to-l from-transparent via-[#FDFDFD]/80 to-transparent z-10 pointer-events-none" />
                                 
-                                <div className="absolute left-6 top-1/2 -translate-y-1/2 z-20 flex items-center gap-2">
-                                    <div className="w-2 h-2 bg-amber-500 rounded-full animate-ping" />
-                                    <span className="text-[9px] font-black text-amber-500 uppercase tracking-[0.3em] whitespace-nowrap bg-black/50 px-3 py-1 rounded-full border border-amber-500/30 backdrop-blur-sm">Trending Now</span>
+                                <div className="absolute left-10 top-1/2 -translate-y-1/2 z-20 flex items-center gap-3">
+                                    <div className="w-2.5 h-2.5 bg-amber-500 rounded-full animate-ping" />
+                                    <span className="text-[10px] font-black text-gray-900 uppercase tracking-[0.4em] whitespace-nowrap bg-white/40 px-5 py-2 rounded-full border border-gray-100 backdrop-blur-md shadow-sm">Trending Alpha</span>
                                 </div>
 
                                 <motion.div 
-                                    className="flex gap-16 whitespace-nowrap pl-56"
-                                    animate={{ x: [0, -2500] }}
-                                    transition={{ duration: 45, repeat: Infinity, ease: "linear" }}
+                                    className="flex gap-20 whitespace-nowrap pl-72"
+                                    animate={{ x: [0, -3000] }}
+                                    transition={{ duration: 50, repeat: Infinity, ease: "linear" }}
                                 >
-                                    {[...cgTrending, ...cgTrending, ...cgTrending].map((t, idx) => (
+                                    {[...cgTrending, ...cgTrending, ...cgTrending, ...cgTrending].map((t, idx) => (
                                         <div 
-                                            key={`${t.id}-${idx}`}
+                                            key={`${t.id || t.address}-${idx}`}
                                             onClick={() => { setMode('spot'); setToToken(t); window.scrollTo({ top: 300, behavior: 'smooth' }); }}
-                                            className="flex items-center gap-5 cursor-pointer group/item py-1"
+                                            className="flex items-center gap-6 cursor-pointer group/float py-2 hover:scale-105 transition-transform"
                                         >
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 bg-white/5 rounded-lg p-1.5 border border-white/5 group-hover/item:border-amber-500/50 transition-all">
-                                                    <img src={t.image} className="w-full h-full object-contain grayscale group-hover/item:grayscale-0 transition-all" alt="" />
+                                            <div className="relative group">
+                                                <div className="absolute inset-0 bg-amber-500/10 blur-xl rounded-full opacity-0 group-hover/float:opacity-100 transition-opacity" />
+                                                <img src={t.image} className="w-10 h-10 relative z-10 object-contain rounded-xl opacity-80 group-hover/float:opacity-100 transition-all" alt="" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-sm font-black text-gray-900 uppercase tracking-tight italic">{t.symbol}</span>
+                                                    <span className={`text-[11px] font-black ${t.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                        {t.price_change_percentage_24h >= 0 ? '+' : ''}{t.price_change_percentage_24h?.toFixed(2)}%
+                                                    </span>
                                                 </div>
-                                                <div className="space-y-0.5">
-                                                    <div className="flex items-center gap-2">
-                                                        <span className="text-xs font-black text-white/90 uppercase tracking-tight group-hover/item:text-white transition-colors">{t.symbol}</span>
-                                                        <span className={`text-[10px] font-bold ${t.price_change_percentage_24h >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                            {t.price_change_percentage_24h >= 0 ? '▲' : '▼'} {Math.abs(t.price_change_percentage_24h || 0).toFixed(2)}%
-                                                        </span>
-                                                    </div>
-                                                    <div className="text-[10px] font-mono text-white/40 group-hover/item:text-white/60 transition-colors">
-                                                        ${t.current_price < 0.01 ? t.current_price.toFixed(8) : t.current_price?.toLocaleString()}
-                                                    </div>
+                                                <div className="text-[10px] font-bold text-gray-400 font-mono tracking-tighter">
+                                                    ${t.current_price < 0.01 ? t.current_price.toFixed(7) : t.current_price?.toLocaleString()}
                                                 </div>
                                             </div>
-                                            <div className="h-6 w-[1px] bg-white/10 ml-2" />
+                                            <div className="w-1.5 h-1.5 bg-gray-200 rounded-full mx-2" />
                                         </div>
                                     ))}
                                 </motion.div>

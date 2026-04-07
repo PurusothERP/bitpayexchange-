@@ -12,7 +12,7 @@ import {
     MoreHorizontal, Search, Settings, ChevronRight, Sparkles,
     PiggyBank, Receipt, Landmark, Scale, X, ArrowDownRight, Info,
     Copy, Check, ListOrdered, PieChart as PieIcon, Briefcase, Rocket, AlertTriangle, Image as ImageIcon,
-    Unlock, Calendar, Gift, Target, MessageSquare, Megaphone, ShieldBan, Trash2
+    Unlock, Calendar, Gift, Target, MessageSquare, Megaphone, ShieldBan, Trash2, Brain
 } from 'lucide-react';
 import axios from 'axios';
 import {

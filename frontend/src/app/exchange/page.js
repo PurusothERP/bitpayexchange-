@@ -1185,6 +1185,42 @@ export default function B20Exchange() {
                             exit={{ opacity: 0, y: -20 }}
                             className="max-w-[1600px] mx-auto space-y-12"
                         >
+                            {/* Trending Ticker - Right to Left */}
+                            <div className="relative overflow-hidden bg-gray-900 shadow-3xl shadow-amber-900/10 rounded-[2.5rem] py-6 border-y border-white/5 mx-4">
+                                <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-gray-900 to-transparent z-10" />
+                                <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-gray-900 to-transparent z-10" />
+                                
+                                <motion.div 
+                                    className="flex gap-12 whitespace-nowrap px-12"
+                                    animate={{ x: [0, -2000] }}
+                                    transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+                                >
+                                    {[...trending, ...trending].slice(0, 20).map((t, idx) => (
+                                        <div 
+                                            key={`${t.id}-${idx}`}
+                                            onClick={() => { setMode('spot'); setToToken(t); window.scrollTo({ top: 300, behavior: 'smooth' }); }}
+                                            className="flex items-center gap-4 cursor-pointer group hover:scale-105 transition-all"
+                                        >
+                                            <div className="w-10 h-10 bg-white/10 rounded-xl p-1.5 border border-white/10 group-hover:bg-amber-500 transition-colors">
+                                                <img src={t.image} className="w-full h-full object-contain rounded-md" alt="" />
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-black text-white uppercase tracking-tighter italic">{t.symbol}</span>
+                                                    <span className={`text-[10px] font-black ${t.price_change_percentage_24h >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                        {t.price_change_percentage_24h >= 0 ? '+' : ''}{t.price_change_percentage_24h?.toFixed(2)}%
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">${t.current_price?.toLocaleString()}</span>
+                                                    <div className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </motion.div>
+                            </div>
+
                             {/* Market Intelligence Filters */}
                             <div className="flex flex-wrap items-center justify-between gap-6 px-4">
                                 <div className="flex bg-white shadow-xl shadow-gray-200/50 p-2 rounded-2xl border border-gray-100 italic font-black uppercase tracking-widest text-[10px]">

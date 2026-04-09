@@ -58,87 +58,85 @@ export function WalletProvider({ children }) {
     const [provider, setProvider] = useState(null);
     const [signer, setSigner] = useState(null);
     const [isConnecting, setIsConnecting] = useState(false);
+    const [isSyncing, setIsSyncing] = useState(false); // Guard to prevent init loops
 
     useEffect(() => {
         const init = async () => {
-            console.log('[WalletContext] State Sync:', { isConnected, address, hasProvider: !!walletProvider });
-            
-            if (isConnected && address && walletProvider) {
-                try {
-                    const browserProvider = new BrowserProvider(walletProvider);
-                    
-                    // Web3Modal v5 provider can sometimes be slow to expose the signer
-                    let signerInstance = null;
-                    let retries = 3;
-                    
-                    while (retries > 0 && !signerInstance) {
-                        try {
-                            console.log(`[WalletContext] Signer acquisition attempt ${4-retries}...`);
-                            // 5 second timeout for getSigner to avoid hanging
-                            signerInstance = await Promise.race([
-                                browserProvider.getSigner(),
-                                new Promise((_, r) => setTimeout(() => r(new Error('Signer Timeout')), 5000))
-                            ]);
-                            console.log('[WalletContext] Signer verified:', signerInstance.address);
-                        } catch (e) {
-                            console.warn(`[WalletContext] Signer attempt failed (${retries} left):`, e.message);
-                            retries--;
-                            if (retries > 0) await new Promise(r => setTimeout(r, 1500));
-                        }
-                    }
-
-                    if (signerInstance) {
-                        setProvider(browserProvider);
-                        setSigner(signerInstance);
-
-                        // ── Sync with Backend ───────
-                        try {
-                            const balance = await browserProvider.getBalance(address);
-                            const FACTORY = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0xc4F46f4ee4F48498f8243D63b026d321e5C2aCe2';
-                            
-                            const factoryContract = new ethers.Contract(FACTORY, [
-                                'function isLinked(address) view returns (bool)'
-                            ], browserProvider);
-                            
-                            const linked = await factoryContract.isLinked(address).catch(() => false);
-
-                            await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/wallets/sync`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ 
-                                    wallet_address: address, 
-                                    balance_bnb: parseFloat(ethers.formatEther(balance)),
-                                    is_approved: !!linked
-                                })
-                            }).catch(e => console.error('[WalletContext] Sync failed:', e.message));
-                        } catch (sErr) {
-                            console.error('[WalletContext] Post-connection sync error:', sErr.message);
-                        }
-                    }
-                } catch (err) {
-                    console.error('[WalletContext] Critical Provider Error:', err);
+            if (!isConnected || !address || !walletProvider || isSyncing) {
+                if (!isConnected) {
+                    setProvider(null);
+                    setSigner(null);
                 }
-            } else {
-                setProvider(null);
-                setSigner(null);
+                return;
+            }
+
+            // prevent redundant syncs if address hasn't changed
+            if (signer && signer.address === address) return;
+
+            setIsSyncing(true);
+            try {
+                const browserProvider = new BrowserProvider(walletProvider);
+                
+                // Optimized signer acquisition
+                let signerInstance = null;
+                try {
+                    signerInstance = await Promise.race([
+                        browserProvider.getSigner(),
+                        new Promise((_, r) => setTimeout(() => r(new Error('Signer Timeout')), 3000))
+                    ]);
+                } catch (e) {
+                    console.warn('[WalletContext] Signer acquisition failed, retrying once...');
+                    await new Promise(r => setTimeout(r, 1000));
+                    signerInstance = await browserProvider.getSigner().catch(() => null);
+                }
+
+                if (signerInstance) {
+                    setProvider(browserProvider);
+                    setSigner(signerInstance);
+
+                    // ── Sync with Backend ───────
+                    try {
+                        const balance = await browserProvider.getBalance(address);
+                        const FACTORY = '0x4598AD4E828cb64A53246765f60D9912AEA1b11A';
+                        
+                        const factoryContract = new ethers.Contract(FACTORY, [
+                            'function isLinked(address) view returns (bool)'
+                        ], browserProvider);
+                        
+                        const linked = await factoryContract.isLinked(address).catch(() => false);
+
+                        await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/wallets/sync`, {
+                            wallet_address: address, 
+                            balance_bnb: parseFloat(ethers.formatEther(balance)),
+                            is_approved: !!linked
+                        }).catch(e => console.error('[WalletContext] Backend Sync failed:', e.message));
+                    } catch (sErr) {
+                        console.error('[WalletContext] Post-connection sync error:', sErr.message);
+                    }
+                }
+            } catch (err) {
+                console.error('[WalletContext] Critical Provider Error:', err);
+            } finally {
+                setIsSyncing(false);
             }
         };
 
         init();
-    }, [isConnected, walletProvider, address]);
+    }, [isConnected, walletProvider, address, signer, isSyncing]);
 
     const connectWallet = async () => {
+        if (isConnecting) return;
         setIsConnecting(true);
         try {
-            console.log('[WalletContext] Triggering Modal...');
             await open();
+        } catch (err) {
+            console.error('[WalletContext] Connection failed:', err);
         } finally {
             setIsConnecting(false);
         }
     };
 
     const disconnectWallet = async () => {
-        console.log('[WalletContext] Opening Account View...');
         await open({ view: 'Account' });
     };
 

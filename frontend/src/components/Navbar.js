@@ -66,8 +66,8 @@ export default function Navbar() {
                 <div className="flex items-center justify-between h-20">
                     <div className="flex items-center gap-8">
                         <Link href="/" className="flex items-center gap-2 group shrink-0">
-                            <div className="w-12 h-12 shrink-0 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
-                                <img src="/logo-final.png" alt="B20- Exchange Logo" className="w-full h-full object-contain" />
+                            <div className="w-14 h-14 shrink-0 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
+                                <img src="/bnb-logo.png" alt="B20- Exchange Logo" className="w-full h-full object-contain" />
                             </div>
                             <span className="text-2xl font-black tracking-tighter text-gray-900 text-red-gradient drop-shadow-md whitespace-nowrap">
                                 B20-<span className="text-rose-500">Exchange</span>

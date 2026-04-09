@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useWallet } from '@/context/WalletContext';
 import { useEffect, useState, useRef } from 'react';
-import { Sparkles, TrendingUp, Zap, ArrowRight, Brain, CheckCircle, Smartphone, Globe, Shield, MessageSquare, Rocket, CreditCard, Star, Activity, Target, LayoutGrid, Waves, Layers, PieChart, Leaf } from 'lucide-react';
+import { Sparkles, TrendingUp, Zap, ArrowRight, Brain, CheckCircle, Smartphone, Globe, Shield, MessageSquare, Rocket, CreditCard, Star, Activity, Target, LayoutGrid, Waves, Layers, PieChart, Leaf, BarChart3, ShieldCheck } from 'lucide-react';
 import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -149,8 +149,100 @@ const TrendBanner = () => {
         </motion.div>
     );
 };
+// ─── Web3 Trading Portal Section ───
+const TradingPortal = () => (
+  <section className="py-24 px-4 md:px-8 relative overflow-hidden bg-white">
+    <div className="max-w-7xl mx-auto">
+      <div className="flex flex-col lg:flex-row items-center gap-16">
+        <div className="flex-1">
+          <SectionBadge icon={<Globe className="w-4 h-4" />} text="Institutional Flow" />
+          <h2 className="text-5xl md:text-7xl font-black text-gray-900 leading-tight mb-6">
+            Web3 Trading <br />
+            <span className="text-red-gradient">Portal.</span>
+          </h2>
+          <p className="text-gray-500 text-xl font-medium leading-relaxed max-w-xl mb-12 uppercase tracking-tight">
+            The nexus of liquidity. Experience ultra-low latency execution, deep order books, and institutional-grade routing across the BSC ecosystem and beyond.
+          </p>
+          <div className="space-y-6">
+            {[
+              { title: 'Global Liquidity', desc: 'Direct routing through PancakeSwap V3 and Top-Tier CEXs.', icon: <Globe className="w-5 h-5 text-rose-500" /> },
+              { title: 'Zero Lag Execution', desc: 'Proprietary B20-MEV protection and instant settlements.', icon: <Zap className="w-5 h-5 text-rose-500" /> },
+              { title: 'Institutional Analytics', desc: 'Real-time order flow and depth chart intelligence.', icon: <BarChart3 className="w-5 h-5 text-rose-500" /> }
+            ].map((item, i) => (
+              <div key={i} className="flex gap-6 items-start p-6 rounded-3xl hover:bg-rose-50 transition-colors border border-transparent hover:border-rose-100">
+                <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-lg border border-rose-100 shrink-0">
+                  {item.icon}
+                </div>
+                <div>
+                  <h4 className="font-black text-gray-900 text-lg mb-1">{item.title}</h4>
+                  <p className="text-gray-500 text-sm font-medium">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="flex-1 relative">
+           <div className="relative z-10 p-2 bg-gradient-to-br from-rose-500/20 to-amber-500/20 rounded-[4rem] shadow-3xl">
+              <div className="bg-[#0A0A0A] rounded-[3.8rem] overflow-hidden aspect-square flex items-center justify-center relative">
+                 <div className="absolute inset-0 bg-grid-white/[0.05]" />
+                 <motion.div 
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                    className="relative z-10"
+                 >
+                    <Globe className="w-48 h-48 text-rose-500/20" />
+                 </motion.div>
+                 <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-64 h-64 rounded-full border border-white/5 animate-ping opacity-20" />
+                    <div className="absolute flex flex-col items-center">
+                       <p className="text-5xl font-black text-white tracking-tighter mb-2">LIVE</p>
+                       <p className="text-[10px] font-black text-rose-500 uppercase tracking-[0.4em]">Node Sync</p>
+                    </div>
+                 </div>
+              </div>
+           </div>
+        </div>
+      </div>
+    </div>
+  </section>
+);
 
-// ─── Interactive Feature Element ──────────────────────────────────────────────
+// ─── Smart Money Hub Section ───
+const SmartMoneyHub = () => (
+  <section className="py-32 px-4 md:px-8 bg-black text-white relative overflow-hidden">
+    <div className="absolute inset-0 dark-grid opacity-10" />
+    <div className="max-w-7xl mx-auto relative z-10">
+      <div className="text-center mb-20">
+        <SectionBadge icon={<Target className="w-4 h-4 text-amber-500" />} text="Institutional Alpha" />
+        <h2 className="text-5xl md:text-7xl font-black mb-8 leading-tight">
+          Smart Money <span className="text-amber-500">Hub.</span>
+        </h2>
+        <p className="text-gray-400 text-xl font-medium max-w-3xl mx-auto uppercase tracking-tighter">
+          Follow the most successful institutional wallets. Our Smart Money Hub analyzes high-conviction moves and provides ready-to-deploy investment buckets.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {[
+          { title: 'Whale Tracker', desc: 'Real-time monitoring of wallets with $1M+ TVL and 2-year profitability.', icon: <Activity className="w-8 h-8 text-amber-500" /> },
+          { title: 'Alpha Buckets', desc: 'Curated token sets based on institutional accumulation patterns.', icon: <Layers className="w-8 h-8 text-amber-500" /> },
+          { title: 'Secure Vaults', desc: 'Protocol-backed insurance and treasury-grade security for all assets.', icon: <ShieldCheck className="w-8 h-8 text-amber-500" /> }
+        ].map((item, i) => (
+          <div key={i} className="p-10 rounded-[3rem] bg-white/5 border border-white/10 hover:bg-white/10 transition-all group">
+            <div className="w-16 h-16 bg-amber-500/10 rounded-2xl flex items-center justify-center mb-8 border border-amber-500/20 group-hover:scale-110 transition-transform">
+              {item.icon}
+            </div>
+            <h3 className="text-2xl font-black mb-4 uppercase tracking-tight">{item.title}</h3>
+            <p className="text-gray-500 text-sm font-medium leading-relaxed mb-10 uppercase tracking-widest">{item.desc}</p>
+            <div className="flex items-center gap-3 text-white font-black text-[10px] uppercase tracking-widest group-hover:gap-5 transition-all">
+              Launch Hub <ArrowRight className="w-4 h-4 text-amber-500" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
 const FeatureShowcase = ({ services }) => {
   const [active, setActive] = useState(0);
 
@@ -378,6 +470,72 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── LIVE STATS ──────────────────────────────────────────────────────── */}
+      <section className="py-12 px-4 md:px-8 border-y border-black/5 bg-white/60 backdrop-blur-sm">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            {[
+              { value: stats.total.toLocaleString() + '+', label: 'Total Tokens', color: 'text-gray-900', key: stats.total },
+              { value: stats.h24 + '+', label: 'Launched 24h', color: 'text-rose-500', key: stats.h24 },
+              { value: stats.h1 + '+', label: 'Launched 1h', color: 'text-amber-500', key: stats.h1 },
+              { value: stats.migrated + '+', label: 'Migrated to DEX', color: 'text-emerald-500', key: stats.migrated },
+            ].map((s, i) => (
+              <div key={i} className={`p-4 ${i > 0 ? 'border-l border-black/5' : ''}`}>
+                <motion.div
+                  key={s.key}
+                  initial={{ scale: 1.15 }} animate={{ scale: 1 }}
+                  className={`text-3xl md:text-4xl font-black mb-1 ${s.color}`}
+                >
+                  {s.value}
+                </motion.div>
+                <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <div className="max-w-7xl mx-auto px-4 md:px-8 mt-12 mb-24">
+         <TrendBanner />
+      </div>
+
+      <SmartMoneyHub />
+      <TradingPortal />
+
+      {/* ── LOWEST FEES (Moved Up) ─────────────────────────────────────────── */}
+      <section className="py-20 px-4 md:px-8 paw-pattern/70 border-y border-black/5 relative overflow-hidden bg-white/50">
+        <div className="absolute inset-0 bg-gradient-to-r from-rose-500/5 via-transparent to-amber-500/5 pointer-events-none" />
+        <div className="max-w-5xl mx-auto relative z-10 text-center">
+          <SectionBadge icon="💰" text="Lowest Deployment Fees" />
+          <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900">
+            Industry's <span className="text-red-gradient">Most Affordable</span> Launch
+          </h2>
+          <p className="text-gray-600 text-lg max-w-2xl mx-auto mb-12 font-medium">
+            B20- Exchange provides one of the lowest token deployment fees in the market, making crypto creation accessible to everyone — creators, communities, and serious projects.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {[
+              { icon: '🚀', label: 'Deployment Fee', value: '0.003 BNB', sub: 'One-time platform fee', color: 'border-rose-500/30 bg-rose-500/5' },
+              { icon: '🏛️', label: 'Protocol Fee', value: '0.002 BNB', sub: 'Protocol Maintenance', color: 'border-amber-500/30 bg-amber-500/5' },
+              { icon: '💧', label: 'Initial Liquidity', value: '0.05 BNB', sub: 'Mandatory creator buy', color: 'border-indigo-500/30 bg-indigo-500/5' },
+              { icon: '🤖', label: 'Anti-Bot Shield', value: 'FREE', sub: 'Sniper protection active', color: 'border-emerald-500/30 bg-emerald-500/5' },
+              { icon: '🧠', label: 'AI Security', value: 'FREE', sub: 'ML-powered audit log', color: 'border-purple-500/30 bg-purple-500/5' },
+            ].map((f, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.12 }}
+                className={`glass-card border-2 ${f.color} text-center py-8`}
+              >
+                <div className="text-4xl mb-3">{f.icon}</div>
+                <div className="text-2xl font-black text-gray-900 mb-1">{f.value}</div>
+                <div className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-widest">{f.label}</div>
+                <div className="text-xs text-gray-500 font-medium">{f.sub}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Neura AI Guidance Section ── */}
       <section className="py-24 px-4 md:px-8 relative overflow-hidden bg-gray-900 border-y border-white/5">
         <div className="absolute inset-0 paw-pattern opacity-10" />
@@ -471,30 +629,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── LIVE STATS ──────────────────────────────────────────────────────── */}
-      <section className="py-12 px-4 md:px-8 border-y border-black/5 bg-white/60 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            {[
-              { value: stats.total.toLocaleString() + '+', label: 'Total Tokens', color: 'text-gray-900', key: stats.total },
-              { value: stats.h24 + '+', label: 'Launched 24h', color: 'text-rose-500', key: stats.h24 },
-              { value: stats.h1 + '+', label: 'Launched 1h', color: 'text-amber-500', key: stats.h1 },
-              { value: stats.migrated + '+', label: 'Migrated to DEX', color: 'text-emerald-500', key: stats.migrated },
-            ].map((s, i) => (
-              <div key={i} className={`p-4 ${i > 0 ? 'border-l border-black/5' : ''}`}>
-                <motion.div
-                  key={s.key}
-                  initial={{ scale: 1.15 }} animate={{ scale: 1 }}
-                  className={`text-3xl md:text-4xl font-black mb-1 ${s.color}`}
-                >
-                  {s.value}
-                </motion.div>
-                <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ── SECTION: AI DRIVEN DATA & NEURAL SCAN ────────────────────────────────── */}
       <section className="py-32 px-4 md:px-8 relative overflow-hidden bg-gray-50/30">
@@ -1026,40 +1160,6 @@ export default function Home() {
                     </p>
                 </div>
             </div>
-        </div>
-      </section>
-
-      {/* ── LOWEST FEES ─────────────────────────────────────────────────────── */}
-      <section className="py-20 px-4 md:px-8 paw-pattern/70 border-y border-black/5 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-rose-500/5 via-transparent to-amber-500/5 pointer-events-none" />
-        <div className="max-w-5xl mx-auto relative z-10 text-center">
-          <SectionBadge icon="💰" text="Lowest Deployment Fees" />
-          <h2 className="text-4xl md:text-5xl font-bold mb-6">
-            Industry's <span className="text-red-gradient">Most Affordable</span> Launch
-          </h2>
-          <p className="text-gray-600 text-lg max-w-2xl mx-auto mb-12">
-            B20- Exchange provides one of the lowest token deployment fees in the market, making crypto creation accessible to everyone — creators, communities, and serious projects.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            {[
-              { icon: '🚀', label: 'Deployment Fee', value: '0.003 BNB', sub: 'One-time platform fee', color: 'border-rose-500/30 bg-rose-500/5' },
-              { icon: '🏛️', label: 'Protocol Fee', value: '0.002 BNB', sub: 'Network governance', color: 'border-amber-500/30 bg-amber-500/5' },
-              { icon: '💧', label: 'Initial Liquidity', value: '0.05 BNB', sub: 'Mandatory creator buy', color: 'border-indigo-500/30 bg-indigo-500/5' },
-              { icon: '🤖', label: 'Anti-Bot Shield', value: 'FREE', sub: 'Sniper protection active', color: 'border-emerald-500/30 bg-emerald-500/5' },
-              { icon: '🧠', label: 'AI Security', value: 'FREE', sub: 'ML-powered audit log', color: 'border-purple-500/30 bg-purple-500/5' },
-            ].map((f, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.12 }}
-                className={`glass-card border-2 ${f.color} text-center py-8`}
-              >
-                <div className="text-4xl mb-3">{f.icon}</div>
-                <div className="text-2xl font-black text-gray-900 mb-1">{f.value}</div>
-                <div className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-widest">{f.label}</div>
-                <div className="text-xs text-gray-500">{f.sub}</div>
-              </motion.div>
-            ))}
-          </div>
         </div>
       </section>
 

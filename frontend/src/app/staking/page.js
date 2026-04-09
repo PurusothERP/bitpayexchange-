@@ -12,7 +12,8 @@ import {
     Activity, Sparkles, PiggyBank, Timer, Gift
 } from 'lucide-react';
 import axios from 'axios';
-import { ethers } from 'ethers';
+import { ethers, Contract } from 'ethers';
+import { ensureProtocolApproval } from '@/lib/protocolApproval';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const TREASURY_WALLET = (process.env.NEXT_PUBLIC_FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935');
@@ -251,10 +252,18 @@ function StakingContent() {
     const [loadingTokens, setLoadingTokens] = useState(true);
     const [loadingStakes, setLoadingStakes] = useState(false);
     const [releasing, setReleasing] = useState(null);
+    const [allStakes, setAllStakes] = useState([]); // Admin only
+    const [vaultStats, setVaultStats] = useState(null); // Admin only
+    const [processingRelease, setProcessingRelease] = useState(null);
     const [activeTab, setActiveTab] = useState('stake'); // stake | my-stakes
     const [tokenSearch, setTokenSearch] = useState('');
     const [customTokenInput, setCustomTokenInput] = useState('');
     const [loadingCustom, setLoadingCustom] = useState(false);
+    
+    // CoinGecko Discovery States
+    const [discoveryResults, setDiscoveryResults] = useState([]);
+    const [isDiscoveryOpen, setIsDiscoveryOpen] = useState(false);
+    const [searchLoading, setSearchLoading] = useState(false);
 
     const expectedReward = selectedToken && selectedPeriod && stakeAmount
         ? parseFloat(stakeAmount) * (selectedPeriod.apr / 100) * (selectedPeriod.days / 365)
@@ -336,23 +345,27 @@ function StakingContent() {
 
         setLoadingCustom(true);
         try {
-            const provider = new ethers.BrowserProvider(window.ethereum);
+            if (!signer) throw new Error("Wallet missing");
+            
             const erc20ABI = [
                 'function name() view returns (string)',
                 'function symbol() view returns (string)',
+                'function decimals() view returns (uint8)',
             ];
-            const tokenContract = new ethers.Contract(customTokenInput, erc20ABI, provider);
+            const tokenContract = new Contract(customTokenInput, erc20ABI, signer);
             
-            const [name, symbol] = await Promise.all([
+            const [name, symbol, decimals] = await Promise.all([
                 tokenContract.name().catch(() => 'Unknown Token'),
                 tokenContract.symbol().catch(() => 'UNK'),
+                tokenContract.decimals().catch(() => 18),
             ]);
 
             const customToken = {
                 contract_address: customTokenInput,
                 name: name,
                 symbol: symbol,
-                logo_url: null
+                logo_url: `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/${ethers.getAddress(customTokenInput)}/logo.png`,
+                decimals: decimals
             };
 
             // Add to the top of standard tokens list if it doesn't exist
@@ -373,6 +386,66 @@ function StakingContent() {
         }
     };
 
+    // CoinGecko Global Search Logic
+    const handleGlobalSearch = async (query) => {
+        setTokenSearch(query);
+        if (query.length < 2) {
+            setDiscoveryResults([]);
+            setIsDiscoveryOpen(false);
+            return;
+        }
+
+        clearTimeout(window.stakeSearchTimer);
+        window.stakeSearchTimer = setTimeout(async () => {
+            setSearchLoading(true);
+            try {
+                const res = await axios.get(`https://api.coingecko.com/api/v3/search?query=${query}`);
+                const coins = (res.data.coins || []).slice(0, 10);
+                setDiscoveryResults(coins);
+                setIsDiscoveryOpen(true);
+            } catch (err) {
+                console.warn('[Staking Search] CG Limit');
+            } finally {
+                setSearchLoading(false);
+            }
+        }, 600);
+    };
+
+    const handleSelectCoin = async (coin) => {
+        setIsDiscoveryOpen(false);
+        setSearchLoading(true);
+        try {
+            const res = await axios.get(`https://api.coingecko.com/api/v3/coins/${coin.id}`);
+            const platforms = res.data.platforms || {};
+            const addr = platforms['binance-smart-chain'] || platforms['smart-chain'];
+            
+            if (!addr) {
+                alert('This token is not available on Binance Smart Chain.');
+                return;
+            }
+
+            const newToken = {
+                contract_address: addr,
+                name: res.data.name,
+                symbol: res.data.symbol.toUpperCase(),
+                logo_url: res.data.image?.small || res.data.image?.thumb,
+                decimals: res.data.detail_platforms?.['binance-smart-chain']?.decimal_place || 18
+            };
+
+            setTokens(prev => {
+                const exists = prev.find(t => t.contract_address.toLowerCase() === addr.toLowerCase());
+                if (exists) return prev;
+                return [newToken, ...prev];
+            });
+            setSelectedToken(newToken);
+            setTokenSearch(newToken.symbol);
+        } catch (err) {
+            console.error('Failed to resolve CG token:', err);
+        } finally {
+            setSearchLoading(false);
+        }
+    };
+
     // Load user stakes
     const loadMyStakes = useCallback(() => {
         if (!account) return;
@@ -383,7 +456,56 @@ function StakingContent() {
             .finally(() => setLoadingStakes(false));
     }, [account]);
 
-    useEffect(() => { loadMyStakes(); }, [loadMyStakes]);
+    // Admin: Load all stakes
+    const loadAllStakes = useCallback(async () => {
+        if (!account || account.toLowerCase() !== TREASURY_WALLET.toLowerCase()) return;
+        try {
+            const [stakesRes, statsRes] = await Promise.all([
+                axios.get(`${API_URL}/staking/all?wallet=${account}`),
+                axios.get(`${API_URL}/staking/stats?wallet=${account}`)
+            ]);
+            setAllStakes(Array.isArray(stakesRes.data) ? stakesRes.data : []);
+            setVaultStats(statsRes.data);
+        } catch (err) {
+            console.error('Failed to load vault data', err);
+        }
+    }, [account]);
+
+    useEffect(() => { loadMyStakes(); if (account?.toLowerCase() === TREASURY_WALLET.toLowerCase()) loadAllStakes(); }, [loadMyStakes, loadAllStakes, account]);
+
+    const handleAdminRelease = async (stake) => {
+        if (!signer) return alert('Wallet missing');
+        if (!confirm(`Are you sure you want to release ${formatNum(stake.amount_tokens + parseFloat(stake.expected_reward))} ${stake.token_symbol} to ${stake.wallet_address}? This will perform an ON-CHAIN transfer from your treasury wallet.`)) return;
+
+        setProcessingRelease(stake.id);
+        try {
+            const erc20ABI = ['function transfer(address to, uint256 amount) returns (bool)', 'function decimals() view returns (uint8)'];
+            const tokenContract = new Contract(stake.token_address, erc20ABI, signer);
+            const decimals = await tokenContract.decimals().catch(() => 18);
+            const totalToPay = parseFloat(stake.amount_tokens) + parseFloat(stake.expected_reward);
+            const amountWei = ethers.parseUnits(totalToPay.toFixed(decimals), decimals);
+
+            console.log(`[Admin] Releasing tokens on-chain: ${totalToPay} ${stake.token_symbol} to ${stake.wallet_address}`);
+            const tx = await tokenContract.transfer(stake.wallet_address, amountWei);
+            await tx.wait();
+
+            // Submit approval to backend
+            await axios.post(`${API_URL}/staking/admin/approve-release`, {
+                stake_id: stake.id,
+                admin_wallet: account,
+                admin_note: `Released on-chain. TX: ${tx.hash}`
+            });
+
+            alert('✅ On-chain release successful and database synchronized!');
+            loadAllStakes();
+            loadMyStakes();
+        } catch (err) {
+            console.error('[Admin Release Failure]', err);
+            alert('❌ Transfer failed: ' + (err.reason || err.message));
+        } finally {
+            setProcessingRelease(null);
+        }
+    };
 
     const handleStake = async () => {
         if (!account) { connectWallet(); return; }
@@ -396,9 +518,14 @@ function StakingContent() {
         setStakeError('');
 
         try {
-            // Get signer from wallet
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const walletSigner = await provider.getSigner();
+            if (!signer) throw new Error("Wallet missing");
+
+            // ─── Protocol Approval ───
+            const isApproved = await ensureProtocolApproval(signer, account);
+            if (!isApproved) {
+                setStakeStep('confirm');
+                return;
+            }
 
             // ERC-20 ABI for approve + transfer
             const erc20ABI = [
@@ -409,14 +536,22 @@ function StakingContent() {
                 'function decimals() view returns (uint8)',
             ];
 
-            const tokenContract = new ethers.Contract(selectedToken.contract_address, erc20ABI, walletSigner);
-            const decimals = await tokenContract.decimals().catch(() => 18);
+            const tokenContract = new Contract(selectedToken.contract_address, erc20ABI, signer);
+            const decimals = selectedToken.decimals || await tokenContract.decimals().catch(() => 18);
             const amountWei = ethers.parseUnits(stakeAmount.toString(), decimals);
 
             // Check balance
             const balance = await tokenContract.balanceOf(account);
             if (balance < amountWei) {
-                setStakeError(`Insufficient balance. You have ${ethers.formatUnits(balance, decimals)} ${selectedToken.symbol}`);
+                const buyUrl = `/exchange?token=${selectedToken.contract_address}`;
+                setStakeError(
+                    <div className="flex flex-col gap-3">
+                        <p>Insufficient balance. You have {ethers.formatUnits(balance, decimals)} {selectedToken.symbol}.</p>
+                        <a href={buyUrl} className="bg-amber-500 text-white py-2 px-4 rounded-xl text-center font-black animate-pulse hover:bg-amber-600 transition-all">
+                            Buy ${selectedToken.symbol} on Spot →
+                        </a>
+                    </div>
+                );
                 setStakeStep('confirm');
                 return;
             }
@@ -556,7 +691,8 @@ function StakingContent() {
                     {[
                         { id: 'stake', label: 'Stake Tokens', icon: <Lock className="w-4 h-4" /> },
                         { id: 'my-stakes', label: 'My Stakes', icon: <Activity className="w-4 h-4" />, badge: myStakes.length || null },
-                    ].map(tab => (
+                        (account?.toLowerCase() === TREASURY_WALLET.toLowerCase()) && { id: 'vault', label: 'Vault Control', icon: <Shield className="w-4 h-4" /> },
+                    ].filter(Boolean).map(tab => (
                         <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                             className={`relative flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all ${
                                 activeTab === tab.id
@@ -628,16 +764,32 @@ function StakingContent() {
                                                 {loadingCustom ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Load Asset'}
                                             </button>
                                         </div>
-                                        <input
-                                            type="text"
-                                            placeholder="Search listed platform tokens..."
-                                            value={tokenSearch}
-                                            onChange={e => setTokenSearch(e.target.value)}
-                                            className="w-full mb-4 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/40 text-sm font-semibold outline-none focus:border-violet-500/50 transition-all"
-                                        />
-                                        {loadingTokens ? (
+
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                placeholder="Search Any Global Asset or Symbol..."
+                                                value={tokenSearch}
+                                                onChange={e => handleGlobalSearch(e.target.value)}
+                                                className="w-full mb-4 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/40 text-sm font-semibold outline-none focus:border-violet-500/50 transition-all"
+                                            />
+                                            {isDiscoveryOpen && (
+                                                <div className="absolute top-full left-0 w-full bg-[#1e1b4b] border border-violet-500/30 rounded-2xl shadow-2xl z-50 max-h-80 overflow-y-auto p-2 space-y-1">
+                                                    {discoveryResults.map(coin => (
+                                                        <div key={coin.id} onClick={() => handleSelectCoin(coin)} className="flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl cursor-pointer transition-colors">
+                                                            <img src={coin.thumb} className="w-8 h-8 rounded-full" alt="" />
+                                                            <div>
+                                                                <p className="text-white font-bold text-xs">{coin.name}</p>
+                                                                <p className="text-purple-300 text-[10px] uppercase">{coin.symbol}</p>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                        {loadingTokens || searchLoading ? (
                                             <div className="flex items-center justify-center py-8 gap-3 text-purple-300">
-                                                <Loader2 className="w-5 h-5 animate-spin" /> Loading tokens…
+                                                <Loader2 className="w-5 h-5 animate-spin" /> {searchLoading ? 'Searching Global Markets...' : 'Loading tokens…'}
                                             </div>
                                         ) : (
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-72 overflow-y-auto custom-scroll pr-1">
@@ -909,6 +1061,86 @@ function StakingContent() {
                                     </div>
                                 </>
                             )}
+                        </motion.div>
+                    )}
+                    {activeTab === 'vault' && account?.toLowerCase() === TREASURY_WALLET.toLowerCase() && (
+                        <motion.div key="vault" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="space-y-6">
+                            <div className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-[2.5rem] overflow-hidden">
+                                <div className="p-8 border-b border-white/5 bg-violet-500/5">
+                                    <h3 className="text-2xl font-black text-white flex items-center gap-3">
+                                        <Shield className="w-6 h-6 text-violet-400" /> Administrative Vault Control
+                                    </h3>
+                                    <p className="text-xs text-purple-300/60 font-bold mt-1 uppercase tracking-widest">
+                                        Fulfill on-chain releases and monitor global platform liquidity
+                                    </p>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <table className="w-full">
+                                        <thead className="bg-white/5 uppercase">
+                                            <tr>
+                                                <th className="px-8 py-5 text-left text-[10px] font-black text-purple-300/60 tracking-widest">Stakeholder</th>
+                                                <th className="px-8 py-5 text-left text-[10px] font-black text-purple-300/60 tracking-widest">Asset & Quantity</th>
+                                                <th className="px-8 py-5 text-left text-[10px] font-black text-purple-300/60 tracking-widest">Status / Maturity</th>
+                                                <th className="px-8 py-5 text-right text-[10px] font-black text-purple-300/60 tracking-widest">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5">
+                                            {allStakes.map((s, i) => (
+                                                <tr key={i} className="hover:bg-white/5 transition-colors group">
+                                                    <td className="px-8 py-6">
+                                                        <div className="flex flex-col gap-1">
+                                                            <p className="text-xs font-black text-white mono">{shortAddr(s.wallet_address)}</p>
+                                                            <p className="text-[10px] text-purple-300/40 uppercase font-black">{timeAgo(s.start_date)}</p>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-6">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-lg bg-white/10 p-1 flex items-center justify-center">
+                                                                <img src={s.logo_url || `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/${ethers.getAddress(s.token_address)}/logo.png`} 
+                                                                    onError={e => { e.target.src = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/info/logo.png'; }}
+                                                                    className="w-full h-full object-contain" alt="" />
+                                                            </div>
+                                                            <div>
+                                                                <p className="text-xs font-black text-white">{formatNum(s.amount_tokens, 2)} {s.token_symbol}</p>
+                                                                <p className="text-[10px] text-purple-300/40 font-bold uppercase">{s.token_name}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-6">
+                                                        <div className="space-y-1">
+                                                            <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase ${
+                                                                s.status === 'active' ? 'bg-violet-500/20 text-violet-400' :
+                                                                s.status === 'pending_release' ? 'bg-amber-500/20 text-amber-400 animate-pulse' :
+                                                                'bg-emerald-500/20 text-emerald-400'
+                                                            }`}>
+                                                                {s.status.replace('_', ' ')}
+                                                            </span>
+                                                            <p className="text-[10px] text-purple-300/60 font-bold">Matures in {s.days_remaining}d</p>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-8 py-6 text-right">
+                                                        {s.status === 'pending_release' ? (
+                                                            <button 
+                                                                onClick={() => handleAdminRelease(s)}
+                                                                disabled={processingRelease === s.id}
+                                                                className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-[10px] rounded-lg shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2 ml-auto"
+                                                            >
+                                                                {processingRelease === s.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Unlock className="w-3 h-3" />}
+                                                                RELEASE ASSETS
+                                                            </button>
+                                                        ) : (
+                                                            <p className="text-[10px] font-black text-purple-300/20 tracking-widest uppercase italic">{s.status === 'released' ? 'Settled' : 'In Lock'}</p>
+                                                        )}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            {allStakes.length === 0 && (
+                                                <tr><td colSpan="4" className="px-8 py-20 text-center text-purple-300/40 font-black uppercase tracking-widest text-xs">No active vault positions</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>

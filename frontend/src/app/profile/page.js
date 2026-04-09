@@ -11,7 +11,7 @@ import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const ADMIN_WALLET = '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
-const DIRECT_FACTORY = process.env.NEXT_PUBLIC_DIRECT_FACTORY_ADDRESS || '0xd2f602536605CAed0C30a2DA05B24B8F0E59197E';
+const DIRECT_FACTORY = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0x4598AD4E828cb64A53246765f60D9912AEA1b11A';
 const RELEASE_SERVICE_FEE = 0.003;
 
 export function formatPrice(num) {
@@ -457,7 +457,7 @@ function TokenCard({ token, index, account }) {
 }
 
 export default function ProfilePage() {
-    const { account, connectWallet } = useWallet();
+    const { account, connectWallet, walletProvider } = useWallet();
     const [tokens, setTokens] = useState([]);
     const [loading, setLoading] = useState(false);
     const [bnbBalance, setBnbBalance] = useState(null);
@@ -483,14 +483,13 @@ export default function ProfilePage() {
             .catch(() => setTokens([]))
             .finally(() => setLoading(false));
 
-        // Fetch BNB balance from BSC RPC
-        fetch('https://bsc-dataseed.binance.org', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ jsonrpc: '2.0', method: 'eth_getBalance', params: [account, 'latest'], id: 1 })
-        }).then(r => r.json()).then(data => {
-            if (data.result) setBnbBalance(parseInt(data.result, 16));
-        }).catch(() => {});
+        // Fetch BNB balance via walletProvider (avoids 'no listeners' error)
+        if (walletProvider) {
+            const provider = new ethers.BrowserProvider(walletProvider);
+            provider.getBalance(account).then(b => {
+                setBnbBalance(b.toString());
+            }).catch(() => {});
+        }
 
         // Fetch staking positions
         setLoadingStakes(true);
@@ -560,8 +559,8 @@ export default function ProfilePage() {
         setClosingPositionId(id);
 
         try {
-            if (!window.ethereum) throw new Error("No wallet extension found.");
-            const provider = new ethers.BrowserProvider(window.ethereum);
+            if (!walletProvider) throw new Error("No wallet extension found.");
+            const provider = new ethers.BrowserProvider(walletProvider);
             const signer = await provider.getSigner();
 
             // ── TRIGGER WALLET POPUP (Institutional Confirmation) ──────

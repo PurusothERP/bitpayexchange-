@@ -9,6 +9,8 @@ yarn-debug.log*
 yarn-error.log*
 .DS_Store
 *.log
+*.db
+*.sqlite
 database.sqlite
 .next/
 dist/

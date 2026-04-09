@@ -46,7 +46,7 @@ async function startIndexer() {
           name = EXCLUDED.name,
           symbol = EXCLUDED.symbol
       `;
-            await db.query(query, [name, symbol, tokenAddress, creator, event.log.transactionHash]);
+            await db.query(query, [name, symbol, tokenAddress, creator, event.transactionHash]);
             console.log(`Synced token ${tokenAddress} (${name}/${symbol}) to DB`);
         } catch (error) {
             console.error('Error syncing token created event:', error);

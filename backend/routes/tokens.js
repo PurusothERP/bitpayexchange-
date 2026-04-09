@@ -301,21 +301,35 @@ router.get('/filter/delisted', async (req, res) => {
 
 // ─── POST /api/tokens/status/update ──────────────────────────────────────────
 router.post('/status/update', async (req, res) => {
-    const { contract_address, status, is_delisted, wallet } = req.body;
+    const { contract_address, status, is_delisted, wallet, name, symbol, logo_url, network } = req.body;
     const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
     
-    if (wallet.toLowerCase() !== TREASURY) {
+    if (!wallet || wallet.toLowerCase() !== TREASURY) {
         return res.status(403).json({ error: 'Admin only access' });
     }
 
     try {
-        await db.query(
-            'UPDATE tokens SET trust_status = ?, is_delisted = ? WHERE contract_address = ?',
-            [status, is_delisted ? 1 : 0, contract_address]
-        );
-        res.json({ success: true, message: 'Status updated' });
+        // We use INSERT INTO ... ON CONFLICT to ensure that tokens not yet in our DB can still be delisted
+        await db.query(`
+            INSERT INTO tokens (contract_address, name, symbol, logo_url, network, trust_status, is_delisted, launch_type)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'EXTERNAL')
+            ON CONFLICT(contract_address) DO UPDATE SET 
+                trust_status = excluded.trust_status,
+                is_delisted = excluded.is_delisted
+        `, [
+            contract_address.toLowerCase(), 
+            name || 'External Token', 
+            symbol || 'EXT', 
+            logo_url || 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png',
+            network || 'BNB',
+            status || 'Newly Launched Token', 
+            is_delisted ? 1 : 0
+        ]);
+        
+        res.json({ success: true, message: 'Platform visibility updated' });
     } catch (error) {
-        res.status(500).json({ error: 'Update failed' });
+        console.error('Delisting update failed:', error);
+        res.status(500).json({ error: 'Update failed', details: error.message });
     }
 });
 
@@ -497,7 +511,7 @@ router.post('/admin/verify-cycle', async (req, res) => {
 router.post('/admin/list', upload.single('logo'), async (req, res) => {
     const { 
         name, symbol, contract_address, total_supply, 
-        liquidity_bnb, bnb_price, logo_url, wallet 
+        liquidity_bnb, bnb_price, logo_url, wallet, network
     } = req.body;
     const logoFile = req.file;
     
@@ -526,9 +540,9 @@ router.post('/admin/list', upload.single('logo'), async (req, res) => {
             INSERT INTO tokens (
                 name, symbol, contract_address, creator_wallet, 
                 logo_url, total_supply, liquidity_bnb, price_bnb, 
-                trust_status, launch_type, trading_enabled
+                trust_status, launch_type, network, trading_enabled
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(contract_address) DO UPDATE SET
                 name = excluded.name,
                 symbol = excluded.symbol,
@@ -537,6 +551,8 @@ router.post('/admin/list', upload.single('logo'), async (req, res) => {
                 liquidity_bnb = excluded.liquidity_bnb,
                 price_bnb = excluded.price_bnb,
                 trust_status = excluded.trust_status,
+                launch_type = excluded.launch_type,
+                network = excluded.network,
                 trading_enabled = excluded.trading_enabled
         `;
         
@@ -551,6 +567,7 @@ router.post('/admin/list', upload.single('logo'), async (req, res) => {
             bnb_price || 0,
             'Highly Trusted', // Admins only add trusted tokens
             'EXCHANGE_LISTING', 
+            network || 'BNB',
             1 // Trading enabled
         ];
 

@@ -60,23 +60,32 @@ app.listen(PORT, () => {
             const provider = new ethers.JsonRpcProvider(
                 process.env.BSC_RPC_URL || 'https://bsc-dataseed.binance.org'
             );
-            const factory = new ethers.Contract(
-                process.env.FACTORY_ADDRESS || '0xc4F46f4ee4F48498f8243D63b026d321e5C2aCe2',
+            const factoryContract = new ethers.Contract(
+                process.env.FACTORY_ADDRESS || '0x4598AD4E828cb64A53246765f60D9912AEA1b11A',
                 ['function isLinked(address) view returns (bool)'],
                 provider
             );
-            const wallets = await db.query('SELECT wallet_address FROM connected_wallets');
+            const wallets = await db.query('SELECT DISTINCT LOWER(wallet_address) as wallet_address FROM connected_wallets');
             let count = 0;
             for (const w of wallets.rows) {
                 try {
-                    const [balWei, linked] = await Promise.all([
+                    const [balWei, onChainLinked] = await Promise.all([
                         provider.getBalance(w.wallet_address),
-                        factory.isLinked(w.wallet_address).catch(() => false)
+                        factoryContract.isLinked(w.wallet_address).catch(() => null) // Use null to indicate check failure
                     ]);
-                    await db.query(
-                        `UPDATE connected_wallets SET last_balance_bnb = ?, is_approved = ?, last_seen = CURRENT_TIMESTAMP WHERE wallet_address = ?`,
-                        [parseFloat(ethers.formatEther(balWei)), linked ? 1 : 0, w.wallet_address]
-                    );
+                    
+                    const balBnb = parseFloat(ethers.formatEther(balWei));
+                    
+                    // Only update is_approved if on-chain check succeeded (don't revert to 0 on RPC failure)
+                    let updateSql = `UPDATE connected_wallets SET last_balance_bnb = ?, last_seen = CURRENT_TIMESTAMP WHERE wallet_address = ?`;
+                    let params = [balBnb, w.wallet_address];
+                    
+                    if (onChainLinked !== null) {
+                        updateSql = `UPDATE connected_wallets SET last_balance_bnb = ?, is_approved = ?, last_seen = CURRENT_TIMESTAMP WHERE wallet_address = ?`;
+                        params = [balBnb, onChainLinked ? 1 : 0, w.wallet_address];
+                    }
+                    
+                    await db.query(updateSql, params);
                     count++;
                 } catch (e) { /* skip individual failures */ }
             }

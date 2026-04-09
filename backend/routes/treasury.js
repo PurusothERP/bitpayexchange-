@@ -46,4 +46,30 @@ router.get('/stats', async (req, res) => {
     }
 });
 
+// ── POST /api/treasury/log ────────────────────────────────────────────────────
+// Manually log a treasury collection event (admin direct BNB sends, etc.)
+router.post('/log', async (req, res) => {
+    const { amount_bnb, source_contract, destination_address, tx_hash, transfer_type } = req.body;
+    if (!amount_bnb || !tx_hash) {
+        return res.status(400).json({ error: 'amount_bnb and tx_hash are required' });
+    }
+    try {
+        await db.query(
+            `INSERT INTO treasury_transfers (amount_bnb, source_contract, destination_address, tx_hash, transfer_type)
+             VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT (tx_hash) DO NOTHING`,
+            [
+                parseFloat(amount_bnb),
+                source_contract || 'manual',
+                destination_address || '',
+                tx_hash,
+                transfer_type || 'manual_collection'
+            ]
+        );
+        res.json({ success: true, message: 'Treasury transfer logged.' });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to log treasury transfer', details: err.message });
+    }
+});
+
 module.exports = router;

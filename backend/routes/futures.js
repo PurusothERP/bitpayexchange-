@@ -10,7 +10,7 @@ const treasuryWallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
 // ── POST /api/futures/settle ─────────────────────────────────────────────────
 // Institutional Payout Settlement: Credits BNB back to the trader's wallet.
 router.post('/settle', async (req, res) => {
-    const { walletAddress, pnlAmount, originalSize } = req.body;
+    const { walletAddress, pnlAmount, originalSize, tokenSymbol, positionId } = req.body;
 
     if (!walletAddress || !walletAddress.startsWith('0x')) {
         return res.status(400).json({ error: 'Invalid wallet address' });

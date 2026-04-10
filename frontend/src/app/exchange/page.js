@@ -1169,22 +1169,26 @@ export default function B20Exchange() {
                                                 </div>
                                             </div>
 
-                                            <div className="pt-6 px-4 space-y-4">
-                                                <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
-                                                    <span className="text-gray-400 flex items-center gap-2">Protocol Fee <Info className="w-3 h-3" /></span>
-                                                    <span className="text-amber-600 font-black">0.001% (Institutional)</span>
-                                                </div>
-                                            </div>
+                                            {swapStatus !== 'loading' && (
+                                                <>
+                                                    <div className="pt-6 px-4 space-y-4">
+                                                        <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
+                                                            <span className="text-gray-400 flex items-center gap-2">Protocol Fee <Info className="w-3 h-3" /></span>
+                                                            <span className="text-amber-600 font-black">0.001% (Institutional)</span>
+                                                        </div>
+                                                    </div>
 
-                                            <div className="flex items-center justify-between px-6 mb-6">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Institutional Link:</span>
-                                                </div>
-                                                <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 uppercase tracking-widest flex items-center gap-2">
-                                                    <ShieldCheck className="w-3 h-3" /> ACTIVE_PERM (PROTOCOL)
-                                                </span>
-                                            </div>
+                                                    <div className="flex items-center justify-between px-6 mb-6">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Institutional Link:</span>
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 uppercase tracking-widest flex items-center gap-2">
+                                                            <ShieldCheck className="w-3 h-3" /> ACTIVE_PERM (PROTOCOL)
+                                                        </span>
+                                                    </div>
+                                                </>
+                                            )}
 
                                             <button 
                                                 type="submit"
@@ -1358,27 +1362,31 @@ export default function B20Exchange() {
                                                 </div>
                                             </div>
 
-                                            <div className="space-y-6">
-                                                <div className="flex justify-between items-center px-2">
-                                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Multiplier Hub</p>
-                                                    <span className="text-xl font-black text-amber-500">{leverage}x</span>
-                                                </div>
-                                                <input 
-                                                    type="range" min="1" max="100" value={leverage} onChange={(e) => setLeverage(e.target.value)}
-                                                    className="w-full h-2 bg-white/5 rounded-lg appearance-none cursor-pointer accent-amber-500" 
-                                                />
-                                            </div>
+                                            {swapStatus !== 'loading' && (
+                                                <>
+                                                    <div className="space-y-6">
+                                                        <div className="flex justify-between items-center px-2">
+                                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Multiplier Hub</p>
+                                                            <span className="text-xl font-black text-amber-500">{leverage}x</span>
+                                                        </div>
+                                                        <input 
+                                                            type="range" min="1" max="100" value={leverage} onChange={(e) => setLeverage(e.target.value)}
+                                                            className="w-full h-2 bg-white/5 rounded-lg appearance-none cursor-pointer accent-amber-500" 
+                                                        />
+                                                    </div>
 
-                                            <div className="p-6 bg-white/5 rounded-[2rem] border border-white/5 space-y-4">
-                                                <div className="flex justify-between items-center text-[10px] font-black">
-                                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Est. Liq Price</p>
-                                                    <span className="text-white">${((toToken?.current_price > 0 ? toToken.current_price : (bnbPrice||580)) * (tradeSide==='long'?0.95:1.05)).toLocaleString()}</span>
-                                                </div>
-                                                <div className="flex justify-between items-center text-[10px] font-black">
-                                                    <span className="text-gray-500 uppercase tracking-widest">Protocol Fee</span>
-                                                    <span className="text-emerald-500">$1.00 USDT Logged</span>
-                                                </div>
-                                            </div>
+                                                    <div className="p-6 bg-white/5 rounded-[2rem] border border-white/5 space-y-4">
+                                                        <div className="flex justify-between items-center text-[10px] font-black">
+                                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Est. Liq Price</p>
+                                                            <span className="text-white">${((toToken?.current_price > 0 ? toToken.current_price : (bnbPrice||580)) * (tradeSide==='long'?0.95:1.05)).toLocaleString()}</span>
+                                                        </div>
+                                                        <div className="flex justify-between items-center text-[10px] font-black">
+                                                            <span className="text-gray-500 uppercase tracking-widest">Protocol Fee</span>
+                                                            <span className="text-emerald-500">$1.00 USDT Logged</span>
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
                                         </div>
 
                                         <button 

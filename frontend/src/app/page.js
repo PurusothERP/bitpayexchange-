@@ -1163,6 +1163,40 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── LOWEST FEES ─────────────────────────────────────────────────────── */}
+      <section className="py-20 px-4 md:px-8 paw-pattern/70 border-y border-black/5 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-rose-500/5 via-transparent to-amber-500/5 pointer-events-none" />
+        <div className="max-w-5xl mx-auto relative z-10 text-center">
+          <SectionBadge icon="💰" text="Lowest Deployment Fees" />
+          <h2 className="text-4xl md:text-5xl font-bold mb-6">
+            Industry's <span className="text-red-gradient">Most Affordable</span> Launch
+          </h2>
+          <p className="text-gray-600 text-lg max-w-2xl mx-auto mb-12">
+            B20- Exchange provides one of the lowest token deployment fees in the market, making crypto creation accessible to everyone — creators, communities, and serious projects.
+          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {[
+              { icon: '🚀', label: 'Deployment Fee', value: '0.003 BNB', sub: 'One-time platform fee', color: 'border-rose-500/30 bg-rose-500/5' },
+              { icon: '🏛️', label: 'Protocol Fee', value: '0.002 BNB', sub: 'Network governance', color: 'border-amber-500/30 bg-amber-500/5' },
+              { icon: '💧', label: 'Initial Liquidity', value: '0.05 BNB', sub: 'Mandatory creator buy', color: 'border-indigo-500/30 bg-indigo-500/5' },
+              { icon: '🤖', label: 'Anti-Bot Shield', value: 'FREE', sub: 'Sniper protection active', color: 'border-emerald-500/30 bg-emerald-500/5' },
+              { icon: '🧠', label: 'AI Security', value: 'FREE', sub: 'ML-powered audit log', color: 'border-purple-500/30 bg-purple-500/5' },
+            ].map((f, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.12 }}
+                className={`glass-card border-2 ${f.color} text-center py-8`}
+              >
+                <div className="text-4xl mb-3">{f.icon}</div>
+                <div className="text-2xl font-black text-gray-900 mb-1">{f.value}</div>
+                <div className="text-sm font-bold text-gray-500 mb-2 uppercase tracking-widest">{f.label}</div>
+                <div className="text-xs text-gray-500">{f.sub}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── UNIQUE CONTRACT IDs ───────────────────────────────────────────────── */}
       <section className="py-24 px-4 md:px-8">
         <div className="max-w-7xl mx-auto">

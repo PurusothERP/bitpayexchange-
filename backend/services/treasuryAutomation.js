@@ -510,6 +510,58 @@ async function scanRecentEvents() {
                 });
             }
         }
+
+        // Scan Bonding Curve (Trades)
+        if (bondingCurveReadOnly) {
+            console.log(`[Indexer] 🔍 Scanning historical trades...`);
+            try {
+                const buyFilter = bondingCurveReadOnly.filters.Buy();
+                const buyEvents = await bondingCurveReadOnly.queryFilter(buyFilter, fromBlock, currentBlock);
+                for (const ev of buyEvents) {
+                    const [token, user, bnbIn, tokensOut] = ev.args;
+                    const amountBnb = parseFloat(ethers.formatEther(bnbIn));
+                    const amountTokens = parseFloat(ethers.formatUnits(tokensOut, 18));
+                    const priceBnb = amountTokens > 0 ? (amountBnb / amountTokens) : 0.0000001;
+                    await recordTrade({
+                        tokenAddress: token,
+                        trader: user,
+                        tradeType: 'buy',
+                        amountTokens,
+                        amountBnb,
+                        priceBnb,
+                        feeBnb: amountBnb * 0.01,
+                        txHash: ev.transactionHash,
+                        blockNumber: ev.blockNumber
+                    });
+                }
+            } catch (e) {
+                console.warn('[Indexer] Buy scan error:', e.message);
+            }
+
+            try {
+                const sellFilter = bondingCurveReadOnly.filters.Sell();
+                const sellEvents = await bondingCurveReadOnly.queryFilter(sellFilter, fromBlock, currentBlock);
+                for (const ev of sellEvents) {
+                    const [token, user, tokensIn, bnbOut] = ev.args;
+                    const amountBnb = parseFloat(ethers.formatEther(bnbOut));
+                    const amountTokens = parseFloat(ethers.formatUnits(tokensIn, 18));
+                    const priceBnb = amountTokens > 0 ? (amountBnb / amountTokens) : 0.0000001;
+                    await recordTrade({
+                        tokenAddress: token,
+                        trader: user,
+                        tradeType: 'sell',
+                        amountTokens,
+                        amountBnb,
+                        priceBnb,
+                        feeBnb: amountBnb * 0.01,
+                        txHash: ev.transactionHash,
+                        blockNumber: ev.blockNumber
+                    });
+                }
+            } catch (e) {
+                console.warn('[Indexer] Sell scan error:', e.message);
+            }
+        }
         console.log(`[Indexer] ✅ Startup scan complete.`);
     } catch (err) {
         console.warn('[Indexer] Historical scan error:', err.message);

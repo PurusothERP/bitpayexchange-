@@ -18,13 +18,13 @@ import { ethers, Contract } from 'ethers';
 import { TOKEN_FACTORY_ABI, TOKEN_TEMPLATE_ABI } from '@/lib/abis';
 import { ensureProtocolApproval } from '@/lib/protocolApproval';
 
-const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0x4598AD4E828cb64A53246765f60D9912AEA1b11A';
+const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0xDB81357038c120072a5c6bFd3091C8F88F67b014';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 // Must match on-chain: DEPLOYMENT_FEE=0.003, MIN_INITIAL_BUY=0.05
 const DEPLOY_FEE = 0.003;
 const MIN_LIQUIDITY = 0.05;
-const DEFAULT_FACTORY = '0x4598AD4E828cb64A53246765f60D9912AEA1b11A';
+const DEFAULT_FACTORY = '0xDB81357038c120072a5c6bFd3091C8F88F67b014';
 
 function CreateToken() {
     const { account, signer, connectWallet, isConnecting, chainId, provider, walletProvider } = useWallet();

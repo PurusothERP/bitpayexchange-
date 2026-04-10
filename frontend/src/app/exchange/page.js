@@ -45,6 +45,21 @@ const formatB20Number = (num, prefix = "") => {
     return prefix + num.toLocaleString(undefined, { maximumFractionDigits: 2 });
 };
 
+function CopyButton({ text }) {
+    const [copied, setCopied] = useState(false);
+    const handleCopy = (e) => {
+        if (e && e.stopPropagation) e.stopPropagation();
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
+    return (
+        <button onClick={handleCopy} className="p-1 hover:bg-black/5 rounded-md transition-all active:scale-95 text-gray-400 hover:text-amber-500">
+            {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+        </button>
+    );
+}
+
 const PANCAKE_ROUTER_ADDRESS = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
 const WBNB_ADDRESS = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
 const FEE_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
@@ -94,8 +109,8 @@ export default function B20Exchange() {
         try {
             // 1. Fetch Local History (B20 indexer data)
             const [histRes, statRes] = await Promise.all([
-                axios.get(`${API_URL}/api/trades/history/${toToken.address || toToken.id}`).catch(() => ({ data: [] })),
-                axios.get(`${API_URL}/api/trades/market/${toToken.address || toToken.id}`).catch(() => ({ data: null }))
+                axios.get(`${API_URL}/trades/history/${toToken.address || toToken.id}`).catch(() => ({ data: [] })),
+                axios.get(`${API_URL}/trades/market/${toToken.address || toToken.id}`).catch(() => ({ data: null }))
             ]);
             
             let localTrades = histRes.data || [];
@@ -1176,12 +1191,7 @@ export default function B20Exchange() {
                                                 disabled={swapStatus === 'loading' || !fromAmount}
                                                 className="w-full py-6 bg-gray-900 text-white font-black text-lg rounded-[2rem] mt-4 hover:bg-amber-500 transition-all active:scale-[0.98] shadow-2xl disabled:opacity-50"
                                             >
-                                                {swapStatus === 'loading' ? (
-                                                    <span className="flex items-center justify-center gap-3">
-                                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                                        {swapMsg || 'ROUTING THROUGH BSC NODE...'}
-                                                    </span>
-                                                ) : 'INITIATE TRANSACTION'}
+                                                {swapStatus === 'loading' ? 'SWAP INITING...' : 'INITIATE TRANSACTION'}
                                             </button>
                                         </form>
 
@@ -1376,7 +1386,7 @@ export default function B20Exchange() {
                                             disabled={swapStatus === 'loading'}
                                             className={`w-full py-7 rounded-[2.5rem] text-[13px] font-black uppercase tracking-[0.4em] shadow-2xl transition-all ${tradeSide === 'long' ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-rose-500 shadow-rose-500/20'} text-white active:scale-95`}
                                         >
-                                            {swapStatus === 'loading' ? 'Executing Hub...' : 'Execute Mission'}
+                                            {swapStatus === 'loading' ? 'SWAP INITING...' : 'Execute Mission'}
                                         </button>
                                     </div>
                                 </div>

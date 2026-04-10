@@ -83,7 +83,14 @@ const db = new sqlite3.Database(dbPath, (err) => {
             )
         `, (err) => {
             if (err) console.error('Error creating trades table:', err);
-            else console.log('Trades table ready.');
+            else {
+                console.log('Trades table ready.');
+                // Schema evolution: Support futures and detailed tracking
+                const tradeCols = ['token_symbol', 'pnl_bnb', 'position_id', 'is_settled'];
+                tradeCols.forEach(col => {
+                    db.run(`ALTER TABLE trades ADD COLUMN ${col} ${col === 'pnl_bnb' ? 'REAL DEFAULT 0' : (col === 'is_settled' ? 'INTEGER DEFAULT 0' : 'TEXT')}`, () => {});
+                });
+            }
         });
 
         // Price history per trade tick

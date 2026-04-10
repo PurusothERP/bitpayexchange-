@@ -4,7 +4,7 @@
 //
 //  Runs every 1 hour:
 //   1. Finds unverified tokens in DB
-//   2. Submits source code to BSCScan V2 for verification
+//   2. Submits source code to BSCScan V2 for verification (FLATTENED)
 //   3. Checks GUID status for pending submissions
 //   4. On confirmed verification → fires Trust Wallet PR + IPFS logo
 // ============================================================
@@ -69,26 +69,26 @@ async function submitVerification(contractAddress, contractName, sourceCode, con
             compilerversion:  compilerVersion || 'v0.8.20+commit.a1b79de6',
             optimizationUsed: '1',
             runs:             '200',
-            evmversion:       'paris',
+            evmversion:       'shanghai',
             licenseType:      '3'
         };
 
         if (constructorArgs) {
-            body.constructorArguements = constructorArgs; // Note: BSCScan uses this specific spelling
+            body.constructorArguements = constructorArgs.replace('0x', ''); // BSCScan uses this specific spelling
         }
 
         const params = new URLSearchParams(body);
 
         const res = await axios.post(`${BSCSCAN_API}?chainid=56&apikey=${BSCSCAN_KEY}`, params.toString(), {
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            timeout: 15000
+            timeout: 20000
         });
 
         if (res.data.status === '1') {
-            console.log(`[Verifier] ✅ Verification submitted — GUID: ${res.data.result}`);
+            console.log(`[Verifier] ✅ Verification submitted for ${contractName} — GUID: ${res.data.result}`);
             return { submitted: true, guid: res.data.result };
         } else {
-            console.warn(`[Verifier] ⚠️ Submission rejected: ${res.data.result}`);
+            console.warn(`[Verifier] ⚠️ Submission rejected for ${contractName}: ${res.data.result}`);
             return { submitted: false, reason: res.data.result };
         }
     } catch (err) {
@@ -141,15 +141,107 @@ async function ensureVerificationColumns() {
     }
 }
 
-// ── 5. Main verification + TrustWallet dispatch loop ─────────
+// ── 5. Verify Core System Contracts (Factory, etc.) ─────────
+async function verifyCoreContracts() {
+    console.log('[Verifier] 🏗️  Checking Core System Contracts verification...');
+    const { ethers } = require('ethers');
+    const abiCoder = new ethers.AbiCoder();
+    
+    // 1. Factory
+    const factoryAddr = process.env.FACTORY_ADDRESS;
+    if (factoryAddr) {
+        const status = await checkVerificationStatus(factoryAddr);
+        if (!status.verified) {
+            console.log('[Verifier] 🏭 Factory not verified. Submitting...');
+            const src = readContract('TokenFactory.flattened.sol');
+            if (src) {
+                const args = abiCoder.encode(
+                    ['address', 'address', 'address'],
+                    [
+                        process.env.BONDING_CURVE_ADDRESS || '0xf7E5D2791F70051BEe564Ba5AC9896937cdf3d0a',
+                        process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935',
+                        process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935'
+                    ]
+                );
+                await submitVerification(factoryAddr, 'TokenFactory', src, args);
+            }
+        } else {
+            console.log('[Verifier] 🏭 Factory already verified ✓');
+        }
+    }
+
+    // 2. BondingCurve
+    const curveAddr = process.env.BONDING_CURVE_ADDRESS;
+    if (curveAddr) {
+        const status = await checkVerificationStatus(curveAddr);
+        if (!status.verified) {
+            console.log('[Verifier] 📈 BondingCurve not verified. Submitting...');
+            const src = readContract('BondingCurve.flattened.sol');
+            if (src) {
+                const args = abiCoder.encode(
+                    ['address', 'address', 'address'],
+                    [
+                        process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935',
+                        process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935',
+                        '0x10ED43C718714eb63d5aA57B78B54704E256024E' // Pancake Router
+                    ]
+                );
+                await submitVerification(curveAddr, 'BondingCurve', src, args);
+            }
+        } else {
+            console.log('[Verifier] 📈 BondingCurve already verified ✓');
+        }
+    }
+
+    // 3. LiquidityManager
+    const liqAddr = process.env.LIQUIDITY_MANAGER_ADDRESS;
+    if (liqAddr) {
+        const status = await checkVerificationStatus(liqAddr);
+        if (!status.verified) {
+            console.log('[Verifier] 💧 LiquidityManager not verified. Submitting...');
+            const src = readContract('LiquidityManager.flattened.sol');
+            if (src) {
+                await submitVerification(liqAddr, 'LiquidityManager', src);
+            }
+        } else {
+            console.log('[Verifier] 💧 LiquidityManager already verified ✓');
+        }
+    }
+
+    // 4. DirectFactory
+    const directFactoryAddr = process.env.DIRECT_FACTORY_ADDRESS;
+    if (directFactoryAddr) {
+        const status = await checkVerificationStatus(directFactoryAddr);
+        if (!status.verified) {
+            console.log('[Verifier] 🚀 DirectFactory not verified. Submitting...');
+            const src = readContract('DirectDexLaunchFactory.flattened.sol');
+            if (src) {
+                const args = abiCoder.encode(
+                    ['address', 'address', 'address'],
+                    [
+                        process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935',
+                        '0x10ED43C718714eb63d5aA57B78B54704E256024E', // Pancake Router
+                        process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935'
+                    ]
+                );
+                await submitVerification(directFactoryAddr, 'DirectDexLaunchFactory', src, args);
+            }
+        } else {
+            console.log('[Verifier] 🚀 DirectFactory already verified ✓');
+        }
+    }
+}
+
+// ── 6. Main verification + TrustWallet dispatch loop ─────────
 async function runVerificationCycle() {
     const startTime = Date.now();
     console.log('\n[Verifier] ═══════════════════════════════════════════════');
-    console.log('[Verifier] 🔍 Starting hourly verification cycle...');
+    console.log('[Verifier] 🔍 Starting verification cycle...');
     console.log(`[Verifier] Time: ${new Date().toISOString()}`);
     console.log('[Verifier] ═══════════════════════════════════════════════');
 
     await ensureVerificationColumns();
+    await verifyCoreContracts();
 
     let tokens;
     try {
@@ -162,10 +254,10 @@ async function runVerificationCycle() {
             WHERE contract_address IS NOT NULL
               AND (
                   bscscan_verified IS NOT 1
-                  OR last_verified_at < datetime('now', '-6 hours')
+                  OR last_verified_at < datetime('now', '-12 hours')
               )
             ORDER BY created_at DESC
-            LIMIT 50
+            LIMIT 20
         `);
         tokens = result.rows;
     } catch (err) {
@@ -181,7 +273,8 @@ async function runVerificationCycle() {
     console.log(`[Verifier] Found ${tokens.length} token(s) to process.`);
     let cntVerified = 0, cntSubmitted = 0, cntFailed = 0, cntTW = 0;
 
-    const tokenTemplateSrc = readContract('TokenTemplate.sol');
+    // Use Flattened Source for verification compatibility
+    const tokenTemplateSrc = readContract('TokenTemplate.flattened.sol');
 
     for (const token of tokens) {
         const addr = token.contract_address?.toLowerCase();
@@ -210,27 +303,24 @@ async function runVerificationCycle() {
                 const { ethers } = require('ethers');
                 const abiCoder = new ethers.AbiCoder();
                 
-                // Fetch current contract addresses from ENV
                 const BC_ADDR  = process.env.BONDING_CURVE_ADDRESS;
                 const DF_ADDR  = process.env.DIRECT_FACTORY_ADDRESS;
                 const FEE_ADDR = process.env.FEE_WALLET;
                 
-                if (!BC_ADDR || !DF_ADDR || !FEE_ADDR) {
-                    console.warn('[Verifier] ⚠️ Missing ENV addresses (BONDING_CURVE, DIRECT_FACTORY, or FEE_WALLET). Skipping submission.');
+                if (!BC_ADDR || !FEE_ADDR) {
+                    console.warn('[Verifier] ⚠️ Missing ENV addresses. Skipping submission.');
                     continue;
                 }
 
                 let ownerAddr;
                 if (token.launch_type === 'FAIR' || token.launch_type === 'FAIR_LAUNCH') {
-                    ownerAddr = DF_ADDR;
+                    ownerAddr = DF_ADDR || '0xbe3EA5f2AE5b278796AbCFbd1078EF88dd0d70F5';
                 } else if (token.launch_type === 'STANDARD') {
                     ownerAddr = token.creator_address;
                 } else {
                     ownerAddr = BC_ADDR;
                 }
                 
-                // constructor(string name_, string symbol_, uint8 decimals_, uint256 fixedSupply, address _creator, address bondingCurve_, address feeWallet_)
-                // Ensure supply is parsed to BigInt correctly
                 const rawSupply = token.total_supply?.toString() || '1000000000';
                 const finalSupply = rawSupply.includes('e') ? BigInt(parseFloat(rawSupply)) : BigInt(rawSupply.replace(/[,_]/g, ''));
 
@@ -245,9 +335,9 @@ async function runVerificationCycle() {
                         ownerAddr, 
                         FEE_ADDR
                     ]
-                ).replace('0x', '');
+                );
 
-                await new Promise(r => setTimeout(r, 300));
+                await new Promise(r => setTimeout(r, 1000)); // Rate limit
                 submitResult = await submitVerification(addr, 'TokenTemplate', tokenTemplateSrc, encodedArgs, 'v0.8.20+commit.a1b79de6');
                 if (submitResult.submitted) {
                     verifyGuid = submitResult.guid;
@@ -276,7 +366,6 @@ async function runVerificationCycle() {
                 console.log(`[Verifier]   ✅ VERIFIED on BSCScan`);
                 cntVerified++;
 
-                // E: Trust Wallet PR + IPFS (only if not yet submitted)
                 const twNotDone = !token.tw_pr_status || token.tw_pr_status === 'pending';
                 if (twNotDone) {
                     console.log(`[Verifier]   🏦 Triggering Trust Wallet submission...`);
@@ -299,21 +388,13 @@ async function runVerificationCycle() {
                 }
             } else if (submitResult?.submitted) {
                 console.log(`[Verifier]   📤 Verification submitted — GUID: ${verifyGuid}`);
-            } else {
-                console.log(`[Verifier]   ⏳ Pending`);
             }
 
-            await new Promise(r => setTimeout(r, 250)); // BSCScan rate limit
+            await new Promise(r => setTimeout(r, 500)); 
 
         } catch (err) {
             console.error(`[Verifier] ❌ Error for ${addr}:`, err.message);
             cntFailed++;
-            try {
-                await db.query(
-                    `UPDATE tokens SET verification_status = 'error', last_verified_at = datetime('now') WHERE id = $1`,
-                    [token.id]
-                );
-            } catch (_) {}
         }
     }
 
@@ -324,22 +405,22 @@ async function runVerificationCycle() {
     console.log(`[Verifier]   📤 BSCScan Submitted: ${cntSubmitted}`);
     console.log(`[Verifier]   🏦 TrustWallet PRs:   ${cntTW}`);
     console.log(`[Verifier]   ❌ Errors:            ${cntFailed}`);
-    console.log(`[Verifier]   📊 Total:             ${tokens.length}`);
-    console.log('[Verifier] Next run in 60 minutes');
-    console.log('[Verifier] ═══════════════════════════════════════════════\n');
+    console.log(`[Verifier] ═══════════════════════════════════════════════\n`);
 }
 
-// ── 6. Start Scheduler ────────────────────────────────────────
+// ── 7. Start Scheduler ────────────────────────────────────────
 function startTokenVerifier() {
-    console.log('[Verifier] 🔐 BSCScan V2 Auto-Verification + Trust Wallet Service started');
+    console.log('[Verifier] 🔐 BSCScan V2 Auto-Verification Service started');
+    // Run initial cycle after 1 minute of startup
     setTimeout(async () => {
         try { await runVerificationCycle(); }
         catch (err) { console.error('[Verifier] Initial cycle error:', err.message); }
+        // Then every hour
         setInterval(async () => {
             try { await runVerificationCycle(); }
             catch (err) { console.error('[Verifier] Scheduled cycle error:', err.message); }
         }, ONE_HOUR_MS);
-    }, 30000);
+    }, 60000);
 }
 
 module.exports = { startTokenVerifier, runVerificationCycle, checkVerificationStatus };

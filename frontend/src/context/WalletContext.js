@@ -4,6 +4,7 @@ import { createWeb3Modal, defaultConfig } from '@web3modal/ethers/react';
 import { useWeb3Modal, useWeb3ModalAccount, useWeb3ModalProvider } from '@web3modal/ethers/react';
 import { BrowserProvider, ethers } from 'ethers';
 import { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
 
 // 1. Get projectId
 const projectId = '223d65a6a53a4e04d4abe678be2a93c4';

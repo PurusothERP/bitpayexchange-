@@ -92,11 +92,19 @@ async function resizeLogo(inputBuffer) {
         // Try sharp first (fastest)
         const sharp = require('sharp');
         return await sharp(inputBuffer)
-            .resize(256, 256, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 0 } })
-            .png()
+            .resize(256, 256, { 
+                fit: 'contain', 
+                background: { r: 255, g: 255, b: 255, alpha: 0 } 
+            })
+            .png({ 
+                compressionLevel: 9, 
+                adaptiveFiltering: true,
+                palette: true, // Use palette-based PNG to significantly reduce size
+                colors: 128     // Limit colors for small file size (<10kb)
+            })
             .toBuffer();
     } catch (_) {
-        // If sharp not available, return as-is (logo may already be acceptable)
+        // If sharp not available, return as-is
         console.warn('[TrustWallet] sharp not available — using original logo buffer');
         return inputBuffer;
     }

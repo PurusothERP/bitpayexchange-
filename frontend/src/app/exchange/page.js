@@ -35,6 +35,16 @@ function useDebounce(value, delay) {
     return debouncedValue;
 }
 
+const formatB20Number = (num, prefix = "") => {
+    if (!num || isNaN(num)) return prefix + "0";
+    const n = Math.abs(num);
+    if (n >= 1e12) return prefix + (num / 1e12).toFixed(2) + "T";
+    if (n >= 1e9) return prefix + (num / 1e9).toFixed(2) + "B";
+    if (n >= 1e6) return prefix + (num / 1e6).toFixed(2) + "M";
+    if (n >= 1e3) return prefix + (num / 1e3).toFixed(2) + "K";
+    return prefix + num.toLocaleString(undefined, { maximumFractionDigits: 2 });
+};
+
 const PANCAKE_ROUTER_ADDRESS = '0x10ED43C718714eb63d5aA57B78B54704E256024E';
 const WBNB_ADDRESS = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
 const FEE_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935';

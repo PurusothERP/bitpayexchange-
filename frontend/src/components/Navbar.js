@@ -214,76 +214,208 @@ export default function Navbar() {
             <AnimatePresence>
                 {isMobileMenuOpen && (
                     <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="md:hidden paw-pattern/95 border-b border-black/5 overflow-hidden"
+                        initial={{ opacity: 0, y: -8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -8 }}
+                        transition={{ duration: 0.2 }}
+                        className="md:hidden bg-white/98 backdrop-blur-2xl border-b border-black/5 shadow-2xl overflow-hidden"
                     >
-                        <div className="px-4 pt-2 pb-6 space-y-4">
-                            <div className="pb-2 border-b border-black/5">
-                                <p className="px-3 text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Create</p>
-                                <Link href="/create" className="block px-3 py-2.5 rounded-md text-sm font-bold text-gray-800 hover:bg-rose-50 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
-                                    <div className="bg-rose-100 p-1.5 rounded-lg"><ImageIcon className="w-4 h-4 text-rose-600" /></div> BondingCurve Meme Token
-                                </Link>
-                                <Link href="/fair-launch" className="block px-3 py-2.5 rounded-md text-sm font-bold text-gray-800 hover:bg-emerald-50 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
-                                    <div className="bg-emerald-100 p-1.5 rounded-lg"><Activity className="w-4 h-4 text-emerald-600" /></div> Fair-Launch DEX Token
-                                </Link>
-                                <Link href="/standard" className="block px-3 py-2.5 rounded-md text-sm font-bold text-gray-800 hover:bg-blue-50 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
-                                    <div className="bg-blue-100 p-1.5 rounded-lg"><ShieldCheck className="w-4 h-4 text-blue-600" /></div> Standard Token
-                                </Link>
-                            </div>
-                            
-                            <Link href="/launch" className="block px-3 py-3 rounded-md text-base font-medium text-gray-900 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
-                                <Coins className="w-5 h-5 text-gray-600" /> Launchpad
-                            </Link>
-                            <Link href="/cards" className="block px-3 py-3 rounded-md text-base font-bold text-amber-600 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
-                                <CreditCard className="w-5 h-5 text-amber-500" /> B20 Cards
-                            </Link>
-                            <Link href="/exchange" className="group relative block mx-3 my-2 px-4 py-3 rounded-xl bg-gradient-to-r from-gray-900 to-black border border-white/5 shadow-xl font-bold text-white flex items-center gap-3 transition-all hover:border-amber-500/30 active:scale-95" onClick={() => setIsMobileMenuOpen(false)}>
-                                <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-amber-600 opacity-10 rounded-xl pointer-events-none" />
-                                <div className="p-1.5 bg-white/10 rounded-lg shadow-sm border border-white/10 group-hover:bg-amber-500/20 group-hover:border-amber-500/40 transition-all">
-                                    <Activity className="w-5 h-5 text-amber-400 group-hover:text-amber-500" />
-                                </div>
-                                <span className="flex-1 tracking-wide">B20 Exchange</span>
-                            </Link>
-                            <Link href="/services" className="block px-3 py-3 rounded-md text-base font-medium text-gray-900 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
-                                <FileText className="w-5 h-5 text-rose-500" /> Services
-                            </Link>
-                            <Link href="/profile" className="block px-3 py-3 rounded-md text-base font-medium text-gray-900 hover:bg-black/10 flex items-center gap-3" onClick={() => setIsMobileMenuOpen(false)}>
-                                <Wallet className="w-5 h-5 text-rose-500" /> My Profile
-                            </Link>
+                        <div className="px-3 pt-2 pb-4">
 
-                            <div className="pt-4 border-t border-black/10">
+                            {/* ── CREATE TOKEN SECTION ─── */}
+                            <div className="mb-2">
+                                <p className="px-3 pt-2 pb-1.5 text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">
+                                    🚀 Create Token
+                                </p>
+                                <div className="grid grid-cols-2 gap-2 px-1">
+                                    <Link
+                                        href="/ai-agent"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className="flex flex-col items-start gap-1.5 p-3 bg-rose-50 border border-rose-100 rounded-2xl hover:bg-rose-100 transition-all active:scale-95"
+                                    >
+                                        <div className="bg-rose-500 p-1.5 rounded-xl">
+                                            <Sparkles className="w-3.5 h-3.5 text-white" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[11px] font-black text-rose-600 leading-tight">Nuera AI</p>
+                                            <p className="text-[9px] text-rose-400 font-medium leading-tight">Brainstorm plan</p>
+                                        </div>
+                                    </Link>
+                                    <Link
+                                        href="/create"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className="flex flex-col items-start gap-1.5 p-3 bg-gray-50 border border-gray-100 rounded-2xl hover:bg-rose-50 hover:border-rose-100 transition-all active:scale-95"
+                                    >
+                                        <div className="bg-gray-800 p-1.5 rounded-xl">
+                                            <Rocket className="w-3.5 h-3.5 text-amber-400" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[11px] font-black text-gray-800 leading-tight">BondingCurve</p>
+                                            <p className="text-[9px] text-gray-400 font-medium leading-tight">Fair launch</p>
+                                        </div>
+                                    </Link>
+                                    <Link
+                                        href="/fair-launch"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className="flex flex-col items-start gap-1.5 p-3 bg-emerald-50 border border-emerald-100 rounded-2xl hover:bg-emerald-100 transition-all active:scale-95"
+                                    >
+                                        <div className="bg-emerald-500 p-1.5 rounded-xl">
+                                            <Activity className="w-3.5 h-3.5 text-white" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[11px] font-black text-emerald-700 leading-tight">Fair-Launch</p>
+                                            <p className="text-[9px] text-emerald-500 font-medium leading-tight">Presale + DEX</p>
+                                        </div>
+                                    </Link>
+                                    <Link
+                                        href="/standard"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className="flex flex-col items-start gap-1.5 p-3 bg-blue-50 border border-blue-100 rounded-2xl hover:bg-blue-100 transition-all active:scale-95"
+                                    >
+                                        <div className="bg-blue-500 p-1.5 rounded-xl">
+                                            <ShieldCheck className="w-3.5 h-3.5 text-white" />
+                                        </div>
+                                        <div>
+                                            <p className="text-[11px] font-black text-blue-700 leading-tight">Standard</p>
+                                            <p className="text-[9px] text-blue-400 font-medium leading-tight">Fixed-supply</p>
+                                        </div>
+                                    </Link>
+                                </div>
+                            </div>
+
+                            {/* ── DIVIDER ─── */}
+                            <div className="my-2 mx-2 border-t border-gray-100" />
+
+                            {/* ── MAIN NAV LINKS ─── */}
+                            <div className="space-y-1 px-1">
+                                <p className="px-2 pt-1 pb-1 text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">Platform</p>
+
+                                {/* Exchange — Highlighted */}
+                                <Link
+                                    href="/exchange"
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-gray-900 to-gray-800 text-white font-black shadow-lg active:scale-95 transition-all overflow-hidden"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 to-transparent pointer-events-none" />
+                                    <div className="p-1.5 bg-amber-500/20 rounded-xl border border-amber-500/30 z-10">
+                                        <Activity className="w-4 h-4 text-amber-400" />
+                                    </div>
+                                    <div className="z-10">
+                                        <p className="text-sm font-black leading-tight">B20 Exchange</p>
+                                        <p className="text-[9px] text-gray-400 font-medium">Trade & Futures</p>
+                                    </div>
+                                    <div className="ml-auto z-10 bg-amber-500 text-[8px] font-black text-gray-900 px-2 py-0.5 rounded-full">LIVE</div>
+                                </Link>
+
+                                {/* Launchpad */}
+                                <Link
+                                    href="/launch"
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 transition-colors active:scale-95 group"
+                                >
+                                    <div className="w-8 h-8 bg-amber-50 border border-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <Coins className="w-4 h-4 text-amber-500" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-800 leading-tight">Launchpad</p>
+                                        <p className="text-[10px] text-gray-400">Discover new tokens</p>
+                                    </div>
+                                </Link>
+
+                                {/* Card */}
+                                <Link
+                                    href="/cards"
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-amber-50 transition-colors active:scale-95 group"
+                                >
+                                    <div className="w-8 h-8 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <CreditCard className="w-4 h-4 text-amber-500" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-amber-600 leading-tight">B20 Card</p>
+                                        <p className="text-[10px] text-amber-400">Crypto debit card</p>
+                                    </div>
+                                </Link>
+
+                                {/* Service */}
+                                <Link
+                                    href="/services"
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 transition-colors active:scale-95"
+                                >
+                                    <div className="w-8 h-8 bg-gray-100 border border-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <FileText className="w-4 h-4 text-gray-500" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-700 leading-tight">Service</p>
+                                        <p className="text-[10px] text-gray-400">Tools & integrations</p>
+                                    </div>
+                                </Link>
+
+                                {/* Profile */}
+                                <Link
+                                    href="/profile"
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-rose-50 transition-colors active:scale-95"
+                                >
+                                    <div className="w-8 h-8 bg-rose-50 border border-rose-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <Wallet className="w-4 h-4 text-rose-500" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-700 leading-tight">My Profile</p>
+                                        <p className="text-[10px] text-gray-400">Assets & history</p>
+                                    </div>
+                                </Link>
+
+                                {/* Admin (conditional) */}
+                                {isAdmin && (
+                                    <Link
+                                        href="/admin"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className="flex items-center gap-3 px-3 py-3 rounded-xl bg-rose-50 border border-rose-100 hover:bg-rose-100 transition-colors active:scale-95"
+                                    >
+                                        <div className="w-8 h-8 bg-rose-100 border border-rose-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <Shield className="w-4 h-4 text-rose-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-black text-rose-600 leading-tight">Admin Panel</p>
+                                            <p className="text-[10px] text-rose-400">Platform controls</p>
+                                        </div>
+                                        <div className="ml-auto bg-rose-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full">ADMIN</div>
+                                    </Link>
+                                )}
+                            </div>
+
+                            {/* ── WALLET SECTION ─── */}
+                            <div className="mt-3 mx-1 pt-3 border-t border-gray-100">
                                 {account ? (
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-3 px-3">
-                                            <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-                                            <span className="text-sm font-mono text-gray-700">{truncateAddress(account)}</span>
+                                    <div className="flex items-center justify-between bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse flex-shrink-0" />
+                                            <div>
+                                                <p className="text-[10px] text-gray-400 font-medium">Connected</p>
+                                                <p className="text-xs font-mono font-bold text-gray-700">{truncateAddress(account)}</p>
+                                            </div>
                                         </div>
                                         <button
-                                            onClick={() => {
-                                                disconnectWallet();
-                                                setIsMobileMenuOpen(false);
-                                            }}
-                                            className="w-full text-left px-3 py-3 text-red-400 hover:bg-black/10 rounded-md transition-colors font-medium"
+                                            onClick={() => { disconnectWallet(); setIsMobileMenuOpen(false); }}
+                                            className="text-[10px] font-bold text-red-400 hover:text-red-600 border border-red-100 bg-white px-3 py-1.5 rounded-xl transition-colors"
                                         >
-                                            Disconnect Wallet
+                                            Disconnect
                                         </button>
                                     </div>
                                 ) : (
                                     <button
-                                        onClick={() => {
-                                            connectWallet();
-                                            setIsMobileMenuOpen(false);
-                                        }}
+                                        onClick={() => { connectWallet(); setIsMobileMenuOpen(false); }}
                                         disabled={isConnecting}
-                                        className="w-full btn-primary flex items-center justify-center gap-2 py-3"
+                                        className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-rose-500 to-rose-600 text-white font-black text-sm rounded-2xl shadow-lg shadow-rose-200 active:scale-95 transition-all"
                                     >
-                                        <Wallet className="w-5 h-5" />
+                                        <Wallet className="w-4 h-4" />
                                         {isConnecting ? 'Connecting...' : 'Connect Wallet'}
                                     </button>
                                 )}
                             </div>
+
                         </div>
                     </motion.div>
                 )}
@@ -291,3 +423,4 @@ export default function Navbar() {
         </nav>
     );
 }
+

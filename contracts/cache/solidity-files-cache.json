@@ -517,6 +517,258 @@
         "DirectDexLaunchFactory",
         "IDexRouter"
       ]
+    },
+    "/Users/purusothaman/Desktop/untitled folder 2/contracts/contracts/BondingCurve.flattened.sol": {
+      "lastModificationDate": 1775810656882,
+      "contentHash": "9bc9ec3da16cac826f865497dcf692d1",
+      "sourceName": "contracts/BondingCurve.flattened.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "viaIR": true,
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20",
+        "^0.8.20",
+        "^0.8.20",
+        "^0.8.20",
+        ">=0.4.16",
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "BondingCurve",
+        "Context",
+        "IERC20",
+        "IPancakeRouter",
+        "Ownable",
+        "ReentrancyGuard",
+        "StorageSlot"
+      ]
+    },
+    "/Users/purusothaman/Desktop/untitled folder 2/contracts/contracts/DirectDexLaunchFactory.flattened.sol": {
+      "lastModificationDate": 1775810656888,
+      "contentHash": "dea093dcb94728bff13c49b0781d787b",
+      "sourceName": "contracts/DirectDexLaunchFactory.flattened.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "viaIR": true,
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20",
+        "^0.8.20",
+        ">=0.8.4",
+        ">=0.4.16",
+        ">=0.6.2",
+        "^0.8.20",
+        "^0.8.20",
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "Context",
+        "DirectDexLaunchFactory",
+        "ERC20",
+        "IDexRouter",
+        "IERC1155Errors",
+        "IERC20",
+        "IERC20Errors",
+        "IERC20Metadata",
+        "IERC721Errors",
+        "Ownable",
+        "TokenTemplate"
+      ]
+    },
+    "/Users/purusothaman/Desktop/untitled folder 2/contracts/contracts/LiquidityManager.flattened.sol": {
+      "lastModificationDate": 1775810656894,
+      "contentHash": "aa3c0e59700a66ff093288aaae5aeba7",
+      "sourceName": "contracts/LiquidityManager.flattened.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "viaIR": true,
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20",
+        "^0.8.20",
+        ">=0.4.16",
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "Context",
+        "IERC20",
+        "IPancakeFactory",
+        "IPancakeRouter",
+        "LiquidityManager",
+        "Ownable"
+      ]
+    },
+    "/Users/purusothaman/Desktop/untitled folder 2/contracts/contracts/TokenFactory.flattened.sol": {
+      "lastModificationDate": 1775810656899,
+      "contentHash": "a2c698a2e0c18ca46e876f45b5c81f83",
+      "sourceName": "contracts/TokenFactory.flattened.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "viaIR": true,
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20",
+        "^0.8.20",
+        ">=0.8.4",
+        ">=0.4.16",
+        ">=0.6.2",
+        "^0.8.20",
+        "^0.8.20",
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "Context",
+        "ERC20",
+        "IBondingCurve",
+        "IERC1155Errors",
+        "IERC20",
+        "IERC20Errors",
+        "IERC20Metadata",
+        "IERC721Errors",
+        "Ownable",
+        "TokenFactory",
+        "TokenTemplate"
+      ]
+    },
+    "/Users/purusothaman/Desktop/untitled folder 2/contracts/contracts/TokenTemplate.flattened.sol": {
+      "lastModificationDate": 1775810656903,
+      "contentHash": "cc17230d9f2793f10e495f8717f4db2d",
+      "sourceName": "contracts/TokenTemplate.flattened.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "viaIR": true,
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20",
+        "^0.8.20",
+        ">=0.8.4",
+        ">=0.4.16",
+        ">=0.6.2",
+        "^0.8.20",
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "Context",
+        "ERC20",
+        "IERC1155Errors",
+        "IERC20",
+        "IERC20Errors",
+        "IERC20Metadata",
+        "IERC721Errors",
+        "Ownable",
+        "TokenTemplate"
+      ]
     }
   }
 }

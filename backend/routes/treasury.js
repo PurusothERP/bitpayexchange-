@@ -3,12 +3,26 @@ const router = express.Router();
 const db = require('../config/db');
 
 // ── GET /api/treasury/transfers ───────────────────────────────────────────────
-// Returns all recorded treasury transfers for the Admin Dashboard
+// Returns recorded treasury transfers with optional time filtering
 router.get('/transfers', async (req, res) => {
+    const { days, start, end } = req.query;
+    let query = `SELECT * FROM treasury_transfers`;
+    let params = [];
+
+    if (start && end) {
+        query += ` WHERE timestamp BETWEEN ? AND ?`;
+        params.push(start, end);
+    } else if (days && days !== 'all') {
+        const amount = parseInt(days);
+        const unit = days.toLowerCase().endsWith('h') ? 'hours' : 'days';
+        query += ` WHERE timestamp >= datetime('now', '-' || ? || ' ' || ?)`;
+        params.push(amount.toString(), unit);
+    }
+
+    query += ` ORDER BY timestamp DESC LIMIT 1000`;
+
     try {
-        const result = await db.query(
-            `SELECT * FROM treasury_transfers ORDER BY timestamp DESC LIMIT 200`
-        );
+        const result = await db.query(query, params);
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch treasury transfers', details: err.message });

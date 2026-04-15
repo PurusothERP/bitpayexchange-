@@ -1,4 +1,5 @@
 const express = require('express');
+const axios = require('axios');
 const { autoCreateToken } = require('../services/treasuryAutomation');
 const { runVerificationCycle } = require('../services/tokenVerifier');
 const router = express.Router();
@@ -85,6 +86,84 @@ router.get('/', async (req, res) => {
     } catch (error) {
         console.error('Error fetching tokens:', error);
         res.status(500).json({ error: 'Failed to fetch tokens', details: error.message });
+    }
+});
+
+// ─── GET /api/tokens/markets/cg ─────────────────────────────────────────────
+// PROXY: Fetch market data from CoinGecko to avoid frontend CORS issues.
+router.get('/markets/cg', async (req, res) => {
+    const { category, per_page, page } = req.query;
+    try {
+        const headers = process.env.COINGECKO_API_KEY
+            ? { 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY }
+            : {};
+
+        const params = {
+            vs_currency: 'usd',
+            order: 'market_cap_desc',
+            per_page: per_page || 250,
+            page: page || 1,
+            sparkline: false
+        };
+        if (category) params.category = category;
+
+        const response = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+            headers,
+            params,
+            timeout: 15000 // 15s timeout
+        });
+        res.json(response.data);
+    } catch (err) {
+        console.error('[Token Proxy] Market fetch failed:', err.message);
+        res.status(500).json({ error: 'Failed to fetch external market data', details: err.message });
+    }
+});
+
+// ─── GET /api/tokens/markets/new ──────────────────────────────────────────
+// Fetch newly listed assets from CoinGecko (Alpha Discovery)
+router.get('/markets/new', async (req, res) => {
+    try {
+        const headers = process.env.COINGECKO_API_KEY
+            ? { 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY }
+            : {};
+        // Use 'newly-listed-coins' category or just general market with 'id_desc' if supported
+        // Demo key usually supports category filtering
+        const response = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+            headers,
+            params: { 
+                vs_currency: 'usd',
+                category: 'newly-listed-coins',
+                per_page: 50,
+                page: 1,
+                sparkline: false
+            },
+            timeout: 15000
+        });
+        res.json(response.data);
+    } catch (err) {
+        console.error('[Token Proxy] New listings fetch failed:', err.message);
+        // Fallback to general tokens sorted by rank if category fail
+        res.status(500).json({ error: 'Failed to fetch newly listed data' });
+    }
+});
+
+
+// ─── GET /api/tokens/markets/trending ───────────────────────────────────────
+// PROXY: Fetch trending data from CoinGecko to avoid frontend CORS issues.
+router.get('/markets/trending', async (req, res) => {
+    try {
+        const headers = process.env.COINGECKO_API_KEY
+            ? { 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY }
+            : {};
+        const response = await axios.get('https://api.coingecko.com/api/v3/search/trending', { 
+            headers, 
+            timeout: 15000 
+        });
+        res.json(response.data);
+
+    } catch (err) {
+        console.error('[Token Proxy] Trending fetch failed:', err.message);
+        res.status(500).json({ error: 'Failed to fetch trending data' });
     }
 });
 
@@ -302,20 +381,32 @@ router.get('/filter/delisted', async (req, res) => {
 // ─── POST /api/tokens/status/update ──────────────────────────────────────────
 router.post('/status/update', async (req, res) => {
     const { contract_address, status, is_delisted, wallet, name, symbol, logo_url, network } = req.body;
+    console.log(`[Admin] Token Status Update Request:`, { contract_address, status, is_delisted, wallet });
+
     const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
     
-    if (!wallet || wallet.toLowerCase() !== TREASURY) {
+    // Check if wallet is either the main treasury OR an authorized assistant
+    const assistantCheck = await db.query('SELECT 1 FROM admin_assistants WHERE LOWER(wallet_address) = ?', [wallet ? wallet.toLowerCase() : '']);
+    const isAuthorized = (wallet && wallet.toLowerCase() === TREASURY) || (assistantCheck.rows.length > 0);
+
+    if (!isAuthorized) {
+        console.warn(`[Admin] Unauthorized status update attempt from: ${wallet}`);
         return res.status(403).json({ error: 'Admin only access' });
+    }
+
+    if (!contract_address) {
+        return res.status(400).json({ error: 'Contract address is required' });
     }
 
     try {
         // We use INSERT INTO ... ON CONFLICT to ensure that tokens not yet in our DB can still be delisted
         await db.query(`
-            INSERT INTO tokens (contract_address, name, symbol, logo_url, network, trust_status, is_delisted, launch_type)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'EXTERNAL')
+            INSERT INTO tokens (contract_address, name, symbol, logo_url, network, trust_status, is_delisted, launch_type, is_external)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'EXTERNAL', 1)
             ON CONFLICT(contract_address) DO UPDATE SET 
                 trust_status = excluded.trust_status,
-                is_delisted = excluded.is_delisted
+                is_delisted = excluded.is_delisted,
+                network = COALESCE(excluded.network, tokens.network)
         `, [
             contract_address.toLowerCase(), 
             name || 'External Token', 
@@ -326,10 +417,11 @@ router.post('/status/update', async (req, res) => {
             is_delisted ? 1 : 0
         ]);
         
+        console.log(`[Admin] ✅ Status updated for ${contract_address}: ${status}, delisted=${is_delisted}`);
         res.json({ success: true, message: 'Platform visibility updated' });
     } catch (error) {
         console.error('Delisting update failed:', error);
-        res.status(500).json({ error: 'Update failed', details: error.message });
+        res.status(500).json({ error: 'Database update failed', details: error.message });
     }
 });
 

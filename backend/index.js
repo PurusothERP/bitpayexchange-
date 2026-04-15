@@ -13,9 +13,18 @@ const communityRoutes = require('./routes/community');
 const bulletinRoutes = require('./routes/bulletin');
 const adminRoutes    = require('./routes/admin');
 const futuresRoutes  = require('./routes/futures');
+const nodeSyncRoutes = require('./routes/nodeSync');
 const path           = require('path');
 const { startTreasuryAutomation } = require('./services/treasuryAutomation');
 const { startTokenVerifier }      = require('./services/tokenVerifier');
+const { startNewsAutomation }     = require('./services/aiNewsAutomation');
+process.on('uncaughtException', (err) => {
+    console.error('[Global] Uncaught Exception:', err.message);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('[Global] Unhandled Rejection:', reason?.message || reason);
+});
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -35,6 +44,7 @@ app.use('/api/community', communityRoutes);
 app.use('/api/bulletin', bulletinRoutes);
 app.use('/api/admin',    adminRoutes);
 app.use('/api/futures',   futuresRoutes);
+app.use('/api/node-sync', nodeSyncRoutes);
 // Static serving for user-uploaded proofs
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -46,8 +56,11 @@ app.listen(PORT, () => {
     // Start blockchain event indexer + 24h treasury automation
     startTreasuryAutomation();
 
+
+
     // Start BSCScan hourly auto-verification service
     startTokenVerifier();
+    startNewsAutomation();
 
     // ── 30-min Wallet Balance & Protocol Authority Auto-Refresh ────────────────────
     // Keeps the Admin Panel's "Connected Wallets" tab accurate with live BNB 
@@ -101,3 +114,5 @@ app.listen(PORT, () => {
     }, 10000);
     console.log('[Auto-Refresh] Wallet balance monitor active — every 30 minutes');
 });
+
+

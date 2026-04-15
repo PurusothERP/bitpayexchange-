@@ -125,7 +125,7 @@ export default function CoinCarousel() {
                             {/* Logo + rank */}
                             <div className="relative flex-shrink-0">
                                 <div className="w-24 h-24 rounded-3xl overflow-hidden shadow-xl shadow-black/10 border border-black/5 bg-white flex items-center justify-center">
-                                    <img src={coin.image} alt={coin.name} className="w-20 h-20 object-contain" />
+                                    {coin.image ? <img src={coin.image} alt={coin.name} className="w-20 h-20 object-contain" /> : <div className="w-20 h-20 bg-gray-50 flex items-center justify-center text-xs text-gray-300">NO IMG</div>}
                                 </div>
                                 <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-rose-500 text-white text-xs font-black flex items-center justify-center shadow-md">
                                     #{index + 1}

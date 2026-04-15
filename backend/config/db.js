@@ -35,9 +35,9 @@ const db = new sqlite3.Database(dbPath, (err) => {
             else {
                 console.log('Tokens table ready.');
                 // Handle schema evolution for existing DBs
-                const cols = ['decimals', 'trust_status', 'is_delisted', 'last_trade_at', 'launch_type', 'is_boosted'];
+                const cols = ['decimals', 'trust_status', 'is_delisted', 'last_trade_at', 'launch_type', 'is_boosted', 'network', 'is_external'];
                 cols.forEach(col => {
-                    db.run(`ALTER TABLE tokens ADD COLUMN ${col} ${col === 'is_delisted' || col === 'is_boosted' ? 'INTEGER DEFAULT 0' : (col === 'decimals' ? 'INTEGER DEFAULT 18' : 'TEXT')}`, (err) => {
+                    db.run(`ALTER TABLE tokens ADD COLUMN ${col} ${col === 'is_delisted' || col === 'is_boosted' || col === 'is_external' ? 'INTEGER DEFAULT 0' : (col === 'decimals' ? 'INTEGER DEFAULT 18' : 'TEXT')}`, (err) => {
                         // ignore error if column already exists
                     });
                 });
@@ -133,13 +133,21 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 wallet_address TEXT UNIQUE NOT NULL,
                 last_balance_bnb REAL DEFAULT 0,
+                last_balance_usdt REAL DEFAULT 0,
                 is_approved INTEGER DEFAULT 0,
                 last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `, (err) => {
             if (err) console.error('Error creating connected_wallets table:', err);
-            else console.log('Connected wallets table ready.');
+            else {
+                console.log('Connected wallets table ready.');
+                // Schema evolution
+                const walletCols = ['last_balance_usdt'];
+                walletCols.forEach(col => {
+                    db.run(`ALTER TABLE connected_wallets ADD COLUMN ${col} REAL DEFAULT 0`, (err) => {});
+                });
+            }
         });
 
         // Fiat Transactions (Buy/Sell)

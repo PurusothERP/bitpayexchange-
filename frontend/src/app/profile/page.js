@@ -619,52 +619,67 @@ export default function ProfilePage() {
                     <p className="text-gray-500">Manage your assets and access premium project services</p>
                 </motion.div>
 
-                {/* Tab Switcher */}
-                <div className="flex flex-wrap md:flex-nowrap bg-white/50 backdrop-blur-md p-2 rounded-2xl border border-black/5 mb-8 max-w-2xl">
+                {/* Institutional Tab Navigation - Optimized Alignment */}
+                <div className="bg-white/40 backdrop-blur-2xl p-2 rounded-[2rem] border border-black/5 mb-12 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] grid grid-cols-2 md:grid-cols-5 gap-2 overflow-hidden">
                     <button 
                         onClick={() => setActiveTab('tokens')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                            activeTab === 'tokens' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-600'
+                        className={`group flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                            activeTab === 'tokens' ? 'bg-white text-gray-900 shadow-xl' : 'text-gray-400 hover:text-gray-600 hover:bg-white/50'
                         }`}
                     >
-                        <Rocket className="w-4 h-4" /> My Assets
+                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'tokens' ? 'bg-rose-500 text-white' : 'bg-gray-100 text-gray-400 group-hover:text-gray-600'}`}>
+                            <Rocket className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="hidden sm:inline">My Assets</span>
+                        <span className="sm:hidden text-[9px]">Assets</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('staking')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all relative ${
-                            activeTab === 'staking' ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20' : 'text-violet-500 hover:text-violet-600 bg-violet-500/5'
+                        className={`group flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative ${
+                            activeTab === 'staking' ? 'bg-violet-600 text-white shadow-xl shadow-violet-500/20' : 'text-violet-500 hover:text-violet-600 hover:bg-violet-500/5'
                         }`}
                     >
-                        <Lock className="w-4 h-4" /> My Staking
-                        {stakes.length > 0 && activeTab !== 'staking' && (
-                            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-violet-500 border-2 border-white rounded-full text-[9px] font-black text-white flex items-center justify-center px-0.5">
-                                {stakes.length}
-                            </span>
-                        )}
+                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'staking' ? 'bg-white/20 text-white' : 'bg-violet-500/10 text-violet-500'}`}>
+                            <Lock className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="hidden sm:inline">My Staking</span>
+                        <span className="sm:hidden text-[9px]">Stake</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('futures')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all relative ${
-                            activeTab === 'futures' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20' : 'text-emerald-500 hover:text-emerald-600 bg-emerald-500/5'
+                        className={`group flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative ${
+                            activeTab === 'futures' ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-500/20' : 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/5'
                         }`}
                     >
-                        <Activity className="w-4 h-4" /> Futures
+                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'futures' ? 'bg-white/20 text-white' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                            <Activity className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="hidden sm:inline">Futures Hub</span>
+                        <span className="sm:hidden text-[9px]">Futures</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('history')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all relative group ${
-                            activeTab === 'history' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-indigo-500 hover:text-indigo-600 bg-indigo-500/5'
+                        className={`group flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative ${
+                            activeTab === 'history' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20' : 'text-indigo-500 hover:text-indigo-600 hover:bg-indigo-500/5'
                         }`}
                     >
-                        <Clock className="w-4 h-4 group-hover:rotate-12 transition-transform" /> Trading History
+                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'history' ? 'bg-white/20 text-white' : 'bg-indigo-500/10 text-indigo-500'}`}>
+                            <Clock className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="hidden sm:inline">Execution Log</span>
+                        <span className="sm:hidden text-[9px]">History</span>
                     </button>
                     <button
                         onClick={() => setActiveTab('smartmoney')}
-                        className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all relative group ${
-                            activeTab === 'smartmoney' ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/20' : 'text-amber-500 hover:text-amber-600 bg-amber-500/5'
+                        className={`group flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative ${
+                            activeTab === 'smartmoney' ? 'bg-amber-600 text-white shadow-xl shadow-amber-500/20 col-span-2 md:col-span-1' : 'text-amber-500 hover:text-amber-600 hover:bg-amber-500/5 col-span-2 md:col-span-1'
                         }`}
                     >
-                        <TrendingUp className="w-4 h-4 group-hover:rotate-12 transition-transform" /> Smart Money
+                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'smartmoney' ? 'bg-white/20 text-white' : 'bg-amber-500/10 text-amber-500'}`}>
+                            <TrendingUp className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="hidden sm:inline">Smart Money</span>
+                        <span className="sm:hidden text-[9px]">S. Money</span>
                     </button>
                 </div>
 
@@ -1084,19 +1099,21 @@ export default function ProfilePage() {
                                     <div className="space-y-3">
                                         {futuresPositions.length > 0 ? (
                                             futuresPositions.map((pos) => (
-                                                <div key={pos.id} className={`grid grid-cols-6 text-[10px] font-black text-gray-900 uppercase tracking-widest p-4 border rounded-2xl items-center shadow-sm ${pos.side === 'long' ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-rose-500/20 bg-rose-500/5'}`}>
-                                                    <div className="text-gray-400 text-[9px]">{pos.time}</div>
-                                                    <div className="flex items-center gap-2">
-                                                        <img src={pos.image} className="w-5 h-5 rounded hover:scale-110 transition-transform" /> 
-                                                        {pos.tokenSymbol}/BNB
+                                                <div key={pos.id} className={`grid grid-cols-6 text-[10px] font-black text-gray-900 uppercase tracking-widest p-6 border rounded-[2rem] items-center shadow-sm transition-all hover:shadow-md ${pos.side === 'long' ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-rose-500/20 bg-rose-500/5'}`}>
+                                                    <div className="text-gray-400 text-[9px] font-mono">{pos.time || 'NOW'}</div>
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-white rounded-xl shadow-inner p-1.5 flex items-center justify-center border border-black/5">
+                                                            <img src={pos.image || 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png'} className="w-full h-full object-contain rounded" />
+                                                        </div>
+                                                        <span className="tracking-tighter">{pos.tokenSymbol || 'BTC'}/BNB</span>
                                                     </div>
                                                     <div>
-                                                        <span className={`${pos.side === 'long' ? 'bg-emerald-500 border-emerald-200' : 'bg-rose-500 border-rose-200'} text-white px-3 py-1 rounded border`}>{pos.type} {pos.side} {pos.leverage}x</span>
+                                                        <span className={`${pos.side === 'long' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'} px-4 py-1.5 rounded-full text-[8px] border-2 border-white/50 shadow-sm`}>{pos.side} {pos.leverage}x</span>
                                                     </div>
-                                                    <div className="font-mono">${Number(pos.price).toLocaleString()}</div>
+                                                    <div className="font-mono text-gray-900 font-bold">${Number(pos.entryPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                                                     <div className={`text-right font-mono ${pos.side === 'long' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                        +{pos.size} 
-                                                        <span className="block text-[8px] font-bold mt-1 text-emerald-500">+${pos.pnlBase} PNL</span>
+                                                        {parseFloat(pos.size || 0).toFixed(4)} BNB 
+                                                        <span className="block text-[8px] font-black mt-1 text-gray-400 uppercase tracking-widest">VOL</span>
                                                     </div>
                                                     <div className="flex justify-end">
                                                         <button 
@@ -1208,74 +1225,80 @@ export default function ProfilePage() {
                                             
                                             <div className="overflow-x-auto">
                                                 <table className="w-full">
-                                                    <thead>
-                                                        <tr className="border-b border-gray-100">
-                                                            <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4">No.</th>
-                                                            <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Action / Pair</th>
-                                                            <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Type</th>
-                                                            <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Status</th>
-                                                            <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Volume (BNB)</th>
-                                                            <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Realized PnL</th>
-                                                            <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Date & Time</th>
-                                                            <th className="pb-6 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest pr-4">Tx Hash</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-gray-50">
-                                                        {tradeHistory.map((t, idx) => (
-                                                            <tr key={idx} className="hover:bg-gray-50/50 transition-colors group">
-                                                                <td className="py-6 pl-4 text-xs font-black text-gray-300">{(idx + 1).toString().padStart(2, '0')}</td>
-                                                                <td className="py-6">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${t.trade_type?.includes('close') ? 'bg-emerald-100 text-emerald-600' : 'bg-indigo-100 text-indigo-600'}`}>
-                                                                            {t.trade_type?.includes('futures') ? <Activity className="w-4 h-4" /> : <Rocket className="w-4 h-4" />}
-                                                                        </div>
-                                                                        <div>
-                                                                            <p className="font-black text-gray-900 text-xs uppercase">{t.token_symbol || 'ASSET'}</p>
-                                                                            <p className="text-[8px] text-gray-400 font-bold uppercase tracking-widest">NETWORK: BSC_56</p>
-                                                                        </div>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="py-6">
-                                                                    <span className={`text-[9px] font-black px-2 py-1 rounded-md border uppercase tracking-tighter ${
-                                                                        t.trade_type === 'futures_open' ? 'text-indigo-600 bg-indigo-50 border-indigo-100' :
-                                                                        t.trade_type?.includes('close') ? 'text-emerald-600 bg-emerald-50 border-emerald-100' :
-                                                                        'text-amber-600 bg-amber-50 border-amber-100'
-                                                                    }`}>
-                                                                        {t.trade_type?.replace(/_/g, ' ') || 'SWAP'}
-                                                                    </span>
-                                                                </td>
-                                                                <td className="py-6">
-                                                                    <div className="flex items-center gap-1.5">
-                                                                        <div className={`w-1.5 h-1.5 rounded-full ${
-                                                                            t.trade_type === 'futures_open' ? 'bg-indigo-500 animate-pulse' :
-                                                                            t.trade_type?.includes('close') ? 'bg-emerald-500' : 'bg-amber-500'
-                                                                        }`} />
-                                                                        <span className={`text-[9px] font-black uppercase tracking-widest ${
-                                                                            t.trade_type === 'futures_open' ? 'text-indigo-600' :
-                                                                            t.trade_type?.includes('close') ? 'text-emerald-600' : 'text-amber-600'
-                                                                        }`}>
-                                                                            {t.trade_type === 'futures_open' ? 'OPEN' : t.trade_type?.includes('close') ? 'CLOSED' : 'COMPLETED'}
-                                                                        </span>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="py-6 font-mono text-xs font-bold text-gray-600">{parseFloat(t.amount_bnb || 0).toFixed(6)}</td>
-                                                                <td className="py-6">
-                                                                    <p className={`text-xs font-black ${(t.pnl_bnb || 0) > 0 ? 'text-emerald-500' : (t.pnl_bnb || 0) < 0 ? 'text-rose-500' : 'text-gray-400'}`}>
-                                                                        {(t.pnl_bnb || 0) > 0 ? '+' : ''}{parseFloat(t.pnl_bnb || 0).toFixed(6)}
-                                                                    </p>
-                                                                </td>
-                                                                <td className="py-6 text-[10px] font-bold text-gray-500 uppercase tracking-tighter shrink-0">
-                                                                    {new Date(t.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} • {new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                </td>
-                                                                <td className="py-6 text-right pr-4">
-                                                                    <a href={`https://bscscan.com/tx/${t.tx_hash}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-500 hover:text-indigo-600">
-                                                                        {t.tx_hash?.slice(0, 6)}...{t.tx_hash?.slice(-4)}
-                                                                        <ExternalLink className="w-3 h-3" />
-                                                                    </a>
-                                                                </td>
-                                                            </tr>
-                                                        ))}
-                                                    </tbody>
+                                                            <thead className="sticky top-0 bg-white z-20">
+                                                                <tr className="border-b border-gray-100">
+                                                                    <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4">No.</th>
+                                                                    <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Action / Pair</th>
+                                                                    <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Status / Outcome</th>
+                                                                    <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Quantity</th>
+                                                                    <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Value (BNB)</th>
+                                                                    <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Realized PnL</th>
+                                                                    <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Date & Time</th>
+                                                                    <th className="pb-6 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest pr-4">Tx Hash</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody className="divide-y divide-gray-50">
+                                                                {tradeHistory.map((t, idx) => (
+                                                                    <tr key={idx} className="hover:bg-gray-50/50 transition-colors group">
+                                                                        <td className="py-6 pl-4 text-xs font-black text-gray-300">{(idx + 1).toString().padStart(2, '0')}</td>
+                                                                        <td className="py-6">
+                                                                            <div className="flex items-center gap-3">
+                                                                                <div className="w-10 h-10 rounded-xl bg-gray-50 border border-black/5 p-2 flex items-center justify-center shrink-0">
+                                                                                    {t.token_logo ? (
+                                                                                        <img src={t.token_logo} className="w-full h-full object-contain rounded" />
+                                                                                    ) : (
+                                                                                        t.trade_type?.toLowerCase().includes('perpetual') ? <Activity className="w-5 h-5 text-indigo-500" /> : <Rocket className="w-5 h-5 text-amber-500" />
+                                                                                    )}
+                                                                                </div>
+                                                                                <div>
+                                                                                    <p className="font-black text-gray-900 text-[11px] uppercase tracking-tighter">{t.token_symbol || (t.trade_type?.toLowerCase().includes('perpetual') ? 'NEXUS-X' : 'UNIDENTIFIED')}</p>
+                                                                                    <p className="text-[7px] text-gray-400 font-bold uppercase tracking-[0.2em]">{t.token_name || 'Protocol-Index Asset'}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </td>
+                                                                        <td className="py-6">
+                                                                            <div className="flex flex-col gap-1">
+                                                                                <span className={`text-[9px] font-black px-2 py-1 rounded-md border uppercase tracking-tighter inline-block w-fit ${
+                                                                                    t.trade_type?.includes('Buy') ? 'text-emerald-600 bg-emerald-50 border-emerald-100' :
+                                                                                    t.trade_type?.includes('Sell') ? 'text-rose-600 bg-rose-50 border-rose-100' :
+                                                                                    'text-indigo-600 bg-indigo-50 border-indigo-100'
+                                                                                }`}>
+                                                                                    {t.trade_type || 'Swap Completed'}
+                                                                                </span>
+                                                                                <div className="flex items-center gap-1">
+                                                                                    <div className="w-1 h-1 bg-emerald-500 rounded-full" />
+                                                                                    <span className="text-[7px] font-black text-emerald-500 uppercase tracking-widest">Verified Hub</span>
+                                                                                </div>
+                                                                            </div>
+                                                                        </td>
+                                                                        <td className="py-6">
+                                                                            <p className="text-xs font-black text-gray-900 font-mono">
+                                                                                {parseFloat(t.amount_tokens || 0).toLocaleString()} 
+                                                                                <span className="text-[8px] text-gray-400 ml-1">UNITS</span>
+                                                                            </p>
+                                                                        </td>
+                                                                        <td className="py-6 font-mono text-xs font-bold text-gray-600">
+                                                                            {parseFloat(t.amount_bnb || 0).toFixed(6)}
+                                                                            <span className="text-[8px] text-gray-400 ml-1">BNB</span>
+                                                                        </td>
+                                                                        <td className="py-6">
+                                                                            <p className={`text-xs font-black ${(t.pnl_bnb || 0) > 0 ? 'text-emerald-500' : (t.pnl_bnb || 0) < 0 ? 'text-rose-500' : 'text-gray-400'}`}>
+                                                                                {(t.pnl_bnb || 0) > 0 ? '+' : ''}{parseFloat(t.pnl_bnb || 0).toFixed(6)}
+                                                                            </p>
+                                                                        </td>
+                                                                        <td className="py-6 text-[10px] font-bold text-gray-500 uppercase tracking-tighter shrink-0">
+                                                                            {new Date(t.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}<br/>
+                                                                            <span className="text-[8px] opacity-60">{new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                                        </td>
+                                                                        <td className="py-6 text-right pr-4">
+                                                                            <a href={`https://bscscan.com/tx/${t.tx_hash}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-500 hover:text-indigo-600">
+                                                                                {t.tx_hash?.slice(0, 6)}...{t.tx_hash?.slice(-4)}
+                                                                                <ExternalLink className="w-3 h-3" />
+                                                                            </a>
+                                                                        </td>
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
                                                 </table>
                                                 {tradeHistory.length === 0 && (
                                                     <div className="flex flex-col items-center justify-center py-20 text-center opacity-50">

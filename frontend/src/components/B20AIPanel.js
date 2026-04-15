@@ -186,7 +186,7 @@ function AIDataTab({ tokens }) {
                         <motion.div key={slideIdx} initial={{opacity:0,x:30}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-30}} transition={{duration:0.4}}
                             onClick={() => window.location.href='/exchange'}
                             className="flex items-center gap-4 p-4 rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all" style={{background:'rgba(249,250,251,0.8)',border:'1px solid rgba(0,0,0,0.04)'}}>
-                            <img src={aiTokens[slideIdx]?.image} className="w-12 h-12 rounded-full border-2 border-gray-200 shadow-md" alt="" onError={e=>e.target.style.display='none'} />
+                            {aiTokens[slideIdx]?.image ? <img src={aiTokens[slideIdx]?.image} className="w-12 h-12 rounded-full border-2 border-gray-200 shadow-md" alt="" onError={e=>e.target.style.display='none'} /> : null}
                             <div className="flex-1">
                                 <div className="flex items-center gap-2">
                                     <p className="font-black text-gray-900 text-sm">{aiTokens[slideIdx]?.symbol?.toUpperCase()}</p>
@@ -293,7 +293,7 @@ function AIDataTab({ tokens }) {
                                                 return (
                                                     <div key={t.id} className="p-6 rounded-[2.5rem] bg-gray-50 border border-gray-100 flex flex-col items-center justify-center text-center shadow-md hover:-translate-y-2 hover:shadow-2xl hover:border-amber-500/30 transition-all duration-300 group">
                                                         <div className="relative mb-4">
-                                                            <img src={t.image} className="w-16 h-16 rounded-[1.5rem] shadow-xl group-hover:scale-110 transition-transform bg-white p-1" alt="" onError={e=>e.target.style.display='none'} />
+                                                            {t.image ? <img src={t.image} className="w-16 h-16 rounded-[1.5rem] shadow-xl group-hover:scale-110 transition-transform bg-white p-1" alt="" onError={e=>e.target.style.display='none'} /> : null}
                                                             <div className={`absolute -right-2 -top-2 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center shadow-lg ${pos ? 'bg-emerald-500' : 'bg-rose-500'}`}>
                                                                 {pos ? <ArrowUpRight className="w-3.5 h-3.5 text-white" /> : <ArrowDownRight className="w-3.5 h-3.5 text-white" />}
                                                             </div>
@@ -321,7 +321,7 @@ function AIDataTab({ tokens }) {
                         {hot.slice(0,hotExpanded?20:4).map((t,i)=>(
                             <div key={i} style={{background:'rgba(248,250,252,0.8)',border:'1px solid rgba(15,23,42,0.06)'}} className="flex items-center gap-3 p-2.5 rounded-xl hover:brightness-95 transition-all">
                                 <span className="text-[9px] font-black text-indigo-600 w-4">#{i+1}</span>
-                                <img src={t.image} className="w-8 h-8 rounded-full border border-gray-200 shadow-sm" alt="" onError={e=>e.target.style.display='none'} />
+                                {t.image ? <img src={t.image} className="w-8 h-8 rounded-full border border-gray-200 shadow-sm" alt="" onError={e=>e.target.style.display='none'} /> : null}
                                 <div className="flex-1 min-w-0">
                                     <p className="text-xs font-black text-gray-900">{t.symbol?.toUpperCase()}</p>
                                     <p className="text-[9px] text-gray-400 truncate">{fmtB(t.total_volume)} vol</p>
@@ -464,7 +464,7 @@ function AIDataTab({ tokens }) {
                             return (
                                 <div key={i} style={{background:'rgba(249,250,251,0.8)',border:'1px solid rgba(0,0,0,0.04)'}} className="flex items-center gap-3 p-2.5 rounded-xl hover:brightness-95 transition-all">
                                     <span className="text-[9px] font-black text-emerald-500 w-4">#{i+1}</span>
-                                    <img src={t.image} className="w-8 h-8 rounded-full border border-gray-200" alt="" onError={e=>e.target.style.display='none'} />
+                                    {t.image ? <img src={t.image} className="w-8 h-8 rounded-full border border-gray-200" alt="" onError={e=>e.target.style.display='none'} /> : null}
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs font-black text-gray-900">{t.symbol?.toUpperCase()}</p>
                                         <p className="text-[9px] text-gray-400 truncate">${fmt(t.current_price,4)}</p>
@@ -483,7 +483,7 @@ function AIDataTab({ tokens }) {
                             return (
                                 <div key={i} style={{background:'rgba(249,250,251,0.8)',border:'1px solid rgba(0,0,0,0.04)'}} className="flex items-center gap-3 p-2.5 rounded-xl hover:brightness-95 transition-all">
                                     <span className="text-[9px] font-black text-rose-500 w-4">#{i+1}</span>
-                                    <img src={t.image} className="w-8 h-8 rounded-full border border-gray-200" alt="" onError={e=>e.target.style.display='none'} />
+                                    {t.image ? <img src={t.image} className="w-8 h-8 rounded-full border border-gray-200" alt="" onError={e=>e.target.style.display='none'} /> : null}
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs font-black text-gray-900">{t.symbol?.toUpperCase()}</p>
                                         <p className="text-[9px] text-gray-400 truncate">${fmt(t.current_price,4)}</p>
@@ -816,7 +816,7 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
                                     const sel = !!selectedTokens.find(x => x.id === t.id);
                                     return (
                                         <div key={t.id} onClick={() => toggle(t)} className={`flex items-center gap-4 px-4 py-3 cursor-pointer rounded-2xl hover:bg-gray-50 transition-all ${sel ? 'bg-indigo-50/50' : ''}`}>
-                                            <img src={t.image} className="w-8 h-8 rounded-full shadow-sm" alt="" />
+                                            {t.image ? <img src={t.image} className="w-8 h-8 rounded-full shadow-sm" alt="" /> : null}
                                             <div className="flex-1">
                                                 <p className="text-xs font-black text-gray-900">{t.symbol?.toUpperCase()}</p>
                                                 <p className="text-[9px] text-gray-400 font-bold">{t.name}</p>
@@ -847,7 +847,7 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
                                 className={`cursor-pointer rounded-2xl p-4 text-center border-2 transition-all hover:-translate-y-1 ${detail?.id === t.id ? 'ring-2 ring-indigo-500 ring-offset-2' : ''}`}
                                 style={{ background: pos ? 'rgba(16,185,129,0.05)' : 'rgba(239,68,68,0.05)', borderColor: pos ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)' }}
                             >
-                                <img src={t.image} className="w-10 h-10 rounded-full mx-auto mb-2 border-2 border-white shadow-md" alt="" />
+                                {t.image ? <img src={t.image} className="w-10 h-10 rounded-full mx-auto mb-2 border-2 border-white shadow-md" alt="" /> : null}
                                 <p className="text-[11px] font-black text-gray-900 tracking-tight">{t.symbol?.toUpperCase()}</p>
                                 <p className={`text-[10px] font-black mt-0.5 ${pos ? 'text-emerald-600' : 'text-rose-500'}`}>{fmtP(chg)}</p>
                             </motion.div>
@@ -870,7 +870,7 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
                             {/* Left: Identity & Core Stats */}
                             <div className="lg:w-1/3 space-y-6">
                                 <div className="flex items-center gap-6">
-                                    <img src={detail.image} className="w-20 h-20 rounded-[2rem] border-4 border-white shadow-2xl" alt="" />
+                                    {detail.image ? <img src={detail.image} className="w-20 h-20 rounded-[2rem] border-4 border-white shadow-2xl" alt="" /> : null}
                                     <div>
                                         <h3 className="text-3xl font-black text-gray-900 tracking-tighter">{detail.name}</h3>
                                         <p className="text-sm font-black text-indigo-600 uppercase tracking-widest">{detail.symbol?.toUpperCase()}</p>
@@ -1095,7 +1095,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                 {items.length > 0 ? items.map((t, idx) => (
                     <div key={idx} className="flex items-center justify-between group cursor-pointer">
                         <div className="flex items-center gap-2">
-                            <img src={t.image} className="w-5 h-5 rounded-full" alt="" />
+                            {t.image ? <img src={t.image} className="w-5 h-5 rounded-full" alt="" /> : null}
                             <span className="text-[10px] font-black text-gray-700 group-hover:text-indigo-600 transition-colors uppercase">{t.symbol}</span>
                         </div>
                         <span className={`text-[10px] font-black ${isPos(t.price_change_percentage_24h) ? 'text-emerald-500' : 'text-rose-500'}`}>
@@ -1161,7 +1161,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                             <div className="flex flex-col lg:flex-row gap-12 relative z-0">
                                 <div className="lg:w-1/3">
                                     <div className="flex items-center gap-6 mb-8">
-                                        <img src={report.image} className="w-24 h-24 rounded-[2.5rem] border-4 border-white shadow-2xl" alt="" />
+                                        {report.image ? <img src={report.image} className="w-24 h-24 rounded-[2.5rem] border-4 border-white shadow-2xl" alt="" /> : null}
                                         <div>
                                             <h2 className="text-4xl font-black text-gray-900 tracking-tighter uppercase italic">{report.name}</h2>
                                             <p className="text-lg font-black text-indigo-600 tracking-[0.2em]">{report.symbol?.toUpperCase()}</p>
@@ -1364,7 +1364,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                                     {voidList.map((t,i)=>(
                                         <div key={i} className="p-6 rounded-3xl bg-rose-50 border border-rose-100 flex items-center gap-4">
-                                            <img src={t.image} className="w-10 h-10 rounded-full border-2 border-rose-500/20" alt="" />
+                                            {t.image ? <img src={t.image} className="w-10 h-10 rounded-full border-2 border-rose-500/20" alt="" /> : null}
                                             <div>
                                                 <p className="font-black text-gray-900">{t.symbol?.toUpperCase()}</p>
                                                 <p className="text-[10px] font-black text-rose-600">CRITICAL VOLATILITY: {fmtP(t.price_change_percentage_24h)}</p>
@@ -1389,7 +1389,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                                     {alphaList.map((t,i)=>(
                                         <div key={i} className="p-6 rounded-3xl bg-amber-50 border border-amber-100 flex items-center gap-4 group cursor-pointer hover:bg-amber-100 transition-all">
-                                            <img src={t.image} className="w-10 h-10 rounded-full border-2 border-amber-500/20" alt="" />
+                                            {t.image ? <img src={t.image} className="w-10 h-10 rounded-full border-2 border-amber-500/20" alt="" /> : null}
                                             <div>
                                                 <p className="font-black text-gray-900">{t.symbol?.toUpperCase()}</p>
                                                 <p className="text-[10px] font-black text-emerald-600">BULLISH SENTIMENT: {fmtP(t.price_change_percentage_24h)}</p>
@@ -1486,7 +1486,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                     {viewCat.items.map((t,i)=>(
                                         <div key={i} className="grid grid-cols-12 items-center bg-white border border-gray-100 p-6 rounded-[2rem] hover:border-indigo-200 transition-all group">
                                             <div className="col-span-4 flex items-center gap-4">
-                                                <img src={t.image} className="w-12 h-12 rounded-2xl shadow-lg border-2 border-white" alt="" />
+                                                {t.image ? <img src={t.image} className="w-12 h-12 rounded-2xl shadow-lg border-2 border-white" alt="" /> : null}
                                                 <div>
                                                     <p className="font-black text-gray-900 group-hover:text-indigo-600 transition-colors">{t.name}</p>
                                                     <p className="text-[10px] font-black text-gray-400 uppercase">{t.symbol?.toUpperCase()}</p>
@@ -1644,8 +1644,12 @@ function YieldTab({ tokens }) {
                         className="grid grid-cols-12 items-center bg-white border border-gray-100 px-5 py-3.5 rounded-2xl hover:border-emerald-300 hover:shadow-md transition-all">
                         <div className="col-span-5 flex items-center gap-3">
                             <div className="relative shrink-0">
-                                <img src={t.image} alt="" className="w-9 h-9 rounded-xl border-2 border-white shadow"
-                                    onError={e => { e.target.src = 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png'; }} />
+                                {t.image ? (
+                                    <img src={t.image} alt="" className="w-9 h-9 rounded-xl border-2 border-white shadow"
+                                        onError={e => { e.target.src = 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png'; }} />
+                                ) : (
+                                    <div className="w-9 h-9 rounded-xl border-2 border-white bg-gray-50 flex items-center justify-center text-[10px] text-gray-300 shadow">BNB</div>
+                                )}
                                 <div className="absolute -bottom-0.5 -right-0.5 p-0.5 bg-emerald-500 rounded-md border border-white"><Shield className="w-1.5 h-1.5 text-white" /></div>
                             </div>
                             <div className="min-w-0">

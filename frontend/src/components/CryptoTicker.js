@@ -87,12 +87,14 @@ export default function CryptoTicker() {
                             key={`${coin.id}-${i}`}
                             className="inline-flex items-center gap-1.5 px-4 border-r border-white/5 shrink-0"
                         >
-                            <img
-                                src={coin.image}
-                                alt={coin.symbol}
-                                className="w-4 h-4 rounded-full object-cover"
-                                onError={e => { e.target.style.display = 'none'; }}
-                            />
+                            {coin.image ? (
+                                <img
+                                    src={coin.image}
+                                    alt={coin.symbol}
+                                    className="w-4 h-4 rounded-full object-cover"
+                                    onError={e => { e.target.style.display = 'none'; }}
+                                />
+                            ) : null}
                             <span className="text-white/80 text-xs font-bold tracking-wide">{coin.symbol?.toUpperCase()}</span>
                             <span className="text-white text-xs font-mono">{formatPrice(coin.current_price)}</span>
                             <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isUp ? 'text-green-400' : 'text-red-400'}`}>

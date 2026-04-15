@@ -1,0 +1,10 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "StorageSlot",
+  "sourceName": "contracts/BondingCurve.flattened.sol",
+  "abi": [],
+  "bytecode": "0x60808060405234601757603a9081601d823930815050f35b600080fdfe600080fdfea26469706673582212206e7b115101c5d8bbb57494c4940d487ea61c058029d2d8485d211a10c106a23f64736f6c63430008140033",
+  "deployedBytecode": "0x600080fdfea26469706673582212206e7b115101c5d8bbb57494c4940d487ea61c058029d2d8485d211a10c106a23f64736f6c63430008140033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

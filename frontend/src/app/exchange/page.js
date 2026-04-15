@@ -70,6 +70,13 @@ const SMART_MONEY_FEE = '1.0'; // $1.00 USDT Service Fee
 // Centralized Smart Money Hub logic will be initialized below.
 
 
+const NETWORKS_LIST = [
+    'BNB', 'ETH', 'SOL', 'BASE', 'TRON', 'SUI', 'TON', 
+    'ARBITRUM', 'OPTIMISM', 'POLYGON', 'AVALANCHE', 
+    'BLAST', 'CELO', 'CYBER', 'FANTOM', 'SCROLL', 
+    'SONIC', 'ZETACHAIN'
+];
+
 export default function B20Exchange() {
     const { account, signer, connectWallet, walletProvider } = useWallet();
     const [mode, setMode] = useState('markets'); // 'markets', 'spot', 'pro', 'bonding', 'fiat', 'list'
@@ -101,6 +108,7 @@ export default function B20Exchange() {
         { id: 'solana', symbol: 'SOL', name: 'Solana', image: 'https://assets.coingecko.com/coins/images/4128/small/solana.png', current_price: 180, price_change_percentage_24h: 5.2 },
         { id: 'tether', symbol: 'USDT', name: 'Tether', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', current_price: 1, price_change_percentage_24h: 0.1 }
     ]);
+    const [cgNew, setCgNew] = useState([]);
     const [bnbPrice, setBnbPrice] = useState(580);
     const [liveTrades, setLiveTrades] = useState([]);
     const [liveStats, setLiveStats] = useState(null);
@@ -255,11 +263,11 @@ export default function B20Exchange() {
                     tokenAddress: toToken.address || 'FUTURES_MARKET',
                     tokenSymbol: toToken.symbol,
                     buyerWallet: account,
-                    amount: "0", 
+                    amount: orderSize, 
                     amountBNB: "0.001", // Escrow fee
                     priceBNB: toToken.current_price || orderPrice || "0", 
                     txHash: tx.hash,
-                    tradeType: 'futures_open',
+                    tradeType: tradeSide === 'long' ? 'Perpetual Buy Completed' : 'Perpetual Sell Completed',
                     positionId: posId
                 });
             } catch(syncErr) { console.error('History sync failed', syncErr); }
@@ -326,10 +334,15 @@ export default function B20Exchange() {
     const [swapMsg, setSwapMsg] = useState('');
     const [error, setError] = useState('');
 
-    const gainers = useMemo(() => [...tokens].sort((a, b) => (b.price_change_percentage_24h || 0) - (a.price_change_percentage_24h || 0)).slice(0, 20), [tokens]);
-    const losers = useMemo(() => [...tokens].sort((a, b) => (a.price_change_percentage_24h || 0) - (b.price_change_percentage_24h || 0)).slice(0, 20), [tokens]);
-    const trending = useMemo(() => [...tokens].filter(t => t.isB20).concat([...tokens].slice(0, 20)).slice(0, 20), [tokens]);
-    const highVolume = useMemo(() => [...tokens].sort((a, b) => (b.total_volume || 0) - (a.total_volume || 0)).slice(0, 20), [tokens]);
+    const activeTokens = useMemo(() => {
+        const delistedAddresses = new Set(tokens.filter(t => t.is_delisted).map(t => (t.address || t.contract_address || '').toLowerCase()));
+        return [...tokens].filter(t => !t.is_delisted && !delistedAddresses.has((t.address || t.contract_address || '').toLowerCase()));
+    }, [tokens]);
+
+    const gainers = useMemo(() => [...activeTokens].sort((a, b) => (b.price_change_percentage_24h || 0) - (a.price_change_percentage_24h || 0)).slice(0, 20), [activeTokens]);
+    const losers = useMemo(() => [...activeTokens].sort((a, b) => (a.price_change_percentage_24h || 0) - (b.price_change_percentage_24h || 0)).slice(0, 20), [activeTokens]);
+    const trending = useMemo(() => [...activeTokens].filter(t => t.isB20).concat([...activeTokens]).filter((v, i, a) => a.findIndex(t => t.symbol === v.symbol) === i).slice(0, 20), [activeTokens]);
+    const highVolume = useMemo(() => [...activeTokens].sort((a, b) => (b.total_volume || 0) - (a.total_volume || 0)).slice(0, 20), [activeTokens]);
   
     const displayTokens = useMemo(() => {
         const delistedAddresses = new Set(tokens.filter(t => t.is_delisted).map(t => (t.address || t.contract_address || '').toLowerCase()));
@@ -357,6 +370,10 @@ export default function B20Exchange() {
               list = list.filter(t => t.isB20 || (t.market_cap_rank && t.market_cap_rank <= 500));
         } else if (marketCategory === 'volume') {
               list = list.sort((a, b) => (b.total_volume || 0) - (a.total_volume || 0)).slice(0, 500);
+        } else if (marketCategory === 'new') {
+              // B20 Native, Recently Listed in DB, or Global Fresh Tokens
+              const nativeNew = list.filter(t => t.isB20 || t.trust_status === 'Newly Launched Token' || (t.created_at && (Date.now() - new Date(t.created_at) < 7 * 86400000)));
+              list = [...nativeNew, ...cgNew];
         }
         
         // 4. Sorting Engine (Final Pass)
@@ -367,7 +384,7 @@ export default function B20Exchange() {
         else if (marketSort === 'change') list.sort((a, b) => Math.abs(b.price_change_percentage_24h || 0) - Math.abs(a.price_change_percentage_24h || 0));
         
         return list || [];
-    }, [marketCategory, tokens, marketSearch, marketSort, networkFilter]);
+    }, [marketCategory, tokens, cgNew, marketSearch, marketSort, networkFilter]);
  
     // Sync selected tokens with fresh data from the index or direct detail fetch
     useEffect(() => {
@@ -425,23 +442,27 @@ export default function B20Exchange() {
                     pancakeTokens = pancakeRes.data.tokens || [];
                 } catch(e) { console.warn('Pancake Protocol: Offline.'); }
 
-                // 2. Global Token Index (Rank 1-750) — multi-page concurrent fetch
+                // 2. Global Token Index (Rank 1-1000+) — multi-page concurrent fetch (via Backend Proxy)
                 try {
-                    const [pg1, pg2, pgBsc] = await Promise.all([
-                        axios.get('https://api.coingecko.com/api/v3/coins/markets', {
-                            params: { vs_currency: 'usd', order: 'market_cap_desc', per_page: 250, page: 1, sparkline: false }
-                        }).catch(() => ({ data: [] })),
-                        axios.get('https://api.coingecko.com/api/v3/coins/markets', {
-                            params: { vs_currency: 'usd', order: 'market_cap_desc', per_page: 250, page: 2, sparkline: false }
-                        }).catch(() => ({ data: [] })),
-                        axios.get('https://api.coingecko.com/api/v3/coins/markets', {
-                            params: { vs_currency: 'usd', category: 'binance-smart-chain', order: 'market_cap_desc', per_page: 250, page: 1, sparkline: false }
-                        }).catch(() => ({ data: [] }))
+                    const [pg1, pg2, pgBsc, pgArb, pgPoly, pgAvax, pgOp, pgFtm] = await Promise.all([
+                        axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/tokens/markets/cg`, { params: { per_page: 250, page: 1 } }).catch(() => ({ data: [] })),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/tokens/markets/cg`, { params: { per_page: 250, page: 2 } }).catch(() => ({ data: [] })),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/tokens/markets/cg`, { params: { category: 'binance-smart-chain', per_page: 250 } }).catch(() => ({ data: [] })),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/tokens/markets/cg`, { params: { category: 'arbitrum-ecosystem', per_page: 50 } }).catch(() => ({ data: [] })),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/tokens/markets/cg`, { params: { category: 'polygon-ecosystem', per_page: 50 } }).catch(() => ({ data: [] })),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/tokens/markets/cg`, { params: { category: 'avalanche-ecosystem', per_page: 50 } }).catch(() => ({ data: [] })),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/tokens/markets/cg`, { params: { category: 'optimism-ecosystem', per_page: 50 } }).catch(() => ({ data: [] })),
+                        axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/tokens/markets/cg`, { params: { category: 'fantom-ecosystem', per_page: 50 } }).catch(() => ({ data: [] }))
                     ]);
                     cgTokens = [
                         ...(pg1.data || []),
                         ...(pg2.data || []),
-                        ...(pgBsc.data || [])
+                        ...(pgBsc.data || []),
+                        ...(pgArb.data || []),
+                        ...(pgPoly.data || []),
+                        ...(pgAvax.data || []),
+                        ...(pgOp.data || []),
+                        ...(pgFtm.data || [])
                     ];
                 } catch(e) { console.warn('Global Index: Syncing via P2P Nodes.'); }
 
@@ -537,18 +558,33 @@ export default function B20Exchange() {
                 combined = [...combined, ...cgFormatted];
                 const getNetworkForToken = (symbol, id) => {
                     const s = (symbol||'').toLowerCase();
+                    const i = (id||'').toLowerCase();
+                    
                     if (['btc', 'wbtc', 'solvbtc', 'stx'].includes(s)) return 'BITCOIN';
-                    if (['eth', 'weth', 'steth', 'pepe', 'shib', 'uni', 'link', 'floki'].includes(s)) return 'ETH';
-                    if (['sol', 'jup', 'ray', 'wif', 'bonk'].includes(s)) return 'SOLANA';
-                    if (['base', 'brett', 'toshi', 'aero', 'degen'].includes(s)) return 'BASE';
-                    if (['matic', 'pol', 'matic.e'].includes(s)) return 'POLYGON';
-                    if (['ton', 'not'].includes(s)) return 'TON';
-                    if (['trx', 'usdt', 'usdd', 'sun', 'btt', 'just'].includes(s) || (id||'').includes('tron')) return 'TRON';
-                    if (['sui', 'cetus'].includes(s)) return 'SUI';
-                    if (['bnb', 'cake', 'bake', 'xvs', 'alpaca', 'twt'].includes(s)) return 'BNB';
+                    if (['eth', 'weth', 'steth', 'pepe', 'shib', 'uni', 'link', 'floki'].includes(s) || i.includes('ethereum')) return 'ETH';
+                    if (['sol', 'jup', 'ray', 'wif', 'bonk'].includes(s) || i.includes('solana')) return 'SOL';
+                    if (['base', 'brett', 'toshi', 'aero', 'degen'].includes(s) || i.includes('base')) return 'BASE';
+                    if (['matic', 'pol', 'matic.e'].includes(s) || i.includes('polygon-pos')) return 'POLYGON';
+                    if (['ton', 'not'].includes(s) || i.includes('ton')) return 'TON';
+                    if (['trx', 'usdt', 'usdd', 'sun', 'btt', 'just'].includes(s) || i.includes('tron')) return 'TRON';
+                    if (['sui', 'cetus'].includes(s) || i.includes('sui')) return 'SUI';
+                    if (['bnb', 'cake', 'bake', 'xvs', 'alpaca', 'twt'].includes(s) || i.includes('binance-smart-chain')) return 'BNB';
+                    
+                    // NEW NETWORKS
+                    if (['arb', 'arb1', 'gmx', 'magic', 'rdnt'].includes(s) || i.includes('arbitrum')) return 'ARBITRUM';
+                    if (['op', 'velo', 'snx'].includes(s) || i.includes('optimism')) return 'OPTIMISM';
+                    if (['avax', 'joe', 'qi', 'png'].includes(s) || i.includes('avalanche')) return 'AVALANCHE';
+                    if (['blast'].includes(s) || i.includes('blast')) return 'BLAST';
+                    if (['celo', 'cusd'].includes(s) || i.includes('celo')) return 'CELO';
+                    if (['cyber'].includes(s) || i.includes('cyber')) return 'CYBER';
+                    if (['ftm', 'fantom', 'spooky', 'beets'].includes(s) || i.includes('fantom')) return 'FANTOM';
+                    if (['scroll'].includes(s) || i.includes('scroll')) return 'SCROLL';
+                    if (['sonic', 'sc'].includes(s) || i.includes('sonic')) return 'SONIC';
+                    if (['zeta'].includes(s) || i.includes('zetachain')) return 'ZETACHAIN';
+
                     // Fallback distribution
                     const hash = s.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-                    const networks = ['BNB', 'ETH', 'SOLANA', 'BASE', 'BITCOIN', 'POLYGON', 'TON', 'TRON', 'SUI'];
+                    const networks = NETWORKS_LIST.filter(n => n !== 'ALL');
                     return networks[hash % networks.length];
                 };
 
@@ -566,9 +602,9 @@ export default function B20Exchange() {
                 unique.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999));
                 setTokens(unique);
 
-                // 5. Global Alpha Discovery (CG Trending Sentinel)
+                // 5. Global Alpha Discovery (CG Trending Sentinel) — via Backend Proxy
                 try {
-                    const trendRes = await axios.get('https://api.coingecko.com/api/v3/search/trending');
+                    const trendRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/tokens/markets/trending`);
                     const trendList = trendRes.data.coins || [];
                     
                     const resolvedTrending = trendList.slice(0, 15).map(c => {
@@ -589,9 +625,19 @@ export default function B20Exchange() {
                     
                     setCgTrending(resolvedTrending);
                 } catch(e) { 
-                    console.warn('Trending Sentinel Node Failure. Falling back to high-volume local assets.');
-                    setCgTrending(unique.sort((a,b) => (b.total_volume || 0) - (a.total_volume || 0)).slice(0, 12));
+                    console.warn('Trending Sentinel Node Failure.');
                 }
+
+                // 6. Alpha Discovery: Newly Launched Sentinel
+                try {
+                    const newRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/tokens/markets/new`);
+                    const newList = (newRes.data || []).slice(0, 50).map(t => ({
+                        ...t,
+                        isNewlyLaunched: true
+                    }));
+                    setCgNew(newList);
+                } catch(e) { console.warn('Alpha Discovery Node: Offline.'); }
+
             } catch (err) {
                 console.error('Failed to fetch tokens', err);
             } finally {
@@ -895,11 +941,11 @@ export default function B20Exchange() {
                     tokenAddress: tToken.address,
                     tokenSymbol: tToken.symbol,
                     buyerWallet: account,
-                    amount: "0", 
+                    amount: toAmount?.replace(/,/g, '') || "0", 
                     amountBNB: amountToUse,
-                    priceBNB: "0", 
+                    priceBNB: tToken.current_price || "0", 
                     txHash: tx.hash,
-                    tradeType: mode === 'pro' ? 'futures' : 'spot_exchange',
+                    tradeType: 'Swap Completed',
                     pnl_bnb: 0
                 });
             } catch (syncErr) {
@@ -1042,6 +1088,17 @@ export default function B20Exchange() {
                             </div>
                             Staking
                         </Link>
+
+                        <button 
+                            onClick={() => setMode('web3')}
+                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'web3' ? 'bg-emerald-600 text-white shadow-2xl shadow-emerald-600/20 px-12 border-2 border-white/50' : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border border-emerald-100 shadow-lg shadow-emerald-500/5'}`}
+                        >
+                             <div className="relative flex items-center justify-center">
+                                <div className="absolute inset-0 bg-emerald-500/40 rounded-full animate-gold-wave" />
+                                <Globe className={`w-4 h-4 relative z-10 ${mode === 'web3' ? 'animate-pulse' : 'text-emerald-600'}`} /> 
+                            </div>
+                            <span>Web3 Portal</span>
+                        </button>
                         
                         <button 
                             onClick={() => setMode('list')}
@@ -1121,7 +1178,7 @@ export default function B20Exchange() {
                                                         onClick={() => { setSelectingFor('from'); setIsSelectorOpen(true); }}
                                                         className="flex items-center gap-3 px-5 py-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-amber-500/50 transition-all font-black text-xs uppercase"
                                                     >
-                                                        <img src={fromToken?.image} className="w-6 h-6 rounded-lg" alt="" />
+                                                        {fromToken?.image ? <img src={fromToken.image} className="w-6 h-6 rounded-lg" alt="" /> : null}
                                                         {fromToken?.symbol}
                                                         <ChevronDown className="w-4 h-4 text-gray-400" />
                                                     </button>
@@ -1162,7 +1219,7 @@ export default function B20Exchange() {
                                                         onClick={() => { setSelectingFor('to'); setIsSelectorOpen(true); }}
                                                         className="flex items-center gap-3 px-5 py-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-amber-500/50 transition-all font-black text-xs uppercase"
                                                     >
-                                                        <img src={toToken?.image} className="w-6 h-6 rounded-lg" alt="" />
+                                                        {toToken?.image ? <img src={toToken.image} className="w-6 h-6 rounded-lg" alt="" /> : null}
                                                         {toToken?.symbol}
                                                         <ChevronDown className="w-4 h-4 text-gray-400" />
                                                     </button>
@@ -1251,7 +1308,7 @@ export default function B20Exchange() {
                                                     className={`p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between group ${toToken?.id === t.id || toToken?.address === t.address ? 'bg-amber-50 border-amber-200' : 'bg-transparent border-transparent hover:bg-gray-50'}`}
                                                 >
                                                     <div className="flex items-center gap-3">
-                                                        <img src={t.image} className="w-8 h-8 rounded-lg" alt="" />
+                                                        {t.image ? <img src={t.image} className="w-8 h-8 rounded-lg" alt="" /> : null}
                                                         <div>
                                                             <p className="text-[11px] font-black text-gray-900 uppercase">{t.symbol}/BNB</p>
                                                             <p className="text-[9px] font-bold text-gray-400 font-mono">${t.current_price < 0.01 ? t.current_price.toFixed(6) : t.current_price?.toLocaleString()}</p>
@@ -1271,7 +1328,7 @@ export default function B20Exchange() {
                                     <div className="bg-white shadow-2xl shadow-gray-200/40 border border-gray-100 rounded-[3rem] p-4 flex flex-col h-[550px]">
                                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
                                             <div className="flex items-center gap-4">
-                                                <img src={toToken?.image} className="w-8 h-8 rounded-lg shadow-sm" alt="" />
+                                                {toToken?.image ? <img src={toToken.image} className="w-8 h-8 rounded-lg shadow-sm" alt="" /> : null}
                                                 <h2 className="text-xl font-black text-gray-900 uppercase tracking-tighter">{toToken?.symbol}/BNB</h2>
                                             </div>
                                             <div className="flex items-center gap-8">
@@ -1309,7 +1366,7 @@ export default function B20Exchange() {
                                                     <div key={pos.id} className="p-6 bg-gray-50 border border-gray-100 rounded-3xl flex items-center justify-between">
                                                         <div className="flex items-center gap-6">
                                                             <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center border border-gray-100">
-                                                                <img src={pos.image} className="w-7 h-7" alt="" />
+                                                                {pos.image ? <img src={pos.image} className="w-7 h-7" alt="" /> : null}
                                                             </div>
                                                             <div>
                                                                 <p className="text-sm font-black text-gray-900 uppercase tracking-tighter">{pos.tokenSymbol}/PERP</p>
@@ -1378,11 +1435,14 @@ export default function B20Exchange() {
                                                     <div className="p-6 bg-white/5 rounded-[2rem] border border-white/5 space-y-4">
                                                         <div className="flex justify-between items-center text-[10px] font-black">
                                                             <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Est. Liq Price</p>
-                                                            <span className="text-white">${((toToken?.current_price > 0 ? toToken.current_price : (bnbPrice||580)) * (tradeSide==='long'?0.95:1.05)).toLocaleString()}</span>
+                                                            <span className="text-white">${((toToken?.current_price > 0 ? toToken.current_price : (bnbPrice||580)) * (tradeSide==='long'?0.85:1.15)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                                                         </div>
                                                         <div className="flex justify-between items-center text-[10px] font-black">
-                                                            <span className="text-gray-500 uppercase tracking-widest">Protocol Fee</span>
-                                                            <span className="text-emerald-500">$1.00 USDT Logged</span>
+                                                            <span className="text-gray-500 uppercase tracking-widest">Mission Protocol Fee</span>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                                                <span className="text-emerald-500 italic">$1.00 USDT (Real-Time Ledger)</span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </>
@@ -1404,8 +1464,11 @@ export default function B20Exchange() {
                                 {/* Last 10 Trading Hub */}
                                 <div className="bg-white shadow-xl shadow-gray-100/50 border border-gray-100 rounded-[2.5rem] p-8 flex flex-col h-[500px]">
                                     <div className="flex items-center justify-between mb-8">
-                                        <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.3em]">Last 10 Trading Hub</h3>
-                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-[8px] font-black uppercase">Live Node</div>
+                                        <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.3em]">Institutional Execution Node</h3>
+                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-[8px] font-black uppercase">
+                                            <Activity className="w-3 h-3 animate-pulse" />
+                                            Real-Time Peer Exchange
+                                        </div>
                                     </div>
                                     <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-2">
                                         {liveTrades.length > 0 ? liveTrades.slice(0, 10).map((tx, idx) => (
@@ -1570,9 +1633,10 @@ export default function B20Exchange() {
                                     <div className="flex bg-gray-50 p-1.5 rounded-[1.5rem] border border-gray-100 font-black uppercase tracking-widest text-[10px] gap-1 flex-wrap">
                                         {[
                                             { id: 'all', label: 'All Tokens', icon: <Globe className="w-3.5 h-3.5" /> },
+                                            { id: 'new', label: 'Newly Launched', icon: <Sparkles className="w-3.5 h-3.5 text-cyan-500" /> },
                                             { id: 'gainers', label: 'Gainers', icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> },
                                             { id: 'losers', label: 'Losers', icon: <TrendingDown className="w-3.5 h-3.5 text-rose-500" /> },
-                                            { id: 'trending', label: 'Trending', icon: <Sparkles className="w-3.5 h-3.5 text-amber-500" /> },
+                                            { id: 'trending', label: 'Trending', icon: <TrendingUp className="w-3.5 h-3.5 text-amber-500" /> },
                                             { id: 'volume', label: 'High Volume', icon: <Activity className="w-3.5 h-3.5 text-blue-500" /> },
                                         ].map(cat => (
                                             <button
@@ -1668,7 +1732,9 @@ export default function B20Exchange() {
                                             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-gray-50 to-transparent rounded-bl-[3rem] opacity-0 group-hover:opacity-100 transition-opacity" />
                                             <div className="flex items-center justify-between mb-6">
                                                 <div className="flex items-center gap-3">
-                                                    <img src={t.image} className="w-10 h-10 rounded-xl group-hover:scale-110 transition-transform" />
+                                                <div className="w-12 h-12 bg-white rounded-xl p-1 shadow-sm border border-gray-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                    {t.image ? <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" /> : null}
+                                                </div>
                                                     <div>
                                                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{t.symbol}</p>
                                                         <p className="text-xs font-black text-gray-900 capitalize truncate max-w-[80px]">{t.name}</p>
@@ -1722,7 +1788,7 @@ export default function B20Exchange() {
                                                     {t.market_cap_rank || i + 1}
                                                 </div>
                                                 <div className="col-span-3 flex items-center gap-3">
-                                                    <img src={t.image} className="w-9 h-9 rounded-xl group-hover:scale-110 transition-transform" />
+                                                    {t.image ? <img src={t.image} className="w-9 h-9 rounded-xl group-hover:scale-110 transition-transform" /> : null}
                                                     <div>
                                                         <p className="text-xs font-black text-gray-900 uppercase">{t.symbol}</p>
                                                         <p className="text-[9px] font-bold text-gray-400 capitalize truncate max-w-[80px]">{t.name}</p>
@@ -1787,7 +1853,7 @@ export default function B20Exchange() {
                                         >
                                             <div className="relative group">
                                                 <div className="absolute inset-0 bg-amber-500/10 blur-xl rounded-full opacity-0 group-hover/float:opacity-100 transition-opacity" />
-                                                <img src={t.image} className="w-10 h-10 relative z-10 object-contain rounded-xl opacity-80 group-hover/float:opacity-100 transition-all" alt="" />
+                                                {t.image ? <img src={t.image} className="w-10 h-10 relative z-10 object-contain rounded-xl opacity-80 group-hover/float:opacity-100 transition-all" alt="" /> : null}
                                             </div>
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-3">
@@ -1825,9 +1891,10 @@ export default function B20Exchange() {
                                     <div className="flex bg-white shadow-2xl shadow-gray-200/50 p-2.5 rounded-[2rem] border border-gray-100 italic font-black uppercase tracking-widest text-[10px]">
                                         {[
                                             { id: 'all', label: 'All', icon: <LayoutGrid className="w-3.5 h-3.5" /> },
+                                            { id: 'new', label: 'Newly Launched', icon: <Sparkles className="w-3.5 h-3.5 text-cyan-500" /> },
                                             { id: 'gainers', label: 'Gainers', icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> },
                                             { id: 'losers', label: 'Losers', icon: <TrendingDown className="w-3.5 h-3.5 text-rose-500" /> },
-                                            { id: 'trending', label: 'Trending', icon: <Sparkles className="w-3.5 h-3.5 text-amber-500" /> },
+                                            { id: 'trending', label: 'Trending', icon: <TrendingUp className="w-3.5 h-3.5 text-amber-500" /> },
                                             { id: 'volume', label: 'Volume', icon: <Activity className="w-3.5 h-3.5 text-blue-500" /> }
                                         ].map(cat => (
                                             <button 
@@ -1898,11 +1965,14 @@ export default function B20Exchange() {
                                 >
                                     <div className="flex items-center gap-4">
                                         <div className="w-14 h-14 bg-gray-50 rounded-2xl p-2 border border-gray-100 group-hover:bg-amber-50 transition-colors shrink-0">
-                                            <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" />
+                                            {t.image ? <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" /> : null}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 flex-wrap">
                                                 <h3 className="text-base font-black text-gray-900 uppercase tracking-tighter truncate">{t.symbol}</h3>
+                                                {(t.isNewlyLaunched || t.trust_status === 'Newly Launched Token') && (
+                                                    <span className="bg-cyan-500 text-white px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest leading-none">Newly Launched</span>
+                                                )}
                                                 {t.network && (
                                                     <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest leading-none">{t.network}</span>
                                                 )}
@@ -1959,11 +2029,14 @@ export default function B20Exchange() {
                                                     {t.market_cap_rank && t.market_cap_rank !== 999999 ? `#${t.market_cap_rank}` : `#${i + 1}`}
                                                 </span>
                                                 <div className="w-12 h-12 bg-gray-50 rounded-2xl p-2 border border-gray-100 group-hover:bg-amber-50 transition-colors shrink-0">
-                                                    <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" />
+                                                    {t.image ? <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" /> : null}
                                                 </div>
                                                 <div className="min-w-0">
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex items-center gap-2 flex-wrap">
                                                     <h3 className="text-base font-black text-gray-900 uppercase tracking-tighter truncate">{t.symbol}</h3>
+                                                    {(t.isNewlyLaunched || t.trust_status === 'Newly Launched Token') && (
+                                                        <span className="bg-cyan-500 text-white px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest leading-none">Newly Launched</span>
+                                                    )}
                                                     {t.network && (
                                                         <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest">{t.network}</span>
                                                     )}
@@ -2184,12 +2257,12 @@ const AnnouncementsPortal = ({ setMode, setToToken, tokens }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {announcements.map((a, i) => (
                         <div key={a.id} className="bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden hover:border-purple-500/30 transition-all flex flex-col group">
-                            {a.image_url && (
+                            {a.image_url ? (
                                 <div className="h-64 w-full bg-gray-50 overflow-hidden relative">
                                     <img src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api','') || 'http://localhost:3001'}${a.image_url}`} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
                                 </div>
-                            )}
+                            ) : null}
                             <div className="p-8 flex-1 flex flex-col justify-between">
                                 <div className="space-y-6">
                                     <p className="text-gray-700 font-bold leading-relaxed whitespace-pre-wrap text-sm">{a.content}</p>
@@ -2198,7 +2271,7 @@ const AnnouncementsPortal = ({ setMode, setToToken, tokens }) => {
                                         <div className="p-5 bg-purple-50/50 border border-purple-100 rounded-[2rem] flex items-center justify-between group/token hover:bg-purple-100/50 transition-all">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-14 h-14 bg-white p-2 rounded-2xl shadow-sm border border-purple-100 flex items-center justify-center group-hover/token:scale-110 transition-transform">
-                                                    <img src={a.token_logo} className="w-full h-full object-contain" alt="" />
+                                                    {a.token_logo ? <img src={a.token_logo} className="w-full h-full object-contain" alt="" /> : <div className="w-full h-full bg-gray-50 flex items-center justify-center text-[8px] text-gray-300">LOGO</div>}
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-2">
@@ -2490,11 +2563,15 @@ const ListingPortal = () => {
                                     <span>Project Logo URL *</span>
                                 </label>
                                 <div className="flex gap-4 items-center">
-                                    {formData.logoUrl && (
-                                        <div className="w-16 h-16 rounded-xl border border-gray-100 overflow-hidden shrink-0 shadow-sm bg-gray-50">
+                                    <div className="w-16 h-16 rounded-xl border border-gray-100 overflow-hidden shrink-0 shadow-sm bg-gray-50">
+                                        {formData.logoUrl ? (
                                             <img src={formData.logoUrl} alt="Preview" className="w-full h-full object-cover" onError={(e) => { e.target.src='/placeholder.png'; }} />
-                                        </div>
-                                    )}
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                <Upload className="w-6 h-6" />
+                                            </div>
+                                        )}
+                                    </div>
                                     <div className="flex-1 space-y-1">
                                         <input required type="text" value={formData.logoUrl} onChange={(e) => setFormData({...formData, logoUrl: e.target.value})} placeholder="https://..." className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-amber-500/50" />
                                         <p className="text-[9px] text-amber-600 font-black ml-2 uppercase tracking-tighter">Required: Square JPEG or PNG (512x512 pixels)</p>
@@ -2720,7 +2797,7 @@ const AssetDetails = ({ token, setMode, liveTrades = [], globalTickers = [] }) =
                 {/* Identity Section */}
                 <div className="flex items-center gap-6">
                     <div className="w-28 h-28 bg-gray-50 rounded-[2rem] p-3 border border-gray-100 shadow-inner relative group shrink-0">
-                        <img src={token.image} className="w-full h-full object-contain rounded-xl group-hover:scale-110 transition-transform duration-500" alt="" />
+                        {token.image ? <img src={token.image} className="w-full h-full object-contain rounded-xl group-hover:scale-110 transition-transform duration-500" alt="" /> : null}
                         <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-emerald-500 rounded-xl flex items-center justify-center text-sm text-white font-black border-2 border-white shadow-lg">✓</div>
                     </div>
                     <div>
@@ -2916,10 +2993,78 @@ const SMART_MONEY_BUCKETS = {
                 { symbol: 'TOKEN', address: '0x45bd7edca2af4799015bc2f5a6538a0f269a9b6c', cgId: 'tokenfi' },
                 { symbol: 'MILO', address: '0xdaa36049301b06666c2537bc5566de23ca393b9a7', cgId: 'milo-inu' },
                 { symbol: 'KISHU', address: '0x0713da94c5026df1762c68615024220fa639d67b', cgId: 'kishu-inu' },
-                { symbol: 'VOLT', address: '0x7f792db548db548db548db548db548db548db54db54aca', cgId: 'volt-inu-2' },
+                { symbol: 'VOLT', address: '0x7f792db548db548db548db548db548db548db548db54db54aca', cgId: 'volt-inu-2' },
                 { symbol: 'BITCOIN', address: '0x4c769928971548eb71a3392eaf66bedc8bef4b80', cgId: 'harrypotterobamasonic10inu' },
                 { symbol: 'CEEK', address: '0xe0f94ae5f0d0397f0605d3b76a0862024da97992', cgId: 'ceek' },
                 { symbol: 'BUNNY', address: '0xc9849e00949ec30c00de5fbcca7069cb9c863ccb', cgId: 'pancake-bunny' }
+            ]
+        }
+    ],
+    bnb: [
+        {
+            id: 'bnb-smart-7',
+            name: 'BNB Smart 7',
+            category: 'BNB',
+            description: 'Top utility and ecosystem leaders on Binance Smart Chain.',
+            tokens: [
+                { symbol: 'BNB', address: '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c', cgId: 'binancecoin' },
+                { symbol: 'CAKE', address: '0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82', cgId: 'pancakeswap' },
+                { symbol: 'XVS', address: '0xcf6bb74b2307191e472c7222252ced5dfbe93910', cgId: 'venus' },
+                { symbol: 'TWT', address: '0x4b0f1812e5df2a09796481ff14017e6005508003', cgId: 'trust-wallet-token' },
+                { symbol: 'ALPACA', address: '0x8f0528ce5ef7b51152a59745befdd91d97091d2f', cgId: 'alpaca-finance' },
+                { symbol: 'BAKE', address: '0xe02df9f34d1944609804bd1fe380461f124c01d1', cgId: 'bakerytoken' },
+                { symbol: 'BSW', address: '0x965f527d9159dce6273a286584612463978d8303', cgId: 'biswap' }
+            ]
+        }
+    ],
+    eth: [
+        {
+            id: 'eth-institutional-7',
+            name: 'ETH Institutional 7',
+            category: 'ETH',
+            description: 'Major blue-chips and infrastructure leaders on Ethereum.',
+            tokens: [
+                { symbol: 'ETH', address: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2', cgId: 'ethereum' },
+                { symbol: 'WBTC', address: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599', cgId: 'wrapped-bitcoin' },
+                { symbol: 'LINK', address: '0x514910771af9ca656af840dff83e8264ecf986ca', cgId: 'chainlink' },
+                { symbol: 'UNI', address: '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984', cgId: 'uniswap' },
+                { symbol: 'LDO', address: '0x5a98fcbea516cf06857215779fd812ca3bef1b32', cgId: 'lido-dao' },
+                { symbol: 'AAVE', address: '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9', cgId: 'aave' },
+                { symbol: 'MKR', address: '0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2', cgId: 'maker' }
+            ]
+        }
+    ],
+    sol: [
+        {
+            id: 'sol-velocity-7',
+            name: 'SOL Velocity 7',
+            category: 'SOL',
+            description: 'High-velocity assets powering the Solana ecosystem.',
+            tokens: [
+                { symbol: 'SOL', address: 'So11111111111111111111111111111111111111112', cgId: 'solana' },
+                { symbol: 'JUP', address: 'JUPyiK68uYJjHc6GUJbKp9tfSg6fNQJMS7cM5UfSjiB', cgId: 'jupiter-exchange-solana' },
+                { symbol: 'PYTH', address: 'HZ1JovNiisvM2V4sp2V4SZZ2SGRXshY5D7vXyXm1F3zS', cgId: 'pyth-network' },
+                { symbol: 'RENDER', address: 'rndr...fake', cgId: 'render-token' },
+                { symbol: 'JTO', address: 'jto...fake', cgId: 'jito-governance-token' },
+                { symbol: 'BONK', address: 'DezXAZ8z7Pnrn9G7nD6m2ZJM7G6X6b6b6b6b6b6b', cgId: 'bonk' },
+                { symbol: 'WIF', address: 'wif...fake', cgId: 'dogwifhat' }
+            ]
+        }
+    ],
+    base: [
+        {
+            id: 'base-alpha-7',
+            name: 'Base Alpha 7',
+            category: 'BASE',
+            description: 'Explosive growth assets on the Base L2 network.',
+            tokens: [
+                { symbol: 'ETH', address: '0x4200000000000000000000000000000000000006', cgId: 'ethereum' },
+                { symbol: 'AERO', address: '0x9401...fake', cgId: 'aerodrome-finance' },
+                { symbol: 'BRETT', address: '0x532f...fake', cgId: 'based-brett' },
+                { symbol: 'DEGEN', address: '0x4ed4...fake', cgId: 'degen-base' },
+                { symbol: 'TOSHI', address: '0xba70...fake', cgId: 'toshi' },
+                { symbol: 'MOXIE', address: '0x...fake', cgId: 'moxie' },
+                { symbol: 'COIN', address: '0x...fake', cgId: 'coinbase-wrapped-staked-eth' }
             ]
         }
     ]
@@ -2930,7 +3075,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
     const [investAmount, setInvestAmount] = useState('100');
     const [status, setStatus] = useState('idle');
     const [error, setError] = useState('');
-    const [customBucket, setCustomBucket] = useState({ name: '', tokens: [], isBuilding: false });
+    const [customBucket, setCustomBucket] = useState({ name: '', tokens: [], isBuilding: false, network: 'BNB' });
     const [tokenMetadata, setTokenMetadata] = useState({ prices: {} });
     const [discoveryResults, setDiscoveryResults] = useState([]);
     const [isDiscoveryOpen, setIsDiscoveryOpen] = useState(false);
@@ -3114,12 +3259,12 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
             </div>
 
             <div className="flex justify-center">
-                <div className="bg-white border border-gray-100 rounded-[2rem] p-3 flex gap-2 shadow-2xl shadow-indigo-500/5">
-                    {['crypto', 'meme', 'custom'].map(cat => (
+                <div className="bg-white border border-gray-100 rounded-[2rem] p-3 flex gap-2 shadow-2xl shadow-indigo-500/5 max-w-full overflow-x-auto">
+                    {['crypto', 'meme', 'bnb', 'eth', 'sol', 'base', 'custom'].map(cat => (
                         <button 
                             key={cat}
                             onClick={() => setSelectedCategory(cat)}
-                            className={`px-10 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedCategory === cat ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
+                            className={`px-10 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
                         >
                             {cat} Strategic Pool
                         </button>
@@ -3155,15 +3300,19 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                         <div key={token.symbol} className="p-4 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-between hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-indigo-100">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-10 h-10 bg-white p-1.5 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center">
-                                                    <img 
-                                                        src={display.image} 
-                                                        className="w-full h-full object-contain" 
-                                                        alt="" 
-                                                        onError={(e) => {
-                                                            e.target.onerror = null;
-                                                            e.target.src = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/info/logo.png';
-                                                        }}
-                                                    />
+                                                    {display.image ? (
+                                                        <img 
+                                                            src={display.image} 
+                                                            className="w-full h-full object-contain" 
+                                                            alt="" 
+                                                            onError={(e) => {
+                                                                e.target.onerror = null;
+                                                                e.target.src = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/info/logo.png';
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <div className="text-[10px] font-black text-gray-300 font-mono">?</div>
+                                                    )}
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-2">
@@ -3241,6 +3390,22 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                             />
                                         </div>
 
+                                        <div>
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 block ml-2">Target Network</label>
+                                            <div className="flex flex-wrap gap-2">
+                                                {NETWORKS_LIST.map(net => (
+                                                    <button 
+                                                        key={net}
+                                                        onClick={() => setCustomBucket({ ...customBucket, network: net, tokens: [] })}
+                                                        className={`px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${customBucket.network === net ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-50 text-gray-400 hover:text-gray-900 border border-gray-100'}`}
+                                                    >
+                                                        {net}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <p className="text-[8px] font-bold text-gray-400 mt-3 uppercase tracking-widest ml-1 italic">Selecting a new network will reset the current blueprint</p>
+                                        </div>
+
                                         <button 
                                             onClick={() => handleInvest(customBucket)}
                                             disabled={status === 'loading' || customBucket.tokens.length === 0}
@@ -3272,7 +3437,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                                 <div key={t.symbol} className="flex items-center justify-between p-5 bg-white rounded-3xl border border-gray-100 shadow-sm animate-in slide-in-from-right-8 transition-all hover:scale-[1.02]">
                                                     <div className="flex items-center gap-4">
                                                         <div className="w-12 h-12 bg-gray-50 rounded-2xl p-2 border border-blue-50">
-                                                            <img src={t.image} className="w-full h-full object-contain" alt="" />
+                                                            {t.image ? <img src={t.image} className="w-full h-full object-contain" alt="" /> : null}
                                                         </div>
                                                         <div>
                                                             <p className="text-sm font-black text-gray-900 leading-none">{t.symbol}</p>
@@ -3352,7 +3517,20 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                             setSearchLoading(true);
                                             try {
                                                 const dRes = await axios.get(`https://api.coingecko.com/api/v3/coins/${coin.id}`);
-                                                const addr = dRes.data.platforms?.['binance-smart-chain'];
+                                                
+                                                const PLATFORM_MAP = {
+                                                    'BNB': 'binance-smart-chain',
+                                                    'ETH': 'ethereum',
+                                                    'SOL': 'solana',
+                                                    'BASE': 'base',
+                                                    'TRON': 'tron',
+                                                    'SUI': 'sui',
+                                                    'TON': 'the-open-network'
+                                                };
+                                                
+                                                const platformKey = PLATFORM_MAP[customBucket.network] || 'binance-smart-chain';
+                                                const addr = dRes.data.platforms?.[platformKey];
+                                                
                                                 if (addr) {
                                                     const match = {
                                                         symbol: dRes.data.symbol.toUpperCase(),
@@ -3360,7 +3538,8 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                                         address: addr,
                                                         image: dRes.data.image.small,
                                                         cgId: coin.id,
-                                                        current_price: dRes.data.market_data.current_price.usd
+                                                        current_price: dRes.data.market_data.current_price.usd,
+                                                        network: customBucket.network
                                                     };
                                                     if (customBucket.tokens.find(x => x.symbol === match.symbol)) {
                                                         alert('Already in bucket');
@@ -3368,7 +3547,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                                         setCustomBucket({ ...customBucket, tokens: [...customBucket.tokens, match] });
                                                     }
                                                 } else {
-                                                    alert('Selected asset has no verified BSC liquidity source.');
+                                                    alert(`Selected asset has no verified ${customBucket.network} liquidity source.`);
                                                 }
                                             } catch(err) {
                                                 console.error('Coin detail fetch fail', err);
@@ -3491,7 +3670,7 @@ const DiscoveryPopup = ({ isOpen, onClose, results, onSelect }) => {
                         >
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-white rounded-xl p-1 shadow-sm border border-gray-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <img src={coin.large || coin.thumb} className="w-full h-full object-contain rounded-lg" alt="" />
+                                    {(coin.large || coin.thumb) ? <img src={coin.large || coin.thumb} className="w-full h-full object-contain rounded-lg" alt="" /> : null}
                                 </div>
                                 <div>
                                     <p className="font-black text-gray-900 uppercase text-xs">{coin.symbol}</p>
@@ -3556,7 +3735,7 @@ const TokenSelector = ({ isOpen, onClose, onSelect, tokens, searchTerm, setSearc
                         >
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-white rounded-xl p-1 shadow-sm">
-                                    <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" />
+                                    {t.image ? <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" /> : null}
                                 </div>
                                 <div>
                                     <p className="font-black text-gray-900 uppercase text-xs">{t.symbol}</p>

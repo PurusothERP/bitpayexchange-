@@ -6,6 +6,7 @@
 
 const axios = require('axios');
 const NodeCache = require('node-cache');
+const db = require('../config/db');
 
 // Cache: token list for 1 hour, trends for 30 min, sentiment 15 min
 const tokenCache  = new NodeCache({ stdTTL: 3600  });
@@ -405,12 +406,24 @@ async function getTrendForecast() {
   } catch (err) {
     console.error('[ML] Trend forecast error:', err.message);
     return {
-      trendingCoins:  [],
-      categoryTrends: [],
-      topGainers:     [],
+      trendingCoins:  [
+        { name: 'Bitcoin', symbol: 'btc', rank: 1, score: 99 },
+        { name: 'Ethereum', symbol: 'eth', rank: 2, score: 95 },
+        { name: 'Solana', symbol: 'sol', rank: 5, score: 90 },
+        { name: 'Pepe', symbol: 'pepe', rank: 50, score: 85 }
+      ],
+      categoryTrends: [
+        { name: 'AI Tokens', score: 88 },
+        { name: 'Meme Coins', score: 82 },
+        { name: 'Layer 2', score: 75 }
+      ],
+      topGainers: [
+        { name: 'Solana', symbol: 'SOL', change: '5.20' },
+        { name: 'Pepe', symbol: 'PEPE', change: '12.45' }
+      ],
       hotCategory:    'AI Tokens',
       forecast:       'AI and DeFi tokens continue to show strong momentum. Consider positioning your token in these categories.',
-      error:          'Live data unavailable — showing cached forecast'
+      error:          'Live data unavailable — showing simulated forecast'
     };
   }
 }
@@ -635,8 +648,26 @@ async function getMemeMarketData() {
       params: { vs_currency: 'usd', ids: MEME_IDS.join(','), order: 'market_cap_desc', per_page: 20, page: 1, sparkline: false, price_change_percentage: '24h' }
     });
 
-    trendCache.set(cacheKey, res.data, 300); // 5 min cache
-    return res.data;
+    let marketData = res.data;
+
+    // Cross-reference with local DB to hide delisted tokens
+    try {
+      const delistedResult = await db.query('SELECT contract_address FROM tokens WHERE is_delisted = 1');
+      const delistedSet = new Set(delistedResult.rows.map(r => r.contract_address.toLowerCase()));
+      
+      marketData = marketData.filter(m => {
+        // We need the address for CoinGecko coins. 
+        // We can check if it's already in our token system or if it has a known address.
+        const addr = m.platforms?.['binance-smart-chain'] || m.contract_address;
+        if (addr && delistedSet.has(addr.toLowerCase())) return false;
+        return true;
+      });
+    } catch (dbErr) {
+      console.warn('[ML] DB check for delisted tokens failed:', dbErr.message);
+    }
+
+    trendCache.set(cacheKey, marketData, 300); // 5 min cache
+    return marketData;
   } catch (err) {
     console.error('[ML] Meme market fetch failed:', err.message);
     return []; // Frontend handles empty array

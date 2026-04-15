@@ -32,13 +32,20 @@ router.post('/', async (req, res) => {
     }
 });
 
-// ── POST /api/bulletin/like/:id ───────────────────────────────────────────────
-router.post('/like/:id', async (req, res) => {
+const { generateAndPostNews } = require('../services/aiNewsAutomation');
+
+// ── POST /api/bulletin/trigger-ai ─────────────────────────────────────────────
+router.post('/trigger-ai', async (req, res) => {
+    const { wallet } = req.body;
+    const TREASURY = '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
+    if (!wallet || wallet.toLowerCase() !== TREASURY.toLowerCase()) {
+        return res.status(403).json({ error: 'Admin only' });
+    }
     try {
-        await db.query('UPDATE announcements SET likes = likes + 1 WHERE id = ?', [req.params.id]);
-        res.json({ success: true });
+        await generateAndPostNews();
+        res.json({ success: true, message: 'AI News Cycle Triggered' });
     } catch (err) {
-        res.status(500).json({ error: 'Like failed' });
+        res.status(500).json({ error: 'AI Generation failed', details: err.message });
     }
 });
 

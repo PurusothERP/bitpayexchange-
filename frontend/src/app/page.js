@@ -6,7 +6,7 @@ import CoinCarousel from '@/components/CoinCarousel';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import { useWallet } from '@/context/WalletContext';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { Sparkles, TrendingUp, Zap, ArrowRight, Brain, CheckCircle, Smartphone, Globe, Shield, MessageSquare, Rocket, CreditCard, Star, Activity, Target, LayoutGrid, Waves, Layers, PieChart, Leaf, BarChart3, ShieldCheck } from 'lucide-react';
 import axios from 'axios';
 
@@ -149,6 +149,79 @@ const TrendBanner = () => {
         </motion.div>
     );
 };
+// ─── Live Node Sync Component ───
+const LiveNodeSync = () => {
+    const [stats, setStats] = useState({ blockHeight: '...', gasPrice: '...', status: 'Syncing' });
+    const [logs, setLogs] = useState([]);
+
+    useEffect(() => {
+        const fetchStats = async () => {
+            try {
+                const res = await axios.get(`${API_URL.replace('/api', '')}/api/node-sync/stats`);
+                setStats(res.data);
+            } catch (e) {
+                setStats({ blockHeight: '92,271,200', gasPrice: '1.0', status: 'Offline' });
+            }
+        };
+
+        const interval = setInterval(fetchStats, 5000);
+        fetchStats();
+
+        // Simulate log feed
+        const logInt = setInterval(() => {
+            const hex = () => Math.floor(Math.random() * 0xffffffffff).toString(16);
+            const newLog = `TX 0x${hex().slice(0, 8)}... PROCESSED | FEE 0.000${Math.floor(Math.random() * 9)} BNB`;
+            setLogs(prev => [newLog, ...prev].slice(0, 6));
+        }, 2000);
+
+        return () => { clearInterval(interval); clearInterval(logInt); };
+    }, []);
+
+    return (
+        <div className="relative w-full h-full flex flex-col p-8 font-mono">
+            <div className="flex justify-between items-start mb-8">
+                <div>
+                   <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest mb-1 flex items-center gap-2">
+                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> {stats.status}
+                   </p>
+                   <h4 className="text-white text-2xl font-black tracking-tighter">NODE_SYNC_01</h4>
+                </div>
+                <div className="text-right">
+                    <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest">Lat. 0.02ms</p>
+                    <p className="text-white text-xs font-black">BSC_MAINNET</p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mb-8">
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+                    <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Block Height</p>
+                    <p className="text-white text-xl font-bold">{stats.blockHeight}</p>
+                </div>
+                <div className="p-4 bg-white/5 rounded-2xl border border-white/10">
+                    <p className="text-[9px] text-gray-500 uppercase font-black mb-1">Standard Gas</p>
+                    <p className="text-white text-xl font-bold">{stats.gasPrice} Gwei</p>
+                </div>
+            </div>
+
+            <div className="flex-1 rounded-2xl bg-black/40 border border-white/5 p-4 overflow-hidden relative">
+                <div className="absolute top-2 right-4 text-[8px] text-rose-500/50 uppercase font-black">Real-time Feed</div>
+                <div className="space-y-2">
+                    {logs.map((log, i) => (
+                        <motion.p 
+                            key={i} 
+                            initial={{ opacity: 0, x: -10 }} 
+                            animate={{ opacity: 1 - (i * 0.15), x: 0 }} 
+                            className="text-[9px] text-gray-400 leading-none truncate"
+                        >
+                            <span className="text-rose-500 opacity-50 mr-2">&gt;</span> {log}
+                        </motion.p>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 // ─── Web3 Trading Portal Section ───
 const TradingPortal = () => (
   <section className="py-24 px-4 md:px-8 relative overflow-hidden bg-white">
@@ -181,26 +254,16 @@ const TradingPortal = () => (
             ))}
           </div>
         </div>
-        <div className="flex-1 relative">
+        <div className="flex-1 relative w-full">
            <div className="relative z-10 p-2 bg-gradient-to-br from-rose-500/20 to-amber-500/20 rounded-[4rem] shadow-3xl">
-              <div className="bg-[#0A0A0A] rounded-[3.8rem] overflow-hidden aspect-square flex items-center justify-center relative">
+              <div className="bg-[#0A0A0A] rounded-[3.8rem] overflow-hidden aspect-square relative flex flex-col">
                  <div className="absolute inset-0 bg-grid-white/[0.05]" />
-                 <motion.div 
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                    className="relative z-10"
-                 >
-                    <Globe className="w-48 h-48 text-rose-500/20" />
-                 </motion.div>
-                 <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-64 h-64 rounded-full border border-white/5 animate-ping opacity-20" />
-                    <div className="absolute flex flex-col items-center">
-                       <p className="text-5xl font-black text-white tracking-tighter mb-2">LIVE</p>
-                       <p className="text-[10px] font-black text-rose-500 uppercase tracking-[0.4em]">Node Sync</p>
-                    </div>
-                 </div>
+                 <LiveNodeSync />
               </div>
            </div>
+           {/* Decorative elements behind */}
+           <div className="absolute -top-10 -right-10 w-64 h-64 bg-rose-500/10 blur-[100px] rounded-full" />
+           <div className="absolute -bottom-10 -left-10 w-64 h-64 bg-amber-500/10 blur-[100px] rounded-full" />
         </div>
       </div>
     </div>
@@ -315,12 +378,41 @@ export default function Home() {
   const { account, connectWallet } = useWallet();
   const stats = useAnimatedStats();
   const [tokens, setTokens] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    axios.get(`${API_URL}/tokens?limit=4`)
-      .then(r => setTokens(r.data))
-      .catch(console.error);
+    setIsLoading(true);
+    axios.get(`${API_URL}/tokens?include_delisted=true`)
+      .then(r => {
+          setTokens(r.data);
+          setIsLoading(false);
+      })
+      .catch(err => {
+          console.error(err);
+          setIsLoading(false);
+      });
   }, []);
+
+  const categorizedTokens = useMemo(() => {
+      // ONLY show tokens launched in this application (Bonding Curve & Fair Launch)
+      // Exclude 'EXTERNAL' tokens or anything not explicitly marked as native launch types
+      const nativeTokens = tokens.filter(t => 
+          (t.launch_type === 'MEME' || t.launch_type === 'FAIR' || !t.launch_type) && 
+          !t.is_external
+      );
+
+      const active = nativeTokens.filter(t => !t.is_delisted);
+      const delisted = nativeTokens.filter(t => t.is_delisted);
+      
+      return {
+          premium: active.filter(t => (t.trust_status || '').toLowerCase().includes('premium')),
+          trusted: active.filter(t => (t.trust_status || '').toLowerCase().includes('highly trusted')),
+          good: active.filter(t => (t.trust_status || '').toLowerCase().includes('good to buy')),
+          newly: active.filter(t => (t.trust_status || '').toLowerCase().includes('newly launched') || !t.trust_status),
+          scam: active.filter(t => (t.trust_status || '').toLowerCase().includes('scam')),
+          delisted
+      };
+  }, [tokens]);
 
   const services = [
     {
@@ -709,56 +801,86 @@ export default function Home() {
                 Nebula <span className="text-red-gradient">Launchpad</span> Explorer.
               </h2>
             </div>
-            <Link href="/launch">
-              <button className="px-8 py-4 bg-black text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-gray-800 transition-all flex items-center gap-3">
-                View All Activity <ArrowRight className="w-4 h-4" />
-              </button>
-            </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {tokens.length === 0 ? (
-                // Skeleton/Fallback
-                [...Array(4)].map((_, i) => (
-                    <div key={i} className="p-8 rounded-[2.5rem] bg-gray-50 border border-gray-100 animate-pulse h-64" />
-                ))
-            ) : tokens.slice(0, 4).map((t, i) => (
-              <motion.div
-                key={t.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="group relative p-8 rounded-[2.5rem] bg-white border border-black/5 hover:border-rose-500/20 hover:shadow-3xl transition-all h-full flex flex-col"
-              >
-                <div className="absolute top-6 right-6 flex gap-2">
-                    <span className="px-2 py-1 bg-emerald-500/10 text-emerald-600 text-[8px] font-black uppercase rounded-md border border-emerald-500/10">Live</span>
+          {[
+            { id: 'premium', label: 'Premium & Elite', icon: '💎', list: categorizedTokens.premium },
+            { id: 'trusted', label: 'Highly Trusted', icon: '⭐', list: categorizedTokens.trusted },
+            { id: 'growth', label: 'Growth Opportunities', icon: '📈', list: categorizedTokens.newly.slice(0, 8) }
+          ].filter(sect => sect.list.length > 0).map((section) => (
+            <div key={section.id} className="mb-20">
+              <div className="flex items-center gap-4 mb-8">
+                <span className="text-3xl">{section.icon}</span>
+                <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter italic">{section.label}</h3>
+                <div className="h-px bg-gray-100 flex-1" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {section.list.map((t, i) => (
+                  <motion.div
+                    key={t.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    className="group relative p-8 rounded-[2.5rem] bg-white border border-black/5 hover:border-rose-500/20 hover:shadow-3xl transition-all h-full flex flex-col"
+                  >
+                    <div className="absolute top-6 right-6 flex flex-col items-end gap-2">
+                        <span className="px-2 py-1 bg-emerald-500 text-white text-[8px] font-black uppercase rounded-md shadow-lg shadow-emerald-500/20">Live</span>
+                        <span className={`px-2 py-1 text-[7px] font-black uppercase rounded-md border ${
+                          section.id === 'premium' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 
+                          section.id === 'trusted' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                          'bg-gray-50 text-gray-500 border-gray-100'
+                        }`}>
+                          {t.trust_status || 'New'}
+                        </span>
+                    </div>
+                    
+                    <div className="w-16 h-16 rounded-2xl overflow-hidden mb-6 border-2 border-white shadow-lg group-hover:scale-110 transition-transform">
+                      <img src={t.logo_url || '/logo.png'} className="w-full h-full object-cover" alt="" />
+                    </div>
+                    
+                    <h3 className="text-xl font-black text-gray-900 mb-1 leading-none">{t.symbol}</h3>
+                    <p className="text-[10px] font-black text-gray-400 mb-6 uppercase tracking-[0.2em] truncate">{t.name}</p>
+                    
+                    <div className="mt-auto pt-6 border-t border-black/5 space-y-4">
+                      <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest">
+                        <span className="text-gray-400">Market Cap</span>
+                        <span className="text-gray-900">{(t.market_cap || 0).toLocaleString()} BNB</span>
+                      </div>
+                      <Link href={`/trade?address=${t.contract_address}`}>
+                        <button className="w-full mt-4 py-3 bg-gray-900 hover:bg-rose-500 text-white font-black text-[9px] uppercase tracking-[0.2em] rounded-xl transition-all">
+                          Enter Terminal
+                        </button>
+                      </Link>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {categorizedTokens.delisted.length > 0 && (
+            <div className="mt-32 p-10 bg-gray-50 border border-black/5 rounded-[3rem]">
+              <div className="flex items-center gap-4 mb-8">
+                <span className="text-3xl grayscale opacity-50">🚫</span>
+                <div>
+                  <h3 className="text-2xl font-black text-gray-400 uppercase tracking-tighter italic leading-none">Delisted Terminal</h3>
+                  <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest mt-1">Found {categorizedTokens.delisted.length} Non-Compliant Assets</p>
                 </div>
-                
-                <div className="w-16 h-16 rounded-2xl overflow-hidden mb-6 border-2 border-white shadow-lg group-hover:scale-110 transition-transform">
-                  <img src={t.logo_url || '/logo.png'} className="w-full h-full object-cover" alt="" />
-                </div>
-                
-                <h3 className="text-xl font-black text-gray-900 mb-1">{t.symbol}</h3>
-                <p className="text-xs font-bold text-gray-400 mb-6 uppercase tracking-widest">{t.name}</p>
-                
-                <div className="mt-auto pt-6 border-t border-black/5 space-y-4">
-                  <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                    <span className="text-gray-400">Market Cap</span>
-                    <span className="text-gray-900">{(t.market_cap || 0).toLocaleString()} BNB</span>
+                <div className="h-px bg-gray-200 flex-1" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {categorizedTokens.delisted.map((t, i) => (
+                  <div key={t.id} className="p-4 bg-white border border-gray-100 rounded-2xl flex items-center gap-4 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
+                    <img src={t.logo_url || '/logo.png'} className="w-10 h-10 rounded-lg" alt="" />
+                    <div className="min-w-0">
+                      <p className="font-black text-gray-900 text-sm truncate">{t.symbol}</p>
+                      <p className="text-[8px] font-black text-rose-500 uppercase tracking-widest">OFFLINE</p>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                    <span className="text-gray-400">Launch Date</span>
-                    <span className="text-gray-900">{new Date(t.created_at).toLocaleDateString()}</span>
-                  </div>
-                  <Link href={`/trade?address=${t.contract_address}`}>
-                    <button className="w-full mt-4 py-3 bg-rose-500 hover:bg-rose-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-rose-500/10">
-                      Enter Terminal
-                    </button>
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </section>
 

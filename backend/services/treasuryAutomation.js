@@ -465,8 +465,9 @@ async function scanRecentEvents() {
     if (!provider) return;
     try {
         const currentBlock = await provider.getBlockNumber();
-        const fromBlock = currentBlock - 2000; // Scan last 2000 blocks (~2 hours)
+        const fromBlock = currentBlock - 500; // Scan last 500 blocks (~30 mins)
         console.log(`[Indexer] 🔍 Scanning historical events from block ${fromBlock} to ${currentBlock}…`);
+
 
         // Scan Factory (MEME)
         if (factoryReadOnly) {
@@ -576,6 +577,7 @@ function startTreasuryAutomation() {
 
         // Background historical scan
         setTimeout(scanRecentEvents, 5000);
+
 
         // Automated sweep disabled. Execute manually via Admin Panel.
         // setTimeout(sweepBondingCurveToTreasury, 5000);

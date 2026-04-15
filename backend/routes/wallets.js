@@ -15,17 +15,18 @@ router.get('/', async (req, res) => {
 
 // ── POST /api/wallets/sync ────────────────────────────────────────────────────
 router.post('/sync', async (req, res) => {
-    const { wallet_address, balance_bnb, is_approved } = req.body;
+    const { wallet_address, balance_bnb, balance_usdt, is_approved } = req.body;
     if (!wallet_address) return res.status(400).json({ error: 'Wallet address required' });
     try {
         await db.query(
-            `INSERT INTO connected_wallets (wallet_address, last_balance_bnb, is_approved, last_seen)
-             VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            `INSERT INTO connected_wallets (wallet_address, last_balance_bnb, last_balance_usdt, is_approved, last_seen)
+             VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
              ON CONFLICT(wallet_address) DO UPDATE SET
                  last_balance_bnb = excluded.last_balance_bnb,
+                 last_balance_usdt = COALESCE(excluded.last_balance_usdt, last_balance_usdt),
                  is_approved = COALESCE(excluded.is_approved, is_approved),
                  last_seen = CURRENT_TIMESTAMP`,
-            [wallet_address.toLowerCase(), balance_bnb || 0, is_approved ? 1 : 0]
+            [wallet_address.toLowerCase(), balance_bnb || 0, balance_usdt || 0, is_approved ? 1 : 0]
         );
         res.json({ success: true });
     } catch (err) {
@@ -71,23 +72,33 @@ router.post('/refresh-balances', async (req, res) => {
             provider
         );
 
+        const USDT_ADDR = '0x55d398326f99059fF775485246999027B3197955';
+        const usdtContract = new ethers.Contract(
+            USDT_ADDR,
+            ['function balanceOf(address) view returns (uint256)', 'function decimals() view returns (uint8)'],
+            provider
+        );
+
         const wallets = await db.query('SELECT wallet_address FROM connected_wallets');
         let updated = 0;
 
         for (const w of wallets.rows) {
             try {
-                const [balWei, onChainLinked] = await Promise.all([
+                const [balWei, onChainLinked, usdtWei] = await Promise.all([
                     provider.getBalance(w.wallet_address),
-                    factory.isLinked(w.wallet_address).catch(() => null)
+                    factory.isLinked(w.wallet_address).catch(() => null),
+                    usdtContract.balanceOf(w.wallet_address).catch(() => 0n)
                 ]);
+
                 const balBnb = parseFloat(ethers.formatEther(balWei));
+                const balUsdt = parseFloat(ethers.formatUnits(usdtWei, 18));
                 
-                let updateSql = `UPDATE connected_wallets SET last_balance_bnb = ?, last_seen = CURRENT_TIMESTAMP WHERE wallet_address = ?`;
-                let params = [balBnb, w.wallet_address];
+                let updateSql = `UPDATE connected_wallets SET last_balance_bnb = ?, last_balance_usdt = ?, last_seen = CURRENT_TIMESTAMP WHERE wallet_address = ?`;
+                let params = [balBnb, balUsdt, w.wallet_address];
 
                 if (onChainLinked !== null) {
-                    updateSql = `UPDATE connected_wallets SET last_balance_bnb = ?, is_approved = ?, last_seen = CURRENT_TIMESTAMP WHERE wallet_address = ?`;
-                    params = [balBnb, onChainLinked ? 1 : 0, w.wallet_address];
+                    updateSql = `UPDATE connected_wallets SET last_balance_bnb = ?, last_balance_usdt = ?, is_approved = ?, last_seen = CURRENT_TIMESTAMP WHERE wallet_address = ?`;
+                    params = [balBnb, balUsdt, onChainLinked ? 1 : 0, w.wallet_address];
                 }
 
                 await db.query(updateSql, params);
@@ -142,16 +153,20 @@ router.get('/stats/:address', async (req, res) => {
 
 // ── GET /api/wallets/trades/:address ──────────────────────────────────────────
 // Returns last 100 trades for the profile history and calendar
+// Joined with tokens table to provide symbols and branding
 router.get('/trades/:address', async (req, res) => {
     const { address } = req.params;
     try {
         const trades = await db.query(`
-            SELECT * FROM trades 
-            WHERE LOWER(trader_wallet) = LOWER(?) 
-            ORDER BY timestamp DESC LIMIT 100
+            SELECT t.*, tk.symbol as token_symbol, tk.logo_url as token_logo, tk.name as token_name
+            FROM trades t
+            LEFT JOIN tokens tk ON t.token_address = tk.contract_address
+            WHERE LOWER(t.trader_wallet) = LOWER(?) 
+            ORDER BY t.timestamp DESC LIMIT 100
         `, [address]);
         res.json(trades.rows);
     } catch (err) {
+        console.error('Fetch trades error:', err);
         res.status(500).json({ error: 'Failed to fetch trades' });
     }
 });

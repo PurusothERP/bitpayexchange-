@@ -56,7 +56,7 @@ router.post('/settle', async (req, res) => {
         await db.query(`
             INSERT INTO trades (token_address, token_symbol, trader_wallet, trade_type, amount_tokens, amount_bnb, pnl_bnb, tx_hash, position_id)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `, ['FUTURES_MARKET', tokenSymbol || 'FUTURES', walletAddress, 'futures_close', 0, originalSize || 0, pnlAmount || 0, tx.hash, positionId]);
+        `, ['FUTURES_MARKET', tokenSymbol || 'FUTURES', walletAddress, 'Perpetual Settle Completed', originalSize || 0, 0, pnlAmount || 0, tx.hash, positionId]);
 
         res.json({ 
             success: true, 

@@ -9,103 +9,110 @@ const factoryAddress = process.env.FACTORY_ADDRESS;
 const liquidityManagerAddress = process.env.LIQUIDITY_MANAGER_ADDRESS;
 const bondingCurveAddress = process.env.BONDING_CURVE_ADDRESS;
 
-async function startIndexer() {
-    console.log('Starting Blockchain Indexer...');
+async function syncHistoricalEvents(contract, eventName, startBlock, handler) {
+    console.log(`[Indexer] Syncing history for ${eventName}...`);
+    try {
+        const filter = contract.filters[eventName]();
+        const latestBlock = await provider.getBlockNumber();
+        const CHUNK_SIZE = 2000;
+        let fromBlock = startBlock;
 
-    if (!factoryAddress || !liquidityManagerAddress) {
-        console.error('Factory or LiquidityManager address not configured');
+        while (fromBlock <= latestBlock) {
+            const toBlock = Math.min(fromBlock + CHUNK_SIZE, latestBlock);
+            console.log(`[Indexer] Scanning ${eventName} [${fromBlock} -> ${toBlock}]`);
+            const logs = await contract.queryFilter(filter, fromBlock, toBlock);
+            for (const log of logs) {
+                await handler(...log.args, log);
+            }
+            fromBlock = toBlock + 1;
+        }
+        console.log(`[Indexer] ✅ ${eventName} history sync complete.`);
+    } catch (e) {
+        console.error(`[Indexer] Error syncing historical ${eventName}:`, e.message);
+    }
+}
+
+async function handleTokenCreated(tokenAddress, name, symbol, supply, creator, deploymentFee, initialBuyBnb, event) {
+    try {
+        const txHash = event?.transactionHash || 'unknown';
+        const query = `
+            INSERT INTO tokens (name, symbol, contract_address, creator_wallet, tx_hash)
+            VALUES ($1, $2, $3, $4, $5)
+            ON CONFLICT (contract_address) DO UPDATE SET
+                name = EXCLUDED.name,
+                symbol = EXCLUDED.symbol
+        `;
+        await db.query(query, [name, symbol, tokenAddress, creator, txHash]);
+    } catch (error) {
+        console.error('Error syncing token created event:', error.message);
+    }
+}
+
+async function handleBuy(tokenAddress, buyer, amountIn, amountOut, event) {
+    try {
+        const amountBnb = Number(ethers.formatEther(amountIn));
+        const amountTokens = Number(ethers.formatUnits(amountOut, 18));
+        const priceBnb = amountTokens > 0 ? (amountBnb / amountTokens) : 0;
+        const txHash = event?.transactionHash || 'unknown';
+        const blockNum = event?.blockNumber || 0;
+
+        await db.query(`UPDATE tokens SET price_bnb = $1, liquidity_bnb = CAST(COALESCE(liquidity_bnb, '0') AS REAL) + $2 WHERE contract_address = $3`, [priceBnb, amountBnb, tokenAddress]);
+        
+        await db.query(
+            `INSERT OR IGNORE INTO trades (token_address, trader_wallet, trade_type, amount_tokens, amount_bnb, price_bnb, tx_hash, block_number)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [tokenAddress, buyer, 'Swap Completed', amountTokens, amountBnb, priceBnb, txHash, blockNum]
+        );
+    } catch (error) {
+        console.error('Error syncing bonding curve buy:', error.message);
+    }
+}
+
+async function handleSell(tokenAddress, seller, amountIn, amountOut, event) {
+    try {
+        const amountBnb = Number(ethers.formatEther(amountOut));
+        const amountTokens = Number(ethers.formatUnits(amountIn, 18));
+        const priceBnb = amountTokens > 0 ? (amountBnb / amountTokens) : 0;
+        const txHash = event?.transactionHash || 'unknown';
+        const blockNum = event?.blockNumber || 0;
+
+        await db.query(`UPDATE tokens SET price_bnb = $1, liquidity_bnb = CAST(COALESCE(liquidity_bnb, '0') AS REAL) - $2 WHERE contract_address = $3`, [priceBnb, amountBnb, tokenAddress]);
+
+        await db.query(
+            `INSERT OR IGNORE INTO trades (token_address, trader_wallet, trade_type, amount_tokens, amount_bnb, price_bnb, tx_hash, block_number)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [tokenAddress, seller, 'Swap Completed', amountTokens, amountBnb, priceBnb, txHash, blockNum]
+        );
+    } catch (error) {
+        console.error('Error syncing bonding curve sell:', error.message);
+    }
+}
+
+async function startIndexer() {
+    console.log('Starting Blockchain Indexer with Historical Sync...');
+    
+    if (!factoryAddress || !liquidityManagerAddress || !bondingCurveAddress) {
+        console.error('Essential addresses not configured');
         return;
     }
 
     const factoryContract = new ethers.Contract(factoryAddress, TOKEN_FACTORY_ABI, provider);
-    const liquidityManagerContract = new ethers.Contract(liquidityManagerAddress, LIQUIDITY_MANAGER_ABI, provider);
     const bondingCurveContract = new ethers.Contract(bondingCurveAddress, BONDING_CURVE_ABI, provider);
 
-    // 1. Listen for TokenCreated
-    // Deployed contract emits: TokenCreated(address tokenAddress, string name, string symbol, uint256 supply, address creator, uint256 deploymentFee, uint256 initialBuyBnb)
-    factoryContract.on('TokenCreated', async (tokenAddress, name, symbol, supply, creator, deploymentFee, initialBuyBnb, event) => {
-        console.log(`New Token Detected at ${tokenAddress} by creator ${creator}`);
-        try {
-            const txHash = event?.log?.transactionHash || event?.transactionHash || 'unknown';
-            
-            const query = `
-        INSERT INTO tokens (name, symbol, contract_address, creator_wallet, tx_hash)
-        VALUES ($1, $2, $3, $4, $5)
-        ON CONFLICT (contract_address) DO UPDATE SET
-          name = EXCLUDED.name,
-          symbol = EXCLUDED.symbol
-      `;
-            await db.query(query, [name, symbol, tokenAddress, creator, txHash]);
-            console.log(`Synced token ${tokenAddress} (${name}/${symbol}) to DB`);
-        } catch (error) {
-            console.error('Error syncing token created event:', error);
-        }
-    });
+    // Sync History (Go back ~100k blocks or from a specific start block)
+    const START_BLOCK = 43000000; // Reasonable starting block for these contracts
+    
+    await syncHistoricalEvents(factoryContract, 'TokenCreated', START_BLOCK, handleTokenCreated);
+    await syncHistoricalEvents(bondingCurveContract, 'Buy', START_BLOCK, handleBuy);
+    await syncHistoricalEvents(bondingCurveContract, 'Sell', START_BLOCK, handleSell);
 
-    // 2. Listen for LiquidityAdded
-    // LiquidityAdded(address indexed token, uint256 tokenAmount, uint256 ethAmount, address lpReceiver)
-    liquidityManagerContract.on('LiquidityAdded', async (tokenAddress, tokenAmount, ethAmount, lpReceiver, event) => {
-        console.log(`Liquidity Added for ${tokenAddress}: ${ethers.formatEther(ethAmount)} BNB`);
-        try {
-            const priceBnb = Number(ethers.formatEther(ethAmount)) / Number(ethers.formatUnits(tokenAmount, 18));
-            const query = `
-        UPDATE tokens 
-        SET liquidity_bnb = CAST(COALESCE(liquidity_bnb, '0') AS REAL) + $1, 
-            trading_enabled = 1,
-            price_bnb = $2
-        WHERE contract_address = $3
-      `;
-            await db.query(query, [ethers.formatEther(ethAmount), priceBnb, tokenAddress]);
-            console.log(`Updated liquidity and price for ${tokenAddress}: ${priceBnb} BNB`);
-        } catch (error) {
-            console.error('Error syncing liquidity added event:', error);
-        }
-    });
+    // Live Listening
+    console.log('[Indexer] Transitioning to Real-Time Surveillance...');
+    factoryContract.on('TokenCreated', handleTokenCreated);
+    bondingCurveContract.on('Buy', handleBuy);
+    bondingCurveContract.on('Sell', handleSell);
 
-    // 3. Listen for Bonding Curve Trades (Buy/Sell)
-    bondingCurveContract.on('Buy', async (tokenAddress, buyer, amountIn, amountOut, event) => {
-        console.log(`Buy on Bonding Curve for ${tokenAddress}: ${ethers.formatEther(amountIn)} BNB`);
-        try {
-            const amountBnb = Number(ethers.formatEther(amountIn));
-            const amountTokens = Number(ethers.formatUnits(amountOut, 18));
-            const priceBnb = amountTokens > 0 ? (amountBnb / amountTokens) : 0;
-            const query = `UPDATE tokens SET price_bnb = $1, liquidity_bnb = CAST(COALESCE(liquidity_bnb, '0') AS REAL) + $2 WHERE contract_address = $3`;
-            await db.query(query, [priceBnb, amountBnb, tokenAddress]);
-            
-            // Also record the trade!
-            const txHash = event?.log?.transactionHash || event?.transactionHash || 'unknown';
-            await db.query(
-                `INSERT OR IGNORE INTO trades (token_address, trader_wallet, trade_type, amount_tokens, amount_bnb, price_bnb, tx_hash)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                [tokenAddress, buyer, 'buy', amountTokens, amountBnb, priceBnb, txHash]
-            );
-        } catch (error) {
-            console.error('Error syncing bonding curve buy:', error);
-        }
-    });
-
-    bondingCurveContract.on('Sell', async (tokenAddress, seller, amountIn, amountOut, event) => {
-        console.log(`Sell on Bonding Curve for ${tokenAddress}: ${ethers.formatEther(amountOut)} BNB`);
-        try {
-            const amountBnb = Number(ethers.formatEther(amountOut));
-            const amountTokens = Number(ethers.formatUnits(amountIn, 18));
-            const priceBnb = amountTokens > 0 ? (amountBnb / amountTokens) : 0;
-            const query = `UPDATE tokens SET price_bnb = $1, liquidity_bnb = CAST(COALESCE(liquidity_bnb, '0') AS REAL) - $2 WHERE contract_address = $3`;
-            await db.query(query, [priceBnb, amountBnb, tokenAddress]);
-
-            // Also record the trade!
-            const txHash = event?.log?.transactionHash || event?.transactionHash || 'unknown';
-            await db.query(
-                `INSERT OR IGNORE INTO trades (token_address, trader_wallet, trade_type, amount_tokens, amount_bnb, price_bnb, tx_hash)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                [tokenAddress, seller, 'sell', amountTokens, amountBnb, priceBnb, txHash]
-            );
-        } catch (error) {
-            console.error('Error syncing bonding curve sell:', error);
-        }
-    });
-
-    console.log('Indexer is running and listening for events...');
+    console.log('Indexer is now running (Live + Historical History Active)');
 }
 
 if (require.main === module) {

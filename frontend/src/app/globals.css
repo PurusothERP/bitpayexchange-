@@ -11,6 +11,7 @@
   /* Golden Graphics */
   --card-bg: rgba(255, 255, 255, 0.8);
   --border-color: rgba(0, 0, 0, 0.1);
+  --bottom-nav-height: 72px;
 }
 
 body {
@@ -154,4 +155,270 @@ body {
     transparent 100%
   );
   animation: luxury-sweep 3s infinite;
+}
+
+/* =================================================================
+   MOBILE RESPONSIVENESS — ALL CHANGES INSIDE @media BLOCKS ONLY
+   Desktop (>=1025px) is NEVER touched. Zero impact on base styles.
+   ================================================================= */
+
+/* ── Bottom Mobile Navigation Bar ────────────────────────────── */
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 768px) {
+
+  /* ── Bottom Nav ────────────────────────────────────────────── */
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--bottom-nav-height);
+    background: rgba(255, 255, 255, 0.97);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border-top: 1px solid rgba(0, 0, 0, 0.07);
+    z-index: 200;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 4px;
+    box-shadow: 0 -4px 32px rgba(0,0,0,0.08);
+  }
+
+  .mobile-bottom-nav a,
+  .mobile-bottom-nav button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-width: 52px;
+    min-height: 52px;
+    font-size: 8px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #9ca3af;
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 6px 4px;
+    border-radius: 14px;
+    transition: all 0.15s ease;
+    text-decoration: none;
+  }
+
+  .mobile-bottom-nav a:hover,
+  .mobile-bottom-nav button:hover,
+  .mobile-bottom-nav a.bn-active {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.08);
+  }
+
+  /* Padding so content is not hidden behind bottom nav */
+  main {
+    padding-bottom: calc(var(--bottom-nav-height) + 12px) !important;
+  }
+
+  /* ── Top Navbar: compact on mobile ────────────────────────── */
+  nav.fixed .h-20 {
+    height: 56px !important;
+    min-height: 56px !important;
+    max-height: 56px !important;
+  }
+
+  nav.fixed .w-14,
+  nav.fixed .h-14 {
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  nav.fixed .text-2xl {
+    font-size: 1rem !important;
+  }
+
+  /* ── Prevent iOS zoom on input focus ──────────────────────── */
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  /* ── Exchange: mode switcher scrollable pill row ──────────── */
+  .flex.flex-wrap.gap-3.p-4 {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 8px !important;
+    gap: 6px !important;
+  }
+
+  .flex.flex-wrap.gap-3.p-4::-webkit-scrollbar { display: none; }
+
+  .flex.flex-wrap.gap-3.p-4 > button,
+  .flex.flex-wrap.gap-3.p-4 > a {
+    flex-shrink: 0 !important;
+    padding: 10px 12px !important;
+    font-size: 8px !important;
+    min-height: 44px;
+    border-radius: 1rem !important;
+  }
+
+  /* ── Spot swap panel: stack vertically ────────────────────── */
+  .max-w-\[1400px\].mx-auto.grid {
+    grid-template-columns: 1fr !important;
+    padding: 0 8px !important;
+    gap: 16px !important;
+  }
+
+  /* ── Pro/Futures mode: stack all columns ─────────────────── */
+  .grid.grid-cols-1.xl\:grid-cols-12 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .xl\:col-span-3,
+  .xl\:col-span-6 {
+    grid-column: span 1 !important;
+  }
+
+  /* ── Fixed height panels: auto on mobile ─────────────────── */
+  .h-\[850px\] { height: auto !important; min-height: 280px !important; }
+  .h-\[550px\] { height: auto !important; min-height: 260px !important; }
+  .h-\[500px\] { height: auto !important; min-height: 240px !important; }
+  .h-\[360px\] { height: auto !important; }
+
+  /* ── Chart iframe: full-width on mobile  ─────────────────── */
+  iframe {
+    width: 100% !important;
+    min-height: 240px !important;
+  }
+
+  /* ── Tables: horizontal scroll fallback ──────────────────── */
+  .overflow-x-auto {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    font-size: 12px !important;
+  }
+
+  table th,
+  table td {
+    padding: 8px 6px !important;
+    white-space: nowrap;
+  }
+
+  /* ── Market list dense rows ──────────────────────────────── */
+  .min-w-\[1200px\] {
+    min-width: 720px !important;
+  }
+
+  /* ── Modals/Token Selector: full-screen bottom sheet ─────── */
+  .fixed.inset-0 > div:not(.mobile-bottom-nav),
+  .fixed.inset-0 > div > div {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 2rem 2rem 0 0 !important;
+    max-height: 88vh;
+    overflow-y: auto !important;
+  }
+
+  /* ── Grid: collapse on mobile ────────────────────────────── */
+  .grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-3.xl\:grid-cols-4 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .grid.grid-cols-1.md\:grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .grid.grid-cols-1.lg\:grid-cols-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .grid.grid-cols-1.lg\:grid-cols-4 {
+    grid-template-columns: 1fr !important;
+  }
+
+  .grid.grid-cols-1.md\:grid-cols-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Flex row layouts: stack on mobile ───────────────────── */
+  .xl\:flex-row,
+  .md\:flex-row {
+    flex-direction: column !important;
+  }
+
+  /* ── Hero text sizes ─────────────────────────────────────── */
+  .text-8xl { font-size: 2.4rem !important; line-height: 1.05 !important; }
+  .text-7xl { font-size: 2rem !important; line-height: 1.05 !important; }
+  .text-5xl { font-size: 1.75rem !important; }
+
+  /* ── Padding reset ───────────────────────────────────────── */
+  .pt-20 { padding-top: 4rem !important; }
+  .mb-20 { margin-bottom: 1.5rem !important; }
+  .gap-12 { gap: 1rem !important; }
+  .p-10, .p-12, .p-14, .p-16 { padding: 1.25rem !important; }
+  .px-8 { padding-left: 1rem !important; padding-right: 1rem !important; }
+  .py-6 { padding-top: 0.75rem !important; padding-bottom: 0.75rem !important; }
+
+  /* ── Rounded corners: soften on mobile ───────────────────── */
+  .rounded-\[3rem\]   { border-radius: 1.5rem !important; }
+  .rounded-\[2\.5rem\] { border-radius: 1.25rem !important; }
+
+  /* ── Submit/CTA buttons: full-width ─────────────────────── */
+  form button[type="submit"] {
+    width: 100% !important;
+    min-height: 48px !important;
+  }
+
+  /* ── Network filter pills: horizontal scroll ─────────────── */
+  .overflow-x-auto.w-full {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    scrollbar-width: none;
+  }
+
+  /* ── Profile grid-level adjustments ─────────────────────── */
+  .grid.grid-cols-2 { grid-template-columns: 1fr !important; }
+  .grid.grid-cols-3 { grid-template-columns: 1fr !important; }
+  .grid.grid-cols-4 { grid-template-columns: 1fr 1fr !important; }
+}
+
+/* ── Tablet: 769px – 1024px ──────────────────────────────────── */
+@media (min-width: 769px) and (max-width: 1024px) {
+
+  .grid.grid-cols-1.xl\:grid-cols-12 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .xl\:col-span-3 { grid-column: span 1 !important; }
+  .xl\:col-span-6 { grid-column: span 2 !important; }
+
+  .h-\[850px\] { height: auto !important; min-height: 400px !important; }
+  .h-\[550px\] { height: auto !important; min-height: 300px !important; }
+  .h-\[500px\] { height: auto !important; min-height: 280px !important; }
+
+  .text-8xl { font-size: 4rem !important; }
+  .text-7xl { font-size: 3.2rem !important; }
+
+  input[type="text"],
+  input[type="number"] {
+    font-size: 16px !important;
+  }
 }

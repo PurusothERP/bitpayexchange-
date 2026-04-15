@@ -13,6 +13,16 @@ export const metadata = {
   description: "Institutional-grade market data, Traders Hub, and automated high-yield staking on BNB Smart Chain.",
 };
 
+// ── CRITICAL: Mobile viewport scaling ─────────────────────────────────────────
+// Without this, mobile browsers render at ~1280px desktop width and ALL CSS
+// media queries are completely ignored. This is the #1 mobile fix.
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: "#f59e0b",
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">

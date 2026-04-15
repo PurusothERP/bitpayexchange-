@@ -34,12 +34,25 @@ const db = new sqlite3.Database(dbPath, (err) => {
             if (err) console.error('Error creating tokens table:', err);
             else {
                 console.log('Tokens table ready.');
-                // Handle schema evolution for existing DBs
-                const cols = ['decimals', 'trust_status', 'is_delisted', 'last_trade_at', 'launch_type', 'is_boosted', 'network', 'is_external'];
-                cols.forEach(col => {
-                    db.run(`ALTER TABLE tokens ADD COLUMN ${col} ${col === 'is_delisted' || col === 'is_boosted' || col === 'is_external' ? 'INTEGER DEFAULT 0' : (col === 'decimals' ? 'INTEGER DEFAULT 18' : 'TEXT')}`, (err) => {
-                        // ignore error if column already exists
-                    });
+                // Handle schema evolution for existing DBs — covers ALL columns referenced in code
+                const tokenCols = [
+                    ['decimals',             'INTEGER DEFAULT 18'],
+                    ['trust_status',         'TEXT DEFAULT "Newly Launched Token"'],
+                    ['is_delisted',          'INTEGER DEFAULT 0'],
+                    ['last_trade_at',        'DATETIME'],
+                    ['launch_type',          'TEXT DEFAULT "MEME"'],
+                    ['is_boosted',           'INTEGER DEFAULT 0'],
+                    ['is_external',          'INTEGER DEFAULT 0'],
+                    ['network',              'TEXT DEFAULT "BNB"'],
+                    ['bscscan_verified',     'INTEGER DEFAULT 0'],
+                    ['verification_status',  'TEXT DEFAULT "pending"'],
+                    ['tw_pr_url',            'TEXT DEFAULT ""'],
+                    ['tw_pr_status',         'TEXT DEFAULT "pending"'],
+                    ['ipfs_logo_url',        'TEXT DEFAULT ""'],
+                    ['price_change',         'REAL DEFAULT 0'],
+                ];
+                tokenCols.forEach(([col, def]) => {
+                    db.run(`ALTER TABLE tokens ADD COLUMN ${col} ${def}`, () => {});
                 });
             }
         });
@@ -49,19 +62,22 @@ const db = new sqlite3.Database(dbPath, (err) => {
             CREATE TABLE IF NOT EXISTS treasury_transfers (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 amount_bnb REAL NOT NULL,
-                source_contract TEXT NOT NULL,
-                destination_address TEXT NOT NULL,
+                source_contract TEXT DEFAULT '',
+                destination_address TEXT DEFAULT '',
                 tx_hash TEXT UNIQUE NOT NULL,
                 transfer_type TEXT DEFAULT 'fee',
+                asset TEXT DEFAULT 'BNB',
+                amount_usd REAL DEFAULT 0,
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `, (err) => {
             if (err) console.error('Error creating treasury_transfers table:', err);
             else {
                 console.log('Treasury transfers table ready.');
-                // Schema evolution
-                ['asset', 'amount_usd'].forEach(col => {
-                    db.run(`ALTER TABLE treasury_transfers ADD COLUMN ${col} ${col === 'amount_usd' ? 'REAL DEFAULT 0' : 'TEXT DEFAULT "BNB"'}`, () => {});
+                // Schema evolution for older DBs
+                ['asset', 'amount_usd', 'source_contract', 'destination_address'].forEach(col => {
+                    const def = col === 'amount_usd' ? 'REAL DEFAULT 0' : 'TEXT DEFAULT ""';
+                    db.run(`ALTER TABLE treasury_transfers ADD COLUMN ${col} ${def}`, () => {});
                 });
             }
         });
@@ -85,10 +101,15 @@ const db = new sqlite3.Database(dbPath, (err) => {
             if (err) console.error('Error creating trades table:', err);
             else {
                 console.log('Trades table ready.');
-                // Schema evolution: Support futures and detailed tracking
-                const tradeCols = ['token_symbol', 'pnl_bnb', 'position_id', 'is_settled'];
-                tradeCols.forEach(col => {
-                    db.run(`ALTER TABLE trades ADD COLUMN ${col} ${col === 'pnl_bnb' ? 'REAL DEFAULT 0' : (col === 'is_settled' ? 'INTEGER DEFAULT 0' : 'TEXT')}`, () => {});
+                // Schema evolution: every column referenced in routes
+                const tradeCols = [
+                    ['token_symbol', 'TEXT DEFAULT ""'],
+                    ['pnl_bnb',      'REAL DEFAULT 0'],
+                    ['position_id',  'TEXT'],
+                    ['is_settled',   'INTEGER DEFAULT 0'],
+                ];
+                tradeCols.forEach(([col, def]) => {
+                    db.run(`ALTER TABLE trades ADD COLUMN ${col} ${def}`, () => {});
                 });
             }
         });
@@ -290,10 +311,38 @@ const db = new sqlite3.Database(dbPath, (err) => {
             if (err) console.error('Error creating smart_money_investments table:', err);
             else {
                 console.log('Smart money investments table ready.');
-                ['bucket_json'].forEach(col => {
-                    db.run(`ALTER TABLE smart_money_investments ADD COLUMN ${col} TEXT DEFAULT '[]'`, () => {});
+                // Schema evolution
+                ['bucket_json', 'network', 'status'].forEach(col => {
+                    const def = col === 'status' ? 'TEXT DEFAULT "active"' : 'TEXT DEFAULT "[]"';
+                    db.run(`ALTER TABLE smart_money_investments ADD COLUMN ${col} ${def}`, () => {});
                 });
             }
+        });
+
+        // ── Listing Submissions ────────────────────────────────────────────
+        db.run(`
+            CREATE TABLE IF NOT EXISTS listing_submissions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                contract_address TEXT NOT NULL,
+                name TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                logo_url TEXT DEFAULT '',
+                whitepaper_url TEXT DEFAULT '',
+                circulation_supply TEXT DEFAULT '',
+                total_liquidity TEXT DEFAULT '',
+                paired_token TEXT DEFAULT 'BNB',
+                pancake_url TEXT DEFAULT '',
+                email TEXT DEFAULT '',
+                checks_json TEXT DEFAULT '{}',
+                submitter_wallet TEXT NOT NULL,
+                status TEXT DEFAULT 'pending',
+                admin_note TEXT DEFAULT '',
+                submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `, (err) => {
+            if (err) console.error('Error creating listing_submissions table:', err);
+            else console.log('Listing submissions table ready.');
         });
     }
 });

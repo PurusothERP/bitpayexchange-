@@ -5,12 +5,12 @@ const db = require('../config/db');
 // ── GET /api/trades/history/:tokenAddress ──────────────────────────────────────
 router.get('/history/:tokenAddress', async (req, res) => {
     const { tokenAddress } = req.params;
-    if (!tokenAddress.startsWith('0x') || tokenAddress.length !== 42) {
-        return res.status(400).json({ error: 'Invalid token address' });
+    if (!tokenAddress || tokenAddress.length < 3) {
+        return res.status(400).json({ error: 'Invalid token identifier' });
     }
     try {
         const result = await db.query(
-            `SELECT * FROM trades WHERE LOWER(token_address) = LOWER(?) ORDER BY timestamp DESC LIMIT 100`,
+            `SELECT * FROM trades WHERE LOWER(token_address) = LOWER(?) ORDER BY timestamp DESC LIMIT 200`,
             [tokenAddress]
         );
         res.json(result.rows);

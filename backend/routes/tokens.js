@@ -672,5 +672,89 @@ router.post('/admin/list', upload.single('logo'), async (req, res) => {
     }
 });
 
+// ─── GET /api/tokens/stats ────────────────────────────────────────────────────
+// Returns high-level platform counts for Admin + Homepage widgets
+router.get('/stats', async (req, res) => {
+    try {
+        const result = await db.query(`
+            SELECT
+                COUNT(*)                                                          AS total,
+                COUNT(CASE WHEN DATE(created_at) = DATE('now')             THEN 1 END) AS today,
+                COUNT(CASE WHEN created_at >= DATETIME('now', '-1 hour')   THEN 1 END) AS last_1h,
+                COUNT(CASE WHEN created_at >= DATETIME('now', '-24 hours') THEN 1 END) AS last_24h,
+                COUNT(CASE WHEN launch_type IN ('FAIR','STANDARD','EXCHANGE_LISTING') THEN 1 END) AS migrated
+            FROM tokens WHERE is_delisted = 0
+        `);
+        res.json(result.rows[0] || { total: 0, today: 0, last_1h: 0, last_24h: 0, migrated: 0 });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch token stats' });
+    }
+});
+
+// ─── POST /api/tokens/listing-submissions ───────────────────────────────────
+// Stores a listing application submitted via the Exchange "List your token" form
+router.post('/listing-submissions', async (req, res) => {
+    const {
+        contract_address, name, symbol, description, logo_url, whitepaper_url,
+        circulation_supply, total_liquidity, paired_token, pancake_url, email,
+        checks, submitter_wallet
+    } = req.body;
+
+    if (!contract_address || !name || !symbol || !submitter_wallet) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    try {
+        await db.query(`
+            INSERT INTO listing_submissions
+                (contract_address, name, symbol, description, logo_url, whitepaper_url,
+                 circulation_supply, total_liquidity, paired_token, pancake_url, email,
+                 checks_json, submitter_wallet, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')
+        `, [
+            contract_address.toLowerCase(), name, symbol.toUpperCase(),
+            description || '', logo_url || '', whitepaper_url || '',
+            circulation_supply || '', total_liquidity || '',
+            paired_token || 'BNB', pancake_url || '', email || '',
+            JSON.stringify(checks || {}), submitter_wallet.toLowerCase()
+        ]);
+        res.status(201).json({ success: true, message: 'Listing submitted for admin review.' });
+    } catch (err) {
+        console.error('Listing submission error:', err);
+        res.status(500).json({ error: 'Failed to submit listing', details: err.message });
+    }
+});
+
+// ─── GET /api/tokens/listing-submissions ────────────────────────────────────
+// Admin: retrieve all listing submissions
+router.get('/listing-submissions', async (req, res) => {
+    try {
+        const result = await db.query(
+            `SELECT * FROM listing_submissions ORDER BY submitted_at DESC LIMIT 200`
+        );
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch listing submissions' });
+    }
+});
+
+// ─── PATCH /api/tokens/listing-submissions/:id ──────────────────────────────
+// Admin: approve or reject a listing submission
+router.patch('/listing-submissions/:id', async (req, res) => {
+    const { status, admin_note } = req.body;
+    if (!['approved', 'rejected'].includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+    }
+    try {
+        await db.query(
+            `UPDATE listing_submissions SET status = ?, admin_note = ? WHERE id = ?`,
+            [status, admin_note || '', req.params.id]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to update submission' });
+    }
+});
+
 module.exports = router;
 

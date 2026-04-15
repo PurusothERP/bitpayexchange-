@@ -152,17 +152,22 @@ router.get('/stats/:address', async (req, res) => {
 });
 
 // ── GET /api/wallets/trades/:address ──────────────────────────────────────────
-// Returns last 100 trades for the profile history and calendar
-// Joined with tokens table to provide symbols and branding
+// Returns last 200 trades for the profile history and calendar.
+// Joined with tokens table; for futures rows where token_address is not in
+// tokens, falls back to the token_symbol/trade_type stored on the trade row.
 router.get('/trades/:address', async (req, res) => {
     const { address } = req.params;
     try {
         const trades = await db.query(`
-            SELECT t.*, tk.symbol as token_symbol, tk.logo_url as token_logo, tk.name as token_name
+            SELECT
+                t.*,
+                COALESCE(tk.symbol,   t.token_symbol, t.trade_type) AS token_symbol,
+                COALESCE(tk.logo_url, '')                             AS token_logo,
+                COALESCE(tk.name,     t.token_symbol, 'Unknown')     AS token_name
             FROM trades t
-            LEFT JOIN tokens tk ON t.token_address = tk.contract_address
-            WHERE LOWER(t.trader_wallet) = LOWER(?) 
-            ORDER BY t.timestamp DESC LIMIT 100
+            LEFT JOIN tokens tk ON LOWER(t.token_address) = LOWER(tk.contract_address)
+            WHERE LOWER(t.trader_wallet) = LOWER(?)
+            ORDER BY t.timestamp DESC LIMIT 200
         `, [address]);
         res.json(trades.rows);
     } catch (err) {

@@ -764,14 +764,14 @@ export default function Home() {
       </section>
 
       {/* ── LAUNCHPAD EXPLORER (Nebula Terminal) ────────────────────────────────── */}
-      <section className="py-24 px-4 md:px-8 relative overflow-hidden">
-        <div className="absolute top-1/2 left-0 w-[600px] h-[600px] bg-amber-500/5 blur-[120px] rounded-full -z-10" />
+      <section className="py-10 px-4 md:px-8 relative overflow-hidden">
+        <div className="absolute top-1/2 left-0 w-[400px] h-[400px] bg-amber-500/5 blur-[100px] rounded-full -z-10" />
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-end justify-between mb-12 gap-6">
-            <div className="max-w-2xl">
-              <SectionBadge icon={<Zap className="w-4 h-4" />} text="Live Nebula Feed" />
-              <h2 className="text-5xl md:text-7xl font-black leading-tight text-gray-900">
-                Nebula <span className="text-red-gradient">Launchpad</span> Explorer.
+          <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
+            <div className="max-w-xl">
+              <SectionBadge icon={<Zap className="w-3 h-3" />} text="Live Nebula Feed" />
+              <h2 className="text-2xl md:text-3xl font-black leading-tight text-gray-900">
+                Nebula <span className="text-red-gradient">Launchpad</span> Explorer
               </h2>
             </div>
           </div>
@@ -781,46 +781,46 @@ export default function Home() {
             { id: 'trusted', label: 'Highly Trusted', icon: '⭐', list: categorizedTokens.trusted },
             { id: 'growth', label: 'Growth Opportunities', icon: '📈', list: categorizedTokens.newly.slice(0, 8) }
           ].filter(sect => sect.list.length > 0).map((section) => (
-            <div key={section.id} className="mb-20">
-              <div className="flex items-center gap-4 mb-8">
-                <span className="text-3xl">{section.icon}</span>
-                <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter italic">{section.label}</h3>
+            <div key={section.id} className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">{section.icon}</span>
+                <h3 className="text-sm font-black text-gray-900 uppercase tracking-tighter">{section.label}</h3>
                 <div className="h-px bg-gray-100 flex-1" />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
                 {section.list.map((t, i) => (
                   <motion.div
                     key={t.id}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 10 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className="group relative p-8 rounded-[2.5rem] bg-white border border-black/5 hover:border-rose-500/20 hover:shadow-3xl transition-all h-full flex flex-col"
+                    transition={{ delay: i * 0.05 }}
+                    className="group relative p-4 rounded-2xl bg-white border border-black/5 hover:border-rose-500/20 hover:shadow-lg transition-all flex flex-col"
                   >
-                    <div className="absolute top-6 right-6 flex flex-col items-end gap-2">
-                        <span className="px-2 py-1 bg-emerald-500 text-white text-[8px] font-black uppercase rounded-md shadow-lg shadow-emerald-500/20">Live</span>
-                        <span className={`px-2 py-1 text-[7px] font-black uppercase rounded-md border ${
-                          section.id === 'premium' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 
-                          section.id === 'trusted' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                          'bg-gray-50 text-gray-500 border-gray-100'
-                        }`}>
-                          {t.trust_status || 'New'}
-                        </span>
+                    <div className="absolute top-3 right-3 flex flex-col items-end gap-1">
+                      <span className="px-1.5 py-0.5 bg-emerald-500 text-white text-[7px] font-black uppercase rounded shadow-sm">Live</span>
+                      <span className={`px-1.5 py-0.5 text-[6px] font-black uppercase rounded border ${
+                        section.id === 'premium' ? 'bg-indigo-50 text-indigo-600 border-indigo-100' :
+                        section.id === 'trusted' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                        'bg-gray-50 text-gray-500 border-gray-100'
+                      }`}>
+                        {t.trust_status || 'New'}
+                      </span>
                     </div>
-                    
-                    <div className="w-16 h-16 rounded-2xl overflow-hidden mb-6 border-2 border-white shadow-lg group-hover:scale-110 transition-transform">
+
+                    <div className="w-10 h-10 rounded-xl overflow-hidden mb-3 border border-black/5 shadow-sm group-hover:scale-110 transition-transform flex-shrink-0">
                       <img src={t.logo_url || '/logo.png'} className="w-full h-full object-cover" alt="" />
                     </div>
-                    
-                    <h3 className="text-xl font-black text-gray-900 mb-1 leading-none">{t.symbol}</h3>
-                    <p className="text-[10px] font-black text-gray-400 mb-6 uppercase tracking-[0.2em] truncate">{t.name}</p>
-                    
-                    <div className="mt-auto pt-6 border-t border-black/5 space-y-4">
-                      <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest">
-                        <span className="text-gray-400">Market Cap</span>
+
+                    <h3 className="text-sm font-black text-gray-900 leading-none">{t.symbol}</h3>
+                    <p className="text-[9px] font-bold text-gray-400 mt-0.5 mb-3 uppercase tracking-wider truncate">{t.name}</p>
+
+                    <div className="mt-auto pt-3 border-t border-black/5">
+                      <div className="flex justify-between items-center text-[8px] font-black uppercase tracking-wider mb-2">
+                        <span className="text-gray-400">Mkt Cap</span>
                         <span className="text-gray-900">{(t.market_cap || 0).toLocaleString()} BNB</span>
                       </div>
                       <Link href={`/trade?address=${t.contract_address}`}>
-                        <button className="w-full mt-4 py-3 bg-gray-900 hover:bg-rose-500 text-white font-black text-[9px] uppercase tracking-[0.2em] rounded-xl transition-all">
+                        <button className="w-full py-2 bg-gray-900 hover:bg-rose-500 text-white font-black text-[8px] uppercase tracking-widest rounded-lg transition-all">
                           Enter Terminal
                         </button>
                       </Link>
@@ -832,22 +832,22 @@ export default function Home() {
           ))}
 
           {categorizedTokens.delisted.length > 0 && (
-            <div className="mt-32 p-10 bg-gray-50 border border-black/5 rounded-[3rem]">
-              <div className="flex items-center gap-4 mb-8">
-                <span className="text-3xl grayscale opacity-50">🚫</span>
+            <div className="mt-6 p-5 bg-gray-50 border border-black/5 rounded-2xl">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-base grayscale opacity-50">🚫</span>
                 <div>
-                  <h3 className="text-2xl font-black text-gray-400 uppercase tracking-tighter italic leading-none">Delisted Terminal</h3>
-                  <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest mt-1">Found {categorizedTokens.delisted.length} Non-Compliant Assets</p>
+                  <h3 className="text-sm font-black text-gray-400 uppercase tracking-tighter leading-none">Delisted Terminal</h3>
+                  <p className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Found {categorizedTokens.delisted.length} Non-Compliant Assets</p>
                 </div>
                 <div className="h-px bg-gray-200 flex-1" />
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
                 {categorizedTokens.delisted.map((t, i) => (
-                  <div key={t.id} className="p-4 bg-white border border-gray-100 rounded-2xl flex items-center gap-4 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
-                    <img src={t.logo_url || '/logo.png'} className="w-10 h-10 rounded-lg" alt="" />
+                  <div key={t.id} className="p-3 bg-white border border-gray-100 rounded-xl flex items-center gap-2 opacity-50 grayscale hover:grayscale-0 hover:opacity-100 transition-all">
+                    <img src={t.logo_url || '/logo.png'} className="w-7 h-7 rounded-lg flex-shrink-0" alt="" />
                     <div className="min-w-0">
-                      <p className="font-black text-gray-900 text-sm truncate">{t.symbol}</p>
-                      <p className="text-[8px] font-black text-rose-500 uppercase tracking-widest">OFFLINE</p>
+                      <p className="font-black text-gray-900 text-xs truncate">{t.symbol}</p>
+                      <p className="text-[7px] font-black text-rose-500 uppercase tracking-widest">OFFLINE</p>
                     </div>
                   </div>
                 ))}

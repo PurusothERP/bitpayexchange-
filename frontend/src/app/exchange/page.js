@@ -609,15 +609,29 @@ export default function B20Exchange() {
                     
                     const resolvedTrending = trendList.slice(0, 15).map(c => {
                         const item = c.item;
-                        // Map trending object to our standard institutional structure
+                        // CoinGecko trending coins nest their image in multiple possible fields
+                        const imageUrl =
+                            item.thumb ||
+                            item.small ||
+                            item.large ||
+                            item.coin_data?.thumb ||
+                            item.data?.thumb ||
+                            null;
+                        // Price change may live inside data.price_change_percentage_24h.usd
+                        const priceChange =
+                            item.data?.price_change_percentage_24h?.usd ??
+                            item.data?.price_change_percentage_24h ??
+                            item.price_change_percentage_24h ??
+                            0;
+                        const price = item.data?.price ?? item.current_price ?? 0;
                         return {
                             id: item.id,
-                            symbol: item.symbol.toUpperCase(),
+                            symbol: (item.symbol || item.id || '?').toUpperCase(),
                             name: item.name,
-                            address: '0x0000000000000000000000000000000000000000', // Redirect to spot search if no local address
-                            image: item.small || item.large || item.thumb,
-                            current_price: item.data?.price || 0,
-                            price_change_percentage_24h: item.data?.price_change_percentage_24h?.usd || 0,
+                            address: '0x0000000000000000000000000000000000000000',
+                            image: imageUrl,
+                            current_price: price,
+                            price_change_percentage_24h: priceChange,
                             market_cap_rank: item.market_cap_rank,
                             isTrendingAlpha: true
                         };
@@ -1853,7 +1867,20 @@ export default function B20Exchange() {
                                         >
                                             <div className="relative group">
                                                 <div className="absolute inset-0 bg-amber-500/10 blur-xl rounded-full opacity-0 group-hover/float:opacity-100 transition-opacity" />
-                                                {t.image ? <img src={t.image} className="w-10 h-10 relative z-10 object-contain rounded-xl opacity-80 group-hover/float:opacity-100 transition-all" alt="" /> : null}
+                                                {t.image ? (
+                                                    <img
+                                                        src={t.image}
+                                                        className="w-10 h-10 relative z-10 object-contain rounded-xl opacity-80 group-hover/float:opacity-100 transition-all"
+                                                        alt={t.symbol}
+                                                        onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }}
+                                                    />
+                                                ) : null}
+                                                <div
+                                                    className="w-10 h-10 relative z-10 rounded-xl bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center text-white font-black text-sm"
+                                                    style={{ display: t.image ? 'none' : 'flex' }}
+                                                >
+                                                    {(t.symbol || '?').charAt(0)}
+                                                </div>
                                             </div>
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-3">

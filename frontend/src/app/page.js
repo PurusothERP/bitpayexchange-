@@ -562,34 +562,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── LIVE STATS ──────────────────────────────────────────────────────── */}
-      <section className="py-12 px-4 md:px-8 border-y border-black/5 bg-white/60 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-            {[
-              { value: stats.total.toLocaleString() + '+', label: 'Total Tokens', color: 'text-gray-900', key: stats.total },
-              { value: stats.h24 + '+', label: 'Launched 24h', color: 'text-rose-500', key: stats.h24 },
-              { value: stats.h1 + '+', label: 'Launched 1h', color: 'text-amber-500', key: stats.h1 },
-              { value: stats.migrated + '+', label: 'Migrated to DEX', color: 'text-emerald-500', key: stats.migrated },
-            ].map((s, i) => (
-              <div key={i} className={`p-4 ${i > 0 ? 'border-l border-black/5' : ''}`}>
-                <motion.div
-                  key={s.key}
-                  initial={{ scale: 1.15 }} animate={{ scale: 1 }}
-                  className={`text-3xl md:text-4xl font-black mb-1 ${s.color}`}
-                >
-                  {s.value}
-                </motion.div>
-                <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      <div className="max-w-7xl mx-auto px-4 md:px-8 mt-12 mb-24">
-         <TrendBanner />
-      </div>
 
       <SmartMoneyHub />
       <TradingPortal />

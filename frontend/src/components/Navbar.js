@@ -159,9 +159,11 @@ export default function Navbar() {
                                 <FileText className="w-4 h-4" /> Service
                             </Link>
 
-                            <Link href="/profile" className="nav-link flex items-center gap-2 hover:text-rose-500 transition-colors">
-                                <Wallet className="w-4 h-4" /> Profile
-                            </Link>
+                            {account && (
+                                <Link href="/profile" className="nav-link flex items-center gap-2 hover:text-rose-500 transition-colors">
+                                    <Wallet className="w-4 h-4" /> Profile
+                                </Link>
+                            )}
 
                             {isAdmin && (
                                 <Link href="/admin" className="nav-link flex items-center gap-2 text-rose-600 font-black hover:text-rose-700 transition-colors border border-rose-200 bg-rose-50 rounded-lg px-3 py-1">
@@ -352,20 +354,22 @@ export default function Navbar() {
                                     </div>
                                 </Link>
 
-                                {/* Profile */}
-                                <Link
-                                    href="/profile"
-                                    onClick={() => setIsMobileMenuOpen(false)}
-                                    className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-rose-50 transition-colors active:scale-95"
-                                >
-                                    <div className="w-8 h-8 bg-rose-50 border border-rose-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                                        <Wallet className="w-4 h-4 text-rose-500" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-bold text-gray-700 leading-tight">My Profile</p>
-                                        <p className="text-[10px] text-gray-400">Assets & history</p>
-                                    </div>
-                                </Link>
+                                {/* Profile — only shown when connected */}
+                                {account && (
+                                    <Link
+                                        href="/profile"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-rose-50 transition-colors active:scale-95"
+                                    >
+                                        <div className="w-8 h-8 bg-rose-50 border border-rose-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <Wallet className="w-4 h-4 text-rose-500" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-700 leading-tight">My Profile</p>
+                                            <p className="text-[10px] text-gray-400">Assets & history</p>
+                                        </div>
+                                    </Link>
+                                )}
 
                                 {/* Admin (conditional) */}
                                 {isAdmin && (

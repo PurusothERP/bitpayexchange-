@@ -1678,20 +1678,22 @@ export default function B20Exchange() {
                                 <div className="flex flex-col gap-6 w-full">
 
                                     {/* Network Filter */}
-                                    <div className="flex flex-col gap-2">
+                                    <div className="flex flex-col gap-2 max-w-full">
                                         <span className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400 pl-2 flex items-center gap-1.5">
                                             <Layers className="w-3 h-3 text-amber-500" /> Network
                                         </span>
-                                        <div className="flex bg-gray-50 shadow-inner p-1.5 rounded-[1.5rem] border border-gray-100 font-black uppercase tracking-widest text-[9px] gap-1 overflow-x-auto w-full">
-                                            {['ALL', ...NETWORKS_LIST].map(net => (
-                                                <button 
-                                                    key={net}
-                                                    onClick={() => setNetworkFilter(net)}
-                                                    className={`px-4 py-3 rounded-[1.2rem] flex items-center gap-2 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-amber-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
-                                                >
-                                                    {net === 'ALL' ? <Globe className="w-4 h-4 flex-shrink-0" /> : <img src={NETWORK_LOGOS[net] || ''} alt={net} className="w-4 h-4 rounded-full object-cover flex-shrink-0" onError={e => { e.target.style.display='none'; }} />} {net}
-                                                </button>
-                                            ))}
+                                        <div className="max-w-full overflow-x-auto scrollbar-hide">
+                                            <div className="flex bg-gray-50 shadow-inner p-1.5 rounded-[1.5rem] border border-gray-100 font-black uppercase tracking-widest text-[9px] gap-1 min-w-max">
+                                                {['ALL', ...NETWORKS_LIST].map(net => (
+                                                    <button 
+                                                        key={net}
+                                                        onClick={() => setNetworkFilter(net)}
+                                                        className={`px-4 py-3 rounded-[1.2rem] flex items-center gap-2 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-amber-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
+                                                    >
+                                                        {net === 'ALL' ? <Globe className="w-4 h-4 flex-shrink-0" /> : <NetPill net={net} />}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -1960,20 +1962,22 @@ export default function B20Exchange() {
                             <div className="flex flex-col gap-10 px-4">
                                 <div className="flex flex-wrap items-start justify-between gap-8">
                                     {/* Networks Filter */}
-                                    <div className="flex flex-col gap-2">
+                                    <div className="flex flex-col gap-2 max-w-full lg:max-w-[70%]">
                                         <span className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400 pl-2 flex items-center gap-1.5">
                                             <Layers className="w-3 h-3 text-amber-500" /> Network
                                         </span>
-                                        <div className="flex bg-white shadow-2xl shadow-gray-200/50 p-2.5 rounded-[2rem] border border-gray-100 italic font-black uppercase tracking-widest text-[10px] overflow-x-auto">
-                                            {['ALL', 'BITCOIN', 'ETH', 'SOL', 'BASE', 'POLYGON', 'TON', 'TRON', 'SUI', 'BNB', 'ARBITRUM', 'OPTIMISM', 'AVALANCHE', 'FANTOM', 'BLAST', 'CELO', 'SONIC'].map(net => (
-                                                <button 
-                                                    key={net}
-                                                    onClick={() => setNetworkFilter(net)}
-                                                    className={`px-4 py-3.5 rounded-[1.5rem] flex items-center gap-2 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-amber-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
-                                                >
-                                                    {net === 'ALL' ? <Globe className="w-4 h-4 flex-shrink-0" /> : <img src={NETWORK_LOGOS[net] || ''} alt={net} className="w-4 h-4 rounded-full object-cover flex-shrink-0" onError={e => { e.target.style.display='none'; }} />} {net}
-                                                </button>
-                                            ))}
+                                        <div className="max-w-full overflow-x-auto scrollbar-hide">
+                                            <div className="flex bg-white shadow-2xl shadow-gray-200/50 p-2.5 rounded-[2rem] border border-gray-100 italic font-black uppercase tracking-widest text-[10px] gap-1 min-w-max">
+                                                {['ALL', 'BITCOIN', 'ETH', 'SOL', 'BASE', 'POLYGON', 'TON', 'TRON', 'SUI', 'BNB', 'ARBITRUM', 'OPTIMISM', 'AVALANCHE', 'FANTOM', 'BLAST', 'CELO', 'SONIC'].map(net => (
+                                                    <button 
+                                                        key={net}
+                                                        onClick={() => setNetworkFilter(net)}
+                                                        className={`px-4 py-3.5 rounded-[1.5rem] flex items-center gap-2 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-amber-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
+                                                    >
+                                                        {net === 'ALL' ? <Globe className="w-4 h-4 flex-shrink-0" /> : <NetPill net={net} />}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
 

@@ -609,21 +609,27 @@ export default function B20Exchange() {
                     
                     const resolvedTrending = trendList.slice(0, 15).map(c => {
                         const item = c.item;
-                        // CoinGecko trending coins nest their image in multiple possible fields
+                        // Backend enriches thumb/small/large with full-res CoinGecko image
+                        // Also injects current_price & price_change_percentage_24h directly on item
                         const imageUrl =
-                            item.thumb ||
+                            item.thumb ||       // enriched by backend with full /coins/markets image
                             item.small ||
                             item.large ||
                             item.coin_data?.thumb ||
                             item.data?.thumb ||
                             null;
-                        // Price change may live inside data.price_change_percentage_24h.usd
+
                         const priceChange =
+                            item.price_change_percentage_24h ??          // injected by backend
                             item.data?.price_change_percentage_24h?.usd ??
                             item.data?.price_change_percentage_24h ??
-                            item.price_change_percentage_24h ??
                             0;
-                        const price = item.data?.price ?? item.current_price ?? 0;
+
+                        const price =
+                            item.current_price ??      // injected by backend
+                            item.data?.price ??
+                            0;
+
                         return {
                             id: item.id,
                             symbol: (item.symbol || item.id || '?').toUpperCase(),

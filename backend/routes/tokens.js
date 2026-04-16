@@ -149,18 +149,69 @@ router.get('/markets/new', async (req, res) => {
 
 
 // ─── GET /api/tokens/markets/trending ───────────────────────────────────────
-// PROXY: Fetch trending data from CoinGecko to avoid frontend CORS issues.
+// PROXY: Fetch trending data from CoinGecko, enriched with full market data
+// (proper images, live prices, 24h change) via /coins/markets.
 router.get('/markets/trending', async (req, res) => {
     try {
         const headers = process.env.COINGECKO_API_KEY
             ? { 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY }
             : {};
-        const response = await axios.get('https://api.coingecko.com/api/v3/search/trending', { 
-            headers, 
-            timeout: 15000 
-        });
-        res.json(response.data);
 
+        // Step 1: get the trending list
+        const trendRes = await axios.get('https://api.coingecko.com/api/v3/search/trending', {
+            headers,
+            timeout: 15000
+        });
+        const coins = trendRes.data.coins || [];
+
+        // Step 2: extract coin IDs and fetch full market data for proper images + prices
+        const ids = coins.slice(0, 15).map(c => c.item?.id).filter(Boolean).join(',');
+        let marketMap = {};
+        if (ids) {
+            try {
+                const mktRes = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+                    headers,
+                    params: {
+                        vs_currency: 'usd',
+                        ids,
+                        order: 'market_cap_desc',
+                        sparkline: false,
+                        price_change_percentage: '24h'
+                    },
+                    timeout: 15000
+                });
+                (mktRes.data || []).forEach(c => { marketMap[c.id] = c; });
+            } catch (e) {
+                console.warn('[Trending] Market enrichment failed, using thumbnail fallback:', e.message);
+            }
+        }
+
+        // Step 3: merge – prefer full market data image, fall back to thumb
+        const enrichedCoins = coins.slice(0, 15).map(c => {
+            const item = c.item || {};
+            const mkt  = marketMap[item.id] || {};
+            return {
+                item: {
+                    ...item,
+                    // Use /coins/markets image (200x200) if available, else thumb
+                    thumb: mkt.image || item.thumb || item.small || item.large || '',
+                    small: mkt.image || item.small || item.thumb || '',
+                    large: mkt.image || item.large || item.thumb || '',
+                    // Inject live price & change directly onto item so frontend reads them
+                    current_price: mkt.current_price ?? item.data?.price ?? 0,
+                    price_change_percentage_24h: mkt.price_change_percentage_24h ?? item.data?.price_change_percentage_24h?.usd ?? 0,
+                    data: {
+                        ...(item.data || {}),
+                        price: mkt.current_price ?? item.data?.price ?? 0,
+                        price_change_percentage_24h: {
+                            usd: mkt.price_change_percentage_24h ?? item.data?.price_change_percentage_24h?.usd ?? 0
+                        }
+                    }
+                }
+            };
+        });
+
+        res.json({ ...trendRes.data, coins: enrichedCoins });
     } catch (err) {
         console.error('[Token Proxy] Trending fetch failed:', err.message);
         res.status(500).json({ error: 'Failed to fetch trending data' });

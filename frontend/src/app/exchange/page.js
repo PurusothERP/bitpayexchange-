@@ -77,6 +77,43 @@ const NETWORKS_LIST = [
     'SONIC', 'ZETACHAIN'
 ];
 
+// CoinGecko CDN asset URLs — static, no API call needed
+const NETWORK_LOGOS = {
+    ALL:       'https://assets.coingecko.com/coins/images/1/small/bitcoin.png', // globe placeholder
+    BNB:       'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png',
+    ETH:       'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
+    SOL:       'https://assets.coingecko.com/coins/images/4128/small/solana.png',
+    BASE:      'https://assets.coingecko.com/coins/images/33111/small/base.png',
+    TRON:      'https://assets.coingecko.com/coins/images/1094/small/tron-logo.png',
+    SUI:       'https://assets.coingecko.com/coins/images/26375/small/sui_asset.jpeg',
+    TON:       'https://assets.coingecko.com/coins/images/17980/small/ton_symbol.png',
+    ARBITRUM:  'https://assets.coingecko.com/coins/images/16547/small/photo_2023-03-29_21.47.00.jpeg',
+    OPTIMISM:  'https://assets.coingecko.com/coins/images/25244/small/Optimism.png',
+    POLYGON:   'https://assets.coingecko.com/coins/images/4713/small/polygon.png',
+    AVALANCHE: 'https://assets.coingecko.com/coins/images/12559/small/Avalanche_Circle_RedWhite_Trans.png',
+    BLAST:     'https://assets.coingecko.com/coins/images/35494/small/blast.png',
+    CELO:      'https://assets.coingecko.com/coins/images/11090/small/InjXBNx9_400x400.jpg',
+    CYBER:     'https://assets.coingecko.com/coins/images/31622/small/cyber.png',
+    FANTOM:    'https://assets.coingecko.com/coins/images/4001/small/Fantom_round.png',
+    SCROLL:    'https://assets.coingecko.com/coins/images/33583/small/Scroll.jpg',
+    SONIC:     'https://assets.coingecko.com/coins/images/38108/small/sonic.jpg',
+    ZETACHAIN: 'https://assets.coingecko.com/coins/images/26718/small/zetachain.jpg',
+    BITCOIN:   'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
+};
+
+// Helper: renders network logo pill content (logo + name)
+const NetPill = ({ net }) => (
+    <>
+        <img
+            src={NETWORK_LOGOS[net] || ''}
+            alt={net}
+            className="w-4 h-4 rounded-full object-cover flex-shrink-0"
+            onError={e => { e.target.style.display = 'none'; }}
+        />
+        {net}
+    </>
+);
+
 export default function B20Exchange() {
     const { account, signer, connectWallet, walletProvider } = useWallet();
     const [mode, setMode] = useState('markets'); // 'markets', 'spot', 'pro', 'bonding', 'fiat', 'list'
@@ -1650,9 +1687,9 @@ export default function B20Exchange() {
                                                 <button 
                                                     key={net}
                                                     onClick={() => setNetworkFilter(net)}
-                                                    className={`px-6 py-3 rounded-[1.2rem] flex items-center gap-2.5 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-amber-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
+                                                    className={`px-4 py-3 rounded-[1.2rem] flex items-center gap-2 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-amber-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
                                                 >
-                                                    {net === 'ALL' ? <Globe className="w-3 h-3" /> : <Layers className="w-3 h-3" />} {net}
+                                                    {net === 'ALL' ? <Globe className="w-4 h-4 flex-shrink-0" /> : <img src={NETWORK_LOGOS[net] || ''} alt={net} className="w-4 h-4 rounded-full object-cover flex-shrink-0" onError={e => { e.target.style.display='none'; }} />} {net}
                                                 </button>
                                             ))}
                                         </div>
@@ -1928,13 +1965,13 @@ export default function B20Exchange() {
                                             <Layers className="w-3 h-3 text-amber-500" /> Network
                                         </span>
                                         <div className="flex bg-white shadow-2xl shadow-gray-200/50 p-2.5 rounded-[2rem] border border-gray-100 italic font-black uppercase tracking-widest text-[10px] overflow-x-auto">
-                                            {['ALL', 'BITCOIN', 'ETH', 'SOLANA', 'BASE', 'POLYGON', 'TON', 'TRON', 'SUI', 'BNB'].map(net => (
+                                            {['ALL', 'BITCOIN', 'ETH', 'SOL', 'BASE', 'POLYGON', 'TON', 'TRON', 'SUI', 'BNB', 'ARBITRUM', 'OPTIMISM', 'AVALANCHE', 'FANTOM', 'BLAST', 'CELO', 'SONIC'].map(net => (
                                                 <button 
                                                     key={net}
                                                     onClick={() => setNetworkFilter(net)}
-                                                    className={`px-6 py-3.5 rounded-[1.5rem] flex items-center gap-2.5 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-amber-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
+                                                    className={`px-4 py-3.5 rounded-[1.5rem] flex items-center gap-2 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-amber-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
                                                 >
-                                                    {net === 'ALL' ? <Globe className="w-3.5 h-3.5" /> : <Layers className="w-3.5 h-3.5" />} {net}
+                                                    {net === 'ALL' ? <Globe className="w-4 h-4 flex-shrink-0" /> : <img src={NETWORK_LOGOS[net] || ''} alt={net} className="w-4 h-4 rounded-full object-cover flex-shrink-0" onError={e => { e.target.style.display='none'; }} />} {net}
                                                 </button>
                                             ))}
                                         </div>

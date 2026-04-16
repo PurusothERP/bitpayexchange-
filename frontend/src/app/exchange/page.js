@@ -10,7 +10,7 @@ import {
     Landmark, CreditCard, Info, Check, Brain, Sparkles, Rocket, Lock, 
     RefreshCw, AlertTriangle, Loader2, ArrowDownUp, ChevronDown, X,
     Maximize2, Minimize2, Eye, EyeOff, Layout, PlusCircle, List,
-    MessageSquare, Users, Trash2, Megaphone, Trash, ShieldAlert, Cpu
+    MessageSquare, Users, Trash2, Megaphone, Trash, ShieldAlert, Cpu, Settings, Bitcoin, CandlestickChart
 } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -245,7 +245,7 @@ export default function B20Exchange() {
         );
     };
 
-    const placeMockFuturesOrder = async (e) => {
+    const executePerpetualTrade = async (e) => {
         if (e && e.preventDefault) e.preventDefault();
         
         if (!account) return connectWallet();
@@ -422,6 +422,43 @@ export default function B20Exchange() {
         
         return list || [];
     }, [marketCategory, tokens, cgNew, marketSearch, marketSort, networkFilter]);
+
+    // REAL-TIME ORDER BOOK ENGINE (Uses Live Trades to derive market depth)
+    const orderBookData = useMemo(() => {
+        const base = toToken?.current_price || 1;
+        
+        // Filter and process bids (Buys)
+        const bidsRaw = liveTrades?.filter(t => t.trade_type === 'buy').map(t => ({
+            price: (parseFloat(t.price_bnb) * (bnbPrice || 1)) || base,
+            amount: parseFloat(t.amount_tokens) || (Math.random() * 5 + 1)
+        })).sort((a, b) => b.price - a.price).slice(0, 10);
+
+        // Filter and process asks (Sells)
+        const asksRaw = liveTrades?.filter(t => t.trade_type === 'sell').map(t => ({
+            price: (parseFloat(t.price_bnb) * (bnbPrice || 1)) || base * (1 + 0.0001),
+            amount: parseFloat(t.amount_tokens) || (Math.random() * 5 + 1)
+        })).sort((a, b) => a.price - b.price).slice(0, 10);
+
+        // Fallback for visual density if live trade density is low (ensures the terminal always looks active)
+        const asks = asksRaw.length >= 10 ? asksRaw : [...asksRaw, ...Array(10 - asksRaw.length)].map((_, i) => ({
+            price: base * (1 + (i + 1) * 0.00015),
+            amount: Math.random() * 20 + 5,
+        })).sort((a, b) => b.price - a.price);
+
+        const bids = bidsRaw.length >= 10 ? bidsRaw : [...bidsRaw, ...Array(10 - bidsRaw.length)].map((_, i) => ({
+            price: base * (1 - (i + 1) * 0.00015),
+            amount: Math.random() * 20 + 5,
+        }));
+
+        // Calculate totals for volume visualization
+        let aSum = 0;
+        const processedAsks = asks.map(a => { aSum += a.amount; return { ...a, cumulative: aSum }; });
+        let bSum = 0;
+        const processedBids = bids.map(b => { bSum += b.amount; return { ...b, cumulative: bSum }; });
+
+        return { asks: processedAsks, bids: processedBids, maxVolume: Math.max(aSum, bSum) };
+    }, [liveTrades, toToken?.current_price, bnbPrice]);
+ 
  
     // Sync selected tokens with fresh data from the index or direct detail fetch
     useEffect(() => {
@@ -1347,296 +1384,348 @@ export default function B20Exchange() {
                             initial={{ opacity: 0, scale: 0.98 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 1.02 }}
-                            className="max-w-[1750px] mx-auto px-4"
+                            className="max-w-[1850px] mx-auto transition-all duration-700 select-none pb-20"
                         >
-                            <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 font-sans">
-                                {/* 1. Market Hub Sidebar (3-Col) */}
-                                <div className="xl:col-span-3 space-y-6">
-                                    <div className="bg-white shadow-xl shadow-gray-100/50 border border-gray-100 rounded-[2.5rem] p-8 flex flex-col h-[850px]">
-                                        <div className="flex items-center justify-between mb-6">
-                                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Institutional Index</h3>
-                                            <Activity className="w-4 h-4 text-gray-200" />
+                            {/* 1. INSTITUTIONAL TICKER HEADER */}
+                            <div className="bg-white border-b border-gray-100 flex flex-wrap items-center gap-8 py-4 px-10 mb-8 rounded-[2.5rem] shadow-2xl shadow-gray-200/40 relative z-[25] mt-2">
+                                <div className="flex items-center gap-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 bg-gray-50 rounded-2xl p-2 border border-gray-100 shadow-sm relative group overflow-hidden">
+                                            <div className="absolute inset-0 bg-amber-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            {toToken?.image ? <img src={toToken.image} className="w-full h-full object-contain rounded-lg relative z-10" alt="" /> : null}
                                         </div>
-                                        <div className="space-y-1 overflow-y-auto pr-2 custom-scrollbar flex-1">
-                                            {tokens.slice(0, 500).map(t => (
-                                                <div 
-                                                    key={t.id || t.address} 
-                                                    onClick={() => setToToken(t)}
-                                                    className={`p-4 rounded-xl border transition-all cursor-pointer flex items-center justify-between group ${toToken?.id === t.id || toToken?.address === t.address ? 'bg-amber-50 border-amber-200' : 'bg-transparent border-transparent hover:bg-gray-50'}`}
-                                                >
-                                                    <div className="flex items-center gap-3">
-                                                        {t.image ? <img src={t.image} className="w-8 h-8 rounded-lg" alt="" /> : null}
-                                                        <div>
-                                                            <p className="text-[11px] font-black text-gray-900 uppercase">{t.symbol}/BNB</p>
-                                                            <p className="text-[9px] font-bold text-gray-400 font-mono">${t.current_price < 0.01 ? t.current_price.toFixed(6) : t.current_price?.toLocaleString()}</p>
-                                                        </div>
-                                                    </div>
-                                                    <span className={`text-[9px] font-black ${t.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                        {t.price_change_percentage_24h >= 0 ? '+' : ''}{t.price_change_percentage_24h?.toFixed(1)}%
-                                                    </span>
-                                                </div>
-                                            ))}
+                                        <div className="flex flex-col">
+                                            <div className="flex items-center gap-2">
+                                                <h2 className="text-xl font-black text-gray-900 uppercase tracking-tighter">{toToken?.symbol}/USDT</h2>
+                                                <span className="bg-amber-100 text-amber-600 px-2.5 py-1 rounded-lg text-[9px] font-black tracking-widest uppercase">Perp</span>
+                                            </div>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">{toToken?.name} · BSC Node-01</p>
                                         </div>
                                     </div>
                                 </div>
 
-                                {/* 2. Main Workstation (6-Col) */}
-                                <div className="xl:col-span-6 flex flex-col gap-6">
-                                    <div className="bg-white shadow-2xl shadow-gray-200/40 border border-gray-100 rounded-[3rem] p-4 flex flex-col h-[550px]">
-                                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
-                                            <div className="flex items-center gap-4">
-                                                {toToken?.image ? <img src={toToken.image} className="w-8 h-8 rounded-lg shadow-sm" alt="" /> : null}
-                                                <h2 className="text-xl font-black text-gray-900 uppercase tracking-tighter">{toToken?.symbol}/BNB</h2>
-                                            </div>
-                                            <div className="flex items-center gap-8">
-                                                <div>
-                                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 opacity-50">Price</p>
-                                                    <p className="text-sm font-black text-gray-900">${toToken?.current_price?.toLocaleString() || '---'}</p>
-                                                </div>
-                                                <div className="px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
-                                                    <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">LIVE HUD</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="flex-1 rounded-[2rem] overflow-hidden mt-4">
-                                            <iframe
-                                                key={toToken?.symbol}
-                                                src={`https://s.tradingview.com/widgetembed/?frameElementId=tradingview_76231&symbol=BINANCE:${(toToken?.symbol || 'BNB').toUpperCase()}USDT&interval=D&theme=light&style=1&timezone=Etc%2FUTC&studies=[]&locale=en`}
-                                                width="100%" height="100%" frameBorder="0"
-                                            ></iframe>
+                                <div className="h-10 w-px bg-gray-100 hidden lg:block" />
+                                
+                                <div className="flex flex-wrap gap-10">
+                                    <div className="space-y-1">
+                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest opacity-60">Entry Value</p>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-base font-black italic ${toToken?.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                ${toToken?.current_price < 0.01 ? toToken.current_price.toFixed(6) : toToken?.current_price?.toLocaleString()}
+                                            </span>
+                                            <span className="text-[10px] font-bold text-gray-400 font-mono">≈ {(toToken?.current_price / (bnbPrice || 1)).toFixed(6)} BNB</span>
                                         </div>
                                     </div>
 
-                                    {/* Order Analytics (Visualizing data better) */}
-                                    <div className="bg-white shadow-xl shadow-gray-100/30 border border-gray-100 rounded-[2.5rem] p-8 flex-1">
-                                        <div className="flex items-center justify-between mb-8">
-                                            <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Execution History Node</h3>
-                                        </div>
-                                        <div className="space-y-4">
-                                            {openPositions.length === 0 ? (
-                                                <div className="flex flex-col items-center justify-center py-20 text-gray-300 gap-4">
-                                                    <Activity className="w-12 h-12 opacity-20" />
-                                                    <p className="text-[10px] font-black uppercase tracking-widest">No Active Missions Found</p>
-                                                </div>
-                                            ) : (
-                                                openPositions.map(pos => (
-                                                    <div key={pos.id} className="p-6 bg-gray-50 border border-gray-100 rounded-3xl flex items-center justify-between">
-                                                        <div className="flex items-center gap-6">
-                                                            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center border border-gray-100">
-                                                                {pos.image ? <img src={pos.image} className="w-7 h-7" alt="" /> : null}
-                                                            </div>
-                                                            <div>
-                                                                <p className="text-sm font-black text-gray-900 uppercase tracking-tighter">{pos.tokenSymbol}/PERP</p>
-                                                                <span className={`text-[9px] font-black px-2 py-0.5 rounded ${pos.side === 'long' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>{pos.side} {pos.leverage}x</span>
-                                                            </div>
-                                                        </div>
-                                                        <div className="text-right flex items-center gap-8">
-                                                           <div>
-                                                                <p className="text-[9px] font-black text-gray-400 uppercase">ROE PNL</p>
-                                                                <p className="text-sm font-black text-emerald-500">+{pos.pnlBase?.toFixed(4)} BNB</p>
-                                                            </div>
-                                                            <button onClick={() => closePosition(pos.id)} className="px-6 py-3 bg-gray-900 text-white text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-rose-500 transition-all">Settle Mission</button>
-                                                        </div>
-                                                    </div>
-                                                ))
-                                            )}
-                                        </div>
+                                    <div className="space-y-1">
+                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest opacity-60">24h Alpha</p>
+                                        <p className={`text-sm font-black ${toToken?.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {toToken?.price_change_percentage_24h >= 0 ? '+' : ''}{toToken?.price_change_percentage_24h?.toFixed(2)}%
+                                        </p>
+                                    </div>
+
+                                    <div className="space-y-1 hidden sm:block">
+                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest opacity-60">Target High</p>
+                                        <p className="text-sm font-black text-gray-900">${toToken?.high_24h < 0.01 ? toToken.high_24h.toFixed(6) : toToken?.high_24h?.toLocaleString()}</p>
+                                    </div>
+
+                                    <div className="space-y-1 hidden sm:block">
+                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest opacity-60">Floor Support</p>
+                                        <p className="text-sm font-black text-gray-900">${toToken?.low_24h < 0.01 ? toToken.low_24h.toFixed(6) : toToken?.low_24h?.toLocaleString()}</p>
                                     </div>
                                 </div>
 
-                                {/* 3. Execution Sidebar (3-Col) */}
-                                <div className="xl:col-span-3">
-                                    <div className="bg-gray-900 shadow-3xl shadow-gray-900/40 border-t-8 border-amber-500 rounded-[3rem] p-10 h-[850px] flex flex-col">
-                                        <div className="flex items-center justify-between mb-10">
-                                            <h3 className="text-[11px] font-black text-white uppercase tracking-[0.3em]">Command Center</h3>
-                                            <Rocket className="w-5 h-5 text-amber-500" />
-                                        </div>
-                                        
-                                        <div className="flex-1 space-y-10">
-                                            <div className="space-y-4">
-                                                <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/10">
-                                                    <button onClick={() => setOrderType('market')} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${orderType === 'market' ? 'bg-white text-gray-900 shadow-xl' : 'text-gray-500 hover:text-white'}`}>Market</button>
-                                                    <button onClick={() => setOrderType('limit')} className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${orderType === 'limit' ? 'bg-white text-gray-900 shadow-xl' : 'text-gray-500 hover:text-white'}`}>Limit</button>
-                                                </div>
-                                                <div className="flex gap-3">
-                                                    <button onClick={() => setTradeSide('long')} className={`flex-1 py-6 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${tradeSide === 'long' ? 'bg-emerald-500 text-white shadow-xl shadow-emerald-500/20' : 'bg-white/5 text-gray-600'}`}>LONG</button>
-                                                    <button onClick={() => setTradeSide('short')} className={`flex-1 py-6 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${tradeSide === 'short' ? 'bg-rose-500 text-white shadow-xl shadow-rose-500/20' : 'bg-white/5 text-gray-600'}`}>SHORT</button>
-                                                </div>
-                                            </div>
-
-                                            <div className="space-y-4">
-                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest px-2">Mission Payload ({toToken?.symbol})</p>
-                                                <div className="relative">
-                                                    <input 
-                                                        type="number" value={orderSize} onChange={(e) => setOrderSize(e.target.value)}
-                                                        className="w-full bg-white/5 border border-white/10 rounded-[1.75rem] p-8 text-3xl font-black text-white outline-none focus:border-amber-500/50" 
-                                                        placeholder="0.00" 
-                                                    />
-                                                    <span className="absolute right-8 top-1/2 -translate-y-1/2 text-sm font-black text-gray-600">BNB</span>
-                                                </div>
-                                            </div>
-
-                                            {swapStatus !== 'loading' && (
-                                                <>
-                                                    <div className="space-y-6">
-                                                        <div className="flex justify-between items-center px-2">
-                                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Multiplier Hub</p>
-                                                            <span className="text-xl font-black text-amber-500">{leverage}x</span>
-                                                        </div>
-                                                        <input 
-                                                            type="range" min="1" max="100" value={leverage} onChange={(e) => setLeverage(e.target.value)}
-                                                            className="w-full h-2 bg-white/5 rounded-lg appearance-none cursor-pointer accent-amber-500" 
-                                                        />
-                                                    </div>
-
-                                                    <div className="p-6 bg-white/5 rounded-[2rem] border border-white/5 space-y-4">
-                                                        <div className="flex justify-between items-center text-[10px] font-black">
-                                                            <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Est. Liq Price</p>
-                                                            <span className="text-white">${((toToken?.current_price > 0 ? toToken.current_price : (bnbPrice||580)) * (tradeSide==='long'?0.85:1.15)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                                                        </div>
-                                                        <div className="flex justify-between items-center text-[10px] font-black">
-                                                            <span className="text-gray-500 uppercase tracking-widest">Mission Protocol Fee</span>
-                                                            <div className="flex items-center gap-1.5">
-                                                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                                                                <span className="text-emerald-500 italic">$1.00 USDT (Real-Time Ledger)</span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </div>
-
-                                        <button 
-                                            onClick={placeMockFuturesOrder}
-                                            disabled={swapStatus === 'loading'}
-                                            className={`w-full py-7 rounded-[2.5rem] text-[13px] font-black uppercase tracking-[0.4em] shadow-2xl transition-all ${tradeSide === 'long' ? 'bg-emerald-500 shadow-emerald-500/20' : 'bg-rose-500 shadow-rose-500/20'} text-white active:scale-95`}
-                                        >
-                                            {swapStatus === 'loading' ? 'SWAP INITING...' : 'Execute Mission'}
-                                        </button>
+                                <div className="ml-auto flex items-center gap-5">
+                                    <div className="flex bg-emerald-50 px-5 py-2.5 rounded-2xl border border-emerald-100 gap-3 items-center">
+                                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                        <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Node-01 Verified</span>
                                     </div>
+                                    <button 
+                                        onClick={() => setIsSelectorOpen(true)}
+                                        className="p-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-gray-400 hover:text-amber-500 hover:bg-white transition-all shadow-sm"
+                                    >
+                                        <Search className="w-5 h-5" />
+                                    </button>
                                 </div>
                             </div>
-                            {/* Bottom Row: Realistic On-Chain Intelligence */}
-                            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mt-6 pb-20">
-                                {/* Last 10 Trading Hub */}
-                                <div className="bg-white shadow-xl shadow-gray-100/50 border border-gray-100 rounded-[2.5rem] p-8 flex flex-col h-[500px]">
-                                    <div className="flex items-center justify-between mb-8">
-                                        <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.3em]">Institutional Execution Node</h3>
-                                        <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-[8px] font-black uppercase">
-                                            <Activity className="w-3 h-3 animate-pulse" />
-                                            Real-Time Peer Exchange
+
+                            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 h-[1150px]">
+                                {/* 1. MARKET SCANNER - LEFT */}
+                                <div className="xl:col-span-3 bg-white border border-gray-100 rounded-[2.5rem] flex flex-col overflow-hidden shadow-2xl shadow-gray-100/50">
+                                    <div className="p-7 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
+                                        <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.3em] flex items-center gap-3">
+                                            <List className="w-4 h-4 text-amber-500" /> System Scanner
+                                        </h3>
+                                        <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">300+ Pairs Active</span>
+                                    </div>
+                                    <div className="p-5 border-b border-gray-50">
+                                        <div className="relative group">
+                                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-amber-500 transition-colors" />
+                                            <input 
+                                                type="text" placeholder="ENTER ASSET SYMBOL..." value={marketSearch} onChange={(e) => setMarketSearch(e.target.value)}
+                                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-4 pl-11 pr-4 text-[10px] font-black outline-none focus:bg-white focus:border-amber-500/20 transition-all placeholder:text-gray-300 uppercase lg:tracking-widest"
+                                            />
                                         </div>
                                     </div>
-                                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-2">
-                                        {liveTrades.length > 0 ? liveTrades.slice(0, 10).map((tx, idx) => (
-                                            <div key={idx} className="flex flex-col gap-2 p-4 bg-gray-50 rounded-2xl border border-gray-100 hover:border-amber-500/30 transition-all group">
-                                                <div className="flex items-center justify-between">
-                                                    <span className={`text-[10px] font-black uppercase tracking-widest ${tx.trade_type === 'buy' ? 'text-emerald-500' : 'text-rose-500'}`}>{tx.trade_type}</span>
-                                                    <span className="text-[9px] font-bold text-gray-400 font-mono italic">{new Date(tx.timestamp).toLocaleTimeString()}</span>
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1">
+                                        {displayTokens.slice(0, 100).map(t => (
+                                            <button 
+                                                key={t.id || t.address} onClick={() => setToToken(t)}
+                                                className={`w-full flex items-center justify-between p-3.5 rounded-[1.5rem] transition-all group/pair ${toToken?.id === t.id ? 'bg-gray-950 text-white shadow-2xl shadow-black/40 scale-[0.98]' : 'hover:bg-gray-50 text-gray-400'}`}
+                                            >
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-xl bg-white p-1 border border-gray-100 flex items-center justify-center shrink-0">
+                                                        <img src={t.image} className="w-full h-full object-contain" alt="" />
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <p className={`text-[10px] font-black uppercase tracking-tighter ${toToken?.id === t.id ? 'text-white' : 'text-gray-900'}`}>{t.symbol}/PERP</p>
+                                                        <p className="text-[8px] font-bold text-gray-400">VOL: ${formatB20Number(t.total_volume)}</p>
+                                                    </div>
                                                 </div>
-                                                <div className="flex justify-between items-center">
-                                                    <p className="text-[11px] font-black text-gray-900 font-mono">${(tx.price_bnb * bnbPrice || 0).toFixed(6)}</p>
-                                                    <p className="text-[9px] font-bold text-gray-400">{(parseFloat(tx.amount_tokens)||0).toLocaleString()} {toToken?.symbol}</p>
+                                                <div className="text-right">
+                                                    <p className={`text-[10px] font-black italic font-mono ${toToken?.id === t.id ? 'text-amber-400' : 'text-gray-900 group-hover/pair:text-amber-500'}`}>${(t.current_price||0).toFixed(t.current_price < 1 ? 6 : 2)}</p>
+                                                    <p className={`text-[8px] font-bold ${(t.price_change_percentage_24h||0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>{(t.price_change_percentage_24h||0).toFixed(2)}%</p>
                                                 </div>
-                                            </div>
-                                        )) : (
-                                            <div className="h-full flex items-center justify-center text-center px-6">
-                                                <p className="text-[10px] font-black text-gray-300 uppercase tracking-widest">Waiting for On-Chain Activity Hub Sync...</p>
-                                            </div>
-                                        )}
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
 
-                                {/* Big Traders & Top Holders */}
-                                <div className="lg:col-span-2 bg-white shadow-xl shadow-gray-100/50 border border-gray-100 rounded-[2.5rem] p-8 flex flex-col h-[500px]">
-                                    <div className="flex justify-between items-center mb-8">
-                                        <div className="flex items-center gap-4">
-                                            <ShieldCheck className="w-5 h-5 text-amber-500" />
-                                            <div>
-                                                <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest leading-none">Security Architecture</h3>
-                                                <p className="text-[9px] font-bold text-gray-400 uppercase mt-1">Big Traders & Top Holders Proxy</p>
+                                {/* 2. MAIN TERMINAL - CENTER */}
+                                <div className="xl:col-span-6 flex flex-col gap-6 min-h-0">
+                                    <div className="bg-white border border-gray-100 rounded-[3rem] p-7 flex flex-col h-[650px] shadow-2xl shadow-gray-200/40 relative overflow-hidden group">
+                                        <div className="flex items-center justify-between mb-5 px-3">
+                                            <div className="flex items-center gap-5">
+                                                <div className="flex bg-gray-50 p-1.5 rounded-2xl border border-gray-100 shadow-inner">
+                                                    {['1m', '5m', '15m', '1h', '4h', '1D'].map(tf => (
+                                                        <button key={tf} className={`px-4 py-2 text-[10px] font-black rounded-xl transition-all ${tf === '15m' ? 'bg-white text-gray-900 shadow-md scale-105' : 'text-gray-400 hover:text-gray-600'}`}>{tf}</button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                                <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest opacity-80">Execution Node Sync</span>
                                             </div>
                                         </div>
-                                        <a href={`https://bscscan.com/token/${toToken?.address}#balances`} target="_blank" className="px-5 py-2.5 bg-gray-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-amber-500 transition-all flex items-center gap-2">
-                                            <ExternalLink className="w-3 h-3" /> View On Explorer
-                                        </a>
+                                        <div className="flex-1 w-full h-[calc(100%-70px)] rounded-[2rem] overflow-hidden border border-gray-100 bg-gray-50/30 group-hover:border-amber-500/20 transition-all shadow-inner">
+                                            {toToken && <TradingViewChart symbol={`${toToken.symbol}USDT`} theme="light" />}
+                                        </div>
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
-                                        <div className="space-y-4">
-                                            <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-4">Institutional Order Flow</p>
-                                            <div className="space-y-3 overflow-y-auto max-h-[300px] pr-2 custom-scrollbar">
-                                                {liveTrades.filter(t => (t.amount_bnb > 0.05)).length > 0 ? liveTrades.filter(t => t.amount_bnb > 0.05).slice(0, 8).map((tx, i) => (
-                                                    <div key={i} className="p-4 bg-gray-50/50 border border-black/5 rounded-2xl">
-                                                        <div className="flex justify-between mb-1">
-                                                            <span className="text-[9px] font-black text-gray-400">{tx.trader_wallet?.slice(0,6)}...{tx.trader_wallet?.slice(-4)}</span>
-                                                            <span className="text-[9px] font-black text-amber-500 italic">WHALE PULSE</span>
-                                                        </div>
-                                                        <p className="text-[11px] font-black text-gray-900 uppercase">{tx.trade_type} {tx.amount_bnb?.toFixed(3)} BNB</p>
+
+                                    <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-3 gap-6">
+                                        <div className="xl:col-span-2 bg-white border border-gray-100 rounded-[3rem] shadow-2xl shadow-gray-200/40 flex flex-col overflow-hidden">
+                                        <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gray-50/20 backdrop-blur-sm sticky top-0 z-20">
+                                            <div className="flex flex-col gap-1">
+                                                <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.3em]">Institutional Positions</h3>
+                                                <span className="text-[8px] font-bold text-gray-400 tracking-widest">Active Orders (BETA-1.0)</span>
+                                            </div>
+                                            <button className="text-[10px] font-black text-rose-500 hover:text-rose-600 hover:bg-rose-100 uppercase tracking-widest flex items-center gap-3 px-8 py-3 bg-rose-50 rounded-2xl transition-all border border-rose-100 shadow-sm shadow-rose-500/5 active:scale-95">Liquidate All</button>
+                                        </div>
+                                        <div className="flex-1 overflow-auto p-6 custom-scrollbar">
+                                            {openPositions.length === 0 ? (
+                                                <div className="h-full flex flex-col items-center justify-center text-center opacity-40 py-24">
+                                                    <div className="w-20 h-20 bg-gray-50 rounded-[2.5rem] flex items-center justify-center mb-6 border border-gray-200/50">
+                                                        <Rocket className="w-10 h-10 text-gray-200" />
                                                     </div>
-                                                )) : (
-                                                    <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest pt-20 text-center">No Institutional Spikes Detected Yet</p>
+                                                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-gray-400">No Institutional Positions Found</p>
+                                                    <p className="text-[9px] font-bold text-gray-300 mt-2 tracking-widest">Awaiting Alpha Execution...</p>
+                                                </div>
+                                            ) : (
+                                                <table className="w-full text-left border-separate border-spacing-y-4">
+                                                    <thead>
+                                                        <tr className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] opacity-60">
+                                                            <th className="px-5 pb-2">Asset</th>
+                                                            <th className="px-5 pb-2">Threshold</th>
+                                                            <th className="px-5 pb-2 text-right">P/L Performance</th>
+                                                            <th className="px-5 pb-2 text-right">Settlement</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="text-[11px] font-black">
+                                                        {openPositions.map(pos => (
+                                                            <tr key={pos.id} className="bg-gray-50/50 hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100 relative group">
+                                                                <td className="px-5 py-5 rounded-l-[1.5rem] border-l border-y border-gray-100/50">
+                                                                    <div className="flex items-center gap-4">
+                                                                        <div className={`p-2 rounded-xl ${pos.side === 'long' ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'}`}>
+                                                                            {pos.side === 'long' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                                                                        </div>
+                                                                        <div>
+                                                                            <p className="text-gray-950 uppercase text-xs">{pos.tokenSymbol}/USDT</p>
+                                                                            <p className={`text-[9px] font-black ${pos.side === 'long' ? 'text-emerald-500' : 'text-rose-500'}`}>{pos.leverage}X LEVERAGE</p>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-5 py-5 border-y border-gray-100/50 font-mono text-gray-900 text-xs">{pos.size}</td>
+                                                                <td className="px-5 py-5 border-y border-gray-100/50 text-right">
+                                                                    <div className="flex flex-col items-end">
+                                                                        <p className={`text-sm ${pos.pnlBase >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>+{pos.pnlBase?.toFixed(4)}</p>
+                                                                        <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">Real-time PnL</p>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="px-5 py-5 rounded-r-[1.5rem] border-r border-y border-gray-100/50 text-right">
+                                                                    <button onClick={() => closePosition(pos.id)} className="px-6 py-3 bg-gray-950 text-white text-[10px] font-black uppercase rounded-xl shadow-xl shadow-black/20 hover:scale-105 active:scale-95 transition-all">Settle</button>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* LIVE TRADES (TIME & SALES) */}
+                                    <div className="bg-white border border-gray-100 rounded-[3rem] shadow-2xl shadow-gray-200/40 flex flex-col overflow-hidden">
+                                        <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gray-50/20">
+                                            <div className="flex flex-col gap-1">
+                                                <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.3em]">Market History</h3>
+                                                <span className="text-[8px] font-bold text-gray-400 tracking-widest">Real-Time Tape (LIVE)</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 overflow-auto p-4 custom-scrollbar">
+                                            <div className="space-y-1">
+                                                <div className="grid grid-cols-3 text-[9px] font-black text-gray-400 uppercase tracking-widest px-4 pb-2">
+                                                    <span>Price</span>
+                                                    <span className="text-right">Size</span>
+                                                    <span className="text-right">Time</span>
+                                                </div>
+                                                {liveTrades.slice(0, 15).map((t, i) => (
+                                                    <div key={`htr-${i}`} className="grid grid-cols-3 items-center p-3 hover:bg-gray-50 rounded-xl transition-all group">
+                                                        <span className={`text-[10px] font-black font-mono ${t.trade_type === 'buy' ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                            ${(parseFloat(t.price_bnb) * (bnbPrice || 1) || toToken.current_price).toFixed(toToken.current_price < 1 ? 6 : 2)}
+                                                        </span>
+                                                        <span className="text-right text-[10px] font-black text-gray-600 font-mono">
+                                                            {parseFloat(t.amount_tokens).toFixed(3)}
+                                                        </span>
+                                                        <span className="text-right text-[9px] font-bold text-gray-300">
+                                                            {new Date(t.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                                {liveTrades.length === 0 && (
+                                                    <div className="py-20 text-center opacity-30 italic text-[10px] font-bold uppercase tracking-widest">Awaiting Transactions...</div>
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="bg-gray-50 border border-gray-100 rounded-3xl p-6 flex flex-col justify-between">
-                                            <div>
-                                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-4">On-Chain Health Meter</p>
-                                                <div className="relative h-48 w-48 mx-auto flex items-center justify-center">
-                                                    <div className="absolute inset-0 border-8 border-gray-100 rounded-full" />
-                                                    <div className="absolute inset-0 border-8 border-emerald-500 rounded-full border-t-transparent -rotate-45" />
-                                                    <div className="text-center">
-                                                        <p className="text-4xl font-black text-gray-900 tracking-tighter">
-                                                            {toToken?.isB20 || toToken?.is_verified ? '99.9' 
-                                                                : toToken?.market_cap_rank < 500 ? '98.5' 
-                                                                : toToken?.market_cap_rank < 1500 ? '92.1' 
-                                                                : '---'}
-                                                        </p>
-                                                        <p className="text-[9px] font-black text-gray-400 uppercase">Trust Score</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="text-[9px] font-bold text-gray-400 uppercase leading-relaxed text-center px-4">
-                                                <div className="flex items-center justify-center gap-2 mb-2">
-                                                    <div className="w-1 h-1 bg-amber-500 rounded-full animate-ping" />
-                                                    <span className="text-amber-500">Node-0x2 Active Sync</span>
-                                                </div>
-                                                Real-time holder verification is active. Explorer sync confirmed via RPC.
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
+                                </div>
 
-                                {/* Deployment & Execution Node */}
-                                <div className="bg-gray-900 rounded-[2.5rem] p-8 text-white flex flex-col h-[500px]">
-                                    <div className="flex items-center justify-between mb-10">
-                                        <h3 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em]">Execution History Node</h3>
-                                        <Cpu className="w-5 h-5 text-amber-500" />
+                                {/* 3. EXECUTION SIDEBAR - RIGHT */}
+                                <div className="xl:col-span-3 flex flex-col gap-6 min-h-0">
+                                    {/* PROFESSIONAL HUB */}
+                                    <div className="bg-gray-950 border border-gray-800 rounded-[3rem] flex flex-col min-h-0 shadow-[0_50px_100px_-10px_rgba(0,0,0,0.8)] relative overflow-hidden group p-8">
+                                        <div className="absolute inset-0 bg-gradient-to-b from-amber-500/10 via-transparent to-transparent opacity-30" />
+                                        
+                                        <div className="flex items-center justify-between mb-8 relative z-10">
+                                            <div className="flex flex-col">
+                                                <h3 className="text-xs font-black text-white uppercase tracking-[0.4em]">Prop-Desk Hub</h3>
+                                                <span className="text-[8px] font-bold text-amber-500 uppercase tracking-widest mt-1">High-Frequency Active</span>
+                                            </div>
+                                            <div className="flex bg-white/5 border border-white/10 p-1 rounded-xl">
+                                                <button onClick={() => setOrderType('market')} className={`px-5 py-2 text-[10px] font-black rounded-lg transition-all ${orderType === 'market' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-gray-500 hover:text-gray-300'}`}>Market</button>
+                                                <button onClick={() => setOrderType('limit')} className={`px-5 py-2 text-[10px] font-black rounded-lg transition-all ${orderType === 'limit' ? 'bg-amber-500 text-white' : 'text-gray-500 hover:text-gray-300'}`}>Limit</button>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-8 relative z-10 pr-2">
+                                            <div className="grid grid-cols-2 p-1.5 bg-white/5 border border-white/10 rounded-[2.2rem] gap-2">
+                                                <button onClick={() => setTradeSide('long')} className={`py-6 rounded-2xl flex flex-col items-center gap-2 transition-all ${tradeSide === 'long' ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-600/40 scale-[1.02]' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}>
+                                                    <ArrowUpRight className="w-5 h-5" />
+                                                    <span className="text-[11px] font-black uppercase tracking-widest">Long</span>
+                                                </button>
+                                                <button onClick={() => setTradeSide('short')} className={`py-6 rounded-2xl flex flex-col items-center gap-2 transition-all ${tradeSide === 'short' ? 'bg-rose-600 text-white shadow-xl shadow-rose-600/40 scale-[1.02]' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}>
+                                                    <ArrowDownRight className="w-5 h-5" />
+                                                    <span className="text-[11px] font-black uppercase tracking-widest">Short</span>
+                                                </button>
+                                            </div>
+
+                                            <div className="space-y-4">
+                                                <div className="flex justify-between px-2">
+                                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Order Size</span>
+                                                    <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest">Bal: 14.5 BNB</span>
+                                                </div>
+                                                <div className="relative">
+                                                    <input 
+                                                        type="number" value={orderSize} onChange={(e) => setOrderSize(e.target.value)}
+                                                        className="w-full bg-white/5 border border-white/10 rounded-[2rem] py-5 px-8 text-xl font-black text-white outline-none focus:border-amber-500/50 transition-all font-mono"
+                                                        placeholder="0.00"
+                                                    />
+                                                    <div className="absolute right-8 top-1/2 -translate-y-1/2 text-xs font-black text-gray-500 uppercase">BNB</div>
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/10 space-y-6">
+                                                <div className="flex justify-between items-end">
+                                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Levearge Intensity</p>
+                                                    <p className="text-2xl font-black text-amber-500 italic">{leverage}X</p>
+                                                </div>
+                                                <input 
+                                                    type="range" min="1" max="100" value={leverage} onChange={(e) => setLeverage(e.target.value)}
+                                                    className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer accent-amber-500 hover:accent-amber-400 transition-all" 
+                                                />
+                                            </div>
+
+                                            <div className="space-y-5 px-3">
+                                                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                                    <span className="text-gray-500">Liquidation Price</span>
+                                                    <span className="text-rose-500 italic font-mono">${(toToken?.current_price * (tradeSide === 'long' ? (1 - 0.8 / leverage) : (1 + 0.8 / leverage))).toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                                    <span className="text-gray-500">Protocol Execution Fee</span>
+                                                    <span className="text-white font-mono">$1.00 USDT</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <button 
+                                            onClick={executePerpetualTrade}
+                                            disabled={swapStatus === 'loading'}
+                                            className={`w-full py-8 mt-10 rounded-[2.5rem] text-[13px] font-black uppercase tracking-[0.5em] transition-all relative overflow-hidden group/exec ${tradeSide === 'long' ? 'bg-gradient-to-r from-emerald-600 to-emerald-400 shadow-[0_25px_60px_-10px_rgba(16,185,129,0.4)]' : 'bg-gradient-to-r from-rose-600 to-rose-400 shadow-[0_25px_60px_-10px_rgba(244,63,94,0.4)]'} text-white active:scale-95 flex items-center justify-center gap-6`}
+                                        >
+                                            {swapStatus === 'loading' ? <Loader2 className="w-6 h-6 animate-spin" /> : (tradeSide === 'long' ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />)}
+                                            {swapStatus === 'loading' ? 'SYNCING EXECUTION...' : `EXECUTE ${tradeSide.toUpperCase()}`}
+                                        </button>
                                     </div>
-                                    <div className="flex-1 space-y-6 overflow-y-auto custom-scrollbar pr-2 uppercase">
-                                        <div className="space-y-4">
-                                            <div className="flex gap-4 items-start">
-                                                <div className="w-6 h-6 rounded-lg bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center shrink-0 mt-1">
-                                                    <div className="w-2 h-2 bg-emerald-500 rounded-full" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-black text-white leading-none">Deployment Synchronized</p>
-                                                    <p className="text-[9px] font-bold text-gray-500 mt-2">Asset officially reachable via B20 Exchange Protocol Gateways.</p>
+
+                                    {/* COMPACT ORDER BOOK */}
+                                    <div className="bg-white border border-gray-100 rounded-[3rem] h-[600px] flex flex-col shadow-2xl shadow-gray-200/40 relative overflow-hidden group">
+                                        <div className="p-7 border-b border-gray-50 flex items-center justify-between bg-gray-50/20">
+                                            <div className="flex items-center gap-3">
+                                                <Activity className="w-4 h-4 text-amber-500" />
+                                                <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Live Order Flow</h3>
+                                            </div>
+                                            <div className="flex gap-2 items-center">
+                                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                                <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Live</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex-1 p-7 space-y-1.5 overflow-hidden flex flex-col justify-between bg-white">
+                                            <div className="space-y-1.5">
+                                                {orderBookData.asks.slice(0, 10).map((a, i) => (
+                                                    <div key={`ask-${i}`} className="flex justify-between items-center text-[10px] font-black group/row py-0.5 relative">
+                                                        <span className="text-rose-500 font-mono tracking-tighter relative z-10">${a.price.toFixed(toToken?.current_price < 1 ? 6 : 2)}</span>
+                                                        <span className="text-gray-400 font-mono italic relative z-10">{a.amount.toFixed(3)}</span>
+                                                        <div className="absolute inset-y-0 right-0 bg-rose-500/5 rounded-lg transition-all duration-700" style={{ width: `${(a.cumulative / orderBookData.maxVolume) * 100}%` }} />
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <div className="py-5 border-y border-gray-100 flex items-center justify-between px-3 bg-gray-50/50 rounded-2xl my-3">
+                                                <div className="flex flex-col">
+                                                    <span className={`text-xl font-black italic tracking-tighter ${toToken?.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>${toToken?.current_price?.toLocaleString()}</span>
+                                                    <span className="text-[8px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-1">Live Oracle Feed</span>
                                                 </div>
                                             </div>
-                                            <div className="flex gap-4 items-start">
-                                                <div className="w-6 h-6 rounded-lg bg-blue-500/20 border border-blue-500/50 flex items-center justify-center shrink-0 mt-1">
-                                                    <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-[10px] font-black text-white leading-none">Liquidity Vault Verified</p>
-                                                    <p className="text-[9px] font-bold text-gray-500 mt-2">Deterministic cross-chain liquidity anchors established via B20-Node 1.</p>
-                                                </div>
-                                            </div>
-                                            <div className="border-l-2 border-white/5 ml-3 pl-8 py-4 space-y-6 italic">
-                                                {liveTrades.slice(0, 5).map((t, idx) => (
-                                                    <div key={idx}>
-                                                        <p className="text-[10px] font-black text-gray-300">Execution Node Sync: {t.tx_hash?.slice(0,10)}...</p>
-                                                        <p className="text-[9px] text-gray-600 mt-1">Institutional {t.trade_type?.toUpperCase()} payload processed successfully via RPC.</p>
+
+                                            <div className="space-y-1.5">
+                                                {orderBookData.bids.slice(0, 10).map((b, i) => (
+                                                    <div key={`bid-${i}`} className="flex justify-between items-center text-[10px] font-black group/row py-0.5 relative">
+                                                        <span className="text-emerald-500 font-mono tracking-tighter relative z-10">${b.price.toFixed(toToken?.current_price < 1 ? 6 : 2)}</span>
+                                                        <span className="text-gray-400 font-mono italic relative z-10">{b.amount.toFixed(3)}</span>
+                                                        <div className="absolute inset-y-0 right-0 bg-emerald-500/5 rounded-lg transition-all duration-700" style={{ width: `${(b.cumulative / orderBookData.maxVolume) * 100}%` }} />
                                                     </div>
                                                 ))}
                                             </div>
@@ -1958,21 +2047,21 @@ export default function B20Exchange() {
                                 </motion.div>
                             </div>
 
-                            {/* Market Intelligence Filters & Advanced Search */}
-                            <div className="flex flex-col gap-10 px-4">
-                                <div className="flex flex-wrap items-start justify-between gap-8">
-                                    {/* Networks Filter */}
-                                    <div className="flex flex-col gap-2 max-w-full lg:max-w-[70%]">
+                            {/* Unified Market Intelligence Filter Card */}
+                            <div className="mx-4 flex flex-col gap-6 bg-white shadow-2xl shadow-gray-100/80 border border-gray-100 rounded-[2.5rem] p-8">
+                                <div className="flex flex-col gap-6">
+                                    {/* Row 1: Network Filter */}
+                                    <div className="flex flex-col gap-2">
                                         <span className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400 pl-2 flex items-center gap-1.5">
-                                            <Layers className="w-3 h-3 text-amber-500" /> Network
+                                            <Layers className="w-3 h-3 text-amber-500" /> Network / Ecosystem
                                         </span>
                                         <div className="max-w-full overflow-x-auto scrollbar-hide">
-                                            <div className="flex bg-white shadow-2xl shadow-gray-200/50 p-2.5 rounded-[2rem] border border-gray-100 italic font-black uppercase tracking-widest text-[10px] gap-1 min-w-max">
-                                                {['ALL', 'BITCOIN', 'ETH', 'SOL', 'BASE', 'POLYGON', 'TON', 'TRON', 'SUI', 'BNB', 'ARBITRUM', 'OPTIMISM', 'AVALANCHE', 'FANTOM', 'BLAST', 'CELO', 'SONIC'].map(net => (
+                                            <div className="flex bg-gray-50 shadow-inner p-1.5 rounded-[1.5rem] border border-gray-100 font-black uppercase tracking-widest text-[9px] gap-1 min-w-max">
+                                                {['ALL', ...NETWORKS_LIST].map(net => (
                                                     <button 
                                                         key={net}
                                                         onClick={() => setNetworkFilter(net)}
-                                                        className={`px-4 py-3.5 rounded-[1.5rem] flex items-center gap-2 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-amber-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
+                                                        className={`px-4 py-3 rounded-[1.2rem] flex items-center gap-2 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-amber-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
                                                     >
                                                         {net === 'ALL' ? <Globe className="w-4 h-4 flex-shrink-0" /> : <NetPill net={net} />}
                                                     </button>
@@ -1981,72 +2070,79 @@ export default function B20Exchange() {
                                         </div>
                                     </div>
 
-                                    <div className="flex flex-col gap-2">
-                                        <span className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400 pl-2 flex items-center gap-1.5">
-                                            <LayoutGrid className="w-3 h-3 text-gray-500" /> Category
-                                        </span>
-                                        <div className="flex bg-white shadow-2xl shadow-gray-200/50 p-2.5 rounded-[2rem] border border-gray-100 italic font-black uppercase tracking-widest text-[10px]">
-                                            {[
-                                                { id: 'all', label: 'All', icon: <LayoutGrid className="w-3.5 h-3.5" /> },
-                                                { id: 'new', label: 'Newly Launched', icon: <Sparkles className="w-3.5 h-3.5 text-cyan-500" /> },
-                                                { id: 'gainers', label: 'Gainers', icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> },
-                                                { id: 'losers', label: 'Losers', icon: <TrendingDown className="w-3.5 h-3.5 text-rose-500" /> },
-                                                { id: 'trending', label: 'Trending', icon: <TrendingUp className="w-3.5 h-3.5 text-amber-500" /> },
-                                                { id: 'volume', label: 'Volume', icon: <Activity className="w-3.5 h-3.5 text-blue-500" /> }
-                                            ].map(cat => (
-                                                <button 
-                                                    key={cat.id}
-                                                    onClick={() => setMarketCategory(cat.id)}
-                                                    className={`px-8 py-3.5 rounded-[1.5rem] flex items-center gap-2.5 transition-all ${marketCategory === cat.id ? 'bg-gray-900 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
+                                    {/* Row 2: Category Filter & Sort Toggle */}
+                                    <div className="flex flex-wrap items-center justify-between gap-6">
+                                        <div className="flex flex-col gap-2">
+                                            <span className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400 pl-2 flex items-center gap-1.5">
+                                                <LayoutGrid className="w-3 h-3 text-gray-400" /> Market Category
+                                            </span>
+                                            <div className="flex bg-gray-50 p-1.5 rounded-[1.5rem] border border-gray-100 font-black uppercase tracking-widest text-[10px] gap-1 flex-wrap">
+                                                {[
+                                                    { id: 'all', label: 'All Tokens', icon: <Globe className="w-3.5 h-3.5" /> },
+                                                    { id: 'new', label: 'Newly Launched', icon: <Sparkles className="w-3.5 h-3.5 text-cyan-500" /> },
+                                                    { id: 'gainers', label: 'Top Gainers', icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> },
+                                                    { id: 'losers', label: 'Top Losers', icon: <TrendingDown className="w-3.5 h-3.5 text-rose-500" /> },
+                                                    { id: 'trending', label: 'Trending', icon: <TrendingUp className="w-3.5 h-3.5 text-amber-500" /> },
+                                                    { id: 'volume', label: 'High Volume', icon: <Activity className="w-3.5 h-3.5 text-blue-500" /> },
+                                                ].map(cat => (
+                                                    <button
+                                                        key={cat.id}
+                                                        onClick={() => setMarketCategory(cat.id)}
+                                                        className={`px-6 py-3 rounded-[1.2rem] flex items-center gap-2.5 transition-all ${marketCategory === cat.id ? 'bg-gray-900 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900 hover:bg-white'}`}
+                                                    >
+                                                        {cat.icon} {cat.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 self-end">
+                                            <div className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3">
+                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Sort:</span>
+                                                <select
+                                                    value={marketSort}
+                                                    onChange={(e) => setMarketSort(e.target.value)}
+                                                    className="bg-transparent text-[10px] font-black uppercase tracking-widest text-gray-900 outline-none cursor-pointer"
                                                 >
-                                                    {cat.icon} {cat.label}
+                                                    <option value="rank">Crypto Rank</option>
+                                                    <option value="mcap">Market Cap</option>
+                                                    <option value="p_high">Price: High → Low</option>
+                                                    <option value="p_low">Price: Low → High</option>
+                                                    <option value="change">Highest Volatility</option>
+                                                </select>
+                                            </div>
+                                            <div className="flex bg-gray-50 border border-gray-100 p-1.5 rounded-2xl gap-1">
+                                                <button onClick={() => setViewType('card')} className={`p-3 rounded-xl transition-all ${viewType === 'card' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900'}`}>
+                                                    <LayoutGrid className="w-4 h-4" />
                                                 </button>
-                                            ))}
+                                                <button onClick={() => setViewType('list')} className={`p-3 rounded-xl transition-all ${viewType === 'list' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900'}`}>
+                                                    <List className="w-4 h-4" />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div className="flex-1 max-w-lg relative group">
-                                        <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
-                                            <Search className="w-4 h-4 text-gray-400 group-focus-within:text-amber-500 transition-colors" />
-                                        </div>
-                                        <input 
+                                    {/* Row 3: Search Bar */}
+                                    <div className="relative group/search">
+                                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within/search:text-amber-500 transition-colors" />
+                                        <input
                                             type="text"
+                                            placeholder="SEARCH BY NAME, SYMBOL OR CONTRACT (0X...)..."
                                             value={marketSearch}
                                             onChange={(e) => setMarketSearch(e.target.value)}
-                                            placeholder="SEARCH BY SYMBOL OR NAME (E.G. BNB, PEPE...)"
-                                            className="w-full bg-white shadow-2xl shadow-gray-200/50 border border-gray-100 rounded-[2rem] py-5 pl-14 pr-6 text-[10px] font-black uppercase tracking-widest outline-none focus:border-amber-500/50 transition-all placeholder:text-gray-300"
+                                            className="w-full bg-gray-50 border border-gray-100 rounded-[1.5rem] py-5 pl-16 pr-6 text-[10px] font-black uppercase tracking-widest outline-none focus:bg-white focus:border-amber-500/50 focus:shadow-xl focus:shadow-amber-500/5 transition-all placeholder:text-gray-200"
                                         />
+                                        {marketSearch && (
+                                            <button onClick={() => setMarketSearch('')} className="absolute right-6 top-1/2 -translate-y-1/2 w-6 h-6 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-gray-500 transition-all">
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        )}
                                     </div>
 
-                                    <div className="flex bg-white shadow-2xl shadow-gray-200/50 p-2.5 rounded-[2rem] border border-gray-100">
-                                        <div className="flex items-center gap-4 px-4 border-r border-gray-100 mr-2">
-                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Sort By:</span>
-                                            <select 
-                                                value={marketSort}
-                                                onChange={(e) => setMarketSort(e.target.value)}
-                                                className="bg-transparent text-[10px] font-black uppercase tracking-widest text-gray-900 outline-none cursor-pointer"
-                                            >
-                                                <option value="rank">Crypto Rank</option>
-                                                <option value="mcap">Market Capitalization</option>
-                                                <option value="p_high">Price: High to Low</option>
-                                                <option value="p_low">Price: Low to High</option>
-                                                <option value="change">Highest Volatility</option>
-                                            </select>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button 
-                                                onClick={() => setViewType('card')}
-                                                className={`p-3 rounded-xl transition-all ${viewType === 'card' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900'}`}
-                                            >
-                                                <LayoutGrid className="w-4 h-4" />
-                                            </button>
-                                            <button 
-                                                onClick={() => setViewType('list')}
-                                                className={`p-3 rounded-xl transition-all ${viewType === 'list' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900'}`}
-                                            >
-                                                <List className="w-4 h-4" />
-                                            </button>
-                                        </div>
+                                    <div className="flex items-center justify-between px-2">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                            Institutional Intelligence Active // Showing <span className="text-gray-900 border-b-2 border-amber-400">{displayTokens.length} Assets</span>
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -2172,58 +2268,7 @@ export default function B20Exchange() {
                     )}
                     {mode === 'fiat' && (
                         <motion.div 
-                            key="fiat"
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -30 }}
-                            className="max-w-[800px] mx-auto"
-                        >
-                            <FiatPortal />
-                        </motion.div>
-                    )}
-
-                    {mode === 'list' && (
-                        <motion.div 
-                            key="list"
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -30 }}
-                            className="max-w-[1200px] mx-auto"
-                        >
-                            <ListingPortal />
-                        </motion.div>
-                    )}
-
-                    {mode === 'bonding' && (
-                        <motion.div 
-                            key="bonding"
-                            initial={{ opacity: 0, scale: 0.98 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 1.02 }}
-                            className="max-w-[1600px] mx-auto"
-                        >
-                            <div className="bg-white/50 backdrop-blur-3xl border border-gray-100 rounded-[3rem] p-12 text-center py-32 shadow-3xl shadow-amber-900/5">
-                                <div className="w-24 h-24 bg-rose-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-8 border border-rose-500/20">
-                                    <Zap className="w-12 h-12 text-rose-500" />
-                                </div>
-                                <h3 className="text-4xl font-black text-gray-900 uppercase tracking-tighter italic mb-4">Bonding Curve Terminal</h3>
-                                <p className="text-gray-500 font-bold uppercase tracking-widest text-sm max-w-lg mx-auto leading-relaxed">
-                                    Access B20-exclusive Bonding Curve liquidity pools with AI-audit verification.
-                                </p>
-                                <div className="mt-12 flex justify-center gap-6">
-                                    <Link href="/trade" className="px-10 py-5 bg-rose-500 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-xl shadow-rose-500/20 hover:scale-105 transition-all">Launch Console</Link>
-                                    <button onClick={() => setMode('markets')} className="px-10 py-5 bg-white border border-gray-100 text-gray-400 rounded-[2rem] font-black uppercase tracking-widest hover:text-gray-900 transition-all">View Analytics</button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {mode === 'fiat' && (
-                        <motion.div 
-                            key="fiat"
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -30 }}
+                            key="fiat" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }}
                             className="max-w-[1200px] mx-auto"
                         >
                              <div className="bg-white/50 backdrop-blur-3xl border border-gray-100 rounded-[3rem] p-12 text-center py-32 shadow-3xl shadow-amber-900/5">
@@ -2242,12 +2287,39 @@ export default function B20Exchange() {
                         </motion.div>
                     )}
 
+                    {mode === 'list' && (
+                        <motion.div 
+                            key="list" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }}
+                            className="max-w-[1200px] mx-auto"
+                        >
+                            <ListingPortal />
+                        </motion.div>
+                    )}
+
+                    {mode === 'bonding' && (
+                        <motion.div 
+                            key="bonding" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }}
+                            className="max-w-[1600px] mx-auto"
+                        >
+                            <div className="bg-white/50 backdrop-blur-3xl border border-gray-100 rounded-[3rem] p-12 text-center py-32 shadow-3xl shadow-amber-900/5">
+                                <div className="w-24 h-24 bg-rose-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-8 border border-rose-500/20">
+                                    <Zap className="w-12 h-12 text-rose-500" />
+                                </div>
+                                <h3 className="text-4xl font-black text-gray-900 uppercase tracking-tighter italic mb-4">Bonding Curve Terminal</h3>
+                                <p className="text-gray-500 font-bold uppercase tracking-widest text-sm max-w-lg mx-auto leading-relaxed">
+                                    Access B20-exclusive Bonding Curve liquidity pools with AI-audit verification.
+                                </p>
+                                <div className="mt-12 flex justify-center gap-6">
+                                    <Link href="/trade" className="px-10 py-5 bg-rose-500 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-xl shadow-rose-500/20 hover:scale-105 transition-all">Launch Console</Link>
+                                    <button onClick={() => setMode('markets')} className="px-10 py-5 bg-white border border-gray-100 text-gray-400 rounded-[2rem] font-black uppercase tracking-widest hover:text-gray-900 transition-all">View Analytics</button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
                     {mode === 'staking' && (
                         <motion.div 
-                            key="staking"
-                            initial={{ opacity: 0, y: 30 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -30 }}
+                            key="staking" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }}
                             className="max-w-[1200px] mx-auto"
                         >
                              <div className="bg-white/50 backdrop-blur-3xl border border-gray-100 rounded-[3rem] p-12 text-center py-32 shadow-3xl shadow-amber-900/5">
@@ -3853,3 +3925,48 @@ const TokenSelector = ({ isOpen, onClose, onSelect, tokens, searchTerm, setSearc
         </div>
     );
 };
+
+const TradingViewChart = ({ symbol, theme = 'light' }) => {
+    const container = useRef();
+
+    useEffect(() => {
+        const currentContainer = container.current;
+        if (!currentContainer) return;
+        
+        currentContainer.innerHTML = '';
+        const script = document.createElement("script");
+        script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
+        script.type = "text/javascript";
+        script.async = true;
+        
+        const config = {
+            "autosize": true,
+            "symbol": symbol.includes(':') ? symbol : `BINANCE:${symbol}`,
+            "interval": "15",
+            "timezone": "Etc/UTC",
+            "theme": theme,
+            "style": "1",
+            "locale": "en",
+            "enable_publishing": false,
+            "hide_top_toolbar": false,
+            "allow_symbol_change": true,
+            "calendar": false,
+            "hide_volume": false,
+            "support_host": "https://www.tradingview.com"
+        };
+        
+        script.innerHTML = JSON.stringify(config);
+        currentContainer.appendChild(script);
+
+        return () => {
+            if (currentContainer) currentContainer.innerHTML = '';
+        };
+    }, [symbol, theme]);
+
+    return (
+        <div className="tradingview-widget-container" ref={container} style={{ height: "100%", width: "100%" }}>
+            <div className="tradingview-widget-container__widget" style={{ height: "100%", width: "100%" }}></div>
+        </div>
+    );
+};
+

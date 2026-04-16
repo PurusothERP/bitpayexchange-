@@ -1639,34 +1639,48 @@ export default function B20Exchange() {
                                 {/* Row 1: Category Filters */}
                                 <div className="flex flex-wrap items-center justify-between gap-4">
                                 <div className="flex flex-col gap-6 w-full">
-                                    <div className="flex bg-gray-50 shadow-inner p-1.5 rounded-[1.5rem] border border-gray-100 font-black uppercase tracking-widest text-[9px] gap-1 overflow-x-auto w-full">
-                                        {['ALL', ...NETWORKS_LIST].map(net => (
-                                            <button 
-                                                key={net}
-                                                onClick={() => setNetworkFilter(net)}
-                                                className={`px-6 py-3 rounded-[1.2rem] flex items-center gap-2.5 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-amber-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
-                                            >
-                                                {net === 'ALL' ? <Globe className="w-3 h-3" /> : <Layers className="w-3 h-3" />} {net}
-                                            </button>
-                                        ))}
+
+                                    {/* Network Filter */}
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400 pl-2 flex items-center gap-1.5">
+                                            <Layers className="w-3 h-3 text-amber-500" /> Network
+                                        </span>
+                                        <div className="flex bg-gray-50 shadow-inner p-1.5 rounded-[1.5rem] border border-gray-100 font-black uppercase tracking-widest text-[9px] gap-1 overflow-x-auto w-full">
+                                            {['ALL', ...NETWORKS_LIST].map(net => (
+                                                <button 
+                                                    key={net}
+                                                    onClick={() => setNetworkFilter(net)}
+                                                    className={`px-6 py-3 rounded-[1.2rem] flex items-center gap-2.5 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-amber-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
+                                                >
+                                                    {net === 'ALL' ? <Globe className="w-3 h-3" /> : <Layers className="w-3 h-3" />} {net}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                    <div className="flex bg-gray-50 p-1.5 rounded-[1.5rem] border border-gray-100 font-black uppercase tracking-widest text-[10px] gap-1 flex-wrap">
-                                        {[
-                                            { id: 'all', label: 'All Tokens', icon: <Globe className="w-3.5 h-3.5" /> },
-                                            { id: 'new', label: 'Newly Launched', icon: <Sparkles className="w-3.5 h-3.5 text-cyan-500" /> },
-                                            { id: 'gainers', label: 'Gainers', icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> },
-                                            { id: 'losers', label: 'Losers', icon: <TrendingDown className="w-3.5 h-3.5 text-rose-500" /> },
-                                            { id: 'trending', label: 'Trending', icon: <TrendingUp className="w-3.5 h-3.5 text-amber-500" /> },
-                                            { id: 'volume', label: 'High Volume', icon: <Activity className="w-3.5 h-3.5 text-blue-500" /> },
-                                        ].map(cat => (
-                                            <button
-                                                key={cat.id}
-                                                onClick={() => setMarketCategory(cat.id)}
-                                                className={`px-6 py-3 rounded-[1.2rem] flex items-center gap-2.5 transition-all ${marketCategory === cat.id ? 'bg-gray-900 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900 hover:bg-white'}`}
-                                            >
-                                                {cat.icon} {cat.label}
-                                            </button>
-                                        ))}
+
+                                    {/* Category Filter */}
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400 pl-2 flex items-center gap-1.5">
+                                            <LayoutGrid className="w-3 h-3 text-gray-500" /> Category
+                                        </span>
+                                        <div className="flex bg-gray-50 p-1.5 rounded-[1.5rem] border border-gray-100 font-black uppercase tracking-widest text-[10px] gap-1 flex-wrap">
+                                            {[
+                                                { id: 'all', label: 'All Tokens', icon: <Globe className="w-3.5 h-3.5" /> },
+                                                { id: 'new', label: 'Newly Launched', icon: <Sparkles className="w-3.5 h-3.5 text-cyan-500" /> },
+                                                { id: 'gainers', label: 'Gainers', icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> },
+                                                { id: 'losers', label: 'Losers', icon: <TrendingDown className="w-3.5 h-3.5 text-rose-500" /> },
+                                                { id: 'trending', label: 'Trending', icon: <TrendingUp className="w-3.5 h-3.5 text-amber-500" /> },
+                                                { id: 'volume', label: 'High Volume', icon: <Activity className="w-3.5 h-3.5 text-blue-500" /> },
+                                            ].map(cat => (
+                                                <button
+                                                    key={cat.id}
+                                                    onClick={() => setMarketCategory(cat.id)}
+                                                    className={`px-6 py-3 rounded-[1.2rem] flex items-center gap-2.5 transition-all ${marketCategory === cat.id ? 'bg-gray-900 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900 hover:bg-white'}`}
+                                                >
+                                                    {cat.icon} {cat.label}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
 

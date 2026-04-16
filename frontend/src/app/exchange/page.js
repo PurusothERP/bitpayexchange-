@@ -1901,37 +1901,47 @@ export default function B20Exchange() {
 
                             {/* Market Intelligence Filters & Advanced Search */}
                             <div className="flex flex-col gap-10 px-4">
-                                <div className="flex flex-wrap items-center justify-between gap-8">
+                                <div className="flex flex-wrap items-start justify-between gap-8">
                                     {/* Networks Filter */}
-                                    <div className="flex bg-white shadow-2xl shadow-gray-200/50 p-2.5 rounded-[2rem] border border-gray-100 italic font-black uppercase tracking-widest text-[10px] overflow-x-auto w-full md:w-auto">
-                                        {['ALL', 'BITCOIN', 'ETH', 'SOLANA', 'BASE', 'POLYGON', 'TON', 'TRON', 'SUI', 'BNB'].map(net => (
-                                            <button 
-                                                key={net}
-                                                onClick={() => setNetworkFilter(net)}
-                                                className={`px-6 py-3.5 rounded-[1.5rem] flex items-center gap-2.5 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-amber-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
-                                            >
-                                                {net === 'ALL' ? <Globe className="w-3.5 h-3.5" /> : <Layers className="w-3.5 h-3.5" />} {net}
-                                            </button>
-                                        ))}
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400 pl-2 flex items-center gap-1.5">
+                                            <Layers className="w-3 h-3 text-amber-500" /> Network
+                                        </span>
+                                        <div className="flex bg-white shadow-2xl shadow-gray-200/50 p-2.5 rounded-[2rem] border border-gray-100 italic font-black uppercase tracking-widest text-[10px] overflow-x-auto">
+                                            {['ALL', 'BITCOIN', 'ETH', 'SOLANA', 'BASE', 'POLYGON', 'TON', 'TRON', 'SUI', 'BNB'].map(net => (
+                                                <button 
+                                                    key={net}
+                                                    onClick={() => setNetworkFilter(net)}
+                                                    className={`px-6 py-3.5 rounded-[1.5rem] flex items-center gap-2.5 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-amber-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
+                                                >
+                                                    {net === 'ALL' ? <Globe className="w-3.5 h-3.5" /> : <Layers className="w-3.5 h-3.5" />} {net}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
 
-                                    <div className="flex bg-white shadow-2xl shadow-gray-200/50 p-2.5 rounded-[2rem] border border-gray-100 italic font-black uppercase tracking-widest text-[10px]">
-                                        {[
-                                            { id: 'all', label: 'All', icon: <LayoutGrid className="w-3.5 h-3.5" /> },
-                                            { id: 'new', label: 'Newly Launched', icon: <Sparkles className="w-3.5 h-3.5 text-cyan-500" /> },
-                                            { id: 'gainers', label: 'Gainers', icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> },
-                                            { id: 'losers', label: 'Losers', icon: <TrendingDown className="w-3.5 h-3.5 text-rose-500" /> },
-                                            { id: 'trending', label: 'Trending', icon: <TrendingUp className="w-3.5 h-3.5 text-amber-500" /> },
-                                            { id: 'volume', label: 'Volume', icon: <Activity className="w-3.5 h-3.5 text-blue-500" /> }
-                                        ].map(cat => (
-                                            <button 
-                                                key={cat.id}
-                                                onClick={() => setMarketCategory(cat.id)}
-                                                className={`px-8 py-3.5 rounded-[1.5rem] flex items-center gap-2.5 transition-all ${marketCategory === cat.id ? 'bg-gray-900 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
-                                            >
-                                                {cat.icon} {cat.label}
-                                            </button>
-                                        ))}
+                                    <div className="flex flex-col gap-2">
+                                        <span className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400 pl-2 flex items-center gap-1.5">
+                                            <LayoutGrid className="w-3 h-3 text-gray-500" /> Category
+                                        </span>
+                                        <div className="flex bg-white shadow-2xl shadow-gray-200/50 p-2.5 rounded-[2rem] border border-gray-100 italic font-black uppercase tracking-widest text-[10px]">
+                                            {[
+                                                { id: 'all', label: 'All', icon: <LayoutGrid className="w-3.5 h-3.5" /> },
+                                                { id: 'new', label: 'Newly Launched', icon: <Sparkles className="w-3.5 h-3.5 text-cyan-500" /> },
+                                                { id: 'gainers', label: 'Gainers', icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> },
+                                                { id: 'losers', label: 'Losers', icon: <TrendingDown className="w-3.5 h-3.5 text-rose-500" /> },
+                                                { id: 'trending', label: 'Trending', icon: <TrendingUp className="w-3.5 h-3.5 text-amber-500" /> },
+                                                { id: 'volume', label: 'Volume', icon: <Activity className="w-3.5 h-3.5 text-blue-500" /> }
+                                            ].map(cat => (
+                                                <button 
+                                                    key={cat.id}
+                                                    onClick={() => setMarketCategory(cat.id)}
+                                                    className={`px-8 py-3.5 rounded-[1.5rem] flex items-center gap-2.5 transition-all ${marketCategory === cat.id ? 'bg-gray-900 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
+                                                >
+                                                    {cat.icon} {cat.label}
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
 
                                     <div className="flex-1 max-w-lg relative group">

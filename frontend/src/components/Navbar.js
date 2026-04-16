@@ -143,16 +143,16 @@ export default function Navbar() {
                                 <Coins className="w-4 h-4" /> Launchpad
                             </Link>
 
-                            <Link href="/cards" className="nav-link flex items-center gap-2 text-amber-600 font-black hover:text-amber-700 transition-colors">
-                                <CreditCard className="w-4 h-4" /> Card
-                            </Link>
-
                             <Link href="/exchange" className="group relative flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-gray-900 to-black text-white font-black shadow-[0_15px_30px_-5px_rgba(245,158,11,0.3)] hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.5)] border border-white/10 hover:border-amber-500/50 transition-all duration-300 hover:-translate-y-1 active:scale-95">
                                 <div className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none" />
                                 <div className="p-1.5 bg-white/10 rounded-full border border-white/5 group-hover:border-amber-500/30 group-hover:bg-amber-500/20 transition-colors duration-300">
                                     <Activity className="w-3.5 h-3.5 text-white group-hover:text-amber-400 transition-colors" />
                                 </div>
                                 <span className="tracking-wide text-xs">Exchange</span>
+                            </Link>
+
+                            <Link href="/cards" className="nav-link flex items-center gap-2 text-amber-600 font-black hover:text-amber-700 transition-colors">
+                                <CreditCard className="w-4 h-4" /> Card
                             </Link>
 
                             <Link href="/services" className="nav-link flex items-center gap-2 hover:text-rose-500 transition-colors">
@@ -292,6 +292,21 @@ export default function Navbar() {
                             <div className="space-y-1 px-1">
                                 <p className="px-2 pt-1 pb-1 text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">Platform</p>
 
+                                {/* Launchpad */}
+                                <Link
+                                    href="/launch"
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 transition-colors active:scale-95 group"
+                                >
+                                    <div className="w-8 h-8 bg-amber-50 border border-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <Coins className="w-4 h-4 text-amber-500" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-800 leading-tight">Launchpad</p>
+                                        <p className="text-[10px] text-gray-400">Discover new tokens</p>
+                                    </div>
+                                </Link>
+
                                 {/* Exchange — Highlighted */}
                                 <Link
                                     href="/exchange"
@@ -307,21 +322,6 @@ export default function Navbar() {
                                         <p className="text-[9px] text-gray-400 font-medium">Trade & Futures</p>
                                     </div>
                                     <div className="ml-auto z-10 bg-amber-500 text-[8px] font-black text-gray-900 px-2 py-0.5 rounded-full">LIVE</div>
-                                </Link>
-
-                                {/* Launchpad */}
-                                <Link
-                                    href="/launch"
-                                    onClick={() => setIsMobileMenuOpen(false)}
-                                    className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 transition-colors active:scale-95 group"
-                                >
-                                    <div className="w-8 h-8 bg-amber-50 border border-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                                        <Coins className="w-4 h-4 text-amber-500" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-bold text-gray-800 leading-tight">Launchpad</p>
-                                        <p className="text-[10px] text-gray-400">Discover new tokens</p>
-                                    </div>
                                 </Link>
 
                                 {/* Card */}

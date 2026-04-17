@@ -7,7 +7,16 @@ const db = new sqlite3.Database(dbPath, (err) => {
         console.error('[DB] CRITICAL: SQLite connection failed:', err);
     } else {
         console.log('[DB] ✅ Connected to SQLite (Real-time storage active)');
-        // Ensure tables exist
+        // ── WAL Mode: enables concurrent reads + writes without locking ───────────
+        // This is the single most important SQLite performance setting for production.
+        db.serialize(() => {
+            db.run('PRAGMA journal_mode = WAL;');
+            db.run('PRAGMA synchronous = NORMAL;');    // Faster writes, still crash-safe
+            db.run('PRAGMA cache_size = -32000;');     // 32MB page cache
+            db.run('PRAGMA foreign_keys = ON;');       // Enforce referential integrity
+            db.run('PRAGMA temp_store = MEMORY;');     // Temp tables in RAM
+            console.log('[DB] ✅ WAL mode enabled — concurrent read/write active');
+        });
         db.run(`
             CREATE TABLE IF NOT EXISTS tokens (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,

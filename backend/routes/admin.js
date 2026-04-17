@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
+const { requireAdmin, requireAdminOrAssistant } = require('../middleware/adminAuth');
 
 // ── ASSISTANT MANAGEMENT ─────────────────────────────────────────────────────
 
@@ -21,8 +22,8 @@ router.get('/assistants', async (req, res) => {
     }
 });
 
-// POST /api/admin/assistants - Create or update assistant
-router.post('/assistants', async (req, res) => {
+// POST /api/admin/assistants - Create or update assistant (Admin only)
+router.post('/assistants', requireAdmin, async (req, res) => {
     const { wallet_address, name, permissions_json, assistant_id } = req.body;
     if (!wallet_address || !name) return res.status(400).json({ error: 'Missing wallet/name' });
 
@@ -67,8 +68,8 @@ router.post('/assistants/login', async (req, res) => {
     }
 });
 
-// DELETE /api/admin/assistants/:id
-router.delete('/assistants/:id', async (req, res) => {
+// DELETE /api/admin/assistants/:id (Admin only)
+router.delete('/assistants/:id', requireAdmin, async (req, res) => {
     try {
         await db.query('DELETE FROM admin_assistants WHERE id = ?', [req.params.id]);
         res.json({ success: true });
@@ -106,8 +107,8 @@ router.post('/activities/log', async (req, res) => {
 
 // ── REVENUE EXPORT ───────────────────────────────────────────────────────────
 
-// GET /api/admin/revenue/export - Professional Excel/CSV format
-router.get('/revenue/export', async (req, res) => {
+// GET /api/admin/revenue/export (Admin only)
+router.get('/revenue/export', requireAdmin, async (req, res) => {
     try {
         const result = await db.query('SELECT * FROM treasury_transfers ORDER BY timestamp DESC');
         const rows = result.rows;

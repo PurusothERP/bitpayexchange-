@@ -18,6 +18,7 @@ const path           = require('path');
 const { startTreasuryAutomation } = require('./services/treasuryAutomation');
 const { startTokenVerifier }      = require('./services/tokenVerifier');
 const { startNewsAutomation }     = require('./services/aiNewsAutomation');
+
 process.on('uncaughtException', (err) => {
     console.error('[Global] Uncaught Exception:', err.message);
 });
@@ -29,8 +30,56 @@ process.on('unhandledRejection', (reason, promise) => {
 const app  = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
-app.use(express.json());
+// ── CORS: Restrict to configured origins ──────────────────────────────────────
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://localhost:3001')
+    .split(',')
+    .map(o => o.trim());
+
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (e.g. mobile apps, curl, Postman)
+        if (!origin) return callback(null, true);
+        if (ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed))) {
+            return callback(null, true);
+        }
+        console.warn(`[CORS] Blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS policy'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-wallet-address']
+}));
+
+app.use(express.json({ limit: '10mb' }));
+
+// ── Rate Limiting ─────────────────────────────────────────────────────────────
+// Protects all API routes from abuse (max 200 req/min per IP)
+let rateLimit;
+try {
+    rateLimit = require('express-rate-limit');
+    const limiter = rateLimit({
+        windowMs: 60 * 1000,     // 1 minute window
+        max: 200,                 // 200 requests per IP per minute
+        standardHeaders: true,
+        legacyHeaders: false,
+        message: { error: 'Too many requests — please slow down.' },
+        skip: (req) => {
+            // Skip rate-limiting for health checks and internal calls
+            return req.path === '/health';
+        }
+    });
+    // Tighter limit for settlement endpoint (prevent brute force)
+    const settleLimiter = rateLimit({
+        windowMs: 60 * 1000,
+        max: 10,
+        message: { error: 'Settlement rate limit exceeded.' }
+    });
+    app.use('/api/', limiter);
+    app.use('/api/futures/settle', settleLimiter);
+    console.log('[Security] ✅ Rate limiting active (200 req/min general, 10/min futures settle)');
+} catch (e) {
+    console.warn('[Security] express-rate-limit not installed — run: npm install express-rate-limit');
+}
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 app.use('/api/tokens',   tokenRoutes);

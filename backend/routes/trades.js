@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
+const { ethers } = require('ethers');
 
 // ── GET /api/trades/history/:tokenAddress ──────────────────────────────────────
 router.get('/history/:tokenAddress', async (req, res) => {
@@ -8,13 +9,74 @@ router.get('/history/:tokenAddress', async (req, res) => {
     if (!tokenAddress || tokenAddress.length < 3) {
         return res.status(400).json({ error: 'Invalid token identifier' });
     }
+    
     try {
+        // 1. Fetch Local DB Trades
         const result = await db.query(
             `SELECT * FROM trades WHERE LOWER(token_address) = LOWER(?) ORDER BY timestamp DESC LIMIT 200`,
             [tokenAddress]
         );
-        res.json(result.rows);
+        let finalTrades = result.rows || [];
+
+        // 2. Real-Time On-Chain Proxy Fallback (If local data is sparse or for non-B20 assets)
+        if (finalTrades.length < 20 && tokenAddress !== '0x0000000000000000000000000000000000000000') {
+            try {
+                const provider = new ethers.JsonRpcProvider(process.env.BSC_RPC_URL || 'https://bsc-dataseed.binance.org');
+                const PANCAKE_FACTORY = '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73';
+                const WBNB = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
+                
+                const factory = new ethers.Contract(PANCAKE_FACTORY, ['function getPair(address,address) view returns (address)'], provider);
+                const pairAddress = await factory.getPair(tokenAddress, WBNB);
+
+                if (pairAddress && pairAddress !== ethers.ZeroAddress) {
+                    const pairContract = new ethers.Contract(pairAddress, [
+                        'event Swap(address indexed sender, uint amount0In, uint amount1In, uint amount0Out, uint amount1Out, address indexed to)',
+                        'function token0() view returns (address)',
+                        'function token1() view returns (address)'
+                    ], provider);
+
+                    const currentBlock = await provider.getBlockNumber();
+                    const swaps = await pairContract.queryFilter('Swap', currentBlock - 500, currentBlock);
+                    const token0 = await pairContract.token0();
+                    const isToken0 = token0.toLowerCase() === tokenAddress.toLowerCase();
+
+                    const chainTrades = swaps.map(s => {
+                        const { amount0In, amount1In, amount0Out, amount1Out } = s.args;
+                        const buy = isToken0 ? amount0Out > 0 : amount1Out > 0;
+                        const tokenVol = isToken0 ? (amount0In > 0 ? amount0In : amount0Out) : (amount1In > 0 ? amount1In : amount1Out);
+                        const bnbVol = isToken0 ? (amount1In > 0 ? amount1In : amount1Out) : (amount0In > 0 ? amount0In : amount0Out);
+                        
+                        const amountTokens = parseFloat(ethers.formatUnits(tokenVol, 18));
+                        const amountBnb = parseFloat(ethers.formatEther(bnbVol));
+
+                        return {
+                            token_address: tokenAddress,
+                            trader_wallet: s.args.to,
+                            trade_type: buy ? 'buy' : 'sell',
+                            amount_tokens: amountTokens,
+                            amount_bnb: amountBnb,
+                            price_bnb: amountTokens > 0 ? (amountBnb / amountTokens) : 0,
+                            tx_hash: s.transactionHash,
+                            timestamp: Date.now(), // approximation for performance
+                            is_on_chain_proxy: true
+                        };
+                    }).reverse();
+
+                    // Merge and de-duplicate by txHash
+                    const txMap = new Map();
+                    [...finalTrades, ...chainTrades].forEach(t => {
+                        if (!txMap.has(t.tx_hash)) txMap.set(t.tx_hash, t);
+                    });
+                    finalTrades = Array.from(txMap.values()).slice(0, 200);
+                }
+            } catch (chainErr) {
+                console.warn('[Trade Proxy] Failed to fetch on-chain history:', chainErr.message);
+            }
+        }
+
+        res.json(finalTrades);
     } catch (err) {
+        console.error('Trade history fetch error:', err);
         res.status(500).json({ error: 'Failed to fetch trade history' });
     }
 });

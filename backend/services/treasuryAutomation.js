@@ -465,8 +465,11 @@ async function scanRecentEvents() {
     if (!provider) return;
     try {
         const currentBlock = await provider.getBlockNumber();
-        const fromBlock = currentBlock - 500; // Scan last 500 blocks (~30 mins)
+        const fromBlock = currentBlock - 100; // Scan last 100 blocks (~6 mins) for quick catchup
         console.log(`[Indexer] 🔍 Scanning historical events from block ${fromBlock} to ${currentBlock}…`);
+
+        // Helper to delay between scans to avoid rate limits
+        const delay = ms => new Promise(res => setTimeout(res, ms));
 
 
         // Scan Factory (MEME)
@@ -482,6 +485,7 @@ async function scanRecentEvents() {
                     launchType: 'MEME'
                 });
             }
+            await delay(1000); // 1s buffer
 
             // Scan Factory (STANDARD)
             const standardFilter = factoryReadOnly.filters.StandardTokenCreated();
@@ -495,6 +499,7 @@ async function scanRecentEvents() {
                     launchType: 'STANDARD'
                 });
             }
+            await delay(1000); // 1s buffer
         }
 
         // Scan Direct Factory (FAIR)
@@ -510,6 +515,7 @@ async function scanRecentEvents() {
                     launchType: 'FAIR'
                 });
             }
+            await delay(1000); // 1s buffer
         }
 
         // Scan Bonding Curve (Trades)
@@ -535,6 +541,7 @@ async function scanRecentEvents() {
                         blockNumber: ev.blockNumber
                     });
                 }
+                await delay(1000); // 1s buffer
             } catch (e) {
                 console.warn('[Indexer] Buy scan error:', e.message);
             }

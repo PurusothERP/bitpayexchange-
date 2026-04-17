@@ -126,8 +126,8 @@ export default function B20Exchange() {
     const [viewType, setViewType] = useState('list'); // 'card', 'list'
     
     // Token State
-    const [fromToken, setFromToken] = useState({ symbol: 'BNB', name: 'Binance Coin', address: '0x0000000000000000000000000000000000000000', image: 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png' });
-    const [toToken, setToToken] = useState({ symbol: 'USDT', name: 'Tether', address: '0x55d398326f99059fF775485246999027B3197955', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png' });
+    const [fromToken, setFromToken] = useState({ id: 'binancecoin', symbol: 'BNB', name: 'Binance Coin', address: '0x0000000000000000000000000000000000000000', image: 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png' });
+    const [toToken, setToToken] = useState({ id: 'tether', symbol: 'USDT', name: 'Tether', address: '0x55d398326f99059fF775485246999027B3197955', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png' });
     
     // Futures State
     const [leverage, setLeverage] = useState(10);
@@ -155,7 +155,7 @@ export default function B20Exchange() {
 
 
     const fetchLiveActivity = async () => {
-        if (!toToken?.id) return;
+        if (!toToken?.id && !toToken?.address) return;
         try {
             // 1. Fetch Local History (B20 indexer data)
             const [histRes, statRes] = await Promise.all([
@@ -566,7 +566,7 @@ export default function B20Exchange() {
                     b20Tokens = b20Res.data || [];
                 } catch(e) { console.warn('B20 Protocol: Offline.'); }
 
-                const bnbPriceUsd = cgTokens?.find(t => t.id === 'binancecoin')?.current_price || 580;
+                const bnbPriceUsd = (cgTokens || []).find(t => t.id === 'binancecoin')?.current_price || 580;
                 setBnbPrice(bnbPriceUsd);
 
                 const getNetworkForToken = (symbol, id) => {
@@ -585,8 +585,8 @@ export default function B20Exchange() {
                 };
 
                 // Enrich Pancake Tokens
-                const enrichedPancake = pancakeTokens.slice(0, 5000).map((pt, i) => {
-                    const cgToken = cgTokens?.find(ct => ct.symbol.toLowerCase() === pt.symbol.toLowerCase());
+                const enrichedPancake = (pancakeTokens || []).slice(0, 5000).map((pt, i) => {
+                    const cgToken = (cgTokens || []).find(ct => ct.symbol?.toLowerCase() === pt.symbol?.toLowerCase());
                     return {
                         id: pt.address,
                         symbol: pt.symbol.toUpperCase(),
@@ -606,9 +606,9 @@ export default function B20Exchange() {
                 });
 
                 // Format CG Tokens
-                const cgFormatted = cgTokens.map(t => ({
+                const cgFormatted = (cgTokens || []).map(t => ({
                     id: t.id,
-                    symbol: t.symbol.toUpperCase(),
+                    symbol: (t.symbol || '').toUpperCase(),
                     name: t.name,
                     address: t.address || t.contract_address || t.id,
                     image: t.image,
@@ -623,9 +623,9 @@ export default function B20Exchange() {
                     network: getNetworkForToken(t.symbol, t.id)
                 }));
 
-                const b20Formatted = b20Tokens.map(bt => ({
+                const b20Formatted = (b20Tokens || []).map(bt => ({
                     id: bt.contract_address,
-                    symbol: bt.symbol.toUpperCase(),
+                    symbol: (bt.symbol || '').toUpperCase(),
                     name: bt.name,
                     address: bt.contract_address,
                     image: bt.logo_url || '/logo.png',
@@ -672,7 +672,9 @@ export default function B20Exchange() {
                 }
 
                 finalTokens.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999));
-                setTokens(finalTokens);
+                if (finalTokens.length > 0) {
+                    setTokens(finalTokens);
+                }
 
                 // Discovery Sentinel Logic
                 try {
@@ -702,7 +704,7 @@ export default function B20Exchange() {
                 console.error('Terminal Index Error:', error);
             } finally {
                 setIsLoading(false);
-                setIsInitial(false);
+                isInitial = false;
             }
         };
         fetchTokens();
@@ -1135,7 +1137,7 @@ export default function B20Exchange() {
                                 <div className="absolute inset-0 bg-emerald-500/30 rounded-full animate-gold-wave" />
                                 <Globe className={`w-4 h-4 relative z-10 ${mode === 'fiat' ? 'text-white' : 'text-emerald-500'}`} />
                             </div>
-                            Fiat - Buy and sell Crypto
+                            Fiat Portal
                         </button>
 
                         <Link 
@@ -1180,7 +1182,7 @@ export default function B20Exchange() {
                             </div>
                             Community
                         </button>
-                        <button 
+                         <button 
                             onClick={() => setMode('announcements')}
                             className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'announcements' ? 'bg-purple-500 text-white shadow-2xl shadow-purple-500/20 scale-105' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
                         >
@@ -1189,6 +1191,16 @@ export default function B20Exchange() {
                                 <Megaphone className={`w-4 h-4 relative z-10 ${mode === 'announcements' ? 'text-white' : 'text-purple-500'}`} />
                             </div>
                             Bulletin
+                        </button>
+                         <button 
+                            onClick={() => setMode('express_fiat')}
+                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'express_fiat' ? 'bg-amber-500 text-white shadow-2xl shadow-amber-500/20 scale-105' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
+                        >
+                            <div className="relative flex items-center justify-center">
+                                <div className="absolute inset-0 bg-amber-500/30 rounded-full animate-gold-wave" />
+                                <CreditCard className={`w-4 h-4 relative z-10 ${mode === 'express_fiat' ? 'text-white' : 'text-amber-500'}`} />
+                            </div>
+                            Express Fiat
                         </button>
                     </div>
                 </div>
@@ -2270,8 +2282,51 @@ export default function B20Exchange() {
                                     Secure fiat-to-crypto bridging with automated compliance and AI rate optimization.
                                 </p>
                                 <div className="mt-12 flex justify-center gap-6">
-                                    <Link href="/fiat" className="px-10 py-5 bg-emerald-500 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-xl shadow-emerald-500/20 hover:scale-105 transition-all">Open Bridge</Link>
+                                    <button onClick={() => setMode('express_fiat')} className="px-10 py-5 bg-emerald-500 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-xl shadow-emerald-500/20 hover:scale-105 transition-all">Open Bridge</button>
                                     <button onClick={() => setMode('markets')} className="px-10 py-5 bg-white border border-gray-100 text-gray-400 rounded-[2rem] font-black uppercase tracking-widest hover:text-gray-900 transition-all">Market Nexus</button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {mode === 'express_fiat' && (
+                        <motion.div 
+                            key="express_fiat" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }}
+                            className="max-w-[1200px] mx-auto"
+                        >
+                            <div className="bg-white/50 backdrop-blur-3xl border border-gray-100 rounded-[3rem] p-8 md:p-12 shadow-3xl shadow-amber-900/5 min-h-[700px] flex flex-col items-center">
+                                <div className="text-center mb-12">
+                                    <div className="w-20 h-20 bg-emerald-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-6 border border-emerald-500/20">
+                                        <CreditCard className="w-10 h-10 text-emerald-500" />
+                                    </div>
+                                    <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tighter">B20 Express Fiat</h2>
+                                    <p className="text-xs font-black text-emerald-500 uppercase tracking-[0.3em] mt-1 italic">Direct Bank-to-Crypto Pipeline</p>
+                                    <div className="mt-4 flex flex-wrap items-center justify-center gap-6 text-gray-400">
+                                        <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"> <CheckCircle2 className="w-3 h-3 text-emerald-500" /> VISA / MASTERCARD</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"> <CheckCircle2 className="w-3 h-3 text-emerald-500" /> APPLE PAY</span>
+                                        <span className="text-[10px] font-bold uppercase tracking-widest flex items-center gap-2"> <CheckCircle2 className="w-3 h-3 text-emerald-500" /> GOOGLE PAY</span>
+                                    </div>
+                                </div>
+
+                                <div className="w-full max-w-[480px] h-[650px] bg-white rounded-[2.5rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] border border-gray-100 overflow-hidden relative">
+                                    <iframe 
+                                        src={`https://widget.onramper.com/?color=3b82f6&apiKey=pk_test_x5uY9_718mX5h9iJj9n_9&defaultCrypto=BNB&defaultCurrency=USD&wallet=${account || '0x0000000000000000000000000000000000000000'}`}
+                                        title="B20 Express Fiat"
+                                        frameBorder="0"
+                                        allow="accelerometer; autoplay; camera; gyroscope; payment"
+                                        className="w-full h-full"
+                                    />
+                                </div>
+                                
+                                <div className="mt-12 text-center max-w-lg">
+                                    <div className="flex items-center justify-center gap-3 mb-4">
+                                        <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                                        <span className="text-[9px] font-black text-gray-900 uppercase tracking-widest">TLS 1.3 Encryption Active</span>
+                                    </div>
+                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-relaxed">
+                                        Transaction processing is handled by licensed global liquidity providers. 
+                                        B20 Exchange does not store or access your personal banking credentials.
+                                    </p>
                                 </div>
                             </div>
                         </motion.div>

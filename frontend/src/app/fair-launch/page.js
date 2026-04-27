@@ -196,8 +196,16 @@ export default function FairLaunch() {
             );
             const receipt = await tx.wait();
 
-            const event = receipt.logs.find(x => x.fragment?.name === 'TokenCreatedDirect');
-            const tokenAddress = event ? event.args.tokenAddress : null;
+            let tokenAddress = null;
+            for (const log of receipt.logs) {
+                try {
+                    const parsed = factory.interface.parseLog(log);
+                    if (parsed && parsed.name === 'TokenCreatedDirect') {
+                        tokenAddress = parsed.args.tokenAddress;
+                        break;
+                    }
+                } catch (e) { /* skip */ }
+            }
 
             const postData = new FormData();
             postData.append('name', formData.name);

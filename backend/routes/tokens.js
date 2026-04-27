@@ -39,10 +39,9 @@ function normalizeToken(t) {
     const now = new Date();
     const lastTrade = new Date(t.last_trade_at || t.created_at);
     const diffDays = (now - lastTrade) / (1000 * 60 * 60 * 24);
-    let isDelisted = t.is_delisted === 1;
-    let delistingSoon = false;
-    if (diffDays >= 60) isDelisted = true;
-    else if (diffDays >= 57) delistingSoon = true;
+    // Respect admin-controlled is_delisted flag — do NOT auto-delist
+    const isDelisted = t.is_delisted === 1 || t.is_delisted === true;
+    const delistingSoon = !isDelisted && diffDays >= 57;
 
     const collateral = parseFloat(t.liquidity_bnb || 0);
     let progress = Math.min(100, (collateral / 10) * 100);
@@ -66,6 +65,26 @@ function normalizeToken(t) {
 
 
 
+// ─── GET /api/tokens/stats ────────────────────────────────────────────────────
+// Returns high-level platform counts for Admin + Homepage widgets
+router.get('/stats', async (req, res) => {
+    console.log('[DEBUG] Stats route hit');
+    try {
+        const result = await db.query(`
+            SELECT
+                COUNT(*)                                                          AS total,
+                COUNT(CASE WHEN DATE(created_at) = DATE('now')             THEN 1 END) AS today,
+                COUNT(CASE WHEN created_at >= DATETIME('now', '-1 hour')   THEN 1 END) AS last_1h,
+                COUNT(CASE WHEN created_at >= DATETIME('now', '-24 hours') THEN 1 END) AS last_24h,
+                COUNT(CASE WHEN launch_type IN ('FAIR','STANDARD','EXCHANGE_LISTING') THEN 1 END) AS migrated
+            FROM tokens WHERE is_delisted = 0
+        `);
+        res.json(result.rows[0] || { total: 0, today: 0, last_1h: 0, last_24h: 0, migrated: 0 });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch token stats' });
+    }
+});
+
 // ─── GET /api/tokens ─────────────────────────────────────────────────────────
 // List all tokens for the launchpad page
 router.get('/', async (req, res) => {
@@ -86,6 +105,99 @@ router.get('/', async (req, res) => {
     } catch (error) {
         console.error('Error fetching tokens:', error);
         res.status(500).json({ error: 'Failed to fetch tokens', details: error.message });
+    }
+});
+
+// ─── In-memory cache for large token lists (avoids hammering external APIs) ──
+const _listCache = {};
+async function cachedFetch(key, url, ttlMs = 10 * 60 * 1000) {
+    const now = Date.now();
+    if (_listCache[key] && (now - _listCache[key].ts) < ttlMs) {
+        return _listCache[key].data;
+    }
+    const res = await axios.get(url, { timeout: 20000 });
+    _listCache[key] = { data: res.data, ts: now };
+    return res.data;
+}
+
+// ─── GET /api/tokens/markets/bsclist ────────────────────────────────────────
+// Returns the full CoinGecko BSC token list (~3300 tokens) + PancakeSwap extended
+// Cached for 10 minutes to avoid rate limits. Used by the exchange Markets tab.
+router.get('/markets/bsclist', async (req, res) => {
+    try {
+        const PANCAKE_URL    = 'https://tokens.pancakeswap.finance/pancakeswap-extended.json';
+        const CG_BSC_URL     = 'https://tokens.coingecko.com/binance-smart-chain/all.json';
+        const ONE_INCH_URL   = 'https://tokens.1inch.io/v1.2/56'; // 1inch BSC list
+
+        const [cgBsc, pancake, oneInch] = await Promise.allSettled([
+            cachedFetch('cg_bsc',   CG_BSC_URL,   10 * 60 * 1000),
+            cachedFetch('pancake',  PANCAKE_URL,  10 * 60 * 1000),
+            cachedFetch('1inch56',  ONE_INCH_URL, 10 * 60 * 1000),
+        ]);
+
+        const safe = (r) => r.status === 'fulfilled' ? r.value : null;
+
+        // Merge all token lists into a unified format
+        const seenAddresses = new Set();
+        const merged = [];
+
+        // CoinGecko BSC list (highest quality — has prices)
+        const cgTokens = safe(cgBsc)?.tokens || [];
+        for (const t of cgTokens) {
+            const addr = (t.address || '').toLowerCase();
+            if (!addr || seenAddresses.has(addr)) continue;
+            seenAddresses.add(addr);
+            merged.push({
+                address: t.address,
+                symbol:  (t.symbol || '').toUpperCase(),
+                name:    t.name,
+                decimals: t.decimals || 18,
+                logoURI: t.logoURI || t.image || '',
+                chainId: 56,
+                source: 'coingecko_bsc'
+            });
+        }
+
+        // PancakeSwap extended list
+        const pancakeTokens = safe(pancake)?.tokens || [];
+        for (const t of pancakeTokens) {
+            const addr = (t.address || '').toLowerCase();
+            if (!addr || seenAddresses.has(addr)) continue;
+            seenAddresses.add(addr);
+            merged.push({
+                address: t.address,
+                symbol:  (t.symbol || '').toUpperCase(),
+                name:    t.name,
+                decimals: t.decimals || 18,
+                logoURI: t.logoURI || '',
+                chainId: 56,
+                source: 'pancakeswap'
+            });
+        }
+
+        // 1inch BSC list (object keyed by address)
+        const oneInchTokens = safe(oneInch);
+        if (oneInchTokens && typeof oneInchTokens === 'object') {
+            for (const [addr, t] of Object.entries(oneInchTokens)) {
+                const lAddr = addr.toLowerCase();
+                if (seenAddresses.has(lAddr)) continue;
+                seenAddresses.add(lAddr);
+                merged.push({
+                    address: addr,
+                    symbol:  (t.symbol || '').toUpperCase(),
+                    name:    t.name,
+                    decimals: t.decimals || 18,
+                    logoURI: t.logoURI || t.logoUrl || '',
+                    chainId: 56,
+                    source: '1inch'
+                });
+            }
+        }
+
+        res.json({ tokens: merged, count: merged.length });
+    } catch (err) {
+        console.error('[BSC List] Failed:', err.message);
+        res.status(500).json({ error: 'Failed to fetch BSC token list', details: err.message });
     }
 });
 
@@ -264,6 +376,7 @@ router.get('/list', async (req, res) => {
 // IMPORTANT: Must be before /:address route
 router.get('/by-wallet/:wallet', async (req, res) => {
     const { wallet } = req.params;
+    console.log(`[Profile] Fetching tokens for wallet: ${wallet}`);
     try {
         // Case-insensitive match so MetaMask mixed-case wallets always find their tokens
         const query = `SELECT *, COALESCE(launch_type, 'MEME') as launch_type FROM tokens WHERE LOWER(creator_wallet) = LOWER(?) ORDER BY created_at DESC`;
@@ -281,6 +394,8 @@ router.get('/by-wallet/:wallet', async (req, res) => {
 router.post('/sync', upload.single('logo'), async (req, res) => {
     const { name, symbol, decimals, supply, owner, description, tokenAddress, txHash, launch_type } = req.body;
     const logoFile = req.file;
+
+    console.log('[Sync] Incoming request object:', { name, symbol, tokenAddress, owner, launch_type });
 
     if (!tokenAddress) {
         return res.status(400).json({ error: 'tokenAddress is required' });
@@ -413,7 +528,7 @@ router.post('/sync', upload.single('logo'), async (req, res) => {
         const row = insertedRow.rows[0] || { contract_address: tokenAddress, name, symbol };
         res.status(201).json(normalizeToken(row));
     } catch (error) {
-        console.error('Error syncing token:', error);
+        console.error('[Sync] Error syncing token:', error.message, error.stack);
         res.status(500).json({ error: 'Failed to sync token metadata', details: error.message });
     }
 });
@@ -482,24 +597,46 @@ router.post('/status/request', async (req, res) => {
     const isManual = tx_hash === 'admin_manual';
     
     try {
-        await db.query(
-            'UPDATE tokens SET trust_status = ? WHERE contract_address = ?',
-            [new_status, contract_address]
-        );
-        
-        // Log the service fee in treasury_transfers
-        // If manual (admin), log 0 fee. If from user, log 0.01 fee.
-        try {
-            const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+        if (isManual) {
+            // Admin manual override - apply immediately
             await db.query(
-                'INSERT OR IGNORE INTO treasury_transfers (tx_hash, amount_bnb, transfer_type, source_contract, destination_address) VALUES (?, ?, ?, ?, ?)',
-                [tx_hash || `status_req_${contract_address}_${Date.now()}`, isManual ? 0 : 0.01, 'upgrade_fee', contract_address, TREASURY]
+                'UPDATE tokens SET trust_status = ? WHERE contract_address = ?',
+                [new_status, contract_address]
             );
-        } catch (transErr) {
-            console.warn('Failed to log status fee transfer:', transErr.message);
-        }
+            res.json({ success: true, message: 'Status updated directly by Admin' });
+        } else {
+            // User requested upgrade - Route to Admin Launch Guard for approval
+            const tokenData = await db.query('SELECT name, trust_status, owner FROM tokens WHERE contract_address = ?', [contract_address]);
+            const token = tokenData.rows[0];
+            
+            if (!token) return res.status(404).json({ error: 'Token not found' });
 
-        res.json({ success: true, message: isManual ? 'Status updated by Admin' : 'Status updated after verification' });
+            await db.query(`
+                INSERT INTO token_upgrade_requests 
+                (token_address, token_name, current_status, requested_upgrade, user_wallet, status, tx_hash)
+                VALUES (?, ?, ?, ?, ?, 'PENDING', ?)
+            `, [
+                contract_address,
+                token.name,
+                token.trust_status || 'Newly Launched Token',
+                new_status,
+                token.owner || 'UNKNOWN',
+                tx_hash
+            ]);
+
+            // Log the service fee in treasury_transfers
+            try {
+                const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+                await db.query(
+                    'INSERT OR IGNORE INTO treasury_transfers (tx_hash, amount_bnb, transfer_type, source_contract, destination_address) VALUES (?, ?, ?, ?, ?)',
+                    [tx_hash || `status_req_${contract_address}_${Date.now()}`, 0.01, 'upgrade_fee', contract_address, TREASURY]
+                );
+            } catch (transErr) {
+                console.warn('Failed to log status fee transfer:', transErr.message);
+            }
+
+            res.json({ success: true, message: 'Upgrade request submitted to Admin Launch Guard for approval' });
+        }
     } catch (error) {
         console.error('Status request failed:', error);
         res.status(500).json({ error: 'Request failed' });
@@ -527,6 +664,20 @@ router.post('/boost', async (req, res) => {
     } catch (error) {
         console.error('Boost error:', error);
         res.status(500).json({ error: 'Boost failed' });
+    }
+});
+
+// ─── GET /api/tokens/listing-submissions ────────────────────────────────────
+// Admin: retrieve all listing submissions
+// IMPORTANT: Must be before /:address route
+router.get('/listing-submissions', async (req, res) => {
+    try {
+        const result = await db.query(
+            `SELECT * FROM listing_submissions ORDER BY submitted_at DESC LIMIT 200`
+        );
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch listing submissions' });
     }
 });
 
@@ -592,42 +743,7 @@ router.get('/:address', async (req, res) => {
     }
 });
 
-// ── GET /api/tokens/verify-status/:address ───────────────────────────────────
-// Returns live BSCScan verification + Trust Wallet PR status for a token
-router.get('/verify-status/:address', async (req, res) => {
-    const { address } = req.params;
-    if (!address.startsWith('0x') || address.length !== 42) {
-        return res.status(400).json({ error: 'Invalid address' });
-    }
-    try {
-        const result = await db.query(
-            `SELECT contract_address, name, symbol,
-                    bscscan_verified, verification_status, verify_guid,
-                    compiler_version, last_verified_at,
-                    tw_pr_url, tw_pr_status, tw_submitted_at, ipfs_logo_url
-             FROM tokens WHERE LOWER(contract_address) = LOWER(?)`,
-            [address]
-        );
-        if (result.rows.length === 0) return res.status(404).json({ error: 'Token not found' });
-        const t = result.rows[0];
-        res.json({
-            contract_address:    t.contract_address,
-            name:                t.name,
-            symbol:              t.symbol,
-            bscscan_verified:    t.bscscan_verified === 1,
-            verification_status: t.verification_status || 'pending',
-            compiler_version:    t.compiler_version,
-            last_verified_at:    t.last_verified_at,
-            bscscan_url:         `https://bscscan.com/address/${t.contract_address}`,
-            tw_pr_url:           t.tw_pr_url || null,
-            tw_pr_status:        t.tw_pr_status || 'pending',
-            tw_submitted_at:     t.tw_submitted_at || null,
-            ipfs_logo_url:       t.ipfs_logo_url || null,
-        });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to fetch verification status', details: error.message });
-    }
-});
+// ... moved up ...
 
 // ─── POST /api/tokens/admin/verify-cycle ──────────────────────────────────
 // Admin only: Trigge BSCScan / Trust Wallet verification cycle manually
@@ -723,24 +839,7 @@ router.post('/admin/list', upload.single('logo'), async (req, res) => {
     }
 });
 
-// ─── GET /api/tokens/stats ────────────────────────────────────────────────────
-// Returns high-level platform counts for Admin + Homepage widgets
-router.get('/stats', async (req, res) => {
-    try {
-        const result = await db.query(`
-            SELECT
-                COUNT(*)                                                          AS total,
-                COUNT(CASE WHEN DATE(created_at) = DATE('now')             THEN 1 END) AS today,
-                COUNT(CASE WHEN created_at >= DATETIME('now', '-1 hour')   THEN 1 END) AS last_1h,
-                COUNT(CASE WHEN created_at >= DATETIME('now', '-24 hours') THEN 1 END) AS last_24h,
-                COUNT(CASE WHEN launch_type IN ('FAIR','STANDARD','EXCHANGE_LISTING') THEN 1 END) AS migrated
-            FROM tokens WHERE is_delisted = 0
-        `);
-        res.json(result.rows[0] || { total: 0, today: 0, last_1h: 0, last_24h: 0, migrated: 0 });
-    } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch token stats' });
-    }
-});
+// ... moved ...
 
 // ─── POST /api/tokens/listing-submissions ───────────────────────────────────
 // Stores a listing application submitted via the Exchange "List your token" form
@@ -776,18 +875,7 @@ router.post('/listing-submissions', async (req, res) => {
     }
 });
 
-// ─── GET /api/tokens/listing-submissions ────────────────────────────────────
-// Admin: retrieve all listing submissions
-router.get('/listing-submissions', async (req, res) => {
-    try {
-        const result = await db.query(
-            `SELECT * FROM listing_submissions ORDER BY submitted_at DESC LIMIT 200`
-        );
-        res.json(result.rows);
-    } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch listing submissions' });
-    }
-});
+// (GET /listing-submissions moved above /:address — see line ~554)
 
 // ─── PATCH /api/tokens/listing-submissions/:id ──────────────────────────────
 // Admin: approve or reject a listing submission

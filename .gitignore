@@ -12,6 +12,11 @@ yarn-error.log*
 *.db
 *.sqlite
 database.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.bak
+*-shm
+*-wal
 .next/
 dist/
 out/

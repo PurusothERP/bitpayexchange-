@@ -37,13 +37,8 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,h
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Allow requests with no origin (e.g. mobile apps, curl, Postman)
-        if (!origin) return callback(null, true);
-        if (ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed))) {
-            return callback(null, true);
-        }
-        console.warn(`[CORS] Blocked origin: ${origin}`);
-        callback(new Error('Not allowed by CORS policy'));
+        // Broadly allow all origins for the restoration phase to ensure connectivity
+        callback(null, true);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

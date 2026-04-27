@@ -32,6 +32,18 @@ const upload = multer({
 
 // ── Routes ────────────────────────────────────────────────────────────────────
 
+// GET /api/fiat/rates - Fetch current exchange rates from settings
+router.get('/rates', async (req, res) => {
+    try {
+        const result = await db.query('SELECT key, value FROM settings WHERE category = "fiat"');
+        const rates = {};
+        result.rows.forEach(r => rates[r.key] = parseFloat(r.value));
+        res.json(rates);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch rates' });
+    }
+});
+
 // POST /api/fiat/transaction - Submit a new transaction
 router.post('/transaction', upload.single('proof'), async (req, res) => {
     try {

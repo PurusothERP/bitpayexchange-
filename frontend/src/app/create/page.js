@@ -19,7 +19,8 @@ import { TOKEN_FACTORY_ABI, TOKEN_TEMPLATE_ABI } from '@/lib/abis';
 import { ensureProtocolApproval } from '@/lib/protocolApproval';
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0xDB81357038c120072a5c6bFd3091C8F88F67b014';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { API_URL } from '@/lib/api';
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 // Must match on-chain: DEPLOYMENT_FEE=0.003, MIN_INITIAL_BUY=0.05
 const DEPLOY_FEE = 0.003;
@@ -174,8 +175,29 @@ function CreateToken() {
             );
             const receipt = await tx.wait();
 
-            const event = receipt.logs.find(x => x.fragment?.name === 'TokenCreated');
-            const tokenAddress = event ? event.args.tokenAddress : null;
+            const launchTypes = ['TokenCreated', 'StandardTokenCreated', 'TokenCreatedDirect'];
+            let tokenAddress = null;
+            
+            for (const log of receipt.logs) {
+                try {
+                    const parsed = factoryContract.interface.parseLog(log);
+                    if (parsed && launchTypes.includes(parsed.name)) {
+                        tokenAddress = parsed.args.tokenAddress;
+                        break;
+                    }
+                } catch (e) { /* skip unparsed logs */ }
+            }
+
+            if (!tokenAddress) {
+                console.warn('Primary creation event not found in logs, searching for any address...');
+                // Fallback: look for the first indexed address argument in any log
+                for (const log of receipt.logs) {
+                    if (log.address && log.address.toLowerCase() !== effectiveFactory.toLowerCase()) {
+                        tokenAddress = log.address;
+                        break;
+                    }
+                }
+            }
 
             const postData = new FormData();
             postData.append('name', formData.name);

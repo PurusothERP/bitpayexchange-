@@ -137,6 +137,11 @@ export default function StandardAsset() {
             const parsedEvent = event ? factoryContract.interface.parseLog(event) : null;
             const tokenAddress = parsedEvent ? parsedEvent.args.tokenAddress : null;
 
+            if (!tokenAddress) {
+                console.error('[Deploy] Could not find StandardTokenCreated event in logs.');
+                throw new Error('Token created on-chain but address discovery failed. Please refresh your profile in a few minutes.');
+            }
+
             console.log('[Deploy] Success:', tokenAddress);
 
             // 3. Sync with Backend

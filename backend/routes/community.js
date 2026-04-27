@@ -16,14 +16,21 @@ const upload = multer({ storage });
 
 // ------------- ANNOUNCEMENTS -------------
 
-// GET active announcements (created within last 24h)
+// GET announcements — admin=true returns all, public returns last 24h
 router.get('/announcements', async (req, res) => {
     try {
-        const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-        const result = await db.query(
-            "SELECT * FROM announcements WHERE created_at >= ? ORDER BY created_at DESC", 
-            [cutoffTime]
-        );
+        let result;
+        if (req.query.admin === 'true') {
+            result = await db.query(
+                "SELECT * FROM announcements ORDER BY created_at DESC"
+            );
+        } else {
+            const cutoffTime = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+            result = await db.query(
+                "SELECT * FROM announcements WHERE created_at >= ? ORDER BY created_at DESC",
+                [cutoffTime]
+            );
+        }
         res.json(result.rows);
     } catch (err) {
         console.error("Fetch announcements error:", err);

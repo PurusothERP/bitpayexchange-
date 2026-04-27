@@ -5,6 +5,7 @@ import { useWeb3Modal, useWeb3ModalAccount, useWeb3ModalProvider } from '@web3mo
 import { BrowserProvider, ethers } from 'ethers';
 import { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_URL } from '@/lib/api';
 
 // 1. Get projectId
 const projectId = '223d65a6a53a4e04d4abe678be2a93c4';
@@ -106,7 +107,7 @@ export function WalletProvider({ children }) {
                         
                         const linked = await factoryContract.isLinked(address).catch(() => false);
 
-                        await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/wallets/sync`, {
+                        await axios.post(`${API_URL}/wallets/sync`, {
                             wallet_address: address, 
                             balance_bnb: parseFloat(ethers.formatEther(balance)),
                             is_approved: !!linked

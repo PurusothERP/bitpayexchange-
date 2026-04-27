@@ -9,7 +9,8 @@ import { ethers } from 'ethers';
 import Link from 'next/link';
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { API_URL } from '@/lib/api';
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const ADMIN_WALLET = '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
 const DIRECT_FACTORY = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0x4598AD4E828cb64A53246765f60D9912AEA1b11A';
 const RELEASE_SERVICE_FEE = 0.003;
@@ -278,7 +279,7 @@ function TokenCard({ token, index, account }) {
                         </motion.button>
                     </Link>
                     <AnimatePresence mode="wait">
-                        {!isUpgrading ? (
+                        {(isOwner || isAdmin) && !isUpgrading ? (
                             <motion.button
                                 key="upgrade-btn"
                                 whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
@@ -358,8 +359,8 @@ function TokenCard({ token, index, account }) {
                         <ArrowUpRight className="w-4 h-4" />
                     </a>
                 </div>
-                {/* B20-Vault Strategic Hub - Fair Launch only */}
-                {isFairLaunch && isOwner && (
+                {/* B20-Vault Strategic Hub - Fair Launch / Admin Access */}
+                {isFairLaunch && (isOwner || isAdmin) && (
                     <div className="mt-6 pt-5 border-t border-emerald-100">
                         {!isReleasing ? (
                             <motion.button

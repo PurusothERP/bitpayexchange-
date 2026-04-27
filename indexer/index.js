@@ -14,7 +14,7 @@ async function syncHistoricalEvents(contract, eventName, startBlock, handler) {
     try {
         const filter = contract.filters[eventName]();
         const latestBlock = await provider.getBlockNumber();
-        const CHUNK_SIZE = 2000;
+        const CHUNK_SIZE = 500;
         let fromBlock = startBlock;
 
         while (fromBlock <= latestBlock) {
@@ -25,6 +25,7 @@ async function syncHistoricalEvents(contract, eventName, startBlock, handler) {
                 await handler(...log.args, log);
             }
             fromBlock = toBlock + 1;
+            await new Promise(resolve => setTimeout(resolve, 500)); // Rate limit protection
         }
         console.log(`[Indexer] ✅ ${eventName} history sync complete.`);
     } catch (e) {

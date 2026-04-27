@@ -12,7 +12,8 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { API_URL } from '@/lib/api';
+// const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 // ── Components ───────────────────────────────────────────────────────────────
 
@@ -297,9 +298,9 @@ export default function Launchpad() {
         if (view === 'new') {
             list = [...list].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
         }
-        if (launchType === 'bonding') list = list.filter(t => t.launch_type === 'MEME' || !t.launch_type);
-        if (launchType === 'fair') list = list.filter(t => t.launch_type === 'FAIR');
-        if (launchType === 'standard') list = list.filter(t => t.launch_type === 'STANDARD');
+        if (launchType === 'bonding') list = list.filter(t => t.launch_type === 'MEME' || !t.launch_type || t.launch_type === 'BONDING_CURVE');
+        if (launchType === 'fair') list = list.filter(t => t.launch_type === 'FAIR' || t.launch_type === 'FAIR_LAUNCH');
+        if (launchType === 'standard') list = list.filter(t => t.launch_type === 'STANDARD' || t.launch_type === 'EXCHANGE_LISTING');
 
         if (search) {
             const q = search.toLowerCase();

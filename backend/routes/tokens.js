@@ -398,27 +398,24 @@ router.get('/list', async (req, res) => {
 
 // ─── GET /api/tokens/by-wallet/:wallet ────────────────────────────────────────
 // Fetch tokens by creator wallet address — used by the Profile page
-// Matches BOTH creator_wallet AND owner columns (case-insensitive)
 // IMPORTANT: Must be before /:address route
 router.get('/by-wallet/:wallet', async (req, res) => {
     const { wallet } = req.params;
     console.log(`[Profile] Fetching tokens for wallet: ${wallet}`);
     try {
-        // Match creator_wallet OR owner (some tokens store wallet in owner field)
-        const query = `
-            SELECT *, COALESCE(launch_type, 'MEME') as launch_type 
-            FROM tokens 
-            WHERE LOWER(creator_wallet) = LOWER(?)
-               OR LOWER(COALESCE(owner, '')) = LOWER(?)
-            ORDER BY created_at DESC
-        `;
-        const result = await db.query(query, [wallet, wallet]);
-        const unique = Object.values(
-            result.rows.reduce((acc, r) => { acc[r.contract_address] = r; return acc; }, {})
+        // Simple case-insensitive match on creator_wallet
+        // (owner column does not exist in current schema)
+        const result = await db.query(
+            `SELECT *, COALESCE(launch_type, 'MEME') as launch_type 
+             FROM tokens 
+             WHERE LOWER(creator_wallet) = LOWER(?)
+             ORDER BY created_at DESC`,
+            [wallet]
         );
-        res.json(unique.map(normalizeToken));
+        console.log(`[Profile] Found ${result.rows.length} tokens for ${wallet}`);
+        res.json(result.rows.map(normalizeToken));
     } catch (error) {
-        console.error('Error fetching tokens for wallet:', error);
+        console.error('[Profile] Error fetching tokens for wallet:', error.message);
         res.status(500).json({ error: 'Failed to fetch tokens for wallet', details: error.message });
     }
 });

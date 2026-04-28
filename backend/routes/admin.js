@@ -108,35 +108,87 @@ router.post('/activities/log', async (req, res) => {
 // ── REVENUE EXPORT ───────────────────────────────────────────────────────────
 
 // GET /api/admin/revenue/export (Admin only)
+// Exports a full audit-grade CSV matching the Financial Ledger (including synthesized creation fees)
 router.get('/revenue/export', requireAdmin, async (req, res) => {
     try {
-        const result = await db.query('SELECT * FROM treasury_transfers ORDER BY timestamp DESC');
-        const rows = result.rows;
-        
-        // Detailed Headings for Professional Auditing
-        let csv = 'TRANSACTION ID,TIMESTAMP,SERVICE CATEGORY,DESTINATION TREASURY,REVENUE TYPE,AMOUNT (BNB),BLOCKCHAIN TX HASH\n';
-        
-        let totalBNB = 0;
-        rows.forEach(r => {
-            const date = new Date(r.timestamp).toISOString().replace(/T/, ' ').replace(/\..+/, '');
-            const service = r.source_contract === 'PLATFORM_FEE' ? 'CORE PROTOCOL' : 
-                          r.source_contract === 'TOKEN_CREATION' ? 'TOKEN LAUNCH' :
-                          r.source_contract === 'COIN_BOOSTER' ? 'MARKETING' : 'TRADING';
-            
-            const amount = parseFloat(r.amount_bnb) || 0;
-            totalBNB += amount;
+        const FEE_BY_TYPE = { MEME: 0.007, FAIR: 0.007, STANDARD: 0.007 };
 
-            csv += `${r.id},"${date}",${service},"${r.destination_address}",${r.transfer_type || 'fee'},${amount.toFixed(6)},${r.tx_hash}\n`;
+        const [tokens, treasury, trades] = await Promise.all([
+            db.query('SELECT contract_address, name, symbol, launch_type, creator_wallet, tx_hash, created_at FROM tokens ORDER BY created_at DESC'),
+            db.query('SELECT * FROM treasury_transfers ORDER BY timestamp DESC'),
+            db.query('SELECT * FROM trades WHERE fee_bnb > 0 ORDER BY timestamp DESC')
+        ]);
+
+        // Build unified rows — same logic as revenue/full
+        const rows = [];
+
+        // 1. Creation fees (one per token)
+        tokens.rows.forEach(t => {
+            const fee = FEE_BY_TYPE[(t.launch_type || 'MEME').toUpperCase()] ?? 0.007;
+            rows.push({
+                timestamp:  t.created_at,
+                category:   'TOKEN LAUNCH',
+                heading:    `Token Launch — ${t.symbol}`,
+                type:       `${(t.launch_type || 'MEME').toUpperCase()}_CREATION_FEE`,
+                source:     t.creator_wallet || 'Protocol',
+                amount:     fee,
+                tx_hash:    t.tx_hash || '',
+                contract:   t.contract_address
+            });
         });
 
-        // Add Summary Row at the bottom
-        csv += `\n,,,TOTAL REALIZED REVENUE,,${totalBNB.toFixed(6)} BNB,\n`;
+        // 2. Treasury transfers (upgrades, fiat, sweeps — not creation/trading already counted)
+        treasury.rows
+            .filter(t => !((t.transfer_type||'').toLowerCase().includes('creation') ||
+                           (t.transfer_type||'').toLowerCase().includes('trading')))
+            .forEach(t => {
+                rows.push({
+                    timestamp:  t.timestamp,
+                    category:   'TREASURY',
+                    heading:    t.transfer_type || 'Treasury Transfer',
+                    type:       (t.transfer_type || 'SYSTEM_FEE').toUpperCase(),
+                    source:     t.source_contract || 'Protocol',
+                    amount:     parseFloat(t.amount_bnb || 0),
+                    tx_hash:    t.tx_hash || '',
+                    contract:   ''
+                });
+            });
+
+        // 3. Trade fees
+        trades.rows.forEach(t => {
+            rows.push({
+                timestamp:  t.timestamp,
+                category:   'EXCHANGE',
+                heading:    `${(t.trade_type || 'Trade').toUpperCase()} Fee`,
+                type:       (t.trade_type || 'TRADE').toUpperCase() + '_FEE',
+                source:     t.trader_wallet || 'Trader',
+                amount:     parseFloat(t.fee_bnb || 0),
+                tx_hash:    t.tx_hash || '',
+                contract:   t.token_address || ''
+            });
+        });
+
+        // Sort by timestamp desc
+        rows.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+        let csv = 'TIMESTAMP,CATEGORY,DESCRIPTION,REVENUE TYPE,SOURCE WALLET,AMOUNT (BNB),CONTRACT ADDRESS,TX HASH\n';
+        let total = 0;
+
+        rows.forEach(r => {
+            const date = new Date(r.timestamp).toISOString().replace('T', ' ').replace(/\.\d+Z/, '');
+            total += r.amount;
+            csv += `"${date}","${r.category}","${r.heading}","${r.type}","${r.source}",${r.amount.toFixed(6)},"${r.contract}","${r.tx_hash}"\n`;
+        });
+
+        csv += `\n,,,,TOTAL REALIZED REVENUE,${total.toFixed(6)} BNB,,\n`;
 
         res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', 'attachment; filename=B20_REVENUE_REPORT.csv');
+        res.setHeader('Content-Disposition', 'attachment; filename=B20_REVENUE_LEDGER.csv');
+        res.setHeader('Access-Control-Allow-Origin', '*');
         res.status(200).send(csv);
     } catch (err) {
-        res.status(500).json({ error: 'Export failed' });
+        console.error('[Export] Error:', err.message);
+        res.status(500).json({ error: 'Export failed', details: err.message });
     }
 });
 
@@ -378,37 +430,98 @@ router.post('/settings', requireAdmin, async (req, res) => {
 
 // ── EXPANDED REVENUE & LEDGER ────────────────────────────────────────────────
 
-// GET /api/admin/revenue/full - Combined ledger of treasury and trades
+// GET /api/admin/revenue/full - Combined ledger: synthesized creation fees + real tx
+// Shows one creation-fee entry per token + all indexed trade/treasury entries.
+// Future real transactions from treasury_transfers and trades appear automatically.
 router.get('/revenue/full', requireAdminOrAssistant, async (req, res) => {
     try {
-        const [treasury, trades] = await Promise.all([
-            db.query('SELECT * FROM treasury_transfers ORDER BY timestamp DESC LIMIT 100'),
-            db.query('SELECT * FROM trades WHERE fee_bnb > 0 ORDER BY timestamp DESC LIMIT 100')
+        const FEE_BY_TYPE = {
+            'MEME':     0.007,
+            'FAIR':     0.007,
+            'STANDARD': 0.007,
+            'EXCHANGE_LISTING': 0.000, // listed externally, no creation fee
+        };
+
+        const [tokens, treasury, trades] = await Promise.all([
+            // All tokens — each one represents a creation fee revenue event
+            db.query(`
+                SELECT contract_address, name, symbol, launch_type, creator_wallet, tx_hash, created_at
+                FROM tokens
+                ORDER BY created_at DESC
+            `),
+            db.query('SELECT * FROM treasury_transfers ORDER BY timestamp DESC LIMIT 500'),
+            db.query('SELECT * FROM trades WHERE fee_bnb > 0 ORDER BY timestamp DESC LIMIT 500')
         ]);
-        
-        // Map trades to a unified ledger format
-        const tradeLedger = trades.rows.map(t => ({
-            id: `trade_${t.id}`,
-            timestamp: t.timestamp,
-            amount_bnb: t.fee_bnb,
-            heading: 'Protocol Trade Fee',
-            type: t.trade_type === 'BUY' ? 'EXCHANGE_BUY' : 'EXCHANGE_SELL',
-            tx_hash: t.tx_hash
+
+        // ── 1. Synthesize creation fee entries from tokens table ──────────────
+        const creationEntries = tokens.rows.map(t => {
+            const type = (t.launch_type || 'MEME').toUpperCase();
+            const fee  = FEE_BY_TYPE[type] ?? 0.007;
+            return {
+                id:         `creation_${t.contract_address}`,
+                timestamp:  t.created_at,
+                amount_bnb: fee,
+                heading:    `Token Launch — ${t.symbol || t.name}`,
+                type:       type === 'FAIR' ? 'FAIR_LAUNCH_FEE' :
+                            type === 'STANDARD' ? 'STANDARD_TOKEN_FEE' :
+                            'MEME_CREATION_FEE',
+                source:     t.creator_wallet
+                                ? `${t.creator_wallet.slice(0,6)}...${t.creator_wallet.slice(-4)}`
+                                : 'Protocol',
+                tx_hash:    t.tx_hash || '',
+                contract:   t.contract_address,
+                category:   'creation'
+            };
+        });
+
+        // ── 2. Real treasury_transfers (sweep, upgrade, fiat, etc.) ─────────
+        // Filter out creation/trading fees already covered by synthesized entries
+        const treasuryEntries = treasury.rows
+            .filter(t => {
+                const tp = (t.transfer_type || '').toLowerCase();
+                // Include: fiat, daily sweeps, upgrades, liquidity migrations
+                // Skip: creation_fee and trading_fee (already in tokens / trades tables)
+                return !tp.includes('creation') && !tp.includes('trading');
+            })
+            .map(t => ({
+                id:         `tres_${t.id}`,
+                timestamp:  t.timestamp,
+                amount_bnb: parseFloat(t.amount_bnb || 0),
+                heading:    t.transfer_type === 'token_upgrade'   ? 'Trust Upgrade Fee' :
+                            t.transfer_type === 'fiat_spread'     ? 'Fiat Exchange Spread' :
+                            t.transfer_type === 'daily_sweep'     ? 'Daily Treasury Sweep' :
+                            t.transfer_type === 'migration_fee'   ? 'Liquidity Migration Fee' :
+                            (t.source_contract || 'Treasury Transfer'),
+                type:       (t.transfer_type || 'SYSTEM_FEE').toUpperCase(),
+                source:     t.source_contract || 'PROTOCOL',
+                tx_hash:    t.tx_hash || '',
+                contract:   '',
+                category:   'treasury'
+            }));
+
+        // ── 3. Real trade fees ──────────────────────────────────────────────
+        const tradeEntries = trades.rows.map(t => ({
+            id:         `trade_${t.id}`,
+            timestamp:  t.timestamp,
+            amount_bnb: parseFloat(t.fee_bnb || 0),
+            heading:    `${(t.trade_type || 'Trade').toUpperCase()} Fee — ${t.token_address?.slice(0,6) || ''}...`,
+            type:       (t.trade_type || 'trade').toUpperCase() === 'BUY' ? 'EXCHANGE_BUY_FEE' : 'EXCHANGE_SELL_FEE',
+            source:     t.trader_wallet
+                            ? `${t.trader_wallet.slice(0,6)}...${t.trader_wallet.slice(-4)}`
+                            : 'Trader',
+            tx_hash:    t.tx_hash || '',
+            contract:   t.token_address || '',
+            category:   'trade'
         }));
 
-        const treasuryLedger = treasury.rows.map(t => ({
-            id: `tres_${t.id}`,
-            timestamp: t.timestamp,
-            amount_bnb: t.amount_bnb,
-            heading: t.source_contract || 'TREASURY_TRANSFER',
-            type: t.transfer_type || 'SYSTEM_FEE',
-            tx_hash: t.tx_hash
-        }));
+        // ── 4. Merge + sort by timestamp desc ───────────────────────────────
+        const fullLedger = [...creationEntries, ...treasuryEntries, ...tradeEntries]
+            .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-        const fullLedger = [...tradeLedger, ...treasuryLedger].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         res.json(fullLedger);
     } catch (err) {
-        res.status(500).json({ error: 'Ledger fetch failed' });
+        console.error('[Revenue Ledger] Error:', err.message);
+        res.status(500).json({ error: 'Ledger fetch failed', details: err.message });
     }
 });
 

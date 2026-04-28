@@ -490,8 +490,9 @@ export default function ProfilePage() {
         // Fetch Main Assets
         axios.get(`${API_URL}/tokens/by-wallet/${account}`)
             .then(r => setTokens(Array.isArray(r.data) ? r.data : []))
-            .catch(() => setTokens([]))
+            .catch(e => { console.error('[Profile] Failed to fetch assets:', e?.response?.data || e.message); setTokens([]); })
             .finally(() => setLoading(false));
+
 
         // Fetch BNB balance via walletProvider (avoids 'no listeners' error)
         if (walletProvider) {

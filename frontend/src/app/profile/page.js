@@ -131,10 +131,14 @@ function TokenCard({ token, index, account }) {
         ? `${token.contract_address.slice(0, 10)}...${token.contract_address.slice(-8)}`
         : '—';
 
-    // Normalize logo URL — rewrite localhost:3001 URLs to use the correct API base
+    // Resolve logo URL — backend may return:
+    //  a) http://localhost:3001/logos/<addr>.png  (local static file)
+    //  b) http://localhost:3001/api/tokens/<addr>/logo  (proxy/SVG generator)
+    //  c) any other CDN URL
+    const BACKEND_BASE = API_URL.replace('/api', '');
     const logoUrl = token.logo_url
-        ? token.logo_url.replace('http://localhost:3001', API_URL.replace('/api', ''))
-        : null;
+        ? token.logo_url.replace('http://localhost:3001', BACKEND_BASE)
+        : `${BACKEND_BASE}/api/tokens/${token.contract_address}/logo`;
 
     const launchDate = token.created_at ? new Date(token.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Unknown';
     const totalSupply = Number(token.total_supply || 1_000_000_000).toLocaleString();

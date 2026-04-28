@@ -10,22 +10,44 @@ const trustWalletService = require('../services/trustWalletService');
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-// ── Normalize IPFS URLs to a reliable public gateway ─────────────────────────
-// Local logos (http://localhost:3001/logos/...) are served directly — no transform needed.
-// Only legacy Pinata gateway URLs are rewritten.
-function normalizeLogo(url) {
-    if (!url) return url;
-    // Local backend URL — serve as-is
-    if (url.includes('localhost:3001/logos/') || url.includes('/logos/')) return url;
-    // Replace Pinata gateway (rate-limited 429) with ipfs.io public gateway
-    if (url.includes('gateway.pinata.cloud/ipfs/')) {
+// ── Logo resolution: local → Trust Wallet CDN → proxy placeholder ────────────
+// Returns the best available logo URL for a token.
+// Priority: stored_url → local file → Trust Wallet CDN → backend proxy (SVG placeholder)
+const path = require('path');
+const fs   = require('fs');
+const LOGOS_DIR    = path.join(__dirname, '../public/logos');
+const BACKEND_URL  = process.env.BACKEND_URL || 'http://localhost:3001';
+
+function normalizeLogo(url, contractAddress) {
+    // 1. If there's already a working local URL, pass it through unchanged
+    if (url && (url.includes('/logos/') || url.includes('localhost:3001'))) return url;
+
+    // 2. Check if local logo file exists on disk (uploaded with new storage.js)
+    if (contractAddress) {
+        const addr = contractAddress.toLowerCase();
+        for (const ext of ['.png', '.jpg', '.jpeg', '.webp']) {
+            if (fs.existsSync(path.join(LOGOS_DIR, `${addr}${ext}`))) {
+                return `${BACKEND_URL}/logos/${addr}${ext}`;
+            }
+        }
+    }
+
+    // 3. If stored URL is a Pinata URL → rewrite to ipfs.io (better uptime)
+    if (url && url.includes('gateway.pinata.cloud/ipfs/')) {
         return url.replace('https://gateway.pinata.cloud/ipfs/', 'https://ipfs.io/ipfs/');
     }
-    // Also handle ipfs:// protocol
-    if (url.startsWith('ipfs://')) {
+    if (url && url.startsWith('ipfs://')) {
         return url.replace('ipfs://', 'https://ipfs.io/ipfs/');
     }
-    return url;
+
+    // 4. Non-empty stored URL — use as-is (could be any CDN)
+    if (url && url.startsWith('http')) return url;
+
+    // 5. No logo: return backend proxy which generates a colourful SVG placeholder
+    if (contractAddress) {
+        return `${BACKEND_URL}/api/tokens/${contractAddress}/logo`;
+    }
+    return null;
 }
 
 function normalizeToken(t) {
@@ -52,7 +74,7 @@ function normalizeToken(t) {
 
     return { 
         ...t, 
-        logo_url:             normalizeLogo(t.logo_url),
+        logo_url:             normalizeLogo(t.logo_url, t.contract_address),
         ipfs_logo_url:        t.ipfs_logo_url || null,
         trust_status:         status,
         market_cap:           marketCap,
@@ -376,18 +398,86 @@ router.get('/list', async (req, res) => {
 
 // ─── GET /api/tokens/by-wallet/:wallet ────────────────────────────────────────
 // Fetch tokens by creator wallet address — used by the Profile page
+// Matches BOTH creator_wallet AND owner columns (case-insensitive)
 // IMPORTANT: Must be before /:address route
 router.get('/by-wallet/:wallet', async (req, res) => {
     const { wallet } = req.params;
     console.log(`[Profile] Fetching tokens for wallet: ${wallet}`);
     try {
-        // Case-insensitive match so MetaMask mixed-case wallets always find their tokens
-        const query = `SELECT *, COALESCE(launch_type, 'MEME') as launch_type FROM tokens WHERE LOWER(creator_wallet) = LOWER(?) ORDER BY created_at DESC`;
-        const result = await db.query(query, [wallet]);
-        res.json(result.rows.map(normalizeToken));
+        // Match creator_wallet OR owner (some tokens store wallet in owner field)
+        const query = `
+            SELECT *, COALESCE(launch_type, 'MEME') as launch_type 
+            FROM tokens 
+            WHERE LOWER(creator_wallet) = LOWER(?)
+               OR LOWER(COALESCE(owner, '')) = LOWER(?)
+            ORDER BY created_at DESC
+        `;
+        const result = await db.query(query, [wallet, wallet]);
+        const unique = Object.values(
+            result.rows.reduce((acc, r) => { acc[r.contract_address] = r; return acc; }, {})
+        );
+        res.json(unique.map(normalizeToken));
     } catch (error) {
         console.error('Error fetching tokens for wallet:', error);
         res.status(500).json({ error: 'Failed to fetch tokens for wallet', details: error.message });
+    }
+});
+
+// ─── GET /api/tokens/:address/logo ────────────────────────────────────────────
+// Logo proxy: serves local file or generates a colourful SVG placeholder.
+// This ensures every token always has a visible logo — no IPFS / Pinata dependency.
+router.get('/:address/logo', async (req, res) => {
+    const { address } = req.params;
+    const addr = address.toLowerCase();
+
+    // 1. Try local file first
+    for (const ext of ['.png', '.jpg', '.jpeg', '.webp']) {
+        const filePath = path.join(LOGOS_DIR, `${addr}${ext}`);
+        if (fs.existsSync(filePath)) {
+            res.setHeader('Cache-Control', 'public, max-age=604800');
+            return res.sendFile(filePath);
+        }
+    }
+
+    // 2. Try to fetch from DB and see if there's a stored logo URL to proxy
+    try {
+        const row = await db.query(
+            'SELECT logo_url, symbol, name FROM tokens WHERE LOWER(contract_address) = LOWER(?)',
+            [address]
+        );
+        if (row.rows[0]?.logo_url && row.rows[0].logo_url.startsWith('http')) {
+            // Proxy the remote image
+            try {
+                const imgRes = await axios.get(row.rows[0].logo_url, { responseType: 'arraybuffer', timeout: 4000 });
+                const contentType = imgRes.headers['content-type'] || 'image/png';
+                res.setHeader('Content-Type', contentType);
+                res.setHeader('Cache-Control', 'public, max-age=86400');
+                return res.end(Buffer.from(imgRes.data));
+            } catch (e) { /* fall through to SVG */ }
+        }
+
+        // 3. Generate deterministic colourful SVG avatar
+        const symbol = (row.rows[0]?.symbol || address.slice(2, 4)).toUpperCase().slice(0, 2);
+        const hue = (parseInt(addr.slice(2, 6), 16) % 360);
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="hsl(${hue},70%,55%)"/>
+      <stop offset="100%" stop-color="hsl(${(hue+60)%360},80%,40%)"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="32" fill="url(#g)"/>
+  <text x="64" y="76" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-size="48" font-weight="900" fill="rgba(255,255,255,0.95)">${symbol}</text>
+</svg>`;
+        res.setHeader('Content-Type', 'image/svg+xml');
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        return res.end(svg);
+    } catch (err) {
+        // Ultimate fallback — gray circle SVG
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"><rect width="128" height="128" rx="64" fill="#e2e8f0"/><text x="64" y="72" text-anchor="middle" font-size="40" fill="#94a3b8">🪙</text></svg>`;
+        res.setHeader('Content-Type', 'image/svg+xml');
+        return res.end(svg);
     }
 });
 

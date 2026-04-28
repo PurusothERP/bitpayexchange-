@@ -145,68 +145,86 @@ router.get('/revenue/export', requireAdmin, async (req, res) => {
 // GET /api/admin/stats - High-level dashboard metrics
 router.get('/stats', requireAdminOrAssistant, async (req, res) => {
     try {
-        const stats = {
-            total_tokens: 0,
-            launchpad_tokens: 0,
-            standard_tokens: 0,
-            total_wallets: 0,
-            total_revenue_bnb: 0,
-            fee_breakdown: {
-                creation: 0,
-                trading: 0,
-                fiat: 0,
-                upgrade: 0,
-                other: 0
-            },
-            market_inventory: 6140, 
-            delisted_count: 0
-        };
+        // ── Known fee schedule (must match on-chain values) ───────────────────
+        const FEE_MEME      = 0.007;  // MEME bonding curve creation
+        const FEE_FAIR      = 0.007;  // Fair launch (direct DEX)
+        const FEE_STANDARD  = 0.007;  // Standard token
+        const FEE_UPGRADE   = 0.003;  // Trust upgrade / badge
 
-        const [tCount, wCount, rTreasury, rTrades, dCount, fBreakdown] = await Promise.all([
+        const [tCount, wCount, rTreasury, rTrades, dCount, fBreakdown, tokenFees, upgradeFees] = await Promise.all([
             db.query(`SELECT 
                         COUNT(*) as total,
-                        SUM(CASE WHEN launch_type IN ('BONDING', 'FAIR') THEN 1 ELSE 0 END) as launchpad,
-                        SUM(CASE WHEN launch_type = 'STANDARD' THEN 1 ELSE 0 END) as standard
+                        SUM(CASE WHEN launch_type IN ('FAIR','STANDARD','EXCHANGE_LISTING') THEN 1 ELSE 0 END) as launchpad,
+                        SUM(CASE WHEN launch_type = 'STANDARD' THEN 1 ELSE 0 END) as standard,
+                        SUM(CASE WHEN launch_type = 'MEME' THEN 1 ELSE 0 END) as meme_count,
+                        SUM(CASE WHEN launch_type = 'FAIR' THEN 1 ELSE 0 END) as fair_count
                       FROM tokens`),
             db.query('SELECT COUNT(*) as total FROM connected_wallets'),
-            db.query('SELECT SUM(amount_bnb) as total FROM treasury_transfers'),
-            db.query('SELECT SUM(fee_bnb) as total FROM trades'),
+            db.query('SELECT COALESCE(SUM(amount_bnb),0) as total FROM treasury_transfers'),
+            db.query('SELECT COALESCE(SUM(fee_bnb),0) as total FROM trades'),
             db.query('SELECT COUNT(*) as total FROM tokens WHERE is_delisted = 1'),
             db.query(`
-                SELECT transfer_type, SUM(amount_bnb) as total 
+                SELECT transfer_type, COALESCE(SUM(amount_bnb),0) as total 
                 FROM treasury_transfers 
                 GROUP BY transfer_type
-            `)
+            `),
+            // Count tokens by type for fee calculation
+            db.query(`
+                SELECT 
+                    launch_type,
+                    COUNT(*) as cnt
+                FROM tokens 
+                WHERE is_delisted = 0
+                GROUP BY launch_type
+            `),
+            // Upgrade fee records
+            db.query(`SELECT COALESCE(SUM(amount_bnb),0) as total FROM treasury_transfers WHERE transfer_type LIKE '%upgrade%'`)
         ]);
 
-        stats.total_tokens = tCount.rows[0].total;
-        stats.launchpad_tokens = tCount.rows[0].launchpad;
-        stats.standard_tokens = tCount.rows[0].standard;
-        stats.total_wallets = wCount.rows[0].total;
+        // ── Base stats ────────────────────────────────────────────────────────
+        const total  = tCount.rows[0].total || 0;
+        const meme   = tCount.rows[0].meme_count || 0;
+        const fair   = tCount.rows[0].fair_count || 0;
+        const std    = tCount.rows[0].standard || 0;
+
+        // ── Fee calculation: primary = tokens × known fee ─────────────────────
+        // This is the actual revenue generated, even if treasury_transfers is sparse
+        const creationFromTokens = (meme * FEE_MEME) + (fair * FEE_FAIR) + (std * FEE_STANDARD);
+        const tradeRev           = parseFloat(rTrades.rows[0].total || 0);
+        const upgradeRev         = parseFloat(upgradeFees.rows[0]?.total || 0);
+
+        // ── treasury_transfers as supplementary source ────────────────────────
+        const treasuryTotal = parseFloat(rTreasury.rows[0].total || 0);
         
-        // Sum all revenue sources
-        const treasuryRev = parseFloat(rTreasury.rows[0].total || 0);
-        const tradeRev = parseFloat(rTrades.rows[0].total || 0);
-        stats.total_revenue_bnb = treasuryRev + tradeRev;
-        
-        // Map breakdown
+        const feeBreakdown = { creation: creationFromTokens, trading: tradeRev, upgrade: upgradeRev, fiat: 0, other: 0 };
+
+        // Layer in any treasury_transfers data (deduplication by type)
         fBreakdown.rows.forEach(r => {
             const type = (r.transfer_type || '').toLowerCase();
-            if (type.includes('creation')) stats.fee_breakdown.creation += r.total;
-            else if (type.includes('trading')) stats.fee_breakdown.trading += r.total;
-            else if (type.includes('upgrade')) stats.fee_breakdown.upgrade += r.total;
-            else if (type.includes('fiat')) stats.fee_breakdown.fiat += r.total;
-            else stats.fee_breakdown.other += r.total;
+            const amt = parseFloat(r.total || 0);
+            if (type.includes('fiat')) feeBreakdown.fiat += amt;
+            else if (type.includes('sweep') || type.includes('daily')) feeBreakdown.other += amt;
+            // creation, trading, upgrade already computed from tokens table — skip
         });
-        stats.fee_breakdown.trading += tradeRev; // Add trades from events
 
-        stats.delisted_count = dCount.rows[0].total;
+        const totalRevenue = feeBreakdown.creation + feeBreakdown.trading + feeBreakdown.upgrade + feeBreakdown.fiat + feeBreakdown.other;
 
-        res.json(stats);
+        res.json({
+            total_tokens:     total,
+            launchpad_tokens: tCount.rows[0].launchpad || 0,
+            standard_tokens:  std,
+            total_wallets:    wCount.rows[0].total || 0,
+            total_revenue_bnb: totalRevenue,
+            fee_breakdown:    feeBreakdown,
+            market_inventory: 6140,
+            delisted_count:   dCount.rows[0].total || 0
+        });
     } catch (err) {
+        console.error('[Admin Stats] Error:', err.message);
         res.status(500).json({ error: 'Failed to fetch dashboard stats' });
     }
 });
+
 
 // ── WALLET & REGISTRY MANAGEMENT ─────────────────────────────────────────────
 

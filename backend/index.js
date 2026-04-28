@@ -91,6 +91,14 @@ app.use('/api/futures',   futuresRoutes);
 app.use('/api/node-sync', nodeSyncRoutes);
 // Static serving for user-uploaded proofs
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Static serving for token logos (local fallback — always works, no IPFS dependency)
+app.use('/logos', express.static(path.join(__dirname, 'public/logos'), {
+    maxAge: '7d',
+    setHeaders: (res) => {
+        res.set('Access-Control-Allow-Origin', '*');
+        res.set('Cache-Control', 'public, max-age=604800');
+    }
+}));
 
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 

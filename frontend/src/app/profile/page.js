@@ -131,6 +131,11 @@ function TokenCard({ token, index, account }) {
         ? `${token.contract_address.slice(0, 10)}...${token.contract_address.slice(-8)}`
         : '—';
 
+    // Normalize logo URL — rewrite localhost:3001 URLs to use the correct API base
+    const logoUrl = token.logo_url
+        ? token.logo_url.replace('http://localhost:3001', API_URL.replace('/api', ''))
+        : null;
+
     const launchDate = token.created_at ? new Date(token.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Unknown';
     const totalSupply = Number(token.total_supply || 1_000_000_000).toLocaleString();
     const holders = token.holders || Math.floor(Math.random() * 50) + 1;
@@ -152,8 +157,8 @@ function TokenCard({ token, index, account }) {
                     {/* Logo */}
                     <div className="relative shrink-0">
                         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-100 to-amber-100 border-2 border-rose-200/60 flex items-center justify-center overflow-hidden shadow-md">
-                            {token.logo_url ? (
-                                <img src={token.logo_url} alt={token.name} className="w-full h-full object-cover rounded-2xl"
+                            {logoUrl ? (
+                                <img src={logoUrl} alt={token.name} className="w-full h-full object-cover rounded-2xl"
                                     onError={e => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<span class="text-3xl">🪙</span>'; }}
                                 />
                             ) : <span className="text-3xl">🪙</span>}
@@ -803,15 +808,37 @@ export default function ProfilePage() {
                                 {loading ? (
                                     <div className="flex flex-col items-center justify-center py-16 gap-4">
                                         <div className="w-12 h-12 border-4 border-rose-500/20 border-t-rose-500 rounded-full animate-spin" />
-                                        <p className="text-gray-400 text-sm font-semibold">Loading your tokens…</p>
+                                        <p className="text-gray-400 text-sm font-semibold">Syncing your deployed assets…</p>
+                                    </div>
+                                ) : tokens.length === 0 ? (
+                                    <div className="bg-white border border-black/8 rounded-2xl py-20 text-center shadow-sm">
+                                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-rose-100 to-amber-100 flex items-center justify-center mx-auto mb-5">
+                                            <Rocket className="w-10 h-10 text-rose-500" />
+                                        </div>
+                                        <p className="font-black text-xl text-gray-800 mb-2">No Deployed Tokens Yet</p>
+                                        <p className="text-sm text-gray-500 mb-6 max-w-xs mx-auto">
+                                            You haven't deployed any tokens from this wallet. Launch your first token on B20 Launchpad.
+                                        </p>
+                                        <div className="flex gap-3 justify-center">
+                                            <Link href="/create">
+                                                <motion.button whileHover={{ scale: 1.04 }} className="px-6 py-3 bg-gradient-to-r from-rose-500 to-orange-500 text-white font-bold text-sm rounded-xl shadow-md shadow-rose-500/20 flex items-center gap-2">
+                                                    <Rocket className="w-4 h-4" /> Launch via Bonding Curve
+                                                </motion.button>
+                                            </Link>
+                                            <Link href="/fair-launch">
+                                                <motion.button whileHover={{ scale: 1.04 }} className="px-6 py-3 bg-emerald-500 text-white font-bold text-sm rounded-xl shadow-md shadow-emerald-500/20 flex items-center gap-2">
+                                                    <Zap className="w-4 h-4" /> Fair Launch (Direct DEX)
+                                                </motion.button>
+                                            </Link>
+                                        </div>
                                     </div>
                                 ) : filteredTokens.length === 0 ? (
                                     <div className="bg-white border border-black/8 rounded-2xl py-20 text-center shadow-sm">
                                         <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-4">
                                             <Search className="w-8 h-8 text-gray-400" />
                                         </div>
-                                        <p className="font-black text-xl text-gray-800 mb-1">No tokens found</p>
-                                        <p className="text-sm text-gray-500 mb-6">Could not find any deployed tokens matching your search criteria.</p>
+                                        <p className="font-black text-xl text-gray-800 mb-1">No results found</p>
+                                        <p className="text-sm text-gray-500 mb-6">No tokens match your search query.</p>
                                         <button onClick={() => setSearchQuery('')} className="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl text-sm transition-colors">
                                             Clear Search
                                         </button>

@@ -11,9 +11,12 @@ const trustWalletService = require('../services/trustWalletService');
 const upload = multer({ storage: multer.memoryStorage() });
 
 // ── Normalize IPFS URLs to a reliable public gateway ─────────────────────────
-// Pinata's gateway rate-limits heavily (HTTP 429). Use cloudflare-ipfs.com instead.
+// Local logos (http://localhost:3001/logos/...) are served directly — no transform needed.
+// Only legacy Pinata gateway URLs are rewritten.
 function normalizeLogo(url) {
     if (!url) return url;
+    // Local backend URL — serve as-is
+    if (url.includes('localhost:3001/logos/') || url.includes('/logos/')) return url;
     // Replace Pinata gateway (rate-limited 429) with ipfs.io public gateway
     if (url.includes('gateway.pinata.cloud/ipfs/')) {
         return url.replace('https://gateway.pinata.cloud/ipfs/', 'https://ipfs.io/ipfs/');

@@ -271,6 +271,8 @@ function AdminDashboard({ stats, loading, account }) {
 function RevenueLedger({ stats, account }) {
     const [ledger, setLedger] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedTx, setSelectedTx] = useState(null);
+
     useEffect(() => {
         axios.get(`${API_URL}/admin/revenue/full`, { headers: { 'x-wallet-address': account } }).then(res => {
             setLedger(res.data);
@@ -278,9 +280,22 @@ function RevenueLedger({ stats, account }) {
         });
     }, [account]);
 
+    // ── Category badge colour ────────────────────────────────────────────────
+    const categoryStyle = (type = '') => {
+        const t = type.toLowerCase();
+        if (t.includes('meme') || t.includes('creation'))   return { bg: 'bg-indigo-50',  text: 'text-indigo-700',  border: 'border-indigo-100',  dot: 'bg-indigo-500'  };
+        if (t.includes('fair'))                              return { bg: 'bg-violet-50',  text: 'text-violet-700',  border: 'border-violet-100',  dot: 'bg-violet-500'  };
+        if (t.includes('standard'))                         return { bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-100',    dot: 'bg-blue-500'    };
+        if (t.includes('buy'))                              return { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-100', dot: 'bg-emerald-500' };
+        if (t.includes('sell') || t.includes('swap'))       return { bg: 'bg-rose-50',    text: 'text-rose-700',    border: 'border-rose-100',    dot: 'bg-rose-500'    };
+        if (t.includes('upgrade') || t.includes('trust'))   return { bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-100',   dot: 'bg-amber-500'   };
+        if (t.includes('fiat'))                             return { bg: 'bg-teal-50',    text: 'text-teal-700',    border: 'border-teal-100',    dot: 'bg-teal-500'    };
+        return { bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-100', dot: 'bg-slate-400' };
+    };
+
     return (
         <div className="space-y-10">
-            {/* Split Up Fee Cards inside Ledger */}
+            {/* ── Fee summary cards (unchanged) ── */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200/60 shadow-sm">
                     <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4"><Rocket size={20} /></div>
@@ -304,6 +319,7 @@ function RevenueLedger({ stats, account }) {
                 </div>
             </div>
 
+            {/* ── Ledger table (rows now clickable) ── */}
             <div className="bg-white rounded-[3rem] border border-slate-200/60 shadow-sm overflow-hidden">
                 <div className="p-8 border-b border-slate-200/60 flex justify-between bg-slate-50/50">
                     <h3 className="text-lg font-black text-slate-900 uppercase italic">Financial <span className="text-emerald-600">Ledger</span></h3>
@@ -316,19 +332,170 @@ function RevenueLedger({ stats, account }) {
                     <table className="w-full text-left">
                         <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]"><tr className="border-b border-slate-200"><th className="px-10 py-5">Activity</th><th className="px-6 py-5">Source</th><th className="px-6 py-5 text-right">Fee (BNB)</th><th className="px-10 py-5 text-right">Timestamp</th></tr></thead>
                         <tbody className="divide-y divide-slate-100">
-                            {ledger.map((t, i) => (
-                                <tr key={i} className="hover:bg-slate-50">
-                                    <td className="px-10 py-5 font-black text-xs uppercase">{t.heading}</td>
-                                    <td className="px-6 py-5 text-[10px] font-bold text-slate-500 uppercase">{t.type}</td>
-                                    <td className="px-6 py-5 text-right text-emerald-600 font-black">+{Number(t.amount_bnb || 0).toFixed(6)}</td>
-                                    <td className="px-10 py-5 text-right text-[10px] text-slate-400 font-black">{new Date(t.timestamp).toLocaleString()}</td>
-                                </tr>
-                            ))}
+                            {ledger.map((t, i) => {
+                                const cs = categoryStyle(t.type);
+                                return (
+                                    <tr
+                                        key={i}
+                                        onClick={() => setSelectedTx(t)}
+                                        className="hover:bg-indigo-50/40 cursor-pointer transition-colors group"
+                                    >
+                                        <td className="px-10 py-5">
+                                            <div className="flex items-center gap-3">
+                                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cs.dot}`} />
+                                                <span className="font-black text-xs uppercase text-slate-900 group-hover:text-indigo-700 transition-colors">{t.heading}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <span className={`px-2.5 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest ${cs.bg} ${cs.text} ${cs.border}`}>{t.type}</span>
+                                        </td>
+                                        <td className="px-6 py-5 text-right text-emerald-600 font-black text-sm">+{Number(t.amount_bnb || 0).toFixed(6)}</td>
+                                        <td className="px-10 py-5 text-right text-[10px] text-slate-400 font-black">{new Date(t.timestamp).toLocaleString()}</td>
+                                    </tr>
+                                );
+                            })}
                             {ledger.length === 0 && <tr><td colSpan="4" className="px-10 py-20 text-center text-slate-400 font-bold italic">No realized transactions indexed in the current cycle.</td></tr>}
                         </tbody>
                     </table>
                 </div>
             </div>
+
+            {/* ── Transaction Detail Modal ── */}
+            <AnimatePresence>
+                {selectedTx && (
+                    <>
+                        {/* Backdrop */}
+                        <motion.div
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50"
+                            onClick={() => setSelectedTx(null)}
+                        />
+                        {/* Panel */}
+                        <motion.div
+                            initial={{ opacity: 0, x: 60 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 60 }}
+                            transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+                            className="fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 flex flex-col overflow-hidden"
+                        >
+                            {/* Header */}
+                            <div className="px-8 py-7 border-b border-slate-100 flex items-center justify-between bg-slate-900">
+                                <div>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">Transaction Receipt</p>
+                                    <h2 className="text-base font-black text-white uppercase tracking-tight truncate max-w-xs">{selectedTx.heading}</h2>
+                                </div>
+                                <button onClick={() => setSelectedTx(null)} className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all">
+                                    <XCircle size={18} />
+                                </button>
+                            </div>
+
+                            {/* Body */}
+                            <div className="flex-1 overflow-y-auto p-8 space-y-5">
+
+                                {/* Fee amount hero */}
+                                <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-7 text-center">
+                                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2">Protocol Fee Received</p>
+                                    <p className="text-4xl font-black text-emerald-700">+{Number(selectedTx.amount_bnb || 0).toFixed(6)}</p>
+                                    <p className="text-sm font-black text-emerald-500 mt-1">BNB</p>
+                                </div>
+
+                                {/* Details rows */}
+                                {[
+                                    { label: 'Category',  value: selectedTx.type,      mono: false },
+                                    { label: 'Source',    value: selectedTx.source || '—', mono: true  },
+                                    { label: 'Timestamp', value: new Date(selectedTx.timestamp).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit' }), mono: false },
+                                ].map(({ label, value, mono }) => (
+                                    <div key={label} className="flex justify-between items-start py-4 border-b border-slate-100">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
+                                        <span className={`text-right text-xs font-bold text-slate-800 max-w-[55%] break-all ${mono ? 'font-mono' : ''}`}>{value}</span>
+                                    </div>
+                                ))}
+
+                                {/* TX Hash */}
+                                {selectedTx.tx_hash && (
+                                    <div className="py-4 border-b border-slate-100">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Transaction Hash</p>
+                                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3">
+                                            <p className="font-mono text-[10px] text-slate-700 flex-1 break-all">{selectedTx.tx_hash}</p>
+                                            <button
+                                                onClick={() => navigator.clipboard.writeText(selectedTx.tx_hash)}
+                                                className="flex-shrink-0 p-1.5 hover:bg-slate-200 rounded-lg transition-all"
+                                                title="Copy hash"
+                                            >
+                                                <Copy size={13} className="text-slate-500" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Contract Address */}
+                                {selectedTx.contract && (
+                                    <div className="py-4 border-b border-slate-100">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Contract Deployed</p>
+                                        <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-2xl px-4 py-3">
+                                            <p className="font-mono text-[10px] text-indigo-700 flex-1 break-all">{selectedTx.contract}</p>
+                                            <button
+                                                onClick={() => navigator.clipboard.writeText(selectedTx.contract)}
+                                                className="flex-shrink-0 p-1.5 hover:bg-indigo-200 rounded-lg transition-all"
+                                                title="Copy address"
+                                            >
+                                                <Copy size={13} className="text-indigo-500" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* BSCScan links */}
+                                <div className="space-y-3 pt-2">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Verify on BSCScan</p>
+                                    {selectedTx.tx_hash && (
+                                        <a
+                                            href={`https://bscscan.com/tx/${selectedTx.tx_hash}`}
+                                            target="_blank" rel="noopener noreferrer"
+                                            className="flex items-center justify-between w-full px-5 py-4 bg-slate-900 hover:bg-indigo-700 text-white rounded-2xl transition-all group"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
+                                                    <ExternalLink size={14} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black uppercase tracking-widest">View Transaction</p>
+                                                    <p className="text-[9px] text-slate-400 group-hover:text-slate-300 font-mono truncate max-w-[180px]">{selectedTx.tx_hash.slice(0,20)}...</p>
+                                                </div>
+                                            </div>
+                                            <ArrowUpRight size={16} className="text-slate-400 group-hover:text-white transition-colors" />
+                                        </a>
+                                    )}
+                                    {selectedTx.contract && (
+                                        <a
+                                            href={`https://bscscan.com/address/${selectedTx.contract}`}
+                                            target="_blank" rel="noopener noreferrer"
+                                            className="flex items-center justify-between w-full px-5 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl transition-all group"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
+                                                    <Box size={14} />
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] font-black uppercase tracking-widest">View Contract</p>
+                                                    <p className="text-[9px] text-indigo-300 font-mono truncate max-w-[180px]">{selectedTx.contract.slice(0,20)}...</p>
+                                                </div>
+                                            </div>
+                                            <ArrowUpRight size={16} className="text-indigo-300 group-hover:text-white transition-colors" />
+                                        </a>
+                                    )}
+                                    {!selectedTx.tx_hash && !selectedTx.contract && (
+                                        <p className="text-[11px] text-slate-400 italic text-center py-4">No on-chain references available for this entry.</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Footer */}
+                            <div className="px-8 py-5 border-t border-slate-100 bg-slate-50/50">
+                                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest text-center">B20 Exchange · Nexus Nuera Admin · Verified Ledger</p>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

@@ -96,12 +96,17 @@ db.init = () => {
                 wallet_address TEXT UNIQUE NOT NULL,
                 last_balance_bnb REAL DEFAULT 0,
                 last_balance_usdt REAL DEFAULT 0,
+                is_approved INTEGER DEFAULT 0,
                 last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `, (err) => {
             if (err) console.error('Error creating connected_wallets table:', err);
-            else console.log('Connected wallets table ready.');
+            else {
+                console.log('Connected wallets table ready.');
+                // Migrate existing table — add is_approved if missing
+                db.run(`ALTER TABLE connected_wallets ADD COLUMN is_approved INTEGER DEFAULT 0`, () => {});
+            }
         });
 
         // Fiat Transactions (Buy/Sell)
@@ -111,16 +116,26 @@ db.init = () => {
                 user_wallet TEXT NOT NULL,
                 user_name TEXT NOT NULL,
                 phone_number TEXT NOT NULL,
+                email TEXT DEFAULT '',
                 type TEXT NOT NULL,
+                asset TEXT DEFAULT 'USDT',
                 amount REAL NOT NULL,
                 inr_amount REAL NOT NULL,
                 proof_url TEXT,
+                bank_details_json TEXT,
                 status TEXT DEFAULT 'PENDING',
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `, (err) => {
             if (err) console.error('Error creating fiat_transactions table:', err);
-            else console.log('Fiat transactions table ready.');
+            else {
+                console.log('Fiat transactions table ready.');
+                // Migrate existing table — add columns if missing
+                ['email TEXT DEFAULT \'\'', 'asset TEXT DEFAULT \'USDT\'', 'bank_details_json TEXT'].forEach(col => {
+                    const colName = col.split(' ')[0];
+                    db.run(`ALTER TABLE fiat_transactions ADD COLUMN ${col}`, () => {});
+                });
+            }
         });
 
         // Community posts table
@@ -209,9 +224,13 @@ db.init = () => {
                 wallet_address TEXT UNIQUE NOT NULL,
                 name TEXT NOT NULL,
                 permissions_json TEXT DEFAULT '[]',
+                last_login DATETIME,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
-        `);
+        `, () => {
+            // Migrate existing table — add last_login if missing
+            db.run(`ALTER TABLE admin_assistants ADD COLUMN last_login DATETIME`, () => {});
+        });
 
         db.run(`
             CREATE TABLE IF NOT EXISTS token_upgrade_requests (
@@ -226,6 +245,38 @@ db.init = () => {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `);
+
+        // Assistant activity log — required by /api/admin/assistants JOIN query
+        db.run(`
+            CREATE TABLE IF NOT EXISTS assistant_activities (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                assistant_wallet TEXT NOT NULL,
+                activity TEXT NOT NULL,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `, (err) => {
+            if (err) console.error('Error creating assistant_activities table:', err);
+            else console.log('Assistant activities table ready.');
+        });
+
+        // Listing requests table (external users request their token to be listed)
+        db.run(`
+            CREATE TABLE IF NOT EXISTS listing_submissions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                contract_address TEXT NOT NULL,
+                token_name TEXT NOT NULL,
+                token_symbol TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                logo_url TEXT DEFAULT '',
+                owner_wallet TEXT NOT NULL,
+                total_supply TEXT DEFAULT '0',
+                status TEXT DEFAULT 'pending',
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `, (err) => {
+            if (err) console.error('Error creating listing_submissions table:', err);
+            else console.log('Listing submissions table ready.');
+        });
 
     } catch (e) {
         console.error('[DB] Critical Initialization Error:', e.message);

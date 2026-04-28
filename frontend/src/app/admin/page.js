@@ -308,8 +308,8 @@ function RevenueLedger({ stats, account }) {
                 <div className="p-8 border-b border-slate-200/60 flex justify-between bg-slate-50/50">
                     <h3 className="text-lg font-black text-slate-900 uppercase italic">Financial <span className="text-emerald-600">Ledger</span></h3>
                     <div className="flex gap-4">
-                        <button onClick={() => window.location.reload()} className="p-2 text-slate-400 hover:text-indigo-600 transition-all"><RefreshCw size={18} /></button>
-                        <button className="px-6 py-2 bg-slate-900 text-white text-[11px] font-black rounded-xl uppercase tracking-widest"><Download size={14} className="inline mr-2" /> Export CSV</button>
+                        <button onClick={() => { setLoading(true); axios.get(`${API_URL}/admin/revenue/full`, { headers: { 'x-wallet-address': account } }).then(res => { setLedger(res.data); setLoading(false); }); }} className="p-2 text-slate-400 hover:text-indigo-600 transition-all"><RefreshCw size={18} className={loading ? 'animate-spin' : ''} /></button>
+                        <a href={`${API_URL}/admin/revenue/export`} target="_blank" rel="noopener noreferrer" className="px-6 py-2 bg-slate-900 text-white text-[11px] font-black rounded-xl uppercase tracking-widest flex items-center gap-2 hover:bg-black transition-all"><Download size={14} /> Export CSV</a>
                     </div>
                 </div>
                 <div className="overflow-x-auto">
@@ -596,14 +596,16 @@ function FiatQueue({ account }) {
     const [activeTab, setActiveTab] = useState('BUY');
 
     useEffect(() => {
-        axios.get(`${API_URL}/fiat/history?all=true`, { headers: { 'x-wallet-address': account } }).then(res => setRequests(res.data.filter(r => r.status === 'PENDING')));
+        axios.get(`${API_URL}/fiat/transactions`, { headers: { 'x-wallet-address': account } }).then(res => {
+            setRequests(res.data.filter(r => r.status === 'PENDING'));
+        }).catch(err => console.error('[FiatQueue] Failed to load transactions:', err));
     }, [account]);
 
     const handleAction = async (id, status) => {
         try {
-            await axios.post(`${API_URL}/fiat/update-status`, { id, status }, { headers: { 'x-wallet-address': account } });
-            setRequests(requests.filter(r => r.id !== id));
-        } catch (e) { alert('Update failed'); }
+            await axios.patch(`${API_URL}/fiat/transaction/${id}`, { status }, { headers: { 'x-wallet-address': account } });
+            setRequests(prev => prev.filter(r => r.id !== id));
+        } catch (e) { alert('Update failed: ' + (e.response?.data?.error || e.message)); }
     };
 
     const getUpiId = (jsonStr) => {

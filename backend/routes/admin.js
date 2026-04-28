@@ -250,13 +250,15 @@ router.get('/stats', requireAdminOrAssistant, async (req, res) => {
         
         const feeBreakdown = { creation: creationFromTokens, trading: tradeRev, upgrade: upgradeRev, fiat: 0, other: 0 };
 
-        // Layer in any treasury_transfers data (deduplication by type)
+        // Layer in treasury_transfers data — route each type to correct bucket
         fBreakdown.rows.forEach(r => {
             const type = (r.transfer_type || '').toLowerCase();
             const amt = parseFloat(r.total || 0);
-            if (type.includes('fiat')) feeBreakdown.fiat += amt;
-            else if (type.includes('sweep') || type.includes('daily')) feeBreakdown.other += amt;
-            // creation, trading, upgrade already computed from tokens table — skip
+            if (type.includes('fiat'))                                              feeBreakdown.fiat    += amt;
+            else if (type.includes('sweep') || type.includes('daily'))              feeBreakdown.other   += amt;
+            else if (type.includes('trading') || type.includes('swap') ||
+                     type.includes('exchange') || type.includes('trade'))           feeBreakdown.trading += amt;
+            // creation fees already computed from tokens table — skip creation/upgrade types
         });
 
         const totalRevenue = feeBreakdown.creation + feeBreakdown.trading + feeBreakdown.upgrade + feeBreakdown.fiat + feeBreakdown.other;

@@ -659,18 +659,19 @@ function LaunchpadGuard({ account }) {
     const [tokens, setTokens] = useState([]);
     const [upgrades, setUpgrades] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [upgradeFilter, setUpgradeFilter] = useState('PENDING');
 
     useEffect(() => {
         if (subTab === 'inventory') {
             axios.get(`${API_URL}/tokens?include_delisted=true`).then(res => setTokens(res.data.filter(t => t.launch_type !== 'STANDARD')));
         } else {
             setLoading(true);
-            axios.get(`${API_URL}/admin/upgrades`, { headers: { 'x-wallet-address': account } }).then(res => {
+            axios.get(`${API_URL}/admin/upgrades?filter=${upgradeFilter}`, { headers: { 'x-wallet-address': account } }).then(res => {
                 setUpgrades(res.data);
                 setLoading(false);
-            });
+            }).catch(() => setLoading(false));
         }
-    }, [subTab, account]);
+    }, [subTab, account, upgradeFilter]);
 
     const copy = (val) => { navigator.clipboard.writeText(val); alert('Address copied.'); };
 
@@ -683,17 +684,26 @@ function LaunchpadGuard({ account }) {
 
     const handleUpgrade = async (id, action) => {
         try {
-            await axios.post(`${API_URL}/admin/upgrades/${action}`, { id }, { headers: { 'x-wallet-address': account } });
-            setUpgrades(upgrades.filter(u => u.id !== id));
-            alert(`Upgrade ${action}ed`);
-        } catch (e) { alert('Action failed'); }
+            let reason = undefined;
+            if (action === 'reject') {
+                reason = prompt('Rejection reason (optional):') || 'Rejected by admin';
+            }
+            await axios.post(`${API_URL}/admin/upgrades/${action}`, { id, reason }, { headers: { 'x-wallet-address': account } });
+            setUpgrades(prev => prev.map(u => u.id === id ? { ...u, status: action === 'approve' ? 'APPROVED' : 'REJECTED' } : u));
+            alert(`✅ Upgrade request ${action}d successfully.`);
+        } catch (e) { alert('Action failed: ' + (e.response?.data?.error || e.message)); }
     };
+
+    const pendingCount = upgrades.filter(u => u.status === 'PENDING').length;
 
     return (
         <div className="space-y-6">
             <div className="flex gap-4 mb-4">
                 <button onClick={() => setSubTab('inventory')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'inventory' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>Inventory Control</button>
-                <button onClick={() => setSubTab('upgrades')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'upgrades' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>Upgrade Requests {upgrades.length > 0 && <span className="ml-2 bg-rose-500 text-white px-2 py-0.5 rounded-full">{upgrades.length}</span>}</button>
+                <button onClick={() => setSubTab('upgrades')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${subTab === 'upgrades' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>
+                    Upgrade Requests
+                    {pendingCount > 0 && <span className="bg-rose-500 text-white px-2 py-0.5 rounded-full text-[9px] font-black">{pendingCount}</span>}
+                </button>
             </div>
 
             <div className="bg-white rounded-[3rem] border border-slate-200/60 shadow-sm overflow-hidden">
@@ -711,8 +721,8 @@ function LaunchpadGuard({ account }) {
                                         </div>
                                     </td>
                                     <td className="px-6 py-5">
-                                        <select 
-                                            value={t.is_delisted ? 'DELISTED' : 'ACTIVE'} 
+                                        <select
+                                            value={t.is_delisted ? 'DELISTED' : 'ACTIVE'}
                                             onChange={(e) => updateStatus(t.contract_address, e.target.value)}
                                             className={`bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-[10px] font-black outline-none uppercase ${t.is_delisted ? 'text-rose-500' : 'text-emerald-600'}`}
                                         >
@@ -725,33 +735,123 @@ function LaunchpadGuard({ account }) {
                         </tbody>
                     </table>
                 ) : (
-                    <table className="w-full text-left">
-                        <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]"><tr className="border-b border-slate-200"><th className="px-8 py-5">Asset</th><th className="px-6 py-5">Requested Upgrade</th><th className="px-6 py-5">User Wallet</th><th className="px-8 py-5 text-right">Actions</th></tr></thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {loading ? <tr><td colSpan="4" className="text-center py-20"><Loader2 className="animate-spin inline mr-2" /> Loading Requests...</td></tr> : upgrades.map(u => (
-                                <tr key={u.id} className="hover:bg-slate-50">
-                                    <td className="px-8 py-6">
-                                        <div className="flex flex-col">
-                                            <span className="text-xs font-black text-slate-900 uppercase">{u.token_name}</span>
-                                            <span className="text-[9px] font-mono text-slate-400 uppercase">{u.token_address.slice(0,10)}...</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-6">
-                                        <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-widest">{u.requested_upgrade}</span>
-                                        <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase">From: {u.current_status}</p>
-                                    </td>
-                                    <td className="px-6 py-6 font-mono text-[10px] text-slate-400 uppercase">{u.user_wallet.slice(0,8)}...</td>
-                                    <td className="px-8 py-6 text-right">
-                                        <div className="flex gap-2 justify-end">
-                                            <button onClick={() => handleUpgrade(u.id, 'reject')} className="px-4 py-2 bg-rose-50 text-rose-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-rose-100 transition-all">Reject</button>
-                                            <button onClick={() => handleUpgrade(u.id, 'approve')} className="px-4 py-2 bg-emerald-50 text-emerald-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all">Approve</button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                            {upgrades.length === 0 && !loading && <tr><td colSpan="4" className="text-center py-20 text-slate-400 font-bold italic uppercase">No pending upgrade requests in the queue.</td></tr>}
-                        </tbody>
-                    </table>
+                    <>
+                        {/* Filter bar */}
+                        <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight">Upgrade Request Queue</h3>
+                                <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">Review payment proof before approving trust status changes</p>
+                            </div>
+                            <div className="flex gap-2">
+                                {['PENDING', 'APPROVED', 'REJECTED', 'ALL'].map(f => (
+                                    <button
+                                        key={f}
+                                        onClick={() => { setUpgradeFilter(f); setLoading(true); }}
+                                        className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${upgradeFilter === f
+                                            ? f === 'PENDING' ? 'bg-amber-500 text-white' :
+                                              f === 'APPROVED' ? 'bg-emerald-600 text-white' :
+                                              f === 'REJECTED' ? 'bg-rose-500 text-white' : 'bg-slate-900 text-white'
+                                            : 'bg-white text-slate-400 border border-slate-200 hover:border-slate-300'
+                                        }`}
+                                    >
+                                        {f}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Requests table */}
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead className="bg-slate-50 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                    <tr className="border-b border-slate-200">
+                                        <th className="px-8 py-4">Token</th>
+                                        <th className="px-6 py-4">Requested</th>
+                                        <th className="px-6 py-4">Payment Proof</th>
+                                        <th className="px-6 py-4">Requester</th>
+                                        <th className="px-6 py-4">Date</th>
+                                        <th className="px-6 py-4">Status</th>
+                                        <th className="px-8 py-4 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {loading ? (
+                                        <tr><td colSpan="7" className="text-center py-20"><Loader2 className="animate-spin inline mr-2" /> Loading…</td></tr>
+                                    ) : upgrades.length === 0 ? (
+                                        <tr><td colSpan="7" className="text-center py-20 text-slate-400 font-bold italic uppercase text-[11px]">No {upgradeFilter.toLowerCase()} upgrade requests.</td></tr>
+                                    ) : upgrades.map(u => {
+                                        const isPaid = !!(u.tx_hash && u.amount_bnb > 0);
+                                        const statusColor = u.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                                                            u.status === 'REJECTED' ? 'bg-rose-50 text-rose-700 border-rose-100' :
+                                                            'bg-amber-50 text-amber-700 border-amber-100';
+                                        return (
+                                            <tr key={u.id} className="hover:bg-slate-50 align-top">
+                                                {/* Token */}
+                                                <td className="px-8 py-5">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs font-black text-slate-900 uppercase">{u.token_name}</span>
+                                                        <span className="text-[9px] font-mono text-slate-400">{(u.token_address||'').slice(0,10)}...</span>
+                                                        <a href={`https://bscscan.com/address/${u.token_address}`} target="_blank" rel="noopener noreferrer" className="text-[9px] text-indigo-400 hover:text-indigo-600 font-bold mt-0.5 flex items-center gap-1">
+                                                            <ExternalLink size={9} /> BSCScan
+                                                        </a>
+                                                    </div>
+                                                </td>
+                                                {/* Requested upgrade */}
+                                                <td className="px-6 py-5">
+                                                    <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-[9px] font-black uppercase tracking-widest border border-indigo-100 block w-fit">{u.requested_upgrade}</span>
+                                                    <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase">From: {u.current_status}</p>
+                                                </td>
+                                                {/* Payment proof */}
+                                                <td className="px-6 py-5">
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border w-fit ${isPaid ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                                                            {isPaid ? `✅ Paid ${Number(u.amount_bnb).toFixed(4)} BNB` : '⚠️ No Payment'}
+                                                        </span>
+                                                        {u.tx_hash && (
+                                                            <a
+                                                                href={`https://bscscan.com/tx/${u.tx_hash}`}
+                                                                target="_blank" rel="noopener noreferrer"
+                                                                className="text-[9px] font-mono text-indigo-500 hover:text-indigo-700 flex items-center gap-1 truncate max-w-[160px]"
+                                                            >
+                                                                <ExternalLink size={9} /> {u.tx_hash.slice(0,12)}...{u.tx_hash.slice(-6)}
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                {/* Requester wallet */}
+                                                <td className="px-6 py-5 font-mono text-[10px] text-slate-400 uppercase">
+                                                    {(u.user_wallet||'').slice(0,8)}...{(u.user_wallet||'').slice(-4)}
+                                                    <button onClick={() => copy(u.user_wallet)} className="ml-1 hover:text-indigo-600"><Copy size={10} /></button>
+                                                </td>
+                                                {/* Date */}
+                                                <td className="px-6 py-5 text-[9px] text-slate-400 font-bold whitespace-nowrap">
+                                                    {new Date(u.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                                                </td>
+                                                {/* Status badge */}
+                                                <td className="px-6 py-5">
+                                                    <span className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border ${statusColor}`}>{u.status}</span>
+                                                    {u.status === 'REJECTED' && u.reject_reason && (
+                                                        <p className="text-[8px] text-rose-400 font-bold mt-1 max-w-[100px]">{u.reject_reason}</p>
+                                                    )}
+                                                </td>
+                                                {/* Actions */}
+                                                <td className="px-8 py-5 text-right">
+                                                    {u.status === 'PENDING' ? (
+                                                        <div className="flex gap-2 justify-end">
+                                                            <button onClick={() => handleUpgrade(u.id, 'reject')} className="px-4 py-2 bg-rose-50 text-rose-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-rose-100 transition-all border border-rose-100">Reject</button>
+                                                            <button onClick={() => handleUpgrade(u.id, 'approve')} className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-100">✓ Approve</button>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-[9px] text-slate-300 font-bold uppercase italic">Processed</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
                 )}
             </div>
         </div>

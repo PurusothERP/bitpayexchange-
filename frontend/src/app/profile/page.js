@@ -297,21 +297,29 @@ function TokenCard({ token, index, account }) {
                             >
                                 <ShieldCheck className="w-4 h-4" /> Upgrade
                             </motion.button>
-                        ) : (
-                            <motion.div 
+                        ) : isUpgrading ? (
+                            <motion.div
                                 key="upgrade-form"
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                className="flex flex-col gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl"
+                                className="flex flex-col gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl w-full"
                             >
-                                <select 
+                                {/* Fee notice */}
+                                <div className="flex items-center gap-2 bg-amber-100 rounded-lg px-3 py-2">
+                                    <span className="text-amber-600 text-lg">🔒</span>
+                                    <div>
+                                        <p className="text-[10px] font-black text-amber-800 uppercase tracking-wider">Upgrade requires admin approval</p>
+                                        <p className="text-[9px] text-amber-600 font-bold">Pay 0.01 BNB fee → Submit request → Admin reviews in Launch Guard</p>
+                                    </div>
+                                </div>
+                                <select
                                     value={selectedStatus}
                                     onChange={(e) => setSelectedStatus(e.target.value)}
-                                    className="w-full bg-white border border-amber-200 rounded-lg px-2 py-1 text-xs font-bold text-gray-800 outline-none"
+                                    className="w-full bg-white border border-amber-200 rounded-lg px-2 py-1.5 text-xs font-bold text-gray-800 outline-none"
                                 >
-                                    <option value="Highly Trusted">Highly Trusted</option>
-                                    <option value="Premium Token">Premium Token</option>
-                                    <option value="Good to buy">Good to Buy</option>
+                                    <option value="Highly Trusted">⭐ Highly Trusted</option>
+                                    <option value="Premium Token">💎 Premium Token</option>
+                                    <option value="Good to buy">✅ Good to Buy</option>
                                 </select>
                                 <div className="flex gap-2">
                                     <button
@@ -319,38 +327,69 @@ function TokenCard({ token, index, account }) {
                                         onClick={async () => {
                                             setIsProcessing(true);
                                             try {
+                                                const TREASURY = process.env.NEXT_PUBLIC_FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
                                                 let tx_hash = 'admin_manual';
+                                                let amount_bnb = 0;
 
-                                                if (!isAdmin) {
-                                                    const provider = new ethers.BrowserProvider(window.ethereum);
-                                                    const signer = await provider.getSigner();
-                                                    const tx = await signer.sendTransaction({
-                                                        to: ADMIN_WALLET,
-                                                        value: ethers.parseEther('0.01')
+                                                if (isAdmin) {
+                                                    // Admin direct apply — no payment
+                                                    await axios.post(`${API_URL}/tokens/status/request`, {
+                                                        contract_address: token.contract_address,
+                                                        new_status: selectedStatus,
+                                                        tx_hash: 'admin_manual',
+                                                        requester_wallet: account,
+                                                        amount_bnb: 0
                                                     });
-                                                    await tx.wait();
-                                                    tx_hash = tx.hash;
+                                                    alert('Status updated directly by Admin.');
+                                                    window.location.reload();
+                                                    return;
                                                 }
 
+                                                // Step 1: Pay 0.01 BNB to treasury
+                                                const provider = new ethers.BrowserProvider(window.ethereum);
+                                                const signer = await provider.getSigner();
+                                                const tx = await signer.sendTransaction({
+                                                    to: TREASURY,
+                                                    value: ethers.parseEther('0.01')
+                                                });
+                                                await tx.wait();
+                                                tx_hash = tx.hash;
+                                                amount_bnb = 0.01;
+
+                                                // Step 2: Submit request with tx_hash proof
                                                 await axios.post(`${API_URL}/tokens/status/request`, {
                                                     contract_address: token.contract_address,
                                                     new_status: selectedStatus,
-                                                    tx_hash: tx_hash
+                                                    tx_hash,
+                                                    requester_wallet: account,
+                                                    amount_bnb
                                                 });
-                                                
-                                                alert(isAdmin ? 'Status updated successfully!' : 'Upgrade request verified!');
-                                                window.location.reload();
+
+                                                alert('✅ Payment confirmed! Upgrade request submitted to Admin Launch Guard. You will see the status update once approved.');
+                                                setIsUpgrading(false);
                                             } catch (e) {
-                                                alert('Action failed: ' + (e.reason || e.message));
+                                                if (e.code === 'ACTION_REJECTED' || e.message?.includes('rejected')) {
+                                                    alert('Transaction was rejected by wallet.');
+                                                } else if (e.response?.data?.error) {
+                                                    alert('Error: ' + e.response.data.error);
+                                                } else {
+                                                    alert('Action failed: ' + (e.reason || e.message));
+                                                }
                                             } finally {
                                                 setIsProcessing(false);
                                             }
                                         }}
-                                        className="flex-1 py-1.5 bg-amber-500 text-white rounded-lg text-[10px] font-black uppercase hover:bg-amber-600 disabled:opacity-50"
+                                        className="flex-1 py-1.5 bg-amber-500 text-white rounded-lg text-[10px] font-black uppercase hover:bg-amber-600 disabled:opacity-50 flex items-center justify-center gap-1"
                                     >
-                                        {isProcessing ? 'Wait…' : isAdmin ? 'Apply Now' : 'Pay 0.01 BNB'}
+                                        {isProcessing ? (
+                                            <><span className="animate-spin">⏳</span> Processing…</>
+                                        ) : isAdmin ? (
+                                            'Apply Now'
+                                        ) : (
+                                            '🔒 Pay 0.01 BNB & Request'
+                                        )}
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => setIsUpgrading(false)}
                                         className="px-2 py-1.5 bg-gray-200 text-gray-600 rounded-lg text-[10px] font-black uppercase"
                                     >
@@ -358,7 +397,7 @@ function TokenCard({ token, index, account }) {
                                     </button>
                                 </div>
                             </motion.div>
-                        )}
+                        ) : null}
                     </AnimatePresence>
                     <a
                         href={`https://bscscan.com/token/${token.contract_address}`}
@@ -368,6 +407,7 @@ function TokenCard({ token, index, account }) {
                         <ArrowUpRight className="w-4 h-4" />
                     </a>
                 </div>
+
                 {/* B20-Vault Strategic Hub - Fair Launch / Admin Access */}
                 {isFairLaunch && (isOwner || isAdmin) && (
                     <div className="mt-6 pt-5 border-t border-emerald-100">

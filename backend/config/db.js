@@ -242,9 +242,22 @@ db.init = () => {
                 user_wallet TEXT NOT NULL,
                 status TEXT DEFAULT 'PENDING',
                 tx_hash TEXT,
+                amount_bnb REAL DEFAULT 0.01,
+                reject_reason TEXT DEFAULT '',
+                processed_at DATETIME,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
-        `);
+        `, () => {
+            // Migrate existing table — add new columns if missing
+            [
+                'amount_bnb REAL DEFAULT 0.01',
+                'reject_reason TEXT DEFAULT \'\'',
+                'processed_at DATETIME'
+            ].forEach(col => {
+                db.run(`ALTER TABLE token_upgrade_requests ADD COLUMN ${col}`, () => {});
+            });
+        });
+
 
         // Assistant activity log — required by /api/admin/assistants JOIN query
         db.run(`

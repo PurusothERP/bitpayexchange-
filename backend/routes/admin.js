@@ -362,43 +362,63 @@ router.post('/listing/reject', requireAdmin, async (req, res) => {
 
 // ── TOKEN UPGRADE MANAGEMENT (Verifications/Badges) ──────────────────────────
 
-// GET /api/admin/upgrades - Queue for token badge/rank upgrades
+// GET /api/admin/upgrades - Full queue for token trust upgrade requests
+// Returns ALL requests (pending + processed) so admin can see payment history
 router.get('/upgrades', requireAdminOrAssistant, async (req, res) => {
     try {
-        const result = await db.query('SELECT * FROM token_upgrade_requests WHERE status = "PENDING" ORDER BY created_at DESC');
+        const { filter = 'PENDING' } = req.query;
+        let sql = 'SELECT * FROM token_upgrade_requests';
+        const params = [];
+        if (filter !== 'ALL') { sql += ' WHERE status = ?'; params.push(filter); }
+        sql += ' ORDER BY created_at DESC';
+        const result = await db.query(sql, params);
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch upgrade requests' });
     }
 });
 
-// POST /api/admin/upgrades/approve - Elevate token status
+// POST /api/admin/upgrades/approve - Approve and apply trust_status change
 router.post('/upgrades/approve', requireAdmin, async (req, res) => {
     const { id } = req.body;
     try {
         const reqResult = await db.query('SELECT * FROM token_upgrade_requests WHERE id = ?', [id]);
         if (reqResult.rows.length === 0) return res.status(404).json({ error: 'Request not found' });
-        
         const r = reqResult.rows[0];
-        
-        // Update token launch_type or rank in the main tokens table
-        // We'll update launch_type to match the requested upgrade (e.g. 'FAIR', 'VERIFIED', etc)
-        await db.query(`UPDATE tokens SET launch_type = ? WHERE contract_address = ?`, [r.requested_upgrade, r.token_address]);
-        
-        // Mark request as approved
-        await db.query('UPDATE token_upgrade_requests SET status = "APPROVED" WHERE id = ?', [id]);
-        
-        res.json({ success: true, message: `Token upgraded to ${r.requested_upgrade}` });
+
+        // Apply trust_status to the token (NOT launch_type)
+        await db.query(
+            'UPDATE tokens SET trust_status = ? WHERE LOWER(contract_address) = LOWER(?)',
+            [r.requested_upgrade, r.token_address]
+        );
+        // Mark request approved + set processed timestamp
+        await db.query(
+            'UPDATE token_upgrade_requests SET status = \'APPROVED\', processed_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [id]
+        );
+        // Log in treasury transfers so it shows in Financial Ledger
+        try {
+            const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+            await db.query(
+                'INSERT OR IGNORE INTO treasury_transfers (tx_hash, amount_bnb, transfer_type, source_contract, destination_address) VALUES (?, ?, ?, ?, ?)',
+                [r.tx_hash || `upgrade_${id}_${Date.now()}`, r.amount_bnb || 0.01, 'token_upgrade', r.token_address, TREASURY]
+            );
+        } catch (_) {}
+        res.json({ success: true, message: `Token trust_status upgraded to "${r.requested_upgrade}"` });
     } catch (err) {
-        console.error('Upgrade approval error:', err);
+        console.error('Upgrade approval error:', err.message);
         res.status(500).json({ error: 'Upgrade approval failed' });
     }
 });
 
+// POST /api/admin/upgrades/reject - Reject request with optional reason
 router.post('/upgrades/reject', requireAdmin, async (req, res) => {
-    const { id } = req.body;
+    const { id, reason } = req.body;
     try {
-        await db.query('UPDATE token_upgrade_requests SET status = "REJECTED" WHERE id = ?', [id]);
+        await db.query(
+            'UPDATE token_upgrade_requests SET status = \'REJECTED\', reject_reason = ?, processed_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [reason || 'Rejected by admin', id]
+        );
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: 'Upgrade rejection failed' });

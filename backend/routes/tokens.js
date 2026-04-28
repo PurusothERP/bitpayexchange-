@@ -683,53 +683,70 @@ router.post('/status/update', async (req, res) => {
 
 // ─── POST /api/tokens/status/request ──────────────────────────────────────────
 router.post('/status/request', async (req, res) => {
-    const { contract_address, new_status, tx_hash } = req.body;
+    const { contract_address, new_status, tx_hash, requester_wallet, amount_bnb } = req.body;
     const isManual = tx_hash === 'admin_manual';
     
     try {
         if (isManual) {
             // Admin manual override - apply immediately
             await db.query(
-                'UPDATE tokens SET trust_status = ? WHERE contract_address = ?',
+                'UPDATE tokens SET trust_status = ? WHERE LOWER(contract_address) = LOWER(?)',
                 [new_status, contract_address]
             );
             res.json({ success: true, message: 'Status updated directly by Admin' });
         } else {
-            // User requested upgrade - Route to Admin Launch Guard for approval
-            const tokenData = await db.query('SELECT name, trust_status, owner FROM tokens WHERE contract_address = ?', [contract_address]);
+            // User requested upgrade - validate payment tx_hash provided
+            if (!tx_hash) return res.status(400).json({ error: 'Payment tx_hash is required' });
+
+            const tokenData = await db.query(
+                'SELECT name, trust_status FROM tokens WHERE LOWER(contract_address) = LOWER(?)',
+                [contract_address]
+            );
             const token = tokenData.rows[0];
-            
             if (!token) return res.status(404).json({ error: 'Token not found' });
 
-            await db.query(`
-                INSERT INTO token_upgrade_requests 
-                (token_address, token_name, current_status, requested_upgrade, user_wallet, status, tx_hash)
-                VALUES (?, ?, ?, ?, ?, 'PENDING', ?)
-            `, [
-                contract_address,
-                token.name,
-                token.trust_status || 'Newly Launched Token',
-                new_status,
-                token.owner || 'UNKNOWN',
-                tx_hash
-            ]);
+            // Check for duplicate request for same token+status (pending only)
+            const existing = await db.query(
+                `SELECT id FROM token_upgrade_requests 
+                 WHERE LOWER(token_address) = LOWER(?) AND requested_upgrade = ? AND status = 'PENDING'`,
+                [contract_address, new_status]
+            );
+            if (existing.rows.length > 0) {
+                return res.status(400).json({ error: 'A pending upgrade request already exists for this token' });
+            }
 
-            // Log the service fee in treasury_transfers
+            // Insert upgrade request — user_wallet from body (not owner column)
+            await db.query(
+                `INSERT INTO token_upgrade_requests 
+                 (token_address, token_name, current_status, requested_upgrade, user_wallet, status, tx_hash, amount_bnb)
+                 VALUES (?, ?, ?, ?, ?, 'PENDING', ?, ?)`,
+                [
+                    contract_address,
+                    token.name,
+                    token.trust_status || 'Newly Launched Token',
+                    new_status,
+                    requester_wallet || 'UNKNOWN',
+                    tx_hash,
+                    parseFloat(amount_bnb || 0.01)
+                ]
+            );
+
+            // Pre-log the service fee in treasury_transfers (will be confirmed on approval)
             try {
                 const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
                 await db.query(
                     'INSERT OR IGNORE INTO treasury_transfers (tx_hash, amount_bnb, transfer_type, source_contract, destination_address) VALUES (?, ?, ?, ?, ?)',
-                    [tx_hash || `status_req_${contract_address}_${Date.now()}`, 0.01, 'upgrade_fee', contract_address, TREASURY]
+                    [tx_hash, parseFloat(amount_bnb || 0.01), 'upgrade_fee_pending', contract_address, TREASURY]
                 );
             } catch (transErr) {
-                console.warn('Failed to log status fee transfer:', transErr.message);
+                console.warn('Failed to pre-log upgrade fee transfer:', transErr.message);
             }
 
-            res.json({ success: true, message: 'Upgrade request submitted to Admin Launch Guard for approval' });
+            res.json({ success: true, message: 'Upgrade request submitted. Pending Admin approval in Launch Guard.' });
         }
     } catch (error) {
-        console.error('Status request failed:', error);
-        res.status(500).json({ error: 'Request failed' });
+        console.error('Status request failed:', error.message);
+        res.status(500).json({ error: 'Request failed', details: error.message });
     }
 });
 
@@ -754,6 +771,27 @@ router.post('/boost', async (req, res) => {
     } catch (error) {
         console.error('Boost error:', error);
         res.status(500).json({ error: 'Boost failed' });
+    }
+});
+
+// ─── GET /api/tokens/upgrade-requests/:wallet ────────────────────────────────
+// Returns all upgrade requests submitted by a specific wallet — used by Profile
+// IMPORTANT: Must be before /:address route
+router.get('/upgrade-requests/:wallet', async (req, res) => {
+    const { wallet } = req.params;
+    try {
+        const result = await db.query(
+            `SELECT tur.*, t.name, t.symbol, t.logo_url, t.trust_status
+             FROM token_upgrade_requests tur
+             LEFT JOIN tokens t ON LOWER(t.contract_address) = LOWER(tur.token_address)
+             WHERE LOWER(tur.user_wallet) = LOWER(?)
+             ORDER BY tur.created_at DESC`,
+            [wallet]
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error('[UpgradeRequests] Error:', err.message);
+        res.status(500).json({ error: 'Failed to fetch upgrade requests', details: err.message });
     }
 });
 

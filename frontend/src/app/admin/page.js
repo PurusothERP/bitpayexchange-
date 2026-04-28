@@ -283,6 +283,8 @@ function RevenueLedger({ stats, account }) {
     const [ledger, setLedger] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedTx, setSelectedTx] = useState(null);
+    const [newHash, setNewHash] = useState('');
+    const [isUpdatingHash, setIsUpdatingHash] = useState(false);
 
     useEffect(() => {
         axios.get(`${API_URL}/admin/revenue/full`, { headers: { 'x-wallet-address': account } }).then(res => {
@@ -290,6 +292,28 @@ function RevenueLedger({ stats, account }) {
             setLoading(false);
         });
     }, [account]);
+
+    const handleUpdateHash = async () => {
+        if (!newHash || !selectedTx) return;
+        setIsUpdatingHash(true);
+        try {
+            await axios.post(`${API_URL}/admin/revenue/update-hash`, {
+                id: selectedTx.id,
+                category: selectedTx.category,
+                tx_hash: newHash
+            }, { headers: { 'x-wallet-address': account } });
+            
+            // Update local state to reflect the change immediately
+            selectedTx.tx_hash = newHash;
+            setLedger(ledger.map(t => t.id === selectedTx.id ? { ...t, tx_hash: newHash } : t));
+            setNewHash('');
+        } catch (err) {
+            console.error('Failed to update hash:', err);
+            alert('Failed to update transaction hash');
+        } finally {
+            setIsUpdatingHash(false);
+        }
+    };
 
     // ── Category badge colour ────────────────────────────────────────────────
     const categoryStyle = (type = '') => {
@@ -379,7 +403,7 @@ function RevenueLedger({ stats, account }) {
                         <motion.div
                             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                             className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50"
-                            onClick={() => setSelectedTx(null)}
+                            onClick={() => { setSelectedTx(null); setNewHash(''); }}
                         />
                         {/* Panel */}
                         <motion.div
@@ -393,7 +417,7 @@ function RevenueLedger({ stats, account }) {
                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1">Transaction Receipt</p>
                                     <h2 className="text-base font-black text-white uppercase tracking-tight truncate max-w-xs">{selectedTx.heading}</h2>
                                 </div>
-                                <button onClick={() => setSelectedTx(null)} className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all">
+                                <button onClick={() => { setSelectedTx(null); setNewHash(''); }} className="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-all">
                                     <XCircle size={18} />
                                 </button>
                             </div>
@@ -421,21 +445,40 @@ function RevenueLedger({ stats, account }) {
                                 ))}
 
                                 {/* TX Hash */}
-                                {selectedTx.tx_hash && (
-                                    <div className="py-4 border-b border-slate-100">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Transaction Hash</p>
-                                        <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3">
-                                            <p className="font-mono text-[10px] text-slate-700 flex-1 break-all">{selectedTx.tx_hash}</p>
-                                            <button
-                                                onClick={() => navigator.clipboard.writeText(selectedTx.tx_hash)}
-                                                className="flex-shrink-0 p-1.5 hover:bg-slate-200 rounded-lg transition-all"
-                                                title="Copy hash"
-                                            >
-                                                <Copy size={13} className="text-slate-500" />
-                                            </button>
-                                        </div>
+                                <div className="py-4 border-b border-slate-100">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Transaction Hash</p>
+                                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3">
+                                        {selectedTx.tx_hash ? (
+                                            <>
+                                                <p className="font-mono text-[10px] text-slate-700 flex-1 break-all">{selectedTx.tx_hash}</p>
+                                                <button
+                                                    onClick={() => navigator.clipboard.writeText(selectedTx.tx_hash)}
+                                                    className="flex-shrink-0 p-1.5 hover:bg-slate-200 rounded-lg transition-all"
+                                                    title="Copy hash"
+                                                >
+                                                    <Copy size={13} className="text-slate-500" />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <div className="flex w-full items-center gap-2">
+                                                <input
+                                                    type="text"
+                                                    value={newHash}
+                                                    onChange={(e) => setNewHash(e.target.value)}
+                                                    placeholder="Enter TX Hash to update..."
+                                                    className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-none focus:border-indigo-500"
+                                                />
+                                                <button
+                                                    onClick={handleUpdateHash}
+                                                    disabled={isUpdatingHash || !newHash}
+                                                    className="px-3 py-1.5 bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                                                >
+                                                    {isUpdatingHash ? 'Saving...' : 'Update'}
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
+                                </div>
 
                                 {/* Contract Address */}
                                 {selectedTx.contract && (

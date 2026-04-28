@@ -547,6 +547,32 @@ router.get('/revenue/full', requireAdminOrAssistant, async (req, res) => {
     }
 });
 
+// POST /api/admin/revenue/update-hash - Update missing transaction hash for ledger entries
+router.post('/revenue/update-hash', requireAdmin, async (req, res) => {
+    try {
+        const { id, category, tx_hash } = req.body;
+        if (!id || !tx_hash || !category) return res.status(400).json({ error: 'Missing parameters' });
+
+        if (category === 'creation') {
+            const contractAddr = id.replace('creation_', '');
+            await db.query('UPDATE tokens SET tx_hash = ? WHERE LOWER(contract_address) = LOWER(?)', [tx_hash, contractAddr]);
+        } else if (category === 'treasury') {
+            const tresId = id.replace('tres_', '');
+            await db.query('UPDATE treasury_transfers SET tx_hash = ? WHERE id = ?', [tx_hash, tresId]);
+        } else if (category === 'trade') {
+            const tradeId = id.replace('trade_', '');
+            await db.query('UPDATE trades SET tx_hash = ? WHERE id = ?', [tx_hash, tradeId]);
+        } else {
+            return res.status(400).json({ error: 'Invalid category' });
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[Update Hash] Error:', err.message);
+        res.status(500).json({ error: 'Failed to update transaction hash' });
+    }
+});
+
 // ── MARKET REGISTRY (6000+ ASSETS) ──────────────────────────────────────────
 
 // GET /api/admin/tokens/market - Manage global inventory visibility (6,000+)

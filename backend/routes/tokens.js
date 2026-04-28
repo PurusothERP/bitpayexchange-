@@ -52,7 +52,7 @@ function normalizeLogo(url, contractAddress) {
 
 function normalizeToken(t) {
     const totalSold = t.liquidity_bnb ? (parseFloat(t.liquidity_bnb) / 1e18) : 0;
-    const price = parseFloat(t.price_bnb || 0);
+    const price = parseFloat(t.price_bnb || 0) || 0.00000001; // baseline if 0
     const supply = parseFloat(t.total_supply || 1000000000);
     const marketCap = price * supply;
     
@@ -77,6 +77,7 @@ function normalizeToken(t) {
         logo_url:             normalizeLogo(t.logo_url, t.contract_address),
         ipfs_logo_url:        t.ipfs_logo_url || null,
         trust_status:         status,
+        price_bnb:            price, // <-- ensures frontend has a price
         market_cap:           marketCap,
         bonding_progress:     progress,
         is_delisted:          isDelisted,

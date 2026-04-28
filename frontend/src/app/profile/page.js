@@ -738,15 +738,15 @@ export default function ProfilePage() {
                 <AnimatePresence>
                     {activeTab !== 'services' && (
                         <motion.button 
-                            initial={{ opacity: 0, scale: 0.8 }} 
-                            animate={{ opacity: 1, scale: 1 }} 
-                            exit={{ opacity: 0, scale: 0.8 }}
+                            initial={{ opacity: 0, x: 20 }} 
+                            animate={{ opacity: 1, x: 0 }} 
+                            exit={{ opacity: 0, x: 20 }}
                             onClick={() => setActiveTab('services')}
-                            className="fixed bottom-10 right-10 z-40 px-6 py-4 bg-purple-600 hover:bg-purple-700 text-white font-black uppercase tracking-[0.1em] rounded-full shadow-2xl shadow-purple-600/40 flex items-center gap-3 transition-transform hover:scale-105 border-4 border-white/10"
+                            className="fixed top-28 right-4 md:right-8 z-40 px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-lg shadow-lg shadow-purple-600/20 flex items-center gap-2 transition-all hover:-translate-y-0.5 border border-purple-400/30 backdrop-blur-md"
                         >
-                            <span className="relative flex h-3 w-3">
+                            <span className="relative flex h-2 w-2">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
                             </span>
                             Platform Services
                         </motion.button>

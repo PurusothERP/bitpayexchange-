@@ -57,8 +57,8 @@ export default function TreasuryDashboard() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                     <div className="bg-white border border-black/5 rounded-3xl p-6 shadow-sm flex items-center gap-5">
-                        <div className="w-14 h-14 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center justify-center shrink-0">
-                            <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+                        <div className="w-14 h-14 bg-sky-500/10 border border-sky-500/20 rounded-2xl flex items-center justify-center shrink-0">
+                            <CheckCircle2 className="w-6 h-6 text-sky-600" />
                         </div>
                         <div>
                             <p className="text-xs font-black text-gray-400 tracking-widest uppercase mb-1">Treasury Wallet</p>
@@ -77,13 +77,13 @@ export default function TreasuryDashboard() {
                     </div>
 
                     <div className="bg-white border border-black/5 rounded-3xl p-6 shadow-sm flex items-center gap-5">
-                        <div className="w-14 h-14 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center justify-center shrink-0 animate-pulse">
-                            <Activity className="w-6 h-6 text-rose-600" />
+                        <div className="w-14 h-14 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center shrink-0 animate-pulse">
+                            <Activity className="w-6 h-6 text-blue-600" />
                         </div>
                         <div>
                             <p className="text-xs font-black text-gray-400 tracking-widest uppercase mb-1">Sweep Status</p>
                             <p className="text-[11px] font-bold text-gray-500 leading-tight">
-                                Trading fees (1%) are automatically pushed to the Treasury <span className="text-rose-500">instantly on every trade</span> natively within the smart contract!
+                                Trading fees (1%) are automatically pushed to the Treasury <span className="text-blue-500">instantly on every trade</span> natively within the smart contract!
                             </p>
                         </div>
                     </div>
@@ -155,7 +155,7 @@ export default function TreasuryDashboard() {
                                                 {/* Total BNB in Curve */}
                                                 <td className="px-6 py-4">
                                                     {isFair ? (
-                                                       <span className="text-[10px] font-black uppercase bg-emerald-50 text-emerald-600 px-2 py-1 rounded border border-emerald-200">
+                                                       <span className="text-[10px] font-black uppercase bg-sky-50 text-sky-600 px-2 py-1 rounded border border-sky-200">
                                                            Fair Launch DEX
                                                        </span>
                                                     ) : (
@@ -168,8 +168,8 @@ export default function TreasuryDashboard() {
 
                                                 {/* 100M Transfer Confirmation */}
                                                 <td className="px-6 py-4 text-center">
-                                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs font-black text-emerald-600 shadow-sm">
-                                                        <CheckCircle2 className="w-4 h-4 fill-emerald-500 text-white" />
+                                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-sky-500/10 border border-sky-500/20 rounded-lg text-xs font-black text-sky-600 shadow-sm">
+                                                        <CheckCircle2 className="w-4 h-4 fill-sky-500 text-white" />
                                                         100M Received
                                                     </div>
                                                 </td>

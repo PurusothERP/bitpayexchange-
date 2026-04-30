@@ -153,24 +153,24 @@ function AIDataTab({ tokens }) {
     return (
         <div className="space-y-8">
             {/* AI Neural Nexus Header */}
-            <div className="relative overflow-hidden rounded-[3rem] bg-gray-900 p-8 flex items-center justify-between border border-white/5 shadow-2xl shadow-amber-500/10">
+            <div className="relative overflow-hidden rounded-[3rem] bg-gray-900 p-8 flex items-center justify-between border border-white/5 shadow-2xl shadow-indigo-500/10">
                 <div className="relative z-10">
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 rounded-2xl bg-amber-500 flex items-center justify-center shadow-lg shadow-amber-500/20 animate-pulse">
+                        <div className="w-10 h-10 rounded-2xl bg-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 animate-pulse">
                             <Brain className="w-6 h-6 text-white" />
                         </div>
                         <h1 className="text-3xl font-black text-white tracking-tighter">B20 NEURAL NEXUS</h1>
                     </div>
-                    <p className="text-[10px] text-amber-500 font-bold uppercase tracking-[0.4em] ml-1">Advanced Machine Intelligence · Real-Time Telemetry</p>
+                    <p className="text-[10px] text-indigo-500 font-bold uppercase tracking-[0.4em] ml-1">Advanced Machine Intelligence · Real-Time Telemetry</p>
                 </div>
                 <div className="relative z-10 flex items-center gap-6 pr-4">
                     <div className="text-right">
                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Core Sync Status</p>
-                        <p className="text-sm font-black text-emerald-500 uppercase tracking-widest">Optimized</p>
+                        <p className="text-sm font-black text-sky-500 uppercase tracking-widest">Optimized</p>
                     </div>
                     <div className="w-12 h-12 rounded-full border-2 border-white/10 flex items-center justify-center relative">
-                        <div className="absolute inset-0 bg-amber-500 rounded-full blur-md opacity-20 animate-ping" />
-                        <Activity className="w-5 h-5 text-amber-500" />
+                        <div className="absolute inset-0 bg-indigo-500 rounded-full blur-md opacity-20 animate-ping" />
+                        <Activity className="w-5 h-5 text-indigo-500" />
                     </div>
                 </div>
                 {/* Background Grid Graphic */}
@@ -179,7 +179,7 @@ function AIDataTab({ tokens }) {
 
             {/* AI Sentiment Ticker */}
             <Card className="p-5 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 blur-[100px] -mr-32 -mt-32 rounded-full group-hover:scale-150 transition-all duration-1000" />
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[100px] -mr-32 -mt-32 rounded-full group-hover:scale-150 transition-all duration-1000" />
                 <SectionTitle icon={Sparkles} title="AI Prediction Engine" sub="Daily rotating sentiment forecasts" />
                 {aiTokens.length>0 && (
                     <AnimatePresence mode="wait">
@@ -194,7 +194,7 @@ function AIDataTab({ tokens }) {
                                 </div>
                                 <p className="text-[9px] text-gray-400">{aiTokens[slideIdx]?.name}</p>
                                 <div className="flex items-center gap-3 mt-1 text-[9px]">
-                                    <span className="flex items-center gap-1 text-emerald-600 font-black">
+                                    <span className="flex items-center gap-1 text-sky-600 font-black">
                                         <CheckCircle2 className="w-2.5 h-2.5"/>
                                         AI Confidence: {(() => { const t = aiTokens[slideIdx]; if(!t) return '—'; return Math.min(98, Math.max(52, Math.round(60 + Math.abs(Number(t.price_change_percentage_24h||0)) * 2.1 + (t.market_cap_rank ? Math.max(0, 20 - t.market_cap_rank * 0.5) : 10) + ((t.total_volume||0) > 1e9 ? 8 : (t.total_volume||0) > 1e8 ? 4 : 0)))); })()}%
                                     </span>
@@ -205,7 +205,7 @@ function AIDataTab({ tokens }) {
                             </div>
                             <div className="text-right">
                                 <p className="font-black text-gray-900 text-sm">${fmt(aiTokens[slideIdx]?.current_price,4)}</p>
-                                <p className={`text-[10px] font-black ${isPos(aiTokens[slideIdx]?.price_change_percentage_24h)?'text-emerald-600':'text-rose-500'}`}>
+                                <p className={`text-[10px] font-black ${isPos(aiTokens[slideIdx]?.price_change_percentage_24h)?'text-sky-600':'text-blue-500'}`}>
                                     {fmtP(aiTokens[slideIdx]?.price_change_percentage_24h)}
                                 </p>
                             </div>
@@ -227,10 +227,10 @@ function AIDataTab({ tokens }) {
                     <SectionTitle icon={BarChart2} title="Price Change Distribution" sub="24h Up/Down breakdown" />
                     <div className="space-y-3">
                         {[
-                            {id:'strong-up', label:'Strong Up (>5%)',  pct: tokens.filter(t=>Number(t.price_change_percentage_24h||0)>5).length,  color:'bg-emerald-500', txt:'text-emerald-700'},
-                            {id:'up',        label:'Up (0–5%)',        pct: tokens.filter(t=>Number(t.price_change_percentage_24h||0)>0&&Number(t.price_change_percentage_24h||0)<=5).length, color:'bg-emerald-300',txt:'text-emerald-600'},
-                            {id:'down',      label:'Down (0–5%)',      pct: tokens.filter(t=>Number(t.price_change_percentage_24h||0)<0&&Number(t.price_change_percentage_24h||0)>=-5).length,color:'bg-rose-300',  txt:'text-rose-500'},
-                            {id:'strong-down',label:'Strong Down (<-5%)',pct:tokens.filter(t=>Number(t.price_change_percentage_24h||0)<-5).length, color:'bg-rose-500',    txt:'text-rose-700'},
+                            {id:'strong-up', label:'Strong Up (>5%)',  pct: tokens.filter(t=>Number(t.price_change_percentage_24h||0)>5).length,  color:'bg-sky-500', txt:'text-sky-700'},
+                            {id:'up',        label:'Up (0–5%)',        pct: tokens.filter(t=>Number(t.price_change_percentage_24h||0)>0&&Number(t.price_change_percentage_24h||0)<=5).length, color:'bg-sky-300',txt:'text-sky-600'},
+                            {id:'down',      label:'Down (0–5%)',      pct: tokens.filter(t=>Number(t.price_change_percentage_24h||0)<0&&Number(t.price_change_percentage_24h||0)>=-5).length,color:'bg-blue-300',  txt:'text-blue-500'},
+                            {id:'strong-down',label:'Strong Down (<-5%)',pct:tokens.filter(t=>Number(t.price_change_percentage_24h||0)<-5).length, color:'bg-blue-500',    txt:'text-blue-700'},
                         ].map((s,i)=>{
                             const max=Math.max(...[tokens.filter(t=>Number(t.price_change_percentage_24h||0)>5).length,tokens.filter(t=>Number(t.price_change_percentage_24h||0)>0&&Number(t.price_change_percentage_24h||0)<=5).length,tokens.filter(t=>Number(t.price_change_percentage_24h||0)<0&&Number(t.price_change_percentage_24h||0)>=-5).length,tokens.filter(t=>Number(t.price_change_percentage_24h||0)<-5).length],1);
                             return (
@@ -265,11 +265,11 @@ function AIDataTab({ tokens }) {
                                     onClick={(e) => e.stopPropagation()}
                                     className="bg-white rounded-[3.5rem] p-12 w-full max-w-7xl max-h-[90vh] overflow-hidden border border-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] relative flex flex-col"
                                 >
-                                    <button onClick={()=>setDistExpanded(false)} className="absolute top-8 right-8 text-white bg-gray-900 rounded-full p-4 hover:scale-110 hover:bg-rose-500 transition-all z-[110] shadow-xl shadow-black/20">✕</button>
+                                    <button onClick={()=>setDistExpanded(false)} className="absolute top-8 right-8 text-white bg-gray-900 rounded-full p-4 hover:scale-110 hover:bg-blue-500 transition-all z-[110] shadow-xl shadow-black/20">✕</button>
                                     
                                     <div className="mb-12">
                                         <div className="flex items-center gap-4 mb-3">
-                                            <div className="w-2.5 h-10 bg-amber-500 rounded-full shadow-[0_0_15px_rgba(245,158,11,0.5)]" />
+                                            <div className="w-2.5 h-10 bg-indigo-500 rounded-full shadow-[0_0_15px_rgba(245,158,11,0.5)]" />
                                             <h3 className="font-black text-gray-900 text-4xl tracking-tighter uppercase italic">
                                                 {distFilter === 'all' ? 'Global Market Terminal' : `${distFilter.replace('-',' ').toUpperCase()} Signals`}
                                             </h3>
@@ -291,16 +291,16 @@ function AIDataTab({ tokens }) {
                                                 const chg=Number(t.price_change_percentage_24h||0);
                                                 const pos=chg>=0;
                                                 return (
-                                                    <div key={t.id} className="p-6 rounded-[2.5rem] bg-gray-50 border border-gray-100 flex flex-col items-center justify-center text-center shadow-md hover:-translate-y-2 hover:shadow-2xl hover:border-amber-500/30 transition-all duration-300 group">
+                                                    <div key={t.id} className="p-6 rounded-[2.5rem] bg-gray-50 border border-gray-100 flex flex-col items-center justify-center text-center shadow-md hover:-translate-y-2 hover:shadow-2xl hover:border-indigo-500/30 transition-all duration-300 group">
                                                         <div className="relative mb-4">
                                                             {t.image ? <img src={t.image} className="w-16 h-16 rounded-[1.5rem] shadow-xl group-hover:scale-110 transition-transform bg-white p-1" alt="" onError={e=>e.target.style.display='none'} /> : null}
-                                                            <div className={`absolute -right-2 -top-2 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center shadow-lg ${pos ? 'bg-emerald-500' : 'bg-rose-500'}`}>
+                                                            <div className={`absolute -right-2 -top-2 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center shadow-lg ${pos ? 'bg-sky-500' : 'bg-blue-500'}`}>
                                                                 {pos ? <ArrowUpRight className="w-3.5 h-3.5 text-white" /> : <ArrowDownRight className="w-3.5 h-3.5 text-white" />}
                                                             </div>
                                                         </div>
                                                         <p className="font-black text-gray-900 text-base tracking-tight mb-1">{t.symbol?.toUpperCase()}</p>
                                                         <p className="text-[9px] text-gray-400 font-black uppercase tracking-widest truncate w-full mb-4 px-2 opacity-60 italic">{t.name}</p>
-                                                        <div className={`w-full py-2 rounded-2xl font-black text-xs ${pos?'bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-500/10':'bg-rose-50 text-rose-600 shadow-sm shadow-rose-500/10'}`}>
+                                                        <div className={`w-full py-2 rounded-2xl font-black text-xs ${pos?'bg-sky-50 text-sky-700 shadow-sm shadow-sky-500/10':'bg-blue-50 text-blue-600 shadow-sm shadow-blue-500/10'}`}>
                                                             {fmtP(chg)}
                                                         </div>
                                                     </div>
@@ -326,7 +326,7 @@ function AIDataTab({ tokens }) {
                                     <p className="text-xs font-black text-gray-900">{t.symbol?.toUpperCase()}</p>
                                     <p className="text-[9px] text-gray-400 truncate">{fmtB(t.total_volume)} vol</p>
                                 </div>
-                                <p className={`text-[10px] font-black ${isPos(t.price_change_percentage_24h)?'text-emerald-600':'text-rose-500'}`}>{fmtP(t.price_change_percentage_24h)}</p>
+                                <p className={`text-[10px] font-black ${isPos(t.price_change_percentage_24h)?'text-sky-600':'text-blue-500'}`}>{fmtP(t.price_change_percentage_24h)}</p>
                             </div>
                         ))}
                     </div>
@@ -367,9 +367,9 @@ function AIDataTab({ tokens }) {
                         </div>
                         <div className="space-y-2.5">
                             {[
-                                {label:'Bitcoin',sym:'BTC',pct:42,cap:'$1.01T',chg:'+1.2%',c:'#f59e0b',bg:'bg-amber-400'},
+                                {label:'Bitcoin',sym:'BTC',pct:42,cap:'$1.01T',chg:'+1.2%',c:'#f59e0b',bg:'bg-indigo-400'},
                                 {label:'Ethereum',sym:'ETH',pct:19,cap:'$456B',chg:'-0.8%',c:'#6366f1',bg:'bg-indigo-500'},
-                                {label:'BNB Chain',sym:'BNB',pct:12,cap:'$288B',chg:'+0.5%',c:'#10b981',bg:'bg-emerald-500'},
+                                {label:'BNB Chain',sym:'BNB',pct:12,cap:'$288B',chg:'+0.5%',c:'#10b981',bg:'bg-sky-500'},
                                 {label:'Solana',sym:'SOL',pct:8,cap:'$192B',chg:'+3.1%',c:'#8b5cf6',bg:'bg-violet-500'},
                                 {label:'Others',sym:'...',pct:19,cap:'$463B',chg:'-1.2%',c:'#9ca3af',bg:'bg-gray-300'},
                             ].map((s,i)=>(
@@ -382,7 +382,7 @@ function AIDataTab({ tokens }) {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className="font-black text-gray-700">{s.cap}</span>
-                                            <span className={`font-black ${s.chg.startsWith('+')?'text-emerald-600':'text-rose-500'}`}>{s.chg}</span>
+                                            <span className={`font-black ${s.chg.startsWith('+')?'text-sky-600':'text-blue-500'}`}>{s.chg}</span>
                                             <span className="text-indigo-600 font-black w-7 text-right">{s.pct}%</span>
                                         </div>
                                     </div>
@@ -407,14 +407,14 @@ function AIDataTab({ tokens }) {
                     <SectionTitle icon={Globe} title="Market Heatmap" sub="24h price performance grid" />
                     
                     {/* Catchy AI Legend Row */}
-                    <div className="flex items-center gap-3 bg-amber-50/50 border border-amber-200/40 px-4 py-2 rounded-2xl shadow-sm">
+                    <div className="flex items-center gap-3 bg-indigo-50/50 border border-indigo-200/40 px-4 py-2 rounded-2xl shadow-sm">
                         <div className="relative flex items-center justify-center">
-                            <div className="absolute inset-0 bg-amber-400 rounded-full blur-[4px] opacity-40 animate-pulse" />
-                            <div className="bg-gray-900 rounded-full p-1 border border-amber-400/50">
-                                <Brain className="w-2.5 h-2.5 text-amber-400" />
+                            <div className="absolute inset-0 bg-indigo-400 rounded-full blur-[4px] opacity-40 animate-pulse" />
+                            <div className="bg-gray-900 rounded-full p-1 border border-indigo-400/50">
+                                <Brain className="w-2.5 h-2.5 text-indigo-400" />
                             </div>
                         </div>
-                        <p className="text-[10px] font-black italic tracking-tight text-amber-800">
+                        <p className="text-[10px] font-black italic tracking-tight text-indigo-800">
                             NEURAL SIGNAL ACTIVATED: <span className="text-gray-500 font-bold ml-1">Pulsing assets are elite B20 Neural Engine suggestions for high-momentum breakouts.</span>
                         </p>
                     </div>
@@ -433,16 +433,16 @@ function AIDataTab({ tokens }) {
                                     <div className="absolute top-1 right-1 z-20">
                                         <div className="relative flex items-center justify-center">
                                             {/* Dual layer glow for ultra-visibility */}
-                                            <div className="absolute inset-0 bg-amber-400 rounded-full blur-[4px] opacity-60 animate-ping" />
-                                            <div className="absolute inset-0 bg-amber-500 rounded-full blur-[2px] opacity-40 animate-pulse" />
-                                            <div className="bg-gray-900 rounded-full p-0.5 shadow-xl border border-amber-400/50">
-                                                <Brain className="w-2.5 h-2.5 text-amber-400" />
+                                            <div className="absolute inset-0 bg-indigo-400 rounded-full blur-[4px] opacity-60 animate-ping" />
+                                            <div className="absolute inset-0 bg-indigo-500 rounded-full blur-[2px] opacity-40 animate-pulse" />
+                                            <div className="bg-gray-900 rounded-full p-0.5 shadow-xl border border-indigo-400/50">
+                                                <Brain className="w-2.5 h-2.5 text-indigo-400" />
                                             </div>
                                         </div>
                                     </div>
                                 )}
                                 <p className="text-[8px] font-black text-gray-900 truncate leading-none relative z-0">{t.symbol?.toUpperCase()?.slice(0,5)}</p>
-                                <p className={`text-[8px] font-bold mt-0.5 relative z-0 ${chg>=0?'text-emerald-800':'text-rose-800'}`}>{fmtP(chg)}</p>
+                                <p className={`text-[8px] font-bold mt-0.5 relative z-0 ${chg>=0?'text-sky-800':'text-blue-800'}`}>{fmtP(chg)}</p>
                             </div>
                         );
                     })}
@@ -463,13 +463,13 @@ function AIDataTab({ tokens }) {
                             const chg=Number(t.price_change_percentage_24h||0);
                             return (
                                 <div key={i} style={{background:'rgba(249,250,251,0.8)',border:'1px solid rgba(0,0,0,0.04)'}} className="flex items-center gap-3 p-2.5 rounded-xl hover:brightness-95 transition-all">
-                                    <span className="text-[9px] font-black text-emerald-500 w-4">#{i+1}</span>
+                                    <span className="text-[9px] font-black text-sky-500 w-4">#{i+1}</span>
                                     {t.image ? <img src={t.image} className="w-8 h-8 rounded-full border border-gray-200" alt="" onError={e=>e.target.style.display='none'} /> : null}
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs font-black text-gray-900">{t.symbol?.toUpperCase()}</p>
                                         <p className="text-[9px] text-gray-400 truncate">${fmt(t.current_price,4)}</p>
                                     </div>
-                                    <p className="text-[10px] font-black text-emerald-600">{fmtP(chg)}</p>
+                                    <p className="text-[10px] font-black text-sky-600">{fmtP(chg)}</p>
                                 </div>
                             );
                         })}
@@ -482,13 +482,13 @@ function AIDataTab({ tokens }) {
                             const chg=Number(t.price_change_percentage_24h||0);
                             return (
                                 <div key={i} style={{background:'rgba(249,250,251,0.8)',border:'1px solid rgba(0,0,0,0.04)'}} className="flex items-center gap-3 p-2.5 rounded-xl hover:brightness-95 transition-all">
-                                    <span className="text-[9px] font-black text-rose-500 w-4">#{i+1}</span>
+                                    <span className="text-[9px] font-black text-blue-500 w-4">#{i+1}</span>
                                     {t.image ? <img src={t.image} className="w-8 h-8 rounded-full border border-gray-200" alt="" onError={e=>e.target.style.display='none'} /> : null}
                                     <div className="flex-1 min-w-0">
                                         <p className="text-xs font-black text-gray-900">{t.symbol?.toUpperCase()}</p>
                                         <p className="text-[9px] text-gray-400 truncate">${fmt(t.current_price,4)}</p>
                                     </div>
-                                    <p className="text-[10px] font-black text-rose-600">{fmtP(chg)}</p>
+                                    <p className="text-[10px] font-black text-blue-600">{fmtP(chg)}</p>
                                 </div>
                             );
                         })}
@@ -546,9 +546,9 @@ function AIDataTab({ tokens }) {
 // ── Grow Tab
 function GrowTab() {
     const stakingPlans=[
-        {title:'Flex Vault',apr:'6%',lock:'No lock',min:'100 B20',color:'#f59e0b',bg:'from-amber-50 to-yellow-50',accent:'bg-gray-900',desc:'Withdraw anytime with no penalty.'},
+        {title:'Flex Vault',apr:'6%',lock:'No lock',min:'100 B20',color:'#f59e0b',bg:'from-indigo-50 to-yellow-50',accent:'bg-gray-900',desc:'Withdraw anytime with no penalty.'},
         {title:'Silver Vault',apr:'10%',lock:'30 Days',min:'500 B20',color:'#6366f1',bg:'from-indigo-50 to-purple-50',accent:'bg-indigo-500',desc:'Short-term high yield with compound rewards.'},
-        {title:'Gold Vault',apr:'14%',lock:'90 Days',min:'2,000 B20',color:'#10b981',bg:'from-emerald-50 to-teal-50',accent:'bg-emerald-500',desc:'Institutional-grade APR with NFT badge.'},
+        {title:'Gold Vault',apr:'14%',lock:'90 Days',min:'2,000 B20',color:'#10b981',bg:'from-sky-50 to-teal-50',accent:'bg-sky-500',desc:'Institutional-grade APR with NFT badge.'},
         {title:'Diamond Vault',apr:'18%',lock:'180 Days',min:'10,000 B20',color:'#8b5cf6',bg:'from-violet-50 to-purple-50',accent:'bg-violet-600',desc:'Elite staking with VIP trading fee rebates.'},
     ];
     const copyTraders=[
@@ -608,7 +608,7 @@ function GrowTab() {
             {/* Copy trading */}
             <div>
                 <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-300/30">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-sky-400 to-teal-500 flex items-center justify-center shadow-lg shadow-sky-300/30">
                         <Users className="w-5 h-5 text-white" />
                     </div>
                     <div>
@@ -626,13 +626,13 @@ function GrowTab() {
                                     </div>
                                     <div>
                                         <p className="font-black text-gray-900 text-sm">{t.name}</p>
-                                        <span className={`text-[8px] font-black px-2 py-0.5 rounded-full border ${t.risk==='Low'?'bg-emerald-50 text-emerald-700 border-emerald-200':t.risk==='Medium'?'bg-indigo-50 text-indigo-600 border-gray-200':'bg-rose-50 text-rose-700 border-rose-200'}`}>
+                                        <span className={`text-[8px] font-black px-2 py-0.5 rounded-full border ${t.risk==='Low'?'bg-sky-50 text-sky-700 border-sky-200':t.risk==='Medium'?'bg-indigo-50 text-indigo-600 border-gray-200':'bg-blue-50 text-blue-700 border-blue-200'}`}>
                                             {t.risk} Risk
                                         </span>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-3 gap-2 mb-5">
-                                    {[{l:'Win Rate',v:t.wr,c:'text-emerald-600'},{l:'Monthly',v:t.monthly,c:'text-indigo-600'},{l:'Followers',v:t.followers,c:'text-gray-700'}].map((s,j)=>(
+                                    {[{l:'Win Rate',v:t.wr,c:'text-sky-600'},{l:'Monthly',v:t.monthly,c:'text-indigo-600'},{l:'Followers',v:t.followers,c:'text-gray-700'}].map((s,j)=>(
                                         <div key={j} className="text-center p-2 rounded-xl" style={{background:'rgba(248,250,252,0.8)',border:'1px solid rgba(15,23,42,0.06)'}}>
                                             <p className={`text-xs font-black ${s.c}`}>{s.v}</p>
                                             <p className="text-[8px] text-gray-400">{s.l}</p>
@@ -849,7 +849,7 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
                             >
                                 {t.image ? <img src={t.image} className="w-10 h-10 rounded-full mx-auto mb-2 border-2 border-white shadow-md" alt="" /> : null}
                                 <p className="text-[11px] font-black text-gray-900 tracking-tight">{t.symbol?.toUpperCase()}</p>
-                                <p className={`text-[10px] font-black mt-0.5 ${pos ? 'text-emerald-600' : 'text-rose-500'}`}>{fmtP(chg)}</p>
+                                <p className={`text-[10px] font-black mt-0.5 ${pos ? 'text-sky-600' : 'text-blue-500'}`}>{fmtP(chg)}</p>
                             </motion.div>
                         );
                     })}
@@ -885,15 +885,15 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
                                 {moreData && !moreData.loading && !moreData.error && (
                                     <div className="bg-gray-900 rounded-3xl p-6 text-white shadow-2xl shadow-gray-900/20">
                                         <div className="flex items-center gap-2 mb-4">
-                                            <Brain className="w-5 h-5 text-amber-400" />
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-amber-400">B20 AI Recommendation</p>
+                                            <Brain className="w-5 h-5 text-indigo-400" />
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">B20 AI Recommendation</p>
                                         </div>
                                         <p className="text-sm font-bold leading-relaxed italic text-gray-100">
                                             "{moreData.recommendation}"
                                         </p>
                                         <div className="mt-6 pt-4 border-t border-white/10 flex justify-between items-center">
                                             <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Fear & Greed Index</span>
-                                            <span className={`text-[10px] font-black px-3 py-1 rounded-full ${moreData.fng > 70 ? 'bg-emerald-500' : moreData.fng < 30 ? 'bg-rose-500' : 'bg-amber-500'}`}>
+                                            <span className={`text-[10px] font-black px-3 py-1 rounded-full ${moreData.fng > 70 ? 'bg-sky-500' : moreData.fng < 30 ? 'bg-blue-500' : 'bg-indigo-500'}`}>
                                                 {moreData.fng} - {moreData.fngLabel}
                                             </span>
                                         </div>
@@ -940,7 +940,7 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
                                                 <div className="space-y-3">
                                                    <div className="flex justify-between items-center">
                                                        <span className="text-[10px] font-bold text-gray-500 uppercase">24h Delta</span>
-                                                       <span className={`text-[10px] font-black ${isPos(moreData?.price_change_24h) ? 'text-emerald-500' : 'text-rose-500'}`}>{fmtP(moreData?.price_change_24h)}</span>
+                                                       <span className={`text-[10px] font-black ${isPos(moreData?.price_change_24h) ? 'text-sky-500' : 'text-blue-500'}`}>{fmtP(moreData?.price_change_24h)}</span>
                                                    </div>
                                                    <div className="flex justify-between items-center text-[10px]">
                                                        <span className="font-bold text-gray-500 uppercase">24h High</span>
@@ -971,14 +971,14 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
                                             </div>
 
                                             <div className="bg-gray-50 rounded-3xl p-6 border border-gray-100">
-                                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><Zap className="w-3 h-3 text-amber-500"/> Big Traders (Last 24h Velocity)</h4>
+                                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><Zap className="w-3 h-3 text-indigo-500"/> Big Traders (Last 24h Velocity)</h4>
                                                 <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
                                                     {moreData?.traders?.map((t,i)=>(
                                                         <div key={i} className="flex justify-between items-center text-[9px] border-b border-gray-100/50 pb-2">
                                                             <span className="font-mono text-gray-400">{t.address}</span>
                                                             <div className="text-right flex items-center gap-3">
                                                                 <span className="font-black text-gray-900">${fmt(t.volume)}</span>
-                                                                <span className={`px-2 py-0.5 rounded-md font-black ${t.type === 'BUY' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>{t.type}</span>
+                                                                <span className={`px-2 py-0.5 rounded-md font-black ${t.type === 'BUY' ? 'bg-sky-50 text-sky-600' : 'bg-blue-50 text-blue-600'}`}>{t.type}</span>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -993,10 +993,10 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
                                                     <div key={i} className="space-y-2">
                                                         <div className="flex justify-between items-center text-[9px] font-black">
                                                             <span className="text-gray-500 uppercase">{r.label}</span>
-                                                            <span className={`${r.color === 'amber' ? 'text-amber-600' : r.color === 'green' ? 'text-emerald-600' : 'text-blue-600'}`}>{r.score}/100</span>
+                                                            <span className={`${r.color === 'amber' ? 'text-indigo-600' : r.color === 'green' ? 'text-sky-600' : 'text-blue-600'}`}>{r.score}/100</span>
                                                         </div>
                                                         <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                                            <motion.div initial={{ width: 0 }} animate={{ width: `${r.score}%` }} transition={{ duration: 1, delay: i * 0.2 }} className={`h-full ${r.color === 'amber' ? 'bg-amber-500' : r.color === 'green' ? 'bg-emerald-500' : 'bg-blue-500'} rounded-full`} />
+                                                            <motion.div initial={{ width: 0 }} animate={{ width: `${r.score}%` }} transition={{ duration: 1, delay: i * 0.2 }} className={`h-full ${r.color === 'amber' ? 'bg-indigo-500' : r.color === 'green' ? 'bg-sky-500' : 'bg-blue-500'} rounded-full`} />
                                                         </div>
                                                     </div>
                                                 ))}
@@ -1098,7 +1098,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                             {t.image ? <img src={t.image} className="w-5 h-5 rounded-full" alt="" /> : null}
                             <span className="text-[10px] font-black text-gray-700 group-hover:text-indigo-600 transition-colors uppercase">{t.symbol}</span>
                         </div>
-                        <span className={`text-[10px] font-black ${isPos(t.price_change_percentage_24h) ? 'text-emerald-500' : 'text-rose-500'}`}>
+                        <span className={`text-[10px] font-black ${isPos(t.price_change_percentage_24h) ? 'text-sky-500' : 'text-blue-500'}`}>
                             {fmtP(t.price_change_percentage_24h)}
                         </span>
                     </div>
@@ -1113,19 +1113,19 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
         <div className="space-y-8 pb-10">
             {/* Ask Nuera Engine */}
             <div className="relative">
-                <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 to-indigo-600 rounded-[2.5rem] blur opacity-10" />
+                <div className="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-[2.5rem] blur opacity-10" />
                 <div className="relative bg-gray-900 rounded-[2.5rem] p-8 overflow-hidden">
                     <div className="absolute top-0 right-0 p-8 opacity-10">
-                        <Sparkles className="w-32 h-32 text-amber-400 rotate-12" />
+                        <Sparkles className="w-32 h-32 text-indigo-400 rotate-12" />
                     </div>
                     
                     <div className="relative z-10">
                         <div className="flex items-center gap-3 mb-6">
-                            <div className="p-3 bg-amber-400/20 rounded-2xl">
-                                <Search className="w-6 h-6 text-amber-400" />
+                            <div className="p-3 bg-indigo-400/20 rounded-2xl">
+                                <Search className="w-6 h-6 text-indigo-400" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-black text-white tracking-tighter italic uppercase">Ask Nuera <span className="text-amber-400">AI</span></h3>
+                                <h3 className="text-2xl font-black text-white tracking-tighter italic uppercase">Ask Nuera <span className="text-indigo-400">AI</span></h3>
                                 <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Full Technical Scan & Institutional Sentiment Breakdown</p>
                             </div>
                         </div>
@@ -1137,11 +1137,11 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     placeholder="Enter Token Name or Symbol (e.g. Bitcoin, PEPE)..." 
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-all placeholder:text-gray-600"
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-gray-600"
                                 />
-                                {loading && <RefreshCw className="absolute right-5 top-4 w-5 h-5 text-amber-400 animate-spin" />}
+                                {loading && <RefreshCw className="absolute right-5 top-4 w-5 h-5 text-indigo-400 animate-spin" />}
                             </div>
-                            <button type="submit" className="px-8 py-4 sm:py-0 bg-amber-500 hover:bg-amber-400 text-gray-900 font-black text-xs uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-amber-500/20 active:scale-95">
+                            <button type="submit" className="px-8 py-4 sm:py-0 bg-indigo-500 hover:bg-indigo-400 text-gray-900 font-black text-xs uppercase tracking-widest rounded-2xl transition-all shadow-xl shadow-indigo-500/20 active:scale-95">
                                 Generate Technical Report
                             </button>
                         </form>
@@ -1171,17 +1171,17 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                     <div className="space-y-4">
                                         <div className="p-6 bg-gray-900 rounded-[2.5rem] text-white relative overflow-hidden group">
                                             <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
-                                                <Brain className="w-24 h-24 text-amber-400" />
+                                                <Brain className="w-24 h-24 text-indigo-400" />
                                             </div>
                                             <div className="relative z-10">
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    <Brain className="w-4 h-4 text-amber-400" />
-                                                    <span className="text-[10px] font-black uppercase tracking-widest text-amber-400">Nuera Intelligence Suggestion</span>
+                                                    <Brain className="w-4 h-4 text-indigo-400" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Nuera Intelligence Suggestion</span>
                                                 </div>
                                                 <p className="text-2xl font-black italic">{report.sentiment}</p>
                                                 <div className="mt-4 flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-gray-400">
                                                     <span>Confidence Score: {report.fear_score}/100</span>
-                                                    <span className="text-amber-400">Stable-Bullish</span>
+                                                    <span className="text-indigo-400">Stable-Bullish</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1193,15 +1193,15 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                             </div>
                                             <div className={`p-5 bg-gray-50 rounded-3xl border border-gray-100 hover:border-indigo-100 transition-all`}>
                                                 <p className="text-[9px] font-black text-gray-400 uppercase mb-1">24h Change</p>
-                                                <p className={`text-sm font-black ${report.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>{fmtP(report.price_change_percentage_24h)}</p>
+                                                <p className={`text-sm font-black ${report.price_change_percentage_24h >= 0 ? 'text-sky-500' : 'text-blue-500'}`}>{fmtP(report.price_change_percentage_24h)}</p>
                                             </div>
                                             <div className="p-5 bg-gray-50 rounded-3xl border border-gray-100 hover:border-indigo-100 transition-all">
                                                 <p className="text-[9px] font-black text-gray-400 uppercase mb-1">7D Delta</p>
-                                                <p className={`text-sm font-black ${report.change_7d >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>{report.change_7d}%</p>
+                                                <p className={`text-sm font-black ${report.change_7d >= 0 ? 'text-sky-500' : 'text-blue-500'}`}>{report.change_7d}%</p>
                                             </div>
                                             <div className="p-5 bg-gray-50 rounded-3xl border border-gray-100 hover:border-indigo-100 transition-all">
                                                 <p className="text-[9px] font-black text-gray-400 uppercase mb-1">Nuera Sentiment</p>
-                                                <p className={`text-sm font-black ${report.sentiment === 'BULLISH' ? 'text-emerald-500' : 'text-rose-500'}`}>{report.sentiment}</p>
+                                                <p className={`text-sm font-black ${report.sentiment === 'BULLISH' ? 'text-sky-500' : 'text-blue-500'}`}>{report.sentiment}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -1214,7 +1214,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                             <div className="space-y-4">
                                                 <div className="flex justify-between items-center group/item">
                                                     <span className="text-xs font-bold text-gray-500">Liquidity Depth</span>
-                                                    <span className="text-xs font-black text-emerald-600">${fmt(report.liquidity)}</span>
+                                                    <span className="text-xs font-black text-sky-600">${fmt(report.liquidity)}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center group/item">
                                                     <span className="text-xs font-bold text-gray-500">Listed LP Pool</span>
@@ -1226,7 +1226,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                                 </div>
                                                 <div className="flex justify-between items-center group/item">
                                                     <span className="text-xs font-bold text-gray-500">Circulation Drift</span>
-                                                    <span className="text-xs font-black text-amber-600">{report.circ_change}</span>
+                                                    <span className="text-xs font-black text-indigo-600">{report.circ_change}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center group/item">
                                                     <span className="text-xs font-bold text-gray-500">Total Supply</span>
@@ -1240,7 +1240,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                         </div>
 
                                         <div>
-                                            <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-3 mb-5 flex items-center gap-2"><Monitor className="w-3 h-3 text-amber-500"/> Price Bound Analysis</h4>
+                                            <h4 className="text-[11px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-3 mb-5 flex items-center gap-2"><Monitor className="w-3 h-3 text-indigo-500"/> Price Bound Analysis</h4>
                                             <div className="space-y-5">
                                                 <div className="group">
                                                     <div className="flex justify-between items-center mb-2">
@@ -1250,20 +1250,20 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                                 </div>
                                                 <div className="group">
                                                     <div className="flex justify-between items-center mb-2">
-                                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-tighter flex items-center gap-1"><ArrowUp className="w-2.5 h-2.5 text-emerald-500"/> 52-Week Peak</span>
-                                                        <span className="text-xs font-black text-emerald-600">${fmt(report.high_52w, 4)}</span>
+                                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-tighter flex items-center gap-1"><ArrowUp className="w-2.5 h-2.5 text-sky-500"/> 52-Week Peak</span>
+                                                        <span className="text-xs font-black text-sky-600">${fmt(report.high_52w, 4)}</span>
                                                     </div>
                                                     <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                                        <motion.div initial={{ width: 0 }} animate={{ width: '85%' }} className="h-full bg-emerald-500/40 rounded-full" />
+                                                        <motion.div initial={{ width: 0 }} animate={{ width: '85%' }} className="h-full bg-sky-500/40 rounded-full" />
                                                     </div>
                                                 </div>
                                                 <div className="group">
                                                     <div className="flex justify-between items-center mb-2">
-                                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-tighter flex items-center gap-1"><ArrowDown className="w-2.5 h-2.5 text-rose-500"/> 52-Week Floor</span>
-                                                        <span className="text-xs font-black text-rose-600">${fmt(report.low_52w, 4)}</span>
+                                                        <span className="text-xs font-bold text-gray-500 uppercase tracking-tighter flex items-center gap-1"><ArrowDown className="w-2.5 h-2.5 text-blue-500"/> 52-Week Floor</span>
+                                                        <span className="text-xs font-black text-blue-600">${fmt(report.low_52w, 4)}</span>
                                                     </div>
                                                     <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                                        <motion.div initial={{ width: 0 }} animate={{ width: '25%' }} className="h-full bg-rose-500/40 rounded-full" />
+                                                        <motion.div initial={{ width: 0 }} animate={{ width: '25%' }} className="h-full bg-blue-500/40 rounded-full" />
                                                     </div>
                                                 </div>
                                                 <div className="mt-6 p-5 rounded-3xl bg-indigo-50 border border-indigo-100 flex items-center gap-4">
@@ -1307,20 +1307,20 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                 
                 <div className="bg-gradient-to-br from-indigo-900 to-indigo-950 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-6 opacity-20 rotate-12 group-hover:scale-110 transition-transform">
-                        <Award className="w-32 h-32 text-amber-400" />
+                        <Award className="w-32 h-32 text-indigo-400" />
                     </div>
                     <div className="relative z-10 flex flex-col h-full justify-between">
                         <div>
                             <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-amber-400/20 rounded-xl">
-                                    <Sparkles className="w-4 h-4 text-amber-400" />
+                                <div className="p-2 bg-indigo-400/20 rounded-xl">
+                                    <Sparkles className="w-4 h-4 text-indigo-400" />
                                 </div>
-                                <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-amber-400">VIP Selection</h4>
+                                <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-indigo-400">VIP Selection</h4>
                             </div>
                             <p className="text-xl font-black italic mb-3 leading-tight tracking-tighter">SOL & ETH showing extreme institutional accumulation levels.</p>
                             <p className="text-[10px] text-indigo-300 font-black uppercase tracking-widest">Sentiment: High Conviction Bullish</p>
                         </div>
-                        <button onClick={() => setMode ? setMode('spot') : (window.location.href='/exchange')} className="w-full mt-8 py-4 bg-amber-400 text-indigo-950 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-300 shadow-xl shadow-amber-400/10 active:scale-95 transition-all">Invest Now</button>
+                        <button onClick={() => setMode ? setMode('spot') : (window.location.href='/exchange')} className="w-full mt-8 py-4 bg-indigo-400 text-indigo-950 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-300 shadow-xl shadow-indigo-400/10 active:scale-95 transition-all">Invest Now</button>
                     </div>
                 </div>
             </div>
@@ -1328,21 +1328,21 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="flex items-center justify-between p-8 bg-gray-900 border border-white/5 rounded-[2.5rem] relative overflow-hidden group">
                     <div className="flex items-center gap-6 relative z-10">
-                        <div className="w-14 h-14 rounded-2xl bg-rose-500/20 flex items-center justify-center border border-rose-500/30">
-                            <ShieldAlert className="w-7 h-7 text-rose-500" />
+                        <div className="w-14 h-14 rounded-2xl bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
+                            <ShieldAlert className="w-7 h-7 text-blue-500" />
                         </div>
                         <div>
                             <h4 className="font-black text-white text-lg tracking-tight italic">Void Watch: High Risk Zone</h4>
                             <p className="text-xs text-gray-400">Currently flagging {voidList.length}+ assets for liquidity drain & volatility anomalies.</p>
                         </div>
                     </div>
-                    <button onClick={() => setVoidOpen(true)} className="px-8 py-4 bg-white/5 text-rose-500 border border-rose-500/20 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-500/10 transition-all relative z-10">Scan Void List</button>
+                    <button onClick={() => setVoidOpen(true)} className="px-8 py-4 bg-white/5 text-blue-500 border border-blue-500/20 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-500/10 transition-all relative z-10">Scan Void List</button>
                 </div>
 
-                <div className="flex items-center justify-between p-8 bg-amber-400 rounded-[2.5rem] relative overflow-hidden group">
+                <div className="flex items-center justify-between p-8 bg-indigo-400 rounded-[2.5rem] relative overflow-hidden group">
                     <div className="flex items-center gap-6 relative z-10">
                         <div className="w-14 h-14 rounded-2xl bg-gray-900 flex items-center justify-center">
-                            <Star className="w-7 h-7 text-amber-400" />
+                            <Star className="w-7 h-7 text-indigo-400" />
                         </div>
                         <div>
                             <h4 className="font-black text-gray-900 text-lg tracking-tight italic">Sentiment Alpha Leaders</h4>
@@ -1357,17 +1357,17 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
             {voidOpen && (
                 <Portal>
                     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md" onClick={() => setVoidOpen(false)}>
-                        <motion.div initial={{scale:0.9,opacity:0}} animate={{scale:1,opacity:1}} onClick={e=>e.stopPropagation()} className="bg-white rounded-[3.5rem] p-12 w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col relative border-8 border-rose-500/20">
+                        <motion.div initial={{scale:0.9,opacity:0}} animate={{scale:1,opacity:1}} onClick={e=>e.stopPropagation()} className="bg-white rounded-[3.5rem] p-12 w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col relative border-8 border-blue-500/20">
                             <button onClick={()=>setVoidOpen(false)} className="absolute top-8 right-8 p-3 bg-gray-900 text-white rounded-full">✕</button>
-                            <h3 className="text-3xl font-black text-rose-600 mb-8 uppercase italic flex items-center gap-4"><ShieldAlert className="w-8 h-8"/> High Risk Void Assets</h3>
+                            <h3 className="text-3xl font-black text-blue-600 mb-8 uppercase italic flex items-center gap-4"><ShieldAlert className="w-8 h-8"/> High Risk Void Assets</h3>
                             <div className="overflow-y-auto pr-4 custom-scrollbar">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                                     {voidList.map((t,i)=>(
-                                        <div key={i} className="p-6 rounded-3xl bg-rose-50 border border-rose-100 flex items-center gap-4">
-                                            {t.image ? <img src={t.image} className="w-10 h-10 rounded-full border-2 border-rose-500/20" alt="" /> : null}
+                                        <div key={i} className="p-6 rounded-3xl bg-blue-50 border border-blue-100 flex items-center gap-4">
+                                            {t.image ? <img src={t.image} className="w-10 h-10 rounded-full border-2 border-blue-500/20" alt="" /> : null}
                                             <div>
                                                 <p className="font-black text-gray-900">{t.symbol?.toUpperCase()}</p>
-                                                <p className="text-[10px] font-black text-rose-600">CRITICAL VOLATILITY: {fmtP(t.price_change_percentage_24h)}</p>
+                                                <p className="text-[10px] font-black text-blue-600">CRITICAL VOLATILITY: {fmtP(t.price_change_percentage_24h)}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -1382,17 +1382,17 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
             {alphaOpen && (
                 <Portal>
                     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-indigo-900/40 backdrop-blur-md" onClick={() => setAlphaOpen(false)}>
-                        <motion.div initial={{scale:0.9,opacity:0}} animate={{scale:1,opacity:1}} onClick={e=>e.stopPropagation()} className="bg-white rounded-[3.5rem] p-12 w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col relative border-8 border-amber-500/20">
+                        <motion.div initial={{scale:0.9,opacity:0}} animate={{scale:1,opacity:1}} onClick={e=>e.stopPropagation()} className="bg-white rounded-[3.5rem] p-12 w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col relative border-8 border-indigo-500/20">
                             <button onClick={()=>setAlphaOpen(false)} className="absolute top-8 right-8 p-3 bg-gray-900 text-white rounded-full">✕</button>
-                            <h3 className="text-3xl font-black text-amber-600 mb-8 uppercase italic flex items-center gap-4"><Star className="w-8 h-8"/> Sentiment Alpha Leaders</h3>
+                            <h3 className="text-3xl font-black text-indigo-600 mb-8 uppercase italic flex items-center gap-4"><Star className="w-8 h-8"/> Sentiment Alpha Leaders</h3>
                             <div className="overflow-y-auto pr-4 custom-scrollbar">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                                     {alphaList.map((t,i)=>(
-                                        <div key={i} className="p-6 rounded-3xl bg-amber-50 border border-amber-100 flex items-center gap-4 group cursor-pointer hover:bg-amber-100 transition-all">
-                                            {t.image ? <img src={t.image} className="w-10 h-10 rounded-full border-2 border-amber-500/20" alt="" /> : null}
+                                        <div key={i} className="p-6 rounded-3xl bg-indigo-50 border border-indigo-100 flex items-center gap-4 group cursor-pointer hover:bg-indigo-100 transition-all">
+                                            {t.image ? <img src={t.image} className="w-10 h-10 rounded-full border-2 border-indigo-500/20" alt="" /> : null}
                                             <div>
                                                 <p className="font-black text-gray-900">{t.symbol?.toUpperCase()}</p>
-                                                <p className="text-[10px] font-black text-emerald-600">BULLISH SENTIMENT: {fmtP(t.price_change_percentage_24h)}</p>
+                                                <p className="text-[10px] font-black text-sky-600">BULLISH SENTIMENT: {fmtP(t.price_change_percentage_24h)}</p>
                                             </div>
                                         </div>
                                     ))}
@@ -1424,16 +1424,16 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                         <h5 className="text-[10px] font-black uppercase text-indigo-600 mb-6 flex items-center gap-2"><Users className="w-3 h-3"/> Whale Distribution</h5>
                                         <div className="space-y-4">
                                             <div className="flex justify-between text-xs"><span className="text-gray-500">Top 10 Holders</span><span className="font-black text-gray-900">12.4%</span></div>
-                                            <div className="flex justify-between text-xs"><span className="text-gray-500">Institutional Wallets</span><span className="font-black text-emerald-600">Active</span></div>
+                                            <div className="flex justify-between text-xs"><span className="text-gray-500">Institutional Wallets</span><span className="font-black text-sky-600">Active</span></div>
                                             <div className="flex justify-between text-xs"><span className="text-gray-500">Whale Concentration</span><span className="font-black text-gray-900">Low-Risk</span></div>
                                         </div>
                                     </div>
                                     <div className="p-8 bg-gray-50 rounded-[2.5rem]">
-                                        <h5 className="text-[10px] font-black uppercase text-amber-600 mb-6 flex items-center gap-2"><Shield className="w-3 h-3"/> Security Audit</h5>
+                                        <h5 className="text-[10px] font-black uppercase text-indigo-600 mb-6 flex items-center gap-2"><Shield className="w-3 h-3"/> Security Audit</h5>
                                         <div className="space-y-4">
-                                            <div className="flex justify-between text-xs"><span className="text-gray-500">Contract Verified</span><span className="font-black text-emerald-600">YES</span></div>
+                                            <div className="flex justify-between text-xs"><span className="text-gray-500">Contract Verified</span><span className="font-black text-sky-600">YES</span></div>
                                             <div className="flex justify-between text-xs"><span className="text-gray-500">Liquidity Lock</span><span className="font-black text-gray-900">365 Days</span></div>
-                                            <div className="flex justify-between text-xs"><span className="text-gray-500">Mint Function</span><span className="font-black text-rose-600">Disabled</span></div>
+                                            <div className="flex justify-between text-xs"><span className="text-gray-500">Mint Function</span><span className="font-black text-blue-600">Disabled</span></div>
                                         </div>
                                     </div>
                                     <div className="p-8 bg-gray-900 rounded-[2.5rem] text-white">
@@ -1494,7 +1494,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                             </div>
                                             <div className="col-span-2 text-right font-black text-gray-900">${fmt(t.current_price, 4)}</div>
                                             <div className="col-span-2 text-right">
-                                                <span className={`px-4 py-2 rounded-xl text-[10px] font-black ${isPos(t.price_change_percentage_24h) ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                                                <span className={`px-4 py-2 rounded-xl text-[10px] font-black ${isPos(t.price_change_percentage_24h) ? 'bg-sky-50 text-sky-600' : 'bg-blue-50 text-blue-600'}`}>
                                                     {fmtP(t.price_change_percentage_24h)}
                                                 </span>
                                             </div>
@@ -1580,16 +1580,16 @@ function YieldTab({ tokens }) {
     return (
         <div className="space-y-8">
             {/* Header */}
-            <div className="bg-gradient-to-br from-emerald-50 to-teal-50/50 border border-emerald-100 rounded-[2.5rem] p-10 overflow-hidden relative">
-                <div className="absolute -top-10 -right-10 opacity-10"><Leaf className="w-64 h-64 text-emerald-600" /></div>
+            <div className="bg-gradient-to-br from-sky-50 to-teal-50/50 border border-sky-100 rounded-[2.5rem] p-10 overflow-hidden relative">
+                <div className="absolute -top-10 -right-10 opacity-10"><Leaf className="w-64 h-64 text-sky-600" /></div>
                 <div className="relative z-10">
                     <div className="flex flex-col lg:flex-row lg:items-end gap-8 justify-between mb-8">
                         <div>
                             <div className="flex items-center gap-3 mb-3">
-                                <div className="p-3 bg-emerald-500 text-white rounded-2xl shadow-lg shadow-emerald-500/30"><Leaf className="w-6 h-6" /></div>
+                                <div className="p-3 bg-sky-500 text-white rounded-2xl shadow-lg shadow-sky-500/30"><Leaf className="w-6 h-6" /></div>
                                 <div>
-                                    <h2 className="text-3xl font-black text-gray-900 uppercase italic tracking-tighter">Yield <span className="text-emerald-600">Intelligence</span></h2>
-                                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.3em] mt-0.5">{filtered.length} Active Vaults Scanned</p>
+                                    <h2 className="text-3xl font-black text-gray-900 uppercase italic tracking-tighter">Yield <span className="text-sky-600">Intelligence</span></h2>
+                                    <p className="text-[10px] font-black text-sky-600 uppercase tracking-[0.3em] mt-0.5">{filtered.length} Active Vaults Scanned</p>
                                 </div>
                             </div>
                             <p className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-loose max-w-lg">
@@ -1597,13 +1597,13 @@ function YieldTab({ tokens }) {
                             </p>
                         </div>
                         <div className="flex gap-8 shrink-0">
-                            <div className="text-center"><p className="text-3xl font-black text-emerald-500">{yieldAssets.length}+</p><p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Vaults</p></div>
+                            <div className="text-center"><p className="text-3xl font-black text-sky-500">{yieldAssets.length}+</p><p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Vaults</p></div>
                             <div className="text-center"><p className="text-3xl font-black text-gray-900">{avgAPY}%</p><p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Avg APY</p></div>
                             <div className="text-center"><p className="text-3xl font-black text-indigo-600">${fmtB(totalTVL)}</p><p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Total TVL</p></div>
                         </div>
                     </div>
-                    <div className="p-5 bg-amber-50/80 border border-amber-200/60 rounded-3xl">
-                        <p className="text-[9px] font-bold text-amber-700 uppercase tracking-wider leading-relaxed flex gap-2">
+                    <div className="p-5 bg-indigo-50/80 border border-indigo-200/60 rounded-3xl">
+                        <p className="text-[9px] font-bold text-indigo-700 uppercase tracking-wider leading-relaxed flex gap-2">
                             <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                             B20 operates its own staking vault. What you see is a yield marketplace — aggregated data only. DYOR. B20 is not liable for third-party losses.
                         </p>
@@ -1617,12 +1617,12 @@ function YieldTab({ tokens }) {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input type="text" value={yieldSearch} onChange={e => setYieldSearch(e.target.value)}
                         placeholder="Search token, symbol or protocol..."
-                        className="w-full pl-11 pr-5 py-3.5 bg-white border border-gray-200 rounded-2xl text-sm font-bold outline-none focus:border-emerald-400 shadow-sm" />
+                        className="w-full pl-11 pr-5 py-3.5 bg-white border border-gray-200 rounded-2xl text-sm font-bold outline-none focus:border-sky-400 shadow-sm" />
                 </div>
                 <div className="flex gap-2">
                     {[['apy', '↓ APY'], ['tvl', '↓ TVL'], ['name', 'A→Z']].map(([s, label]) => (
                         <button key={s} onClick={() => setSortBy(s)}
-                            className={`px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${sortBy === s ? 'bg-emerald-600 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-500 hover:border-emerald-300'}`}>
+                            className={`px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${sortBy === s ? 'bg-sky-600 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-500 hover:border-sky-300'}`}>
                             {label}
                         </button>
                     ))}
@@ -1641,7 +1641,7 @@ function YieldTab({ tokens }) {
                     <motion.div key={t.id || idx}
                         initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: Math.min(idx * 0.012, 0.5) }}
-                        className="grid grid-cols-12 items-center bg-white border border-gray-100 px-5 py-3.5 rounded-2xl hover:border-emerald-300 hover:shadow-md transition-all">
+                        className="grid grid-cols-12 items-center bg-white border border-gray-100 px-5 py-3.5 rounded-2xl hover:border-sky-300 hover:shadow-md transition-all">
                         <div className="col-span-5 flex items-center gap-3">
                             <div className="relative shrink-0">
                                 {t.image ? (
@@ -1650,7 +1650,7 @@ function YieldTab({ tokens }) {
                                 ) : (
                                     <div className="w-9 h-9 rounded-xl border-2 border-white bg-gray-50 flex items-center justify-center text-[10px] text-gray-300 shadow">BNB</div>
                                 )}
-                                <div className="absolute -bottom-0.5 -right-0.5 p-0.5 bg-emerald-500 rounded-md border border-white"><Shield className="w-1.5 h-1.5 text-white" /></div>
+                                <div className="absolute -bottom-0.5 -right-0.5 p-0.5 bg-sky-500 rounded-md border border-white"><Shield className="w-1.5 h-1.5 text-white" /></div>
                             </div>
                             <div className="min-w-0">
                                 <p className="font-black text-gray-900 text-xs uppercase truncate">{t.symbol?.toUpperCase()}</p>
@@ -1658,7 +1658,7 @@ function YieldTab({ tokens }) {
                             </div>
                         </div>
                         <div className="col-span-2 text-center">
-                            <p className={`text-sm font-black italic ${parseFloat(t.apy) > 20 ? 'text-emerald-500' : parseFloat(t.apy) > 10 ? 'text-amber-500' : 'text-blue-500'}`}>{t.apy}%</p>
+                            <p className={`text-sm font-black italic ${parseFloat(t.apy) > 20 ? 'text-sky-500' : parseFloat(t.apy) > 10 ? 'text-indigo-500' : 'text-blue-500'}`}>{t.apy}%</p>
                             <p className="text-[8px] text-gray-400 uppercase font-black">APY</p>
                         </div>
                         <div className="col-span-3 text-center">
@@ -1666,7 +1666,7 @@ function YieldTab({ tokens }) {
                             <p className="text-[8px] text-gray-400 uppercase font-black">TVL</p>
                         </div>
                         <div className="col-span-2 flex justify-end gap-2">
-                            <button onClick={() => handleInvest(t)} className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-gray-900 transition-all active:scale-95">Stake</button>
+                            <button onClick={() => handleInvest(t)} className="px-4 py-2 bg-sky-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-gray-900 transition-all active:scale-95">Stake</button>
                             <a href={`https://bscscan.com/token/${t.address}`} target="_blank" rel="noreferrer" className="p-2 bg-gray-50 rounded-xl hover:bg-gray-100 border border-gray-100 flex items-center">
                                 <ArrowUpRight className="w-3 h-3 text-gray-400" />
                             </a>
@@ -1684,9 +1684,9 @@ function YieldTab({ tokens }) {
 // ── Main Panel (no Navbar)
 const TABS = [
     { id:'ai',    label:'AI Data',           icon:Brain,      active:'bg-indigo-600',  glow:'shadow-indigo-600/40'  },
-    { id:'grow',  label:'Grow & Earn',       icon:TrendingUp, active:'bg-emerald-600', glow:'shadow-emerald-600/40' },
+    { id:'grow',  label:'Grow & Earn',       icon:TrendingUp, active:'bg-sky-600', glow:'shadow-sky-600/40' },
     { id:'intel', label:'User Intelligence', icon:Cpu,        active:'bg-violet-600',  glow:'shadow-violet-600/40'  },
-    { id:'hub',   label:'Traders Hub',       icon:Target,     active:'bg-amber-500',   glow:'shadow-amber-500/40',  dot: true },
+    { id:'hub',   label:'Traders Hub',       icon:Target,     active:'bg-indigo-500',   glow:'shadow-indigo-500/40',  dot: true },
     { id:'yield', label:'Yield',             icon:Leaf,       active:'bg-green-600',   glow:'shadow-green-600/40'   },
 ];
 
@@ -1801,7 +1801,7 @@ export default function B20AIPanel({ setMode, setToToken }) {
                                     <Icon className="w-3.5 h-3.5" />
                                     {t.label}
                                     {t.dot && !active && (
-                                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-amber-500 rounded-full border border-white animate-pulse" />
+                                        <div className="absolute -top-1 -right-1 w-2 h-2 bg-indigo-500 rounded-full border border-white animate-pulse" />
                                     )}
                                 </button>
                             );

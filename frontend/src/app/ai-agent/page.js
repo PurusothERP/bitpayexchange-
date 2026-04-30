@@ -10,9 +10,9 @@ import { useRouter } from 'next/navigation';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
 const RISK_COLOR = {
-    SAFE:     { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', badge: 'bg-emerald-500' },
-    MEDIUM:   { bg: 'bg-amber-50',   border: 'border-amber-200',   text: 'text-amber-700',   badge: 'bg-amber-500' },
-    HIGH:     { bg: 'bg-orange-50',  border: 'border-orange-200',  text: 'text-orange-700',  badge: 'bg-orange-500' },
+    SAFE:     { bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-700', badge: 'bg-sky-500' },
+    MEDIUM:   { bg: 'bg-indigo-50',   border: 'border-indigo-200',   text: 'text-indigo-700',   badge: 'bg-indigo-500' },
+    HIGH:     { bg: 'bg-slate-50',  border: 'border-slate-200',  text: 'text-slate-700',  badge: 'bg-slate-500' },
     CRITICAL: { bg: 'bg-red-50',     border: 'border-red-200',     text: 'text-red-700',     badge: 'bg-red-600' },
 };
 
@@ -86,11 +86,11 @@ export default function AIAgent() {
                 <div className="max-w-4xl mx-auto">
                     {/* Header */}
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
-                        <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-600 text-sm font-bold uppercase tracking-widest mb-4">
+                        <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 text-sm font-bold uppercase tracking-widest mb-4">
                             <Sparkles className="w-4 h-4" /> AI Token Architect
                         </span>
                         <h1 className="text-4xl md:text-5xl font-black mb-4">
-                            Build Your Token with <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 to-orange-500">Pure Intelligence</span>
+                            Build Your Token with <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-slate-500">Pure Intelligence</span>
                         </h1>
                         <p className="text-gray-600 text-lg max-w-2xl mx-auto">
                             Describe your idea, and our AI generates a unique name, symbol, description, analysis report, mimic detection via CoinGecko, and full market scoring — all in one shot.
@@ -99,11 +99,11 @@ export default function AIAgent() {
 
                     {/* Input Area */}
                     <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-card mb-8 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-40 h-40 bg-rose-500/5 blur-3xl -z-10" />
+                        <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/5 blur-3xl -z-10" />
                         <form onSubmit={handleRunAgent} className="space-y-6">
                             <div className="space-y-2">
                                 <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                                    <Brain className="w-4 h-4 text-rose-500" /> Describe your token idea
+                                    <Brain className="w-4 h-4 text-blue-500" /> Describe your token idea
                                 </label>
                                 <div className="relative">
                                     <textarea
@@ -111,7 +111,7 @@ export default function AIAgent() {
                                         placeholder="e.g. A fast-food themed meme coin on BSC that rewards holders with burger NFTs and builds a community of food lovers..."
                                         value={prompt}
                                         onChange={(e) => setPrompt(e.target.value)}
-                                        className="w-full bg-black/5 border border-black/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-rose-500/50 transition-all text-gray-900 text-lg resize-none shadow-inner"
+                                        className="w-full bg-black/5 border border-black/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-blue-500/50 transition-all text-gray-900 text-lg resize-none shadow-inner"
                                     />
                                     <div className="absolute bottom-4 right-4 text-xs text-gray-400 flex items-center gap-1">
                                         <Sparkles className="w-3 h-3" /> Claude 3.5 + CoinGecko
@@ -121,13 +121,13 @@ export default function AIAgent() {
                             <div className="flex flex-col sm:flex-row gap-3">
                                 {['Meme coin about dogs', 'AI-powered DeFi yield optimizer', 'Gaming token for metaverse battles'].map(ex => (
                                     <button key={ex} type="button" onClick={() => setPrompt(ex)}
-                                        className="flex-1 py-2 px-3 bg-black/5 hover:bg-rose-500/10 border border-black/10 hover:border-rose-500/30 text-gray-600 hover:text-rose-600 text-xs font-bold rounded-xl transition-all text-left">
+                                        className="flex-1 py-2 px-3 bg-black/5 hover:bg-blue-500/10 border border-black/10 hover:border-blue-500/30 text-gray-600 hover:text-blue-600 text-xs font-bold rounded-xl transition-all text-left">
                                         "{ex}"
                                     </button>
                                 ))}
                             </div>
                             <button type="submit" disabled={loading || !prompt.trim()}
-                                className="w-full py-4 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 disabled:from-gray-300 disabled:to-gray-300 disabled:text-gray-500 text-white font-black rounded-2xl flex items-center justify-center gap-3 shadow-2xl shadow-rose-500/20 transition-all text-lg">
+                                className="w-full py-4 bg-gradient-to-r from-blue-500 to-slate-500 hover:from-blue-600 hover:to-slate-600 disabled:from-gray-300 disabled:to-gray-300 disabled:text-gray-500 text-white font-black rounded-2xl flex items-center justify-center gap-3 shadow-2xl shadow-blue-500/20 transition-all text-lg">
                                 {loading ? (
                                     <><div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" /> <span>AI is analyzing your idea...</span></>
                                 ) : (
@@ -152,12 +152,12 @@ export default function AIAgent() {
                                 {/* Token Identity Card */}
                                 <div className="glass-card overflow-hidden">
                                     <div className="p-6 bg-gradient-to-br from-gray-900 to-gray-800 text-white relative">
-                                        <div className="absolute top-0 right-0 w-48 h-48 rounded-full bg-rose-500/10 blur-3xl" />
+                                        <div className="absolute top-0 right-0 w-48 h-48 rounded-full bg-blue-500/10 blur-3xl" />
                                         <div className="relative flex items-start justify-between">
                                             <div>
                                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">AI Generated Identity</p>
                                                 <h2 className="text-4xl font-black mb-1">{result.name}</h2>
-                                                <p className="text-2xl font-black font-mono text-rose-400 mb-3">${result.symbol}</p>
+                                                <p className="text-2xl font-black font-mono text-blue-400 mb-3">${result.symbol}</p>
                                                 <p className="text-gray-300 text-sm leading-relaxed max-w-lg italic">"{result.tagline || result.description}"</p>
                                             </div>
                                             <div className="text-5xl shrink-0 ml-4">{result.logoEmoji || '🚀'}</div>
@@ -176,9 +176,9 @@ export default function AIAgent() {
                                 {/* ── CoinGecko Mimic Check ── */}
                                 <div className={`glass-card border-2 ${riskColors.border} ${riskColors.bg}`}>
                                     <div className="flex items-start gap-4">
-                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${result.mimic?.riskLevel === 'SAFE' ? 'bg-emerald-100' : 'bg-red-100'}`}>
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${result.mimic?.riskLevel === 'SAFE' ? 'bg-sky-100' : 'bg-red-100'}`}>
                                             {result.mimic?.riskLevel === 'SAFE'
-                                                ? <ShieldCheck className="w-6 h-6 text-emerald-600" />
+                                                ? <ShieldCheck className="w-6 h-6 text-sky-600" />
                                                 : <AlertTriangle className="w-6 h-6 text-red-600" />}
                                         </div>
                                         <div className="flex-1">
@@ -202,7 +202,7 @@ export default function AIAgent() {
                                                                     <span className="font-bold text-gray-900 text-sm">{t.name} <span className="text-gray-500">({t.symbol?.toUpperCase()})</span></span>
                                                                 </div>
                                                                 <div className="flex gap-2">
-                                                                    <span className={`px-2 py-0.5 rounded-lg font-black text-[10px] uppercase ${t.severity === 'CRITICAL' ? 'bg-red-100 text-red-600' : t.severity === 'HIGH' ? 'bg-orange-100 text-orange-600' : 'bg-amber-100 text-amber-600'}`}>
+                                                                    <span className={`px-2 py-0.5 rounded-lg font-black text-[10px] uppercase ${t.severity === 'CRITICAL' ? 'bg-red-100 text-red-600' : t.severity === 'HIGH' ? 'bg-slate-100 text-slate-600' : 'bg-indigo-100 text-indigo-600'}`}>
                                                                         {t.severity} RISK ({t.nameSimilarity}% MATCH)
                                                                     </span>
                                                                 </div>
@@ -227,11 +227,11 @@ export default function AIAgent() {
                                                                 <div className="col-span-2 lg:col-span-1">
                                                                     <span className="block text-gray-400 font-bold uppercase tracking-widest text-[8px]">Contract Identity</span>
                                                                     <div className="flex items-center gap-2">
-                                                                        <span className="text-rose-500 font-mono font-bold truncate max-w-[80px]">{t.contractAddress ? `${t.contractAddress.slice(0,6)}...${t.contractAddress.slice(-4)}` : 'UNKNOWN'}</span>
+                                                                        <span className="text-blue-500 font-mono font-bold truncate max-w-[80px]">{t.contractAddress ? `${t.contractAddress.slice(0,6)}...${t.contractAddress.slice(-4)}` : 'UNKNOWN'}</span>
                                                                         {t.contractAddress && (
                                                                             <button 
                                                                                 onClick={() => { navigator.clipboard.writeText(t.contractAddress); alert('Address Copied!'); }}
-                                                                                className="p-1.5 bg-gray-100 hover:bg-rose-500 hover:text-white rounded-lg transition-all"
+                                                                                className="p-1.5 bg-gray-100 hover:bg-blue-500 hover:text-white rounded-lg transition-all"
                                                                             >
                                                                                 <ExternalLink className="w-3 h-3" />
                                                                             </button>
@@ -251,9 +251,9 @@ export default function AIAgent() {
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     {[
                                         { label: 'Memorability', value: result.scores?.memorability, color: 'from-blue-500 to-indigo-500', icon: '🧠' },
-                                        { label: 'Uniqueness',   value: result.scores?.uniqueness,   color: 'from-emerald-500 to-teal-500', icon: '💎' },
-                                        { label: 'Market Appeal', value: result.scores?.marketAppeal, color: 'from-amber-500 to-orange-500', icon: '📈' },
-                                        { label: 'Risk Score',   value: result.scores?.riskLevel,    color: 'from-rose-500 to-red-500', icon: '🛡️', invert: true },
+                                        { label: 'Uniqueness',   value: result.scores?.uniqueness,   color: 'from-sky-500 to-teal-500', icon: '💎' },
+                                        { label: 'Market Appeal', value: result.scores?.marketAppeal, color: 'from-indigo-500 to-slate-500', icon: '📈' },
+                                        { label: 'Risk Score',   value: result.scores?.riskLevel,    color: 'from-blue-500 to-red-500', icon: '🛡️', invert: true },
                                     ].map(s => (
                                         <div key={s.label} className="glass-card text-center p-5">
                                             <div className="text-2xl mb-2">{s.icon}</div>
@@ -293,14 +293,14 @@ export default function AIAgent() {
                                 {result.sentiment && (
                                     <div className="glass-card">
                                         <h3 className="font-black text-gray-900 mb-4 flex items-center gap-2">
-                                            <BarChart3 className="w-5 h-5 text-rose-500" /> CoinGecko Market Sentiment
+                                            <BarChart3 className="w-5 h-5 text-blue-500" /> CoinGecko Market Sentiment
                                         </h3>
                                         <p className="text-sm text-gray-600 font-medium mb-3">{result.sentiment.recommendation}</p>
                                         {result.sentiment.coinGecko?.exists && (
                                             <div className="grid grid-cols-3 gap-3">
                                                 <div className="p-3 bg-gray-50 rounded-xl text-center">
                                                     <p className="text-[10px] text-gray-400 font-black uppercase">Sentiment ↑</p>
-                                                    <p className="text-xl font-black text-emerald-600">{result.sentiment.coinGecko.sentimentUp?.toFixed(1)}%</p>
+                                                    <p className="text-xl font-black text-sky-600">{result.sentiment.coinGecko.sentimentUp?.toFixed(1)}%</p>
                                                 </div>
                                                 <div className="p-3 bg-gray-50 rounded-xl text-center">
                                                     <p className="text-[10px] text-gray-400 font-black uppercase">Twitter</p>
@@ -308,7 +308,7 @@ export default function AIAgent() {
                                                 </div>
                                                 <div className="p-3 bg-gray-50 rounded-xl text-center">
                                                     <p className="text-[10px] text-gray-400 font-black uppercase">Reddit</p>
-                                                    <p className="text-xl font-black text-orange-600">{(result.sentiment.coinGecko.redditSubs || 0).toLocaleString()}</p>
+                                                    <p className="text-xl font-black text-slate-600">{(result.sentiment.coinGecko.redditSubs || 0).toLocaleString()}</p>
                                                 </div>
                                             </div>
                                         )}
@@ -318,7 +318,7 @@ export default function AIAgent() {
                                 {/* ── Branding ── */}
                                 <div className="glass-card">
                                     <h3 className="font-black text-gray-900 mb-4 flex items-center gap-2">
-                                        <Palette className="w-5 h-5 text-rose-500" /> Brand Palette & Features
+                                        <Palette className="w-5 h-5 text-blue-500" /> Brand Palette & Features
                                     </h3>
                                     <div className="flex gap-3 mb-4">
                                         {(result.branding?.palette || result.palette || []).map((c, i) => (
@@ -337,22 +337,22 @@ export default function AIAgent() {
 
                                 {/* ── Import Actions ── */}
                                 <div className="glass-card bg-gradient-to-br from-gray-900 to-gray-800 text-white overflow-hidden relative">
-                                    <div className="absolute right-0 top-0 w-40 h-40 bg-rose-500/10 blur-3xl" />
+                                    <div className="absolute right-0 top-0 w-40 h-40 bg-blue-500/10 blur-3xl" />
                                     <div className="relative">
                                         <h3 className="font-black text-lg mb-2">Ready to Deploy?</h3>
                                         <p className="text-gray-400 text-sm mb-6">Import this AI-generated token directly into your preferred launch type. Name, symbol, and description will be pre-filled.</p>
                                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                             <button onClick={() => importTo('bonding')}
-                                                className="py-4 px-4 bg-rose-500 hover:bg-rose-600 rounded-2xl font-black text-sm transition-all flex flex-col items-center gap-2 shadow-xl shadow-rose-500/20 active:scale-95">
+                                                className="py-4 px-4 bg-blue-500 hover:bg-blue-600 rounded-2xl font-black text-sm transition-all flex flex-col items-center gap-2 shadow-xl shadow-blue-500/20 active:scale-95">
                                                 <Zap className="w-5 h-5" />
                                                 <span>Bonding Curve</span>
-                                                <span className="text-[10px] text-rose-200 font-normal">Fair launch + gradual price</span>
+                                                <span className="text-[10px] text-blue-200 font-normal">Fair launch + gradual price</span>
                                             </button>
                                             <button onClick={() => importTo('fairlaunch')}
-                                                className="py-4 px-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl font-black text-sm transition-all flex flex-col items-center gap-2 shadow-xl shadow-emerald-500/20 active:scale-95">
+                                                className="py-4 px-4 bg-sky-500 hover:bg-sky-600 rounded-2xl font-black text-sm transition-all flex flex-col items-center gap-2 shadow-xl shadow-sky-500/20 active:scale-95">
                                                 <Rocket className="w-5 h-5" />
                                                 <span>Fair Launch DEX</span>
-                                                <span className="text-[10px] text-emerald-200 font-normal">Instant PancakeSwap listing</span>
+                                                <span className="text-[10px] text-sky-200 font-normal">Instant PancakeSwap listing</span>
                                             </button>
                                             <button onClick={() => importTo('standard')}
                                                 className="py-4 px-4 bg-indigo-500 hover:bg-indigo-600 rounded-2xl font-black text-sm transition-all flex flex-col items-center gap-2 shadow-xl shadow-indigo-500/20 active:scale-95">

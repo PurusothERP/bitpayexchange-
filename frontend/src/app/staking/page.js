@@ -21,11 +21,11 @@ const TREASURY_WALLET = (process.env.NEXT_PUBLIC_FEE_WALLET || '0x6451ee4def4a8b
 const STAKING_PERIODS = [
     { days: 60,  apr: 2.0,  label: '2 Months',  color: 'from-slate-400 to-slate-500',   badge: 'Starter',   badgeColor: 'text-slate-600 bg-slate-100 border-slate-200' },
     { days: 90,  apr: 3.5,  label: '3 Months',  color: 'from-sky-400 to-blue-500',      badge: 'Basic',     badgeColor: 'text-sky-600 bg-sky-100 border-sky-200' },
-    { days: 120, apr: 5.5,  label: '4 Months',  color: 'from-teal-400 to-emerald-500',  badge: 'Standard',  badgeColor: 'text-teal-600 bg-teal-100 border-teal-200' },
+    { days: 120, apr: 5.5,  label: '4 Months',  color: 'from-teal-400 to-sky-500',  badge: 'Standard',  badgeColor: 'text-teal-600 bg-teal-100 border-teal-200' },
     { days: 160, apr: 8.0,  label: '5+ Months', color: 'from-violet-400 to-purple-500', badge: 'Advanced',  badgeColor: 'text-violet-600 bg-violet-100 border-violet-200' },
-    { days: 190, apr: 10.0, label: '6 Months',  color: 'from-amber-400 to-orange-500',  badge: 'Pro',       badgeColor: 'text-amber-600 bg-amber-100 border-amber-200' },
-    { days: 240, apr: 12.5, label: '8 Months',  color: 'from-rose-400 to-pink-500',     badge: 'Elite',     badgeColor: 'text-rose-600 bg-rose-100 border-rose-200' },
-    { days: 360, apr: 16.0, label: '12 Months', color: 'from-yellow-400 to-amber-500',  badge: 'Diamond',   badgeColor: 'text-yellow-700 bg-yellow-100 border-yellow-300' },
+    { days: 190, apr: 10.0, label: '6 Months',  color: 'from-indigo-400 to-slate-500',  badge: 'Pro',       badgeColor: 'text-indigo-600 bg-indigo-100 border-indigo-200' },
+    { days: 240, apr: 12.5, label: '8 Months',  color: 'from-blue-400 to-pink-500',     badge: 'Elite',     badgeColor: 'text-blue-600 bg-blue-100 border-blue-200' },
+    { days: 360, apr: 16.0, label: '12 Months', color: 'from-yellow-400 to-indigo-500',  badge: 'Diamond',   badgeColor: 'text-yellow-700 bg-yellow-100 border-yellow-300' },
 ];
 
 function shortAddr(a) {
@@ -110,8 +110,8 @@ function PeriodCard({ period, selected, onClick }) {
 // ── My Stake Card ─────────────────────────────────────────────────────────────
 function StakeCard({ stake, onRequestRelease, releasing }) {
     const statusColors = {
-        active: 'text-emerald-600 bg-emerald-50 border-emerald-200',
-        pending_release: 'text-amber-600 bg-amber-50 border-amber-200 animate-pulse',
+        active: 'text-sky-600 bg-sky-50 border-sky-200',
+        pending_release: 'text-indigo-600 bg-indigo-50 border-indigo-200 animate-pulse',
         released: 'text-blue-600 bg-blue-50 border-blue-200',
     };
     const statusLabels = {
@@ -159,10 +159,10 @@ function StakeCard({ stake, onRequestRelease, releasing }) {
                         <p className="font-black text-violet-600">{stake.apr}%</p>
                         <p className="text-[10px] text-gray-400">{stake.period_days} days</p>
                     </div>
-                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3">
-                        <p className="text-[10px] text-emerald-600 font-bold uppercase mb-1">Earned Today</p>
-                        <p className="font-black text-emerald-700">{formatNum(stake.earned_so_far, 4)}</p>
-                        <p className="text-[10px] text-emerald-500">{stake.token_symbol}</p>
+                    <div className="bg-sky-50 border border-sky-100 rounded-xl p-3">
+                        <p className="text-[10px] text-sky-600 font-bold uppercase mb-1">Earned Today</p>
+                        <p className="font-black text-sky-700">{formatNum(stake.earned_so_far, 4)}</p>
+                        <p className="text-[10px] text-sky-500">{stake.token_symbol}</p>
                     </div>
                     <div className="bg-black/3 rounded-xl p-3">
                         <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">Total Expected</p>
@@ -206,7 +206,7 @@ function StakeCard({ stake, onRequestRelease, releasing }) {
                         whileTap={{ scale: 0.97 }}
                         onClick={() => onRequestRelease(stake.id)}
                         disabled={releasing === stake.id}
-                        className="w-full py-3 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm rounded-xl shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 transition-all"
+                        className="w-full py-3 bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-white font-black text-sm rounded-xl shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2 transition-all"
                     >
                         {releasing === stake.id ? (
                             <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</>
@@ -216,7 +216,7 @@ function StakeCard({ stake, onRequestRelease, releasing }) {
                     </motion.button>
                 )}
                 {stake.status === 'pending_release' && (
-                    <div className="w-full py-3 bg-amber-50 border border-amber-200 text-amber-700 font-bold text-xs rounded-xl text-center">
+                    <div className="w-full py-3 bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold text-xs rounded-xl text-center">
                         ⏳ Release pending admin approval
                     </div>
                 )}
@@ -547,7 +547,7 @@ function StakingContent() {
                 setStakeError(
                     <div className="flex flex-col gap-3">
                         <p>Insufficient balance. You have {ethers.formatUnits(balance, decimals)} {selectedToken.symbol}.</p>
-                        <a href={buyUrl} className="bg-amber-500 text-white py-2 px-4 rounded-xl text-center font-black animate-pulse hover:bg-amber-600 transition-all">
+                        <a href={buyUrl} className="bg-indigo-500 text-white py-2 px-4 rounded-xl text-center font-black animate-pulse hover:bg-indigo-600 transition-all">
                             Buy ${selectedToken.symbol} on Spot →
                         </a>
                     </div>
@@ -645,8 +645,8 @@ function StakingContent() {
                     {[
                         { label: 'Available Tokens', value: tokens.length, icon: <Coins className="w-5 h-5" />, color: 'from-violet-500 to-purple-600' },
                         { label: 'Staking Periods', value: '7 Options', icon: <Calendar className="w-5 h-5" />, color: 'from-sky-500 to-blue-600' },
-                        { label: 'Max APR', value: '16%', icon: <TrendingUp className="w-5 h-5" />, color: 'from-amber-500 to-orange-500' },
-                        { label: 'Min APR', value: '2%', icon: <Shield className="w-5 h-5" />, color: 'from-emerald-500 to-teal-500' },
+                        { label: 'Max APR', value: '16%', icon: <TrendingUp className="w-5 h-5" />, color: 'from-indigo-500 to-slate-500' },
+                        { label: 'Min APR', value: '2%', icon: <Shield className="w-5 h-5" />, color: 'from-sky-500 to-teal-500' },
                     ].map((s, i) => (
                         <motion.div key={i} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 + i * 0.05 }}
                             className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 flex items-center gap-4">
@@ -679,7 +679,7 @@ function StakingContent() {
                                 </div>
                                 <div>
                                     <p className="text-purple-300 text-xs font-bold uppercase mb-1">Total Earned</p>
-                                    <p className="text-2xl font-black text-emerald-300">{formatNum(totalEarned)}</p>
+                                    <p className="text-2xl font-black text-sky-300">{formatNum(totalEarned)}</p>
                                 </div>
                             </div>
                         </div>
@@ -702,7 +702,7 @@ function StakingContent() {
                         >
                             {tab.icon} {tab.label}
                             {tab.badge !== null && tab.badge > 0 && (
-                                <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 bg-rose-500 text-white text-[10px] font-black rounded-full flex items-center justify-center px-1">
+                                <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 bg-blue-500 text-white text-[10px] font-black rounded-full flex items-center justify-center px-1">
                                     {tab.badge}
                                 </span>
                             )}
@@ -754,12 +754,12 @@ function StakingContent() {
                                                 placeholder="Or Paste Any BEP20 Contract Address..."
                                                 value={customTokenInput}
                                                 onChange={e => setCustomTokenInput(e.target.value)}
-                                                className="flex-1 px-4 py-3 bg-white/5 border border-amber-500/30 rounded-xl text-amber-300 placeholder-amber-300/40 text-[10px] md:text-sm font-semibold outline-none focus:border-amber-500 transition-all font-mono"
+                                                className="flex-1 px-4 py-3 bg-white/5 border border-indigo-500/30 rounded-xl text-indigo-300 placeholder-indigo-300/40 text-[10px] md:text-sm font-semibold outline-none focus:border-indigo-500 transition-all font-mono"
                                             />
                                             <button 
                                                 onClick={handleLoadCustomToken}
                                                 disabled={loadingCustom || !customTokenInput}
-                                                className="px-4 py-3 bg-amber-500 hover:bg-amber-600 text-white font-black rounded-xl text-xs transition-all flex items-center gap-2 shadow-lg shadow-amber-500/20 disabled:opacity-50"
+                                                className="px-4 py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-black rounded-xl text-xs transition-all flex items-center gap-2 shadow-lg shadow-indigo-500/20 disabled:opacity-50"
                                             >
                                                 {loadingCustom ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Load Asset'}
                                             </button>
@@ -932,7 +932,7 @@ function StakingContent() {
                                                     </div>
                                                     <div className="flex justify-between text-sm pt-2 border-t border-violet-500/20">
                                                         <span className="text-purple-300">Expected Reward</span>
-                                                        <span className="text-emerald-300 font-black">+{expectedReward.toFixed(4)} {selectedToken.symbol}</span>
+                                                        <span className="text-sky-300 font-black">+{expectedReward.toFixed(4)} {selectedToken.symbol}</span>
                                                     </div>
                                                     <div className="flex justify-between text-sm font-black border-t border-violet-500/20 pt-2">
                                                         <span className="text-white">Total Payout</span>
@@ -947,7 +947,7 @@ function StakingContent() {
 
                                             {/* Error */}
                                             {stakeError && (
-                                                <div className="flex items-start gap-2 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs font-semibold">
+                                                <div className="flex items-start gap-2 p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl text-blue-300 text-xs font-semibold">
                                                     <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                                                     {stakeError}
                                                 </div>
@@ -967,13 +967,13 @@ function StakingContent() {
                                                 </div>
                                             ) : stakeStep === 'success' ? (
                                                 <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                                                    className="w-full py-4 bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 font-black rounded-xl text-center">
+                                                    className="w-full py-4 bg-sky-500/20 border border-sky-500/30 text-sky-300 font-black rounded-xl text-center">
                                                     ✅ Stake Successful!
                                                     <p className="text-[10px] font-semibold mt-1 opacity-70">
                                                         TX: {shortAddr(stakeTxHash)}
                                                     </p>
                                                     <button onClick={() => { setStakeStep('select'); setSelectedToken(null); setSelectedPeriod(null); setStakeAmount(''); setActiveTab('my-stakes'); }}
-                                                        className="mt-2 text-xs text-emerald-400 underline">
+                                                        className="mt-2 text-xs text-sky-400 underline">
                                                         View My Stakes →
                                                     </button>
                                                 </motion.div>
@@ -1048,11 +1048,11 @@ function StakingContent() {
                                     </div>
 
                                     {/* Release Info Banner */}
-                                    <div className="mt-8 bg-amber-500/10 border border-amber-500/20 rounded-2xl p-5 flex items-start gap-4">
-                                        <Info className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                                    <div className="mt-8 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl p-5 flex items-start gap-4">
+                                        <Info className="w-5 h-5 text-indigo-400 shrink-0 mt-0.5" />
                                         <div>
-                                            <p className="text-amber-300 font-black text-sm">About Releasing Stakes</p>
-                                            <p className="text-amber-200/70 text-xs mt-1 leading-relaxed">
+                                            <p className="text-indigo-300 font-black text-sm">About Releasing Stakes</p>
+                                            <p className="text-indigo-200/70 text-xs mt-1 leading-relaxed">
                                                 After your staking period ends, click &quot;Request Release&quot; to notify the admin.
                                                 The admin will review your request and transfer back your principal + rewards to your wallet.
                                                 Typically processed within 24 hours.
@@ -1110,8 +1110,8 @@ function StakingContent() {
                                                         <div className="space-y-1">
                                                             <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase ${
                                                                 s.status === 'active' ? 'bg-violet-500/20 text-violet-400' :
-                                                                s.status === 'pending_release' ? 'bg-amber-500/20 text-amber-400 animate-pulse' :
-                                                                'bg-emerald-500/20 text-emerald-400'
+                                                                s.status === 'pending_release' ? 'bg-indigo-500/20 text-indigo-400 animate-pulse' :
+                                                                'bg-sky-500/20 text-sky-400'
                                                             }`}>
                                                                 {s.status.replace('_', ' ')}
                                                             </span>
@@ -1123,7 +1123,7 @@ function StakingContent() {
                                                             <button 
                                                                 onClick={() => handleAdminRelease(s)}
                                                                 disabled={processingRelease === s.id}
-                                                                className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-[10px] rounded-lg shadow-lg shadow-emerald-500/20 transition-all flex items-center gap-2 ml-auto"
+                                                                className="px-4 py-2 bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-white font-black text-[10px] rounded-lg shadow-lg shadow-sky-500/20 transition-all flex items-center gap-2 ml-auto"
                                                             >
                                                                 {processingRelease === s.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Unlock className="w-3 h-3" />}
                                                                 RELEASE ASSETS

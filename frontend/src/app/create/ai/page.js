@@ -204,7 +204,7 @@ export default function AICreatePage() {
                                                 </div>
                                                 <div className="p-4 bg-black/5 rounded-2xl">
                                                     <p className="text-[10px] font-black text-gray-400 uppercase mb-1">Gas Est.</p>
-                                                    <p className="font-mono font-black text-emerald-600">~{aiPlan.estimatedGasCost}</p>
+                                                    <p className="font-mono font-black text-sky-600">~{aiPlan.estimatedGasCost}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -220,7 +220,7 @@ export default function AICreatePage() {
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                             {aiPlan.features?.map(feat => (
                                                 <div key={feat} className="px-4 py-2 bg-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                                                    <Zap className="w-3 h-3 text-amber-400" /> {feat}
+                                                    <Zap className="w-3 h-3 text-indigo-400" /> {feat}
                                                 </div>
                                             ))}
                                         </div>
@@ -262,14 +262,14 @@ export default function AICreatePage() {
                                     {/* Risk & Duplicate Warnings */}
                                     <div className="space-y-4">
                                         {score?.duplicateReport && (
-                                            <div className="p-8 bg-amber-500/5 border border-amber-500/10 rounded-[2.5rem] flex flex-col gap-4">
+                                            <div className="p-8 bg-indigo-500/5 border border-indigo-500/10 rounded-[2.5rem] flex flex-col gap-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                                                        <Search className="w-5 h-5 text-amber-500" />
+                                                    <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+                                                        <Search className="w-5 h-5 text-indigo-500" />
                                                     </div>
                                                     <p className="text-sm font-black text-gray-900 uppercase tracking-widest">Neural Scanner Report</p>
                                                 </div>
-                                                <p className="text-sm font-bold text-amber-600 leading-relaxed">{score.duplicateReport}</p>
+                                                <p className="text-sm font-bold text-indigo-600 leading-relaxed">{score.duplicateReport}</p>
                                                 {score.similarTokens?.length > 0 && (
                                                     <div className="p-4 bg-white/50 rounded-2xl border border-black/5">
                                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Closest Collisions Found:</p>
@@ -277,7 +277,7 @@ export default function AICreatePage() {
                                                             {score.similarTokens.map((t, i) => (
                                                                 <div key={i} className="flex justify-between items-center text-xs font-bold text-gray-700">
                                                                     <span>{t.name} (${t.symbol.toUpperCase()})</span>
-                                                                    <span className="text-rose-500">{t.nameSimilarity}% Match</span>
+                                                                    <span className="text-blue-500">{t.nameSimilarity}% Match</span>
                                                                 </div>
                                                             ))}
                                                         </div>
@@ -292,9 +292,9 @@ export default function AICreatePage() {
                                             </div>
                                         )}
                                         {aiPlan.riskWarnings?.map((w, i) => (
-                                            <div key={i} className="p-6 bg-amber-500/5 border border-amber-500/10 rounded-[2rem] flex items-start gap-4">
-                                                <Info className="w-6 h-6 text-amber-500 shrink-0 mt-1" />
-                                                <p className="text-xs font-bold text-amber-600 leading-relaxed">{w}</p>
+                                            <div key={i} className="p-6 bg-indigo-500/5 border border-indigo-500/10 rounded-[2rem] flex items-start gap-4">
+                                                <Info className="w-6 h-6 text-indigo-500 shrink-0 mt-1" />
+                                                <p className="text-xs font-bold text-indigo-600 leading-relaxed">{w}</p>
                                             </div>
                                         ))}
                                     </div>
@@ -305,7 +305,7 @@ export default function AICreatePage() {
                                                 <Rocket className="w-24 h-24" />
                                             </div>
                                             <h4 className="text-xl font-black uppercase tracking-widest mb-6 flex items-center gap-2">
-                                                <Target className="w-5 h-5 text-amber-400" /> Export to Launch
+                                                <Target className="w-5 h-5 text-indigo-400" /> Export to Launch
                                             </h4>
                                             
                                             <div className="grid grid-cols-1 gap-4 relative z-10">
@@ -341,10 +341,10 @@ export default function AICreatePage() {
                                                         }).toString();
                                                         router.push(`/fair-launch?${params}`);
                                                     }}
-                                                    className="w-full py-5 bg-white text-emerald-700 hover:bg-emerald-50 rounded-2xl font-black flex items-center justify-between px-6 transition-all group/btn"
+                                                    className="w-full py-5 bg-white text-sky-700 hover:bg-sky-50 rounded-2xl font-black flex items-center justify-between px-6 transition-all group/btn"
                                                 >
                                                     <div className="flex items-center gap-4">
-                                                        <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                                                        <div className="w-10 h-10 rounded-xl bg-sky-100 flex items-center justify-center">
                                                             <Zap className="w-5 h-5" />
                                                         </div>
                                                         <div className="text-left">
@@ -397,8 +397,8 @@ export default function AICreatePage() {
                             animate={{ opacity: 1, scale: 1 }}
                             className="max-w-xl mx-auto py-20 text-center"
                         >
-                            <div className="w-32 h-32 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-10 shadow-inner">
-                                <CheckCircle2 className="text-emerald-500 w-16 h-16" />
+                            <div className="w-32 h-32 bg-sky-500/10 rounded-full flex items-center justify-center mx-auto mb-10 shadow-inner">
+                                <CheckCircle2 className="text-sky-500 w-16 h-16" />
                             </div>
                             <h2 className="text-4xl font-black text-gray-900 mb-4 tracking-tight">AI Token Launched!</h2>
                             <p className="text-gray-500 font-medium mb-10">Your AI-generated vision is now live on the blockchain.</p>

@@ -178,22 +178,22 @@ export default function StandardAsset() {
     };
 
     return (
-        <main className="min-h-screen bg-gray-50/70 p-pattern selection:bg-rose-500 selection:text-white pb-32">
+        <main className="min-h-screen bg-gray-50/70 p-pattern selection:bg-blue-500 selection:text-white pb-32">
             <Navbar />
             
             <div className="pt-10 pb-24 px-4 md:px-8 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 relative z-10">
                 {/* Background Atmosphere */}
-                <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-rose-500/5 rounded-full blur-[120px] -z-10 animate-pulse" />
-                <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-amber-500/5 rounded-full blur-[120px] -z-10" />
+                <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-500/5 rounded-full blur-[120px] -z-10 animate-pulse" />
+                <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-indigo-500/5 rounded-full blur-[120px] -z-10" />
 
                 {/* LEFT: SIDEBAR */}
                 <div className="lg:col-span-4 space-y-8">
                     <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}
                         className="p-10 rounded-[3rem] bg-white border border-gray-100 shadow-xl relative overflow-hidden group">
-                        <div className="absolute -top-12 -right-12 w-32 h-32 bg-rose-500/10 rounded-full blur-3xl group-hover:bg-rose-500/20 transition-all duration-700" />
+                        <div className="absolute -top-12 -right-12 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-700" />
                         <div className="flex items-center gap-4 mb-8">
-                            <div className="w-14 h-14 bg-rose-500/10 rounded-2xl flex items-center justify-center border border-rose-100 shadow-md">
-                                <Network className="w-7 h-7 text-rose-500" />
+                            <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-100 shadow-md">
+                                <Network className="w-7 h-7 text-blue-500" />
                             </div>
                             <div>
                                 <h3 className="font-black text-gray-900 text-xl tracking-tight">Standard Proxy</h3>
@@ -203,7 +203,7 @@ export default function StandardAsset() {
                         <p className="text-sm text-gray-500 mb-10 leading-relaxed font-medium">
                             Deploy a standard BEP-20 or ERC-20 asset without market logic. Best for existing ecosystems or custom AMM launches.
                         </p>
-                        <div className="pt-6 border-t border-gray-50 flex items-center gap-2 text-rose-500">
+                        <div className="pt-6 border-t border-gray-50 flex items-center gap-2 text-blue-500">
                              <ShieldCheck className="w-5 h-5" />
                              <span className="text-[10px] font-black uppercase tracking-[0.3em]">Institutional Grade</span>
                         </div>
@@ -212,13 +212,13 @@ export default function StandardAsset() {
                     <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
                         className="p-10 rounded-[3rem] bg-white border border-gray-100 shadow-xl">
                         <h4 className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-8 flex items-center gap-2">
-                             <Settings className="w-4 h-4 text-rose-500" /> Protocol Config
+                             <Settings className="w-4 h-4 text-blue-500" /> Protocol Config
                         </h4>
                         <div className="space-y-6">
                             {[
                                 { label: 'Fixed Supply', value: '1,000,000,000', icon: <Layers className="w-4 h-4" /> },
                                 { label: 'Asset Type', value: 'BEP-20 (Standard)', icon: <Cpu className="w-4 h-4" /> },
-                                { label: 'Network', value: 'BNB Smart Chain', icon: <Globe className="w-4 h-4" />, color: 'text-emerald-500' }
+                                { label: 'Network', value: 'BNB Smart Chain', icon: <Globe className="w-4 h-4" />, color: 'text-sky-500' }
                             ].map((p, i) => (
                                 <div key={i} className="flex justify-between items-center py-4 border-b last:border-0 border-gray-100">
                                     <div className="flex items-center gap-3">
@@ -250,7 +250,7 @@ export default function StandardAsset() {
                                 type="button"
                                 onClick={handleGenerateWP}
                                 disabled={wpThinking || !formData.name}
-                                className="w-full py-5 bg-white text-gray-900 rounded-2xl text-[11px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-rose-500 hover:text-white transition-all disabled:opacity-20 active:scale-95"
+                                className="w-full py-5 bg-white text-gray-900 rounded-2xl text-[11px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-blue-500 hover:text-white transition-all disabled:opacity-20 active:scale-95"
                             >
                                 {wpThinking ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Generate + Audit'}
                             </button>
@@ -269,16 +269,16 @@ export default function StandardAsset() {
                                 >
                                     {status === 'uploading' && (
                                         <>
-                                            <div className="w-24 h-24 border-4 border-rose-500/10 border-t-rose-500 rounded-full animate-spin mb-10" />
+                                            <div className="w-24 h-24 border-4 border-blue-500/10 border-t-blue-500 rounded-full animate-spin mb-10" />
                                             <h3 className="text-4xl font-black text-gray-900 mb-4 uppercase tracking-tighter">Deploying Legacy...</h3>
-                                            <p className="text-rose-500 font-black uppercase text-[10px] tracking-widest">{error}</p>
+                                            <p className="text-blue-500 font-black uppercase text-[10px] tracking-widest">{error}</p>
                                         </>
                                     )}
 
                                     {status === 'success' && (
                                         <>
-                                            <div className="w-32 h-32 bg-emerald-500/10 rounded-full flex items-center justify-center mb-10 border border-emerald-500/20 shadow-xl">
-                                                <CheckCircle2 className="w-16 h-16 text-emerald-500" />
+                                            <div className="w-32 h-32 bg-sky-500/10 rounded-full flex items-center justify-center mb-10 border border-sky-500/20 shadow-xl">
+                                                <CheckCircle2 className="w-16 h-16 text-sky-500" />
                                             </div>
                                             <h3 className="text-5xl font-black text-gray-900 mb-3 tracking-tighter uppercase">Nexus Deployed</h3>
                                             <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mb-12">Standard Asset anchored to the nexus chain</p>
@@ -291,10 +291,10 @@ export default function StandardAsset() {
 
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16 border-b border-gray-50 pb-12">
                             <div>
-                                <h1 className="text-5xl font-black text-gray-900 tracking-tighter mb-2">Standard <span className="text-rose-500">Asset</span></h1>
+                                <h1 className="text-5xl font-black text-gray-900 tracking-tighter mb-2">Standard <span className="text-blue-500">Asset</span></h1>
                                 <div className="flex items-center gap-4">
-                                    <span className="px-4 py-1.5 bg-rose-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-rose-500/20">Nexus Proxy</span>
-                                    <span className="px-4 py-1.5 bg-amber-500/10 text-amber-600 text-[10px] font-black uppercase tracking-[0.2em] rounded-full border border-amber-500/20">Legacy Mode</span>
+                                    <span className="px-4 py-1.5 bg-blue-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-blue-500/20">Nexus Proxy</span>
+                                    <span className="px-4 py-1.5 bg-indigo-500/10 text-indigo-600 text-[10px] font-black uppercase tracking-[0.2em] rounded-full border border-indigo-500/20">Legacy Mode</span>
                                 </div>
                             </div>
                             <div className="text-right">
@@ -306,31 +306,31 @@ export default function StandardAsset() {
                         <form onSubmit={handleSubmit} className="space-y-12">
                             <div className="flex flex-col md:flex-row items-center gap-10">
                                 <div className="relative group">
-                                    <div className="w-44 h-44 rounded-[3.5rem] bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:scale-105 group-hover:border-rose-500/30 shadow-inner">
-                                        {logoPreview ? <img src={logoPreview} alt="Preview" className="w-full h-full object-cover" /> : <Upload className="w-12 h-12 text-gray-200 group-hover:text-rose-500 transition-colors" />}
+                                    <div className="w-44 h-44 rounded-[3.5rem] bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:scale-105 group-hover:border-blue-500/30 shadow-inner">
+                                        {logoPreview ? <img src={logoPreview} alt="Preview" className="w-full h-full object-cover" /> : <Upload className="w-12 h-12 text-gray-200 group-hover:text-blue-500 transition-colors" />}
                                         <input type="file" accept="image/*" onChange={handleLogoChange} className="absolute inset-0 opacity-0 cursor-pointer" />
                                     </div>
-                                    <div className="absolute -bottom-2 -right-2 bg-rose-500 text-white p-3 rounded-2xl shadow-xl"><Globe className="w-5 h-5" /></div>
+                                    <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white p-3 rounded-2xl shadow-xl"><Globe className="w-5 h-5" /></div>
                                 </div>
                                 <div className="flex-1 space-y-6 w-full">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-3">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Legacy Name</label>
-                                            <input type="text" placeholder="Institutional Token" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-bold text-gray-900 outline-none focus:bg-white focus:border-rose-500/30 transition-all shadow-sm" />
+                                            <input type="text" placeholder="Institutional Token" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-bold text-gray-900 outline-none focus:bg-white focus:border-blue-500/30 transition-all shadow-sm" />
                                         </div>
                                         <div className="space-y-3">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Asset Symbol</label>
-                                            <input type="text" placeholder="ITK" value={formData.symbol} onChange={(e) => setFormData({...formData, symbol: e.target.value.toUpperCase()})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-black text-gray-900 outline-none focus:bg-white focus:border-rose-500/30 transition-all shadow-sm" />
+                                            <input type="text" placeholder="ITK" value={formData.symbol} onChange={(e) => setFormData({...formData, symbol: e.target.value.toUpperCase()})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-black text-gray-900 outline-none focus:bg-white focus:border-blue-500/30 transition-all shadow-sm" />
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-3">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Decimals</label>
-                                            <input type="number" value={formData.decimals} onChange={(e) => setFormData({...formData, decimals: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-bold text-gray-900 outline-none focus:bg-white focus:border-rose-500/30 transition-all shadow-sm" />
+                                            <input type="number" value={formData.decimals} onChange={(e) => setFormData({...formData, decimals: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-bold text-gray-900 outline-none focus:bg-white focus:border-blue-500/30 transition-all shadow-sm" />
                                         </div>
                                         <div className="space-y-3">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Fixed Supply</label>
-                                            <input type="number" value={formData.supply} onChange={(e) => setFormData({...formData, supply: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-bold text-gray-900 outline-none focus:bg-white focus:border-rose-500/30 transition-all shadow-sm" />
+                                            <input type="number" value={formData.supply} onChange={(e) => setFormData({...formData, supply: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-bold text-gray-900 outline-none focus:bg-white focus:border-blue-500/30 transition-all shadow-sm" />
                                         </div>
                                     </div>
                                 </div>
@@ -342,9 +342,9 @@ export default function StandardAsset() {
                                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-8">
                                         <div className={`p-6 rounded-[2rem] border-2 transition-all duration-500 shadow-sm ${
                                             mimicData.riskLevel === 'CRITICAL' ? 'bg-red-50 border-red-200' :
-                                            mimicData.riskLevel === 'HIGH' ? 'bg-orange-50 border-orange-200' :
-                                            mimicData.riskLevel === 'MEDIUM' ? 'bg-amber-50 border-amber-200' :
-                                            'bg-emerald-50 border-emerald-200'
+                                            mimicData.riskLevel === 'HIGH' ? 'bg-slate-50 border-slate-200' :
+                                            mimicData.riskLevel === 'MEDIUM' ? 'bg-indigo-50 border-indigo-200' :
+                                            'bg-sky-50 border-sky-200'
                                         }`}>
                                             <div className="flex items-start gap-4 relative">
                                                 <button 
@@ -356,7 +356,7 @@ export default function StandardAsset() {
                                                 </button>
 
                                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm ${
-                                                    mimicData.riskLevel === 'SAFE' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white animate-pulse'
+                                                    mimicData.riskLevel === 'SAFE' ? 'bg-sky-500 text-white' : 'bg-red-500 text-white animate-pulse'
                                                 }`}>
                                                     {mimicData.riskLevel === 'SAFE' ? <ShieldCheck className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
                                                 </div>
@@ -365,16 +365,16 @@ export default function StandardAsset() {
                                                         <h4 className="font-black text-gray-900 text-xs uppercase tracking-tight">Mimic Detection</h4>
                                                         <span className={`px-2 py-0.5 rounded-full text-[8px] font-black text-white uppercase tracking-wider ${
                                                             mimicData.riskLevel === 'CRITICAL' ? 'bg-red-600' :
-                                                            mimicData.riskLevel === 'HIGH' ? 'bg-orange-500' :
-                                                            mimicData.riskLevel === 'MEDIUM' ? 'bg-amber-500' :
-                                                            'bg-emerald-500'
+                                                            mimicData.riskLevel === 'HIGH' ? 'bg-slate-500' :
+                                                            mimicData.riskLevel === 'MEDIUM' ? 'bg-indigo-500' :
+                                                            'bg-sky-500'
                                                         }`}>
                                                             {mimicData.riskLevel}
                                                         </span>
                                                         {isMimicChecking && <Loader2 className="w-3 h-3 animate-spin text-gray-400" />}
                                                     </div>
                                                     <p className={`text-[11px] font-bold mb-4 ${
-                                                        mimicData.riskLevel === 'SAFE' ? 'text-emerald-700' : 'text-red-700'
+                                                        mimicData.riskLevel === 'SAFE' ? 'text-sky-700' : 'text-red-700'
                                                     }`}>
                                                         {mimicData.alertMessage || "Safe identifier detected."}
                                                     </p>
@@ -391,9 +391,9 @@ export default function StandardAsset() {
                                                                         <span className="text-[8px] font-bold text-red-500 shrink-0">{t.nameSimilarity}% Match</span>
                                                                     </div>
                                                                     <div className="flex items-center justify-between bg-white/50 px-2 py-1.5 rounded-lg border border-black/5 group">
-                                                                         <code className="text-[9px] font-mono text-rose-500 truncate">{t.contractAddress ? `${t.contractAddress.slice(0,6)}...${t.contractAddress.slice(-4)}` : 'UNKNOWN'}</code>
+                                                                         <code className="text-[9px] font-mono text-blue-500 truncate">{t.contractAddress ? `${t.contractAddress.slice(0,6)}...${t.contractAddress.slice(-4)}` : 'UNKNOWN'}</code>
                                                                          <button type="button" onClick={(e) => { e.preventDefault(); navigator.clipboard.writeText(t.contractAddress); alert('Copied!'); }} className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                             <Copy className="w-3 h-3 text-gray-400 hover:text-rose-500" />
+                                                                             <Copy className="w-3 h-3 text-gray-400 hover:text-blue-500" />
                                                                          </button>
                                                                     </div>
                                                                 </div>

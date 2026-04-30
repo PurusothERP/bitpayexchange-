@@ -66,8 +66,8 @@ function CopyBtn({ text, label }) {
     const [done, setDone] = useState(false);
     return (
         <button onClick={() => { navigator.clipboard.writeText(text); setDone(true); setTimeout(() => setDone(false), 1500); }}
-            className="text-gray-400 hover:text-rose-500 transition-colors" title={`Copy ${label}`}>
-            {done ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+            className="text-gray-400 hover:text-blue-500 transition-colors" title={`Copy ${label}`}>
+            {done ? <CheckCircle2 className="w-3.5 h-3.5 text-sky-500" /> : <Copy className="w-3.5 h-3.5" />}
         </button>
     );
 }
@@ -105,7 +105,7 @@ function ShareButtons({ token, address }) {
                 <Facebook className="w-3 h-3 text-white" fill="currentColor" /> Facebook
             </a>
             <a href={`https://wa.me/?text=${encoded}`} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-xl transition-colors">
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white text-xs font-bold rounded-xl transition-colors">
                 <MessageCircle className="w-3 h-3" /> WhatsApp
             </a>
             <a href={`https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`} target="_blank" rel="noopener noreferrer"
@@ -113,7 +113,7 @@ function ShareButtons({ token, address }) {
                 <Send className="w-3 h-3" /> Telegram
             </a>
             <a href={`https://bscscan.com/token/${address}`} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-colors">
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-bold rounded-xl transition-colors">
                 <ExternalLink className="w-3 h-3" /> BSCScan
             </a>
             <a href={`https://pancakeswap.finance/swap?outputCurrency=${address}&chain=bsc`} target="_blank" rel="noopener noreferrer"
@@ -442,7 +442,7 @@ function TokenDetail() {
         <main className="min-h-screen paw-pattern">
             <Navbar />
             <div className="pt-40 flex flex-col items-center justify-center gap-4">
-                <div className="w-12 h-12 border-4 border-rose-500/20 border-t-rose-500 rounded-full animate-spin" />
+                <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
                 <p className="text-gray-700 text-base font-bold">
                     {syncMsg || 'Loading token…'}
                 </p>
@@ -460,7 +460,7 @@ function TokenDetail() {
             <Navbar />
             <div className="pt-40 text-center">
                 <h1 className="text-2xl font-black text-gray-600">Token Not Found</h1>
-                <Link href="/launch"><p className="mt-4 text-rose-500 font-bold hover:underline">← Back to Launchpad</p></Link>
+                <Link href="/launch"><p className="mt-4 text-blue-500 font-bold hover:underline">← Back to Launchpad</p></Link>
             </div>
         </main>
     );
@@ -469,7 +469,7 @@ function TokenDetail() {
     const rawTotalSupply = Number(token.total_supply || 1_000_000_000);
     const totalSupply = rawTotalSupply > 1e15 ? rawTotalSupply / 1e18 : rawTotalSupply;
     const progress    = parseFloat(market?.progress ?? 0);
-    const progressColor = progress >= 90 ? 'from-red-500 to-rose-500' : progress >= 60 ? 'from-amber-500 to-orange-400' : 'from-emerald-500 to-teal-400';
+    const progressColor = progress >= 90 ? 'from-red-500 to-blue-500' : progress >= 60 ? 'from-indigo-500 to-slate-400' : 'from-sky-500 to-teal-400';
 
     const createdStr = token.created_at
         ? new Date(token.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
@@ -498,14 +498,14 @@ function TokenDetail() {
                     className="bg-white border border-black/8 rounded-3xl p-6 mb-6 shadow-sm">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
                         <div className="relative shrink-0">
-                            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-rose-50 to-amber-50 border-2 border-rose-200 shadow-xl flex items-center justify-center overflow-hidden">
+                            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 shadow-xl flex items-center justify-center overflow-hidden">
                                 {token.logo_url
                                     ? <img src={token.logo_url} alt={token.name} className="w-full h-full object-cover"
                                         onError={e => { e.target.onerror = null; e.target.parentElement.innerHTML = '<span class="text-4xl">🪙</span>'; }} />
                                     : <span className="text-4xl">🪙</span>}
                             </div>
                             {market?.isRegistered && (
-                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-emerald-500 rounded-full border-2 border-white shadow flex items-center justify-center">
+                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-sky-500 rounded-full border-2 border-white shadow flex items-center justify-center">
                                     <Zap className="w-3 h-3 text-white" />
                                 </div>
                             )}
@@ -514,9 +514,9 @@ function TokenDetail() {
                         <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-3 flex-wrap mb-1">
                                 <h1 className="text-3xl font-black text-gray-900">{token.name}</h1>
-                                <span className="text-sm font-extrabold text-rose-600 bg-rose-50 border border-rose-200 px-3 py-1 rounded-full">${token.symbol}</span>
+                                <span className="text-sm font-extrabold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-1 rounded-full">${token.symbol}</span>
                                 {(market?.migrated || token.launch_type === 'FAIR_LAUNCH' || token.launch_type === 'STANDARD') && (
-                                    <span className="text-xs font-extrabold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full flex items-center gap-1">
+                                    <span className="text-xs font-extrabold text-sky-600 bg-sky-50 border border-sky-200 px-2.5 py-1 rounded-full flex items-center gap-1">
                                         <ArrowRightLeft className="w-3 h-3" /> DEX Listed
                                     </span>
                                 )}
@@ -527,8 +527,8 @@ function TokenDetail() {
                                 )}
                                 {token.trust_status && (
                                     <span className={`text-xs font-black px-2.5 py-1 rounded-full border uppercase tracking-tighter ${
-                                        token.trust_status === 'Premium Token' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
-                                        token.trust_status === 'Highly Trusted' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
+                                        token.trust_status === 'Premium Token' ? 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20' :
+                                        token.trust_status === 'Highly Trusted' ? 'bg-sky-500/10 text-sky-600 border-sky-500/20' :
                                         token.trust_status === 'Scam' ? 'bg-red-500 text-white border-red-500' :
                                         'bg-blue-500/10 text-blue-600 border-blue-500/20'
                                     }`}>
@@ -554,7 +554,7 @@ function TokenDetail() {
                                 </span>
                                 <CopyBtn text={token.contract_address || address} label="address" />
                                 <a href={`https://bscscan.com/token/${token.contract_address || address}`} target="_blank" rel="noopener noreferrer"
-                                    className="text-amber-500 hover:text-amber-600 transition-colors">
+                                    className="text-indigo-500 hover:text-indigo-600 transition-colors">
                                     <ExternalLink className="w-3.5 h-3.5" />
                                 </a>
                             </div>
@@ -563,13 +563,13 @@ function TokenDetail() {
                         {/* Price panel */}
                         <div className="bg-black/3 rounded-2xl p-4 text-right shrink-0 min-w-[160px]">
                             <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Current Price</p>
-                            <div className={`text-xl font-black flex items-center justify-end gap-1 transition-colors duration-500 ${market?.trend === 'up' ? 'text-emerald-500' : market?.trend === 'down' ? 'text-red-500' : 'text-gray-900'}`}>
+                            <div className={`text-xl font-black flex items-center justify-end gap-1 transition-colors duration-500 ${market?.trend === 'up' ? 'text-sky-500' : market?.trend === 'down' ? 'text-red-500' : 'text-gray-900'}`}>
                                 {formatPrice(priceBnb)}
                             </div>
                             <p className="text-xs text-gray-400 mb-2">BNB</p>
                             <div className="flex items-center justify-end gap-1">
-                                {change24h < 0 ? <ArrowDownRight className="w-3.5 h-3.5 text-red-500" /> : <ArrowUpRight className="w-3.5 h-3.5 text-emerald-500" />}
-                                <span className={`text-xs font-black ${change24h < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                                {change24h < 0 ? <ArrowDownRight className="w-3.5 h-3.5 text-red-500" /> : <ArrowUpRight className="w-3.5 h-3.5 text-sky-500" />}
+                                <span className={`text-xs font-black ${change24h < 0 ? 'text-red-600' : 'text-sky-600'}`}>
                                     {change24h >= 0 ? '+' : ''}{change24h.toFixed(2)}% (24h)
                                 </span>
                             </div>
@@ -593,9 +593,9 @@ function TokenDetail() {
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
                     {[
                         { label: 'Market Cap',      value: `${(priceBnb * totalSupply).toFixed(4)} BNB`,      icon: <DollarSign className="w-4 h-4" />, color: 'text-indigo-600 bg-indigo-50 border-indigo-100' },
-                        { label: 'Total Supply',   value: formatSupply(rawTotalSupply),                          icon: <TrendingUp className="w-4 h-4" />, color: 'text-rose-500 bg-rose-50 border-rose-100' },
-                        { label: 'Sold',            value: formatSupply(market?.supplyTraded ?? 0),            icon: <ArrowUpRight className="w-4 h-4" />, color: 'text-amber-500 bg-amber-50 border-amber-100' },
-                        { label: 'BNB in Curve',   value: `${market?.collateralBnb?.toFixed(4) ?? '0.0000'} BNB`, icon: <Hash className="w-4 h-4" />, color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
+                        { label: 'Total Supply',   value: formatSupply(rawTotalSupply),                          icon: <TrendingUp className="w-4 h-4" />, color: 'text-blue-500 bg-blue-50 border-blue-100' },
+                        { label: 'Sold',            value: formatSupply(market?.supplyTraded ?? 0),            icon: <ArrowUpRight className="w-4 h-4" />, color: 'text-indigo-500 bg-indigo-50 border-indigo-100' },
+                        { label: 'BNB in Curve',   value: `${market?.collateralBnb?.toFixed(4) ?? '0.0000'} BNB`, icon: <Hash className="w-4 h-4" />, color: 'text-sky-600 bg-sky-50 border-sky-100' },
                         { label: '24h Volume',      value: `${volume24h.toFixed(4)} BNB`,                     icon: <Activity className="w-4 h-4" />, color: 'text-blue-500 bg-blue-50 border-blue-100' },
                         { label: 'Trades (24h)',    value: tradeStats?.total_trades ?? 0,                      icon: <BarChart3 className="w-4 h-4" />, color: 'text-purple-500 bg-purple-50 border-purple-100' },
                     ].map((s, i) => (
@@ -620,7 +620,7 @@ function TokenDetail() {
                                 {TABS.map(tab => (
                                     <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                                         className={`flex-1 py-3.5 text-sm font-bold transition-all ${activeTab === tab.id
-                                            ? 'text-rose-600 border-b-2 border-rose-500 bg-rose-50/50'
+                                            ? 'text-blue-600 border-b-2 border-blue-500 bg-blue-50/50'
                                             : 'text-gray-500 hover:text-gray-800'}`}>
                                         {tab.label}
                                     </button>
@@ -635,10 +635,10 @@ function TokenDetail() {
                                         <motion.div key="chart" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                                             <div className="flex items-center justify-between mb-4">
                                                 <h3 className="font-black text-gray-900 flex items-center gap-2">
-                                                    <TrendingUp className="w-4 h-4 text-rose-500" /> Price Chart
-                                                    <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">● Live</span>
+                                                    <TrendingUp className="w-4 h-4 text-blue-500" /> Price Chart
+                                                    <span className="text-xs font-bold text-sky-600 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-full">● Live</span>
                                                 </h3>
-                                                <button onClick={() => { fetchMarket(); fetchTradeData(); }} className="text-gray-400 hover:text-rose-500 transition-colors">
+                                                <button onClick={() => { fetchMarket(); fetchTradeData(); }} className="text-gray-400 hover:text-blue-500 transition-colors">
                                                     <RefreshCw className="w-4 h-4" />
                                                 </button>
                                             </div>
@@ -675,7 +675,7 @@ function TokenDetail() {
                                                 {[
                                                     { label: 'Current Price', value: <span className="flex items-center justify-center gap-1">{formatPrice(priceBnb)} BNB</span> },
                                                     { label: 'BNB Raised',    value: (market?.collateralBnb ?? 0).toFixed(4) + ' BNB' },
-                                                    { label: '24h Change',    value: `${change24h >= 0 ? '+' : ''}${change24h.toFixed(2)}%`, color: change24h < 0 ? 'text-red-600' : 'text-emerald-600' },
+                                                    { label: '24h Change',    value: `${change24h >= 0 ? '+' : ''}${change24h.toFixed(2)}%`, color: change24h < 0 ? 'text-red-600' : 'text-sky-600' },
                                                 ].map((s, i) => (
                                                     <div key={i} className="bg-black/3 rounded-xl p-3 text-center">
                                                         <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">{s.label}</p>
@@ -736,7 +736,7 @@ function TokenDetail() {
                                                             <p className="font-mono text-xs text-gray-800 font-bold truncate flex-1">{d.value || '—'}</p>
                                                             {d.copy && <CopyBtn text={d.copy} label={d.label} />}
                                                             {d.link && d.copy && (
-                                                                <a href={d.link} target="_blank" rel="noopener noreferrer" className="text-amber-500 hover:text-amber-600">
+                                                                <a href={d.link} target="_blank" rel="noopener noreferrer" className="text-indigo-500 hover:text-indigo-600">
                                                                     <ExternalLink className="w-3 h-3" />
                                                                 </a>
                                                             )}
@@ -755,7 +755,7 @@ function TokenDetail() {
                                                     <Activity className="w-4 h-4 text-blue-500" /> Trading History
                                                 </h3>
                                                 <div className="flex items-center gap-3 text-xs font-bold">
-                                                    <span className="text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                                    <span className="text-sky-600 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-full">
                                                         {tradeStats?.buys || 0} Buys
                                                     </span>
                                                     <span className="text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-full">
@@ -773,9 +773,9 @@ function TokenDetail() {
                                             ) : (
                                                 <div className="space-y-2 max-h-80 overflow-y-auto">
                                                     {trades.map((trade, i) => (
-                                                        <div key={i} className={`flex items-center justify-between px-4 py-2.5 rounded-xl border text-xs ${trade.trade_type === 'buy' ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
+                                                        <div key={i} className={`flex items-center justify-between px-4 py-2.5 rounded-xl border text-xs ${trade.trade_type === 'buy' ? 'bg-sky-50 border-sky-100' : 'bg-red-50 border-red-100'}`}>
                                                             <div className="flex items-center gap-2">
-                                                                <span className={`font-black text-xs w-10 ${trade.trade_type === 'buy' ? 'text-emerald-600' : 'text-red-600'}`}>
+                                                                <span className={`font-black text-xs w-10 ${trade.trade_type === 'buy' ? 'text-sky-600' : 'text-red-600'}`}>
                                                                     {trade.trade_type === 'buy' ? '▲ BUY' : '▼ SELL'}
                                                                 </span>
                                                                 <span className="font-mono text-gray-500">{shortAddr(trade.trader_wallet, 6, 4)}</span>
@@ -787,7 +787,7 @@ function TokenDetail() {
                                                             {trade.tx_hash && trade.tx_hash !== 'unknown' && (
                                                                 <a href={`https://bscscan.com/tx/${trade.tx_hash.replace('_fee', '')}`}
                                                                     target="_blank" rel="noopener noreferrer"
-                                                                    className="text-amber-500 hover:text-amber-600 ml-2">
+                                                                    className="text-indigo-500 hover:text-indigo-600 ml-2">
                                                                     <ExternalLink className="w-3 h-3" />
                                                                 </a>
                                                             )}
@@ -809,7 +809,7 @@ function TokenDetail() {
                                                     <button 
                                                         onClick={handleRunAI}
                                                         disabled={aiLoading}
-                                                        className="px-4 py-2 bg-gray-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-rose-600 transition-all flex items-center gap-2"
+                                                        className="px-4 py-2 bg-gray-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 transition-all flex items-center gap-2"
                                                     >
                                                         {aiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                                                         Analyze Now
@@ -821,9 +821,9 @@ function TokenDetail() {
                                                 <div className="space-y-6">
                                                     {/* AI Audit Grid */}
                                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                                                        <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
-                                                            <p className="text-[10px] text-emerald-600 font-black uppercase mb-1">Memorability</p>
-                                                            <p className="text-xl font-black text-emerald-700">{aiAnalysis.score?.memorability}/100</p>
+                                                        <div className="p-4 bg-sky-50 border border-sky-100 rounded-2xl">
+                                                            <p className="text-[10px] text-sky-600 font-black uppercase mb-1">Memorability</p>
+                                                            <p className="text-xl font-black text-sky-700">{aiAnalysis.score?.memorability}/100</p>
                                                         </div>
                                                         <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl">
                                                             <p className="text-[10px] text-blue-600 font-black uppercase mb-1">Branding</p>
@@ -833,16 +833,16 @@ function TokenDetail() {
                                                             <p className="text-[10px] text-purple-600 font-black uppercase mb-1">Security Score</p>
                                                             <p className="text-xl font-black text-purple-700">{aiAnalysis.score?.security || 85}/100</p>
                                                         </div>
-                                                        <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl">
-                                                            <p className="text-[10px] text-rose-600 font-black uppercase mb-1">Market Sentiment</p>
-                                                            <p className="text-xl font-black text-rose-700">{aiAnalysis.sentiment?.label || 'Bullish'}</p>
+                                                        <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl">
+                                                            <p className="text-[10px] text-blue-600 font-black uppercase mb-1">Market Sentiment</p>
+                                                            <p className="text-xl font-black text-blue-700">{aiAnalysis.sentiment?.label || 'Bullish'}</p>
                                                         </div>
                                                     </div>
 
                                                     {/* Technical Audit Panel */}
                                                     <div className="p-6 bg-white border border-black/8 rounded-[2rem] shadow-sm space-y-4">
                                                         <h4 className="flex items-center gap-2 text-xs font-black text-gray-900 uppercase tracking-widest border-b border-black/5 pb-3">
-                                                            <ShieldCheck className="w-4 h-4 text-emerald-500" /> Protocol Verification Details
+                                                            <ShieldCheck className="w-4 h-4 text-sky-500" /> Protocol Verification Details
                                                         </h4>
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 overflow-hidden">
                                                             {[
@@ -868,7 +868,7 @@ function TokenDetail() {
                                                     
                                                     <div className="p-6 bg-gray-50 border border-gray-100 rounded-[2rem]">
                                                         <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                                            <Sparkles className="w-3.5 h-3.5 text-amber-500" /> AI Executive Summary
+                                                            <Sparkles className="w-3.5 h-3.5 text-indigo-500" /> AI Executive Summary
                                                         </h4>
                                                         <p className="text-[11px] text-gray-700 leading-[1.8] font-medium text-justify">
                                                             {token.name} (${token.symbol}) represents a high-velocity opportunity on the B20-LAB Launchpad. 
@@ -892,8 +892,8 @@ function TokenDetail() {
                                     {/* ── Whitepaper Tab ── */}
                                     {activeTab === 'whitepaper' && (
                                         <motion.div key="whitepaper" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center py-10">
-                                            <div className="w-16 h-16 bg-rose-100 rounded-2xl flex items-center justify-center mx-auto mb-4 icon-3d shadow-xl">
-                                                <FileText className="w-8 h-8 text-rose-500" />
+                                            <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4 icon-3d shadow-xl">
+                                                <FileText className="w-8 h-8 text-blue-500" />
                                             </div>
                                             <h3 className="text-xl font-black text-gray-900 mb-2">Protocol Whitepaper</h3>
                                             <p className="text-sm text-gray-500 max-w-sm mx-auto mb-8">
@@ -903,14 +903,14 @@ function TokenDetail() {
                                             {whitepaper ? (
                                                 <button 
                                                     onClick={() => setIsWpOpen(true)}
-                                                    className="px-8 py-3 bg-gray-900 text-white font-black rounded-xl hover:bg-rose-600 transition-all shadow-xl shadow-gray-900/10 flex items-center gap-2 mx-auto"
+                                                    className="px-8 py-3 bg-gray-900 text-white font-black rounded-xl hover:bg-blue-600 transition-all shadow-xl shadow-gray-900/10 flex items-center gap-2 mx-auto"
                                                 >
                                                     <FileText className="w-4 h-4" /> Open Full Whitepaper
                                                 </button>
                                             ) : (
-                                                <div className="p-6 bg-amber-50 border border-amber-100 rounded-2xl">
-                                                    <p className="text-xs text-amber-700 font-bold mb-4">No whitepaper was generated for this token during launch.</p>
-                                                    <button className="px-6 py-2 bg-amber-500 text-white rounded-lg font-black text-xs uppercase tracking-widest opacity-50 cursor-not-allowed">
+                                                <div className="p-6 bg-indigo-50 border border-indigo-100 rounded-2xl">
+                                                    <p className="text-xs text-indigo-700 font-bold mb-4">No whitepaper was generated for this token during launch.</p>
+                                                    <button className="px-6 py-2 bg-indigo-500 text-white rounded-lg font-black text-xs uppercase tracking-widest opacity-50 cursor-not-allowed">
                                                         Request Custom Generation
                                                     </button>
                                                 </div>
@@ -928,16 +928,16 @@ function TokenDetail() {
                                                 Sell <strong>{token.symbol}</strong> and instantly buy another token in one flow. 1% fee applies on each step.
                                             </p>
                                             <div className="space-y-3">
-                                                <div className="bg-gradient-to-br from-rose-50 to-orange-50 border border-rose-200 rounded-2xl p-4">
+                                                <div className="bg-gradient-to-br from-blue-50 to-slate-50 border border-blue-200 rounded-2xl p-4">
                                                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-2">You Sell</p>
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-full bg-white border border-rose-200 flex items-center justify-center overflow-hidden shadow shrink-0">
+                                                        <div className="w-8 h-8 rounded-full bg-white border border-blue-200 flex items-center justify-center overflow-hidden shadow shrink-0">
                                                             {token.logo_url ? <img src={token.logo_url} alt={token.symbol} className="w-full h-full object-cover" /> : <span>🪙</span>}
                                                         </div>
                                                         <input type="number" step="0.001" min="0" placeholder="0.0"
                                                             value={swapAmount} onChange={e => setSwapAmount(e.target.value)}
                                                             className="flex-1 bg-transparent font-black text-gray-900 text-xl outline-none text-right" />
-                                                        <span className="text-sm font-bold text-rose-600 shrink-0">{token.symbol}</span>
+                                                        <span className="text-sm font-bold text-blue-600 shrink-0">{token.symbol}</span>
                                                     </div>
                                                 </div>
                                                 <div className="flex justify-center">
@@ -960,7 +960,7 @@ function TokenDetail() {
                                                 <AnimatePresence>
                                                     {swapStatus === 'success' && (
                                                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                                            className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-700 text-center">
+                                                            className="p-3 bg-sky-50 border border-sky-200 rounded-xl text-xs font-bold text-sky-700 text-center">
                                                             ✅ Swap complete!
                                                         </motion.div>
                                                     )}
@@ -991,9 +991,9 @@ function TokenDetail() {
                         <div className="bg-white border border-black/8 rounded-2xl p-5 shadow-sm">
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="font-black text-gray-900 flex items-center gap-2">
-                                    <Flame className="w-4 h-4 text-orange-500" /> Bonding Curve Progress
+                                    <Flame className="w-4 h-4 text-slate-500" /> Bonding Curve Progress
                                 </h3>
-                                <span className={`text-sm font-black px-3 py-1 rounded-full border ${progress >= 90 ? 'text-red-500 bg-red-50 border-red-200' : progress >= 60 ? 'text-amber-500 bg-amber-50 border-amber-200' : 'text-emerald-600 bg-emerald-50 border-emerald-200'}`}>
+                                <span className={`text-sm font-black px-3 py-1 rounded-full border ${progress >= 90 ? 'text-red-500 bg-red-50 border-red-200' : progress >= 60 ? 'text-indigo-500 bg-indigo-50 border-indigo-200' : 'text-sky-600 bg-sky-50 border-sky-200'}`}>
                                     {progress}%
                                 </span>
                             </div>
@@ -1016,11 +1016,11 @@ function TokenDetail() {
                                 </div>
                             </div>
                             {(market?.migrated || token.launch_type === 'FAIR_LAUNCH' || token.launch_type === 'STANDARD') ? (
-                                <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-700 flex items-center gap-2">
+                                <div className="mt-4 p-3 bg-sky-50 border border-sky-200 rounded-xl text-xs font-bold text-sky-700 flex items-center gap-2">
                                     <ArrowRightLeft className="w-4 h-4" /> ✅ Available on PancakeSwap DEX!
                                 </div>
                             ) : (
-                                <div className="mt-4 p-3 bg-amber-50 border border-amber-100 rounded-xl text-xs text-amber-700 font-semibold leading-relaxed">
+                                <div className="mt-4 p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-700 font-semibold leading-relaxed">
                                     💡 <strong>Auto-migration:</strong> At 10 BNB target, 9 BNB goes to Treasury and 1 BNB seeds the DEX. Total target: <strong>{market?.migrationThreshold ?? 10} BNB</strong>. Current: <strong>{market?.collateralBnb?.toFixed(4) ?? '0'} BNB</strong>
                                 </div>
                             )}
@@ -1032,7 +1032,7 @@ function TokenDetail() {
                         <div className="bg-white border border-black/8 rounded-2xl shadow-sm overflow-hidden sticky top-24">
                             <div className="flex">
                                 <button onClick={() => setSide('buy')}
-                                    className={`flex-1 py-4 text-sm font-black transition-all ${side === 'buy' ? 'bg-gradient-to-r from-rose-500 to-orange-500 text-white' : 'text-gray-500 hover:bg-black/3'}`}>
+                                    className={`flex-1 py-4 text-sm font-black transition-all ${side === 'buy' ? 'bg-gradient-to-r from-blue-500 to-slate-500 text-white' : 'text-gray-500 hover:bg-black/3'}`}>
                                     🟢 BUY
                                 </button>
                                 <button onClick={() => setSide('sell')}
@@ -1043,14 +1043,14 @@ function TokenDetail() {
 
                             <div className="p-5 space-y-4">
                                 {(market?.migrated || token.launch_type === 'FAIR_LAUNCH' || token.launch_type === 'STANDARD') && (
-                                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs font-bold text-emerald-700">
+                                    <div className="p-3 bg-sky-50 border border-sky-200 rounded-xl text-xs font-bold text-sky-700">
                                         ✅ Token available on PancakeSwap. <a href={`https://pancakeswap.finance/swap?outputCurrency=${token.contract_address || address}`}
                                             target="_blank" rel="noopener noreferrer" className="underline">Trade on PancakeSwap ↗</a>
                                     </div>
                                 )}
                                 {token.is_delisted && (
                                     <div className="p-4 bg-black/90 border border-black rounded-xl text-xs font-bold text-white shadow-2xl">
-                                        <p className="flex items-center gap-2 mb-2 text-rose-500"><XCircle className="w-4 h-4" /> TRADING DISABLED</p>
+                                        <p className="flex items-center gap-2 mb-2 text-blue-500"><XCircle className="w-4 h-4" /> TRADING DISABLED</p>
                                         <p className="opacity-70 leading-relaxed font-medium">This asset has been delisted due to 60+ days of inactivity or violation of terms. Trading is permanently disabled.</p>
                                     </div>
                                 )}
@@ -1068,7 +1068,7 @@ function TokenDetail() {
                                             const val = v.includes('K') ? String(parseInt(v) * 1000) : v.includes('M') ? String(parseInt(v) * 1000000) : v;
                                             return (
                                                 <button key={i} onClick={() => setAmount(val)}
-                                                    className="flex-1 py-1.5 text-[11px] font-bold bg-black/5 hover:bg-rose-500/10 hover:text-rose-600 rounded-lg transition-all">
+                                                    className="flex-1 py-1.5 text-[11px] font-bold bg-black/5 hover:bg-blue-500/10 hover:text-blue-600 rounded-lg transition-all">
                                                     {v}
                                                 </button>
                                             );
@@ -1082,7 +1082,7 @@ function TokenDetail() {
                                 </div>
 
                                 {/* Fee notice */}
-                                <div className="p-2.5 bg-amber-50 border border-amber-100 rounded-xl text-[10px] font-semibold text-amber-700 flex items-center gap-2">
+                                <div className="p-2.5 bg-indigo-50 border border-indigo-100 rounded-xl text-[10px] font-semibold text-indigo-700 flex items-center gap-2">
                                     <DollarSign className="w-3.5 h-3.5 shrink-0" />
                                     1% fee deducted and sent to Treasury Wallet automatically on every trade.
                                 </div>
@@ -1090,7 +1090,7 @@ function TokenDetail() {
                                 <AnimatePresence>
                                     {tradeStatus === 'success' && (
                                         <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                                            className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-700 font-bold text-center">
+                                            className="p-3 bg-sky-50 border border-sky-200 rounded-xl text-xs text-sky-700 font-bold text-center">
                                             ✅ Trade successful! Fee → Treasury.
                                         </motion.div>
                                     )}
@@ -1108,7 +1108,7 @@ function TokenDetail() {
                                         : handleTrade}
                                     disabled={tradeStatus === 'pending' || token.is_delisted || (account && (!amount || parseFloat(amount) <= 0) && !(market?.migrated || token.launch_type === 'FAIR_LAUNCH' || token.launch_type === 'STANDARD'))}
                                     className={`w-full py-4 font-black rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed shadow-xl transition-all text-white ${side === 'buy'
-                                        ? 'bg-gradient-to-r from-rose-500 to-orange-500 shadow-rose-500/25 hover:from-rose-600 hover:to-orange-600'
+                                        ? 'bg-gradient-to-r from-blue-500 to-slate-500 shadow-blue-500/25 hover:from-blue-600 hover:to-slate-600'
                                         : 'bg-gradient-to-r from-gray-700 to-gray-900 shadow-gray-900/25 hover:from-gray-800 hover:to-black'
                                     }`}>
                                     {tradeStatus === 'pending'
@@ -1176,7 +1176,7 @@ function StatusUpgradeButton({ token, account }) {
                     key="upgrade-btn"
                     whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                     onClick={() => setIsUpgrading(true)}
-                    className="px-4 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 font-bold text-[10px] rounded-full border border-amber-200 flex items-center gap-1.5 transition-all uppercase tracking-tighter"
+                    className="px-4 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 font-bold text-[10px] rounded-full border border-indigo-200 flex items-center gap-1.5 transition-all uppercase tracking-tighter"
                 >
                     <ShieldCheck className="w-3 h-3" /> Upgrade Request
                 </motion.button>
@@ -1185,7 +1185,7 @@ function StatusUpgradeButton({ token, account }) {
                     key="upgrade-form"
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    className="flex items-center gap-2 p-1.5 bg-amber-50 border border-amber-200 rounded-full shadow-sm"
+                    className="flex items-center gap-2 p-1.5 bg-indigo-50 border border-indigo-200 rounded-full shadow-sm"
                 >
                     <select 
                         value={selectedStatus}
@@ -1229,7 +1229,7 @@ function StatusUpgradeButton({ token, account }) {
                                 setIsProcessing(false);
                             }
                         }}
-                        className="py-1 px-3 bg-amber-500 text-white rounded-full text-[9px] font-black uppercase hover:bg-amber-600 disabled:opacity-50"
+                        className="py-1 px-3 bg-indigo-500 text-white rounded-full text-[9px] font-black uppercase hover:bg-indigo-600 disabled:opacity-50"
                     >
                         {isProcessing ? '⌛' : isAdmin ? 'Apply' : 'Upgrade Now'}
                     </button>

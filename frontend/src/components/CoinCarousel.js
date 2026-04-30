@@ -70,9 +70,9 @@ export default function CoinCarousel() {
         return (
             <div className="h-64 flex items-center justify-center">
                 <div className="flex gap-3 items-center text-gray-400">
-                    <div className="w-2 h-2 rounded-full bg-amber-500 animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-2 h-2 rounded-full bg-rose-500 animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-2 h-2 rounded-full bg-amber-500 animate-bounce" style={{ animationDelay: '300ms' }} />
+                    <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2 h-2 rounded-full bg-blue-500 animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" style={{ animationDelay: '300ms' }} />
                     <span className="ml-2 text-sm font-medium">Loading top meme tokens…</span>
                 </div>
             </div>
@@ -88,7 +88,7 @@ export default function CoinCarousel() {
         <div className="relative py-20 px-4 md:px-8">
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-12">
-                    <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 text-sm font-bold uppercase tracking-widest mb-4">
+                    <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 text-sm font-bold uppercase tracking-widest mb-4">
                         🔥 Trending Meme Tokens
                     </span>
                     <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
@@ -103,7 +103,7 @@ export default function CoinCarousel() {
                         <button
                             key={i}
                             onClick={() => setIndex(i)}
-                            className={`rounded-full transition-all duration-300 ${i === index ? 'w-6 h-2 bg-rose-500' : 'w-2 h-2 bg-black/15 hover:bg-black/30'}`}
+                            className={`rounded-full transition-all duration-300 ${i === index ? 'w-6 h-2 bg-blue-500' : 'w-2 h-2 bg-black/15 hover:bg-black/30'}`}
                         />
                     ))}
                 </div>
@@ -116,7 +116,7 @@ export default function CoinCarousel() {
                         animate={{ opacity: 1, x: 0, scale: 1 }}
                         exit={{ opacity: 0, x: -60, scale: 0.97 }}
                         transition={{ duration: 0.4, ease: 'easeOut' }}
-                        className="glass-card bg-gradient-to-br from-white/80 to-white/40 border-amber-500/10 max-w-3xl mx-auto p-8 md:p-10"
+                        className="glass-card bg-gradient-to-br from-white/80 to-white/40 border-indigo-500/10 max-w-3xl mx-auto p-8 md:p-10"
                         style={{
                             boxShadow: '0 20px 60px rgba(0,0,0,0.08), 0 4px 20px rgba(0,0,0,0.04)',
                         }}
@@ -127,7 +127,7 @@ export default function CoinCarousel() {
                                 <div className="w-24 h-24 rounded-3xl overflow-hidden shadow-xl shadow-black/10 border border-black/5 bg-white flex items-center justify-center">
                                     {coin.image ? <img src={coin.image} alt={coin.name} className="w-20 h-20 object-contain" /> : <div className="w-20 h-20 bg-gray-50 flex items-center justify-center text-xs text-gray-300">NO IMG</div>}
                                 </div>
-                                <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-rose-500 text-white text-xs font-black flex items-center justify-center shadow-md">
+                                <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-blue-500 text-white text-xs font-black flex items-center justify-center shadow-md">
                                     #{index + 1}
                                 </div>
                             </div>
@@ -161,7 +161,7 @@ export default function CoinCarousel() {
                         <div className="mt-6 h-1 bg-black/5 rounded-full overflow-hidden">
                             <motion.div
                                 key={`bar-${index}`}
-                                className="h-full bg-gradient-to-r from-rose-500 to-amber-500 rounded-full"
+                                className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"
                                 initial={{ width: '0%' }}
                                 animate={{ width: '100%' }}
                                 transition={{ duration: 3, ease: 'linear' }}

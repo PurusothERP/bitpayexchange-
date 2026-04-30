@@ -57,7 +57,7 @@ export default function CryptoTicker() {
         return (
             <div className="h-10 bg-black/5 border-b border-black/5 flex items-center justify-center">
                 <div className="flex gap-2 items-center text-gray-400 text-xs">
-                    <div className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
                     Loading market data...
                 </div>
             </div>
@@ -65,7 +65,7 @@ export default function CryptoTicker() {
     }
 
     return (
-        <div className="fixed top-20 left-0 right-0 z-40 overflow-hidden h-9 bg-gradient-to-r from-gray-900/95 via-gray-800/95 to-gray-900/95 border-b border-amber-500/20 backdrop-blur-sm">
+        <div className="fixed top-20 left-0 right-0 z-40 overflow-hidden h-9 bg-gradient-to-r from-gray-900/95 via-gray-800/95 to-gray-900/95 border-b border-indigo-500/20 backdrop-blur-sm">
             {/* Left fade */}
             <div className="absolute left-0 top-0 bottom-0 w-16 bg-gradient-to-r from-gray-900 to-transparent z-10 pointer-events-none" />
             {/* Right fade */}

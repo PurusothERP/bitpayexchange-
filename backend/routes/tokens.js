@@ -230,7 +230,7 @@ router.get('/markets/bsclist', async (req, res) => {
 // ─── GET /api/tokens/markets/cg ─────────────────────────────────────────────
 // PROXY: Fetch market data from CoinGecko to avoid frontend CORS issues.
 router.get('/markets/cg', async (req, res) => {
-    const { category, per_page, page } = req.query;
+    const { category, per_page, page, ids } = req.query;
     try {
         const headers = process.env.COINGECKO_API_KEY
             ? { 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY }
@@ -244,6 +244,7 @@ router.get('/markets/cg', async (req, res) => {
             sparkline: false
         };
         if (category) params.category = category;
+        if (ids) params.ids = ids;
 
         const response = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
             headers,

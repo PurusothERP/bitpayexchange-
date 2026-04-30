@@ -111,8 +111,8 @@ export default function WhitepaperModal({ isOpen, onClose, whitepaper, isDeploye
                 {/* Header */}
                 <div className="p-6 border-b border-black/5 flex items-center justify-between bg-gray-50/50">
                     <div className="flex items-center gap-3">
-                        <div className="bg-rose-100 p-2 rounded-xl icon-3d">
-                            <FileText className="w-6 h-6 text-rose-500" />
+                        <div className="bg-blue-100 p-2 rounded-xl icon-3d">
+                            <FileText className="w-6 h-6 text-blue-500" />
                         </div>
                         <div>
                             <h2 className="text-xl font-black text-gray-900">
@@ -137,10 +137,10 @@ export default function WhitepaperModal({ isOpen, onClose, whitepaper, isDeploye
                             <motion.div 
                                 initial={{ y: 20, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
-                                className="glass-card max-w-sm p-8 shadow-2xl border-rose-500/20"
+                                className="glass-card max-w-sm p-8 shadow-2xl border-blue-500/20"
                             >
-                                <div className="w-16 h-16 bg-rose-500/10 rounded-full flex items-center justify-center mx-auto mb-6 icon-3d">
-                                    <Rocket className="w-8 h-8 text-rose-500" />
+                                <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-6 icon-3d">
+                                    <Rocket className="w-8 h-8 text-blue-500" />
                                 </div>
                                 <h3 className="text-xl font-black mb-2 text-gray-900 text-red-gradient">Download Whitepaper</h3>
                                 <p className="text-sm text-gray-600 mb-6 font-medium">
@@ -152,7 +152,7 @@ export default function WhitepaperModal({ isOpen, onClose, whitepaper, isDeploye
                                 <button 
                                     onClick={handlePayment}
                                     disabled={isPaying}
-                                    className="w-full py-4 bg-rose-500 text-white rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-rose-600 transition-all shadow-xl shadow-rose-500/20 disabled:bg-gray-400"
+                                    className="w-full py-4 bg-blue-500 text-white rounded-2xl font-black flex items-center justify-center gap-2 hover:bg-blue-600 transition-all shadow-xl shadow-blue-500/20 disabled:bg-gray-400"
                                 >
                                     {isPaying ? (
                                         <Loader2 className="w-5 h-5 animate-spin" />
@@ -169,7 +169,7 @@ export default function WhitepaperModal({ isOpen, onClose, whitepaper, isDeploye
                     )}
 
                     {!isDeployed && (
-                        <div className="sticky bottom-0 left-0 right-0 p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-700 text-sm font-bold flex items-center gap-2 backdrop-blur-sm mx-8 mb-4">
+                        <div className="sticky bottom-0 left-0 right-0 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-xl text-indigo-700 text-sm font-bold flex items-center gap-2 backdrop-blur-sm mx-8 mb-4">
                             <CheckCircle className="w-4 h-4" />
                             Review Mode: Full features available after token deployment.
                         </div>
@@ -192,7 +192,7 @@ export default function WhitepaperModal({ isOpen, onClose, whitepaper, isDeploye
                         <button 
                             disabled={!paid || !isDeployed}
                             onClick={shareToWhatsApp}
-                            className="p-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-all disabled:bg-gray-200"
+                            className="p-3 bg-sky-500 text-white rounded-xl hover:bg-sky-600 transition-all disabled:bg-gray-200"
                         >
                             <MessageCircle className="w-5 h-5" />
                         </button>

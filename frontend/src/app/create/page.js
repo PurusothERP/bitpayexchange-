@@ -237,22 +237,22 @@ function CreateToken() {
     };
 
     return (
-        <main className="min-h-screen bg-gray-50/70 p-pattern selection:bg-rose-500 selection:text-white pb-32">
+        <main className="min-h-screen bg-gray-50/70 p-pattern selection:bg-blue-500 selection:text-white pb-32">
             <Navbar />
             
             <div className="pt-32 pb-24 px-4 md:px-8 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 relative z-10">
                 {/* Visual Flair */}
-                <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-rose-500/5 rounded-full blur-[100px] -z-10 animate-pulse" />
-                <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-amber-500/5 rounded-full blur-[100px] -z-10" />
+                <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[100px] -z-10 animate-pulse" />
+                <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[100px] -z-10" />
 
                 {/* LEFT: INFORMATION & AI */}
                 <div className="lg:col-span-4 space-y-8">
                     <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}
                         className="p-8 rounded-[3rem] bg-white border border-gray-100 shadow-xl relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-3xl group-hover:bg-rose-500/10 transition-all duration-700" />
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-all duration-700" />
                         <div className="flex items-center gap-4 mb-8">
-                            <div className="w-14 h-14 bg-rose-500/10 rounded-2xl flex items-center justify-center border border-rose-100 shadow-md">
-                                <Rocket className="w-7 h-7 text-rose-500" />
+                            <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-100 shadow-md">
+                                <Rocket className="w-7 h-7 text-blue-500" />
                             </div>
                             <div>
                                 <h3 className="font-black text-gray-900 text-xl tracking-tight">Bonding Curve</h3>
@@ -262,7 +262,7 @@ function CreateToken() {
                         <p className="text-sm text-gray-500 mb-10 leading-relaxed font-medium">
                             Launch your protocol with a dynamic bonding curve. Zero initial liquidity required from the creator.
                         </p>
-                        <div className="flex items-center gap-3 text-rose-500 pt-6 border-t border-gray-50">
+                        <div className="flex items-center gap-3 text-blue-500 pt-6 border-t border-gray-50">
                              <ShieldCheck className="w-5 h-5" />
                              <span className="text-[10px] font-black uppercase tracking-[0.3em]">Security Verified Matrix</span>
                         </div>
@@ -271,13 +271,13 @@ function CreateToken() {
                     <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
                         className="p-8 rounded-[3rem] bg-white border border-gray-100 shadow-xl">
                         <h4 className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-8 flex items-center gap-2">
-                             <Activity className="w-4 h-4 text-rose-500" /> Engine Parameters
+                             <Activity className="w-4 h-4 text-blue-500" /> Engine Parameters
                         </h4>
                         <div className="space-y-6">
                             {[
                                 { label: 'Fixed Supply', value: '1,000,000,000', icon: <Layers className="w-4 h-4" /> },
                                 { label: 'DEX Target', value: 'PancakeSwap V2', icon: <Globe className="w-4 h-4" /> },
-                                { label: 'Liquidity Share', value: '900M Tokens', icon: <Zap className="w-4 h-4" />, color: 'text-amber-500' }
+                                { label: 'Liquidity Share', value: '900M Tokens', icon: <Zap className="w-4 h-4" />, color: 'text-indigo-500' }
                             ].map((p, i) => (
                                 <div key={i} className="flex justify-between items-center py-4 border-b last:border-0 border-gray-100">
                                     <div className="flex items-center gap-3">
@@ -310,7 +310,7 @@ function CreateToken() {
                                 type="button"
                                 onClick={handleGenerateWP}
                                 disabled={wpThinking || !formData.name}
-                                className="w-full py-5 bg-white text-gray-900 rounded-2xl text-[11px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-rose-500 hover:text-white transition-all disabled:opacity-20 active:scale-95"
+                                className="w-full py-5 bg-white text-gray-900 rounded-2xl text-[11px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-blue-500 hover:text-white transition-all disabled:opacity-20 active:scale-95"
                             >
                                 {wpThinking ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Generate + Audit'}
                             </button>
@@ -330,40 +330,40 @@ function CreateToken() {
                                     {status === 'uploading' && (
                                         <>
                                             <div className="relative w-28 h-28 mb-10">
-                                                <div className="absolute inset-0 border-4 border-rose-500/10 rounded-full" />
-                                                <div className="absolute inset-0 border-4 border-rose-500 border-t-transparent rounded-full animate-spin" />
+                                                <div className="absolute inset-0 border-4 border-blue-500/10 rounded-full" />
+                                                <div className="absolute inset-0 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
                                                 <div className="absolute inset-0 flex items-center justify-center">
-                                                    <Activity className="w-10 h-10 text-rose-500 animate-pulse" />
+                                                    <Activity className="w-10 h-10 text-blue-500 animate-pulse" />
                                                 </div>
                                             </div>
                                             <h3 className="text-4xl font-black text-gray-900 mb-4 tracking-tighter">Initializing Hub...</h3>
-                                            <p className="text-rose-500 font-black uppercase text-[10px] tracking-[0.4em] animate-pulse">{error}</p>
+                                            <p className="text-blue-500 font-black uppercase text-[10px] tracking-[0.4em] animate-pulse">{error}</p>
                                         </>
                                     )}
 
                                     {status === 'success' && txHash && (
                                         <>
                                             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', bounce: 0.5 }}
-                                                className="w-32 h-32 bg-emerald-500/10 rounded-full flex items-center justify-center mb-10 border border-emerald-500/20 shadow-2xl shadow-emerald-500/10">
-                                                <CheckCircle2 className="w-20 h-20 text-emerald-500" />
+                                                className="w-32 h-32 bg-sky-500/10 rounded-full flex items-center justify-center mb-10 border border-sky-500/20 shadow-2xl shadow-sky-500/10">
+                                                <CheckCircle2 className="w-20 h-20 text-sky-500" />
                                             </motion.div>
                                             <h3 className="text-5xl font-black text-gray-900 mb-3 tracking-tighter uppercase">Nexus Live</h3>
                                             <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mb-12">Protocol successfully anchored on BSC</p>
 
                                             <div className="w-full max-w-lg mb-12 bg-gray-50 border border-gray-100 rounded-[2.5rem] p-10 shadow-inner">
-                                                <p className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.3em] mb-6">Verified Nexus Identifier</p>
+                                                <p className="text-[10px] font-black text-sky-600 uppercase tracking-[0.3em] mb-6">Verified Nexus Identifier</p>
                                                 <div className="flex items-center gap-4 bg-white border border-gray-100 rounded-2xl px-6 py-5 mb-8 shadow-sm">
                                                     <code className="flex-1 text-sm font-mono text-gray-800 break-all select-all font-bold tracking-tight">
                                                         {txHash.tokenAddress}
                                                     </code>
                                                     <button onClick={() => { navigator.clipboard.writeText(txHash.tokenAddress); alert('Copied!'); }}
-                                                        className="shrink-0 p-4 bg-gray-100 hover:bg-rose-500 hover:text-white rounded-xl text-gray-500 transition-all active:scale-90 shadow-sm">
+                                                        className="shrink-0 p-4 bg-gray-100 hover:bg-blue-500 hover:text-white rounded-xl text-gray-500 transition-all active:scale-90 shadow-sm">
                                                         <ExternalLink className="w-5 h-5" />
                                                     </button>
                                                 </div>
                                                 <div className="flex flex-wrap gap-8 justify-center">
-                                                    <a href={`https://bscscan.com/token/${txHash.tokenAddress}`} target="_blank" className="text-[10px] font-black text-amber-500 hover:text-amber-600 uppercase tracking-widest transition-colors flex items-center gap-2 underline underline-offset-8">BSCScan Explorer</a>
-                                                    <a href={`https://pancakeswap.finance/swap?outputCurrency=${txHash.tokenAddress}`} target="_blank" className="text-[10px] font-black text-rose-500 hover:text-rose-600 uppercase tracking-widest transition-colors flex items-center gap-2 underline underline-offset-8">Market Listing</a>
+                                                    <a href={`https://bscscan.com/token/${txHash.tokenAddress}`} target="_blank" className="text-[10px] font-black text-indigo-500 hover:text-indigo-600 uppercase tracking-widest transition-colors flex items-center gap-2 underline underline-offset-8">BSCScan Explorer</a>
+                                                    <a href={`https://pancakeswap.finance/swap?outputCurrency=${txHash.tokenAddress}`} target="_blank" className="text-[10px] font-black text-blue-500 hover:text-blue-600 uppercase tracking-widest transition-colors flex items-center gap-2 underline underline-offset-8">Market Listing</a>
                                                 </div>
                                             </div>
 
@@ -376,12 +376,12 @@ function CreateToken() {
 
                                     {status === 'error' && (
                                         <>
-                                            <div className="w-28 h-28 bg-rose-500/10 rounded-full flex items-center justify-center mb-10 border border-rose-500/20 shadow-xl">
-                                                <AlertCircle className="w-14 h-14 text-rose-500" />
+                                            <div className="w-28 h-28 bg-blue-500/10 rounded-full flex items-center justify-center mb-10 border border-blue-500/20 shadow-xl">
+                                                <AlertCircle className="w-14 h-14 text-blue-500" />
                                             </div>
                                             <h3 className="text-4xl font-black text-gray-900 mb-4 uppercase tracking-tighter">Bridge Error</h3>
                                             <p className="text-gray-400 font-bold mb-12 max-w-sm text-sm uppercase leading-relaxed tracking-wide">{error}</p>
-                                            <button onClick={() => setStatus('idle')} className="px-16 py-6 bg-rose-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-rose-600 transition-all shadow-rose-500/30">Reset System Bridge</button>
+                                            <button onClick={() => setStatus('idle')} className="px-16 py-6 bg-blue-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-blue-600 transition-all shadow-blue-500/30">Reset System Bridge</button>
                                         </>
                                     )}
                                 </motion.div>
@@ -392,8 +392,8 @@ function CreateToken() {
                             <div>
                                 <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter mb-2">Deploy Nexus</h1>
                                 <div className="flex items-center gap-4">
-                                    <span className="px-4 py-1.5 bg-rose-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full">Bonding Matrix</span>
-                                    <span className="px-4 py-1.5 bg-emerald-500/10 text-emerald-600 text-[10px] font-black uppercase tracking-[0.2em] rounded-full border border-emerald-500/20">Active Node</span>
+                                    <span className="px-4 py-1.5 bg-blue-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full">Bonding Matrix</span>
+                                    <span className="px-4 py-1.5 bg-sky-500/10 text-sky-600 text-[10px] font-black uppercase tracking-[0.2em] rounded-full border border-sky-500/20">Active Node</span>
                                 </div>
                             </div>
                             <div className="hidden lg:block text-right">
@@ -405,26 +405,26 @@ function CreateToken() {
                         <div className="space-y-12">
                             <div className="flex flex-col md:flex-row items-start gap-10">
                                 <div className="relative group mx-auto md:mx-0">
-                                    <div className="w-48 h-48 rounded-[3.5rem] bg-gray-50 border-2 border-gray-100 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:border-rose-500/30 group-hover:scale-105 shadow-inner">
-                                        {logoPreview ? <img src={logoPreview} alt="Preview" className="w-full h-full object-cover" /> : <Upload className="w-14 h-14 text-gray-200 group-hover:text-rose-500 transition-colors" />}
+                                    <div className="w-48 h-48 rounded-[3.5rem] bg-gray-50 border-2 border-gray-100 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:border-blue-500/30 group-hover:scale-105 shadow-inner">
+                                        {logoPreview ? <img src={logoPreview} alt="Preview" className="w-full h-full object-cover" /> : <Upload className="w-14 h-14 text-gray-200 group-hover:text-blue-500 transition-colors" />}
                                         <input type="file" accept="image/*" onChange={handleLogoChange} className="absolute inset-0 opacity-0 cursor-pointer" />
                                     </div>
-                                    <div className="absolute -bottom-2 -right-2 bg-rose-500 text-white p-4 rounded-3xl shadow-2xl scale-110"><ImageIcon className="w-6 h-6" /></div>
+                                    <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white p-4 rounded-3xl shadow-2xl scale-110"><ImageIcon className="w-6 h-6" /></div>
                                 </div>
                                 <div className="flex-1 space-y-8 w-full">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-4">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] ml-2">Protocol Name</label>
-                                            <input type="text" placeholder="Nexus Intelligence" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-8 py-5 font-bold text-gray-900 outline-none focus:border-rose-500/30 focus:bg-white transition-all shadow-sm text-lg" />
+                                            <input type="text" placeholder="Nexus Intelligence" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-8 py-5 font-bold text-gray-900 outline-none focus:border-blue-500/30 focus:bg-white transition-all shadow-sm text-lg" />
                                         </div>
                                         <div className="space-y-4">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] ml-2">Symbol / Ticker</label>
-                                            <input type="text" placeholder="NXS" value={formData.symbol} onChange={(e) => setFormData({...formData, symbol: e.target.value.toUpperCase()})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-8 py-5 font-black text-gray-900 outline-none focus:border-rose-500/30 focus:bg-white transition-all shadow-sm text-lg" />
+                                            <input type="text" placeholder="NXS" value={formData.symbol} onChange={(e) => setFormData({...formData, symbol: e.target.value.toUpperCase()})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-8 py-5 font-black text-gray-900 outline-none focus:border-blue-500/30 focus:bg-white transition-all shadow-sm text-lg" />
                                         </div>
                                     </div>
                                     <div className="space-y-4">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] ml-2">Nexus Lore / Story</label>
-                                        <textarea placeholder="Define the origin of your asset..." value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full h-40 bg-gray-50 border border-gray-100 rounded-3xl p-8 font-medium text-gray-700 outline-none focus:border-rose-500/30 focus:bg-white transition-all resize-none shadow-sm text-lg leading-relaxed" />
+                                        <textarea placeholder="Define the origin of your asset..." value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full h-40 bg-gray-50 border border-gray-100 rounded-3xl p-8 font-medium text-gray-700 outline-none focus:border-blue-500/30 focus:bg-white transition-all resize-none shadow-sm text-lg leading-relaxed" />
                                     </div>
                                 </div>
                             </div>
@@ -435,13 +435,13 @@ function CreateToken() {
                                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-12">
                                         <div className={`p-8 rounded-[2.5rem] border-2 transition-all duration-500 ${
                                             mimicData.riskLevel === 'CRITICAL' ? 'bg-red-50 border-red-200' :
-                                            mimicData.riskLevel === 'HIGH' ? 'bg-orange-50 border-orange-200' :
-                                            mimicData.riskLevel === 'MEDIUM' ? 'bg-amber-50 border-amber-200' :
-                                            'bg-emerald-50 border-emerald-200'
+                                            mimicData.riskLevel === 'HIGH' ? 'bg-slate-50 border-slate-200' :
+                                            mimicData.riskLevel === 'MEDIUM' ? 'bg-indigo-50 border-indigo-200' :
+                                            'bg-sky-50 border-sky-200'
                                         }`}>
                                             <div className="flex flex-col md:flex-row items-start gap-6">
                                                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
-                                                    mimicData.riskLevel === 'SAFE' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white animate-pulse'
+                                                    mimicData.riskLevel === 'SAFE' ? 'bg-sky-500 text-white' : 'bg-red-500 text-white animate-pulse'
                                                 }`}>
                                                     {mimicData.riskLevel === 'SAFE' ? <ShieldCheck className="w-7 h-7" /> : <AlertTriangle className="w-7 h-7" />}
                                                 </div>
@@ -458,16 +458,16 @@ function CreateToken() {
                                                         <h4 className="font-black text-gray-900 text-lg uppercase tracking-tight">CoinGecko Mimic Detection</h4>
                                                         <span className={`px-4 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-[0.2em] shadow-sm ${
                                                             mimicData.riskLevel === 'CRITICAL' ? 'bg-red-600' :
-                                                            mimicData.riskLevel === 'HIGH' ? 'bg-orange-500' :
-                                                            mimicData.riskLevel === 'MEDIUM' ? 'bg-amber-500' :
-                                                            'bg-emerald-500'
+                                                            mimicData.riskLevel === 'HIGH' ? 'bg-slate-500' :
+                                                            mimicData.riskLevel === 'MEDIUM' ? 'bg-indigo-500' :
+                                                            'bg-sky-500'
                                                         }`}>
                                                             {mimicData.riskLevel}
                                                         </span>
                                                         {isMimicChecking && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
                                                     </div>
                                                     <p className={`text-sm font-bold mb-6 leading-relaxed ${
-                                                        mimicData.riskLevel === 'SAFE' ? 'text-emerald-700' : 'text-red-700'
+                                                        mimicData.riskLevel === 'SAFE' ? 'text-sky-700' : 'text-red-700'
                                                     }`}>
                                                         {mimicData.alertMessage || `✅ The Nexus algorithm has verified that "${formData.name}" is a unique identifier. No major mimic patterns detected on CoinGecko.`}
                                                     </p>
@@ -501,11 +501,11 @@ function CreateToken() {
                                                                         <div className="pt-3 border-t border-black/5">
                                                                              <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 leading-none">Contract Address</p>
                                                                              <div className="flex items-center justify-between bg-white/50 px-3 py-2 rounded-xl border border-black/5">
-                                                                                 <code className="text-[10px] font-mono font-bold text-rose-500 truncate mr-2">{t.contractAddress ? `${t.contractAddress.slice(0,6)}...${t.contractAddress.slice(-4)}` : 'UNKNOWN'}</code>
+                                                                                 <code className="text-[10px] font-mono font-bold text-blue-500 truncate mr-2">{t.contractAddress ? `${t.contractAddress.slice(0,6)}...${t.contractAddress.slice(-4)}` : 'UNKNOWN'}</code>
                                                                                  {t.contractAddress && (
                                                                                      <button 
                                                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigator.clipboard.writeText(t.contractAddress); alert('Address Copied!'); }}
-                                                                                        className="p-1.5 hover:bg-rose-500 hover:text-white rounded-lg transition-all text-gray-400"
+                                                                                        className="p-1.5 hover:bg-blue-500 hover:text-white rounded-lg transition-all text-gray-400"
                                                                                      >
                                                                                          <Copy className="w-3.5 h-3.5" />
                                                                                      </button>
@@ -529,31 +529,31 @@ function CreateToken() {
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between ml-2">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3">
-                                                 <Activity className="w-4 h-4 text-emerald-500" /> Virtual BNB (Starting Price)
+                                                 <Activity className="w-4 h-4 text-sky-500" /> Virtual BNB (Starting Price)
                                             </label>
-                                            <span className="bg-emerald-500/10 text-emerald-600 px-3 py-1 rounded-lg text-[9px] font-black tracking-widest uppercase border border-emerald-500/20">Adjustable</span>
+                                            <span className="bg-sky-500/10 text-sky-600 px-3 py-1 rounded-lg text-[9px] font-black tracking-widest uppercase border border-sky-500/20">Adjustable</span>
                                         </div>
                                         <div className="relative group">
-                                            <input type="number" step="0.01" min="0.01" value={formData.virtualBnb} onChange={(e) => setFormData({...formData, virtualBnb: e.target.value})} className="w-full bg-gray-50 border-2 border-gray-100 rounded-3xl px-10 py-6 font-black text-3xl text-gray-900 outline-none focus:border-rose-500/20 focus:bg-white transition-all shadow-inner" />
-                                            <span className="absolute right-10 top-1/2 -translate-y-1/2 text-sm font-black text-gray-400 uppercase tracking-widest group-focus-within:text-rose-500 transition-colors">BNB</span>
+                                            <input type="number" step="0.01" min="0.01" value={formData.virtualBnb} onChange={(e) => setFormData({...formData, virtualBnb: e.target.value})} className="w-full bg-gray-50 border-2 border-gray-100 rounded-3xl px-10 py-6 font-black text-3xl text-gray-900 outline-none focus:border-blue-500/20 focus:bg-white transition-all shadow-inner" />
+                                            <span className="absolute right-10 top-1/2 -translate-y-1/2 text-sm font-black text-gray-400 uppercase tracking-widest group-focus-within:text-blue-500 transition-colors">BNB</span>
                                         </div>
                                     </div>
                                     <div className="space-y-4">
                                         <div className="flex items-center justify-between ml-2">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-3">
-                                                 <Zap className="w-4 h-4 text-amber-500" /> Liquidity Protocol (Initial Buy)
+                                                 <Zap className="w-4 h-4 text-indigo-500" /> Liquidity Protocol (Initial Buy)
                                             </label>
-                                            <span className="bg-amber-500/10 text-amber-600 px-3 py-1 rounded-lg text-[9px] font-black tracking-widest uppercase border border-amber-500/20">Mandatory</span>
+                                            <span className="bg-indigo-500/10 text-indigo-600 px-3 py-1 rounded-lg text-[9px] font-black tracking-widest uppercase border border-indigo-500/20">Mandatory</span>
                                         </div>
-                                        <div className="relative group text-rose-500">
-                                            <input type="number" step="0.001" min={actualMinBuy} value={initialBuy} onChange={(e) => setInitialBuy(e.target.value)} className="w-full bg-gray-50 border-2 border-gray-100 rounded-3xl px-10 py-6 font-black text-3xl text-gray-900 outline-none focus:border-rose-500/20 focus:bg-white transition-all shadow-inner" />
-                                            <span className="absolute right-10 top-1/2 -translate-y-1/2 text-sm font-black text-gray-400 uppercase tracking-widest group-focus-within:text-rose-500 transition-colors">BNB</span>
+                                        <div className="relative group text-blue-500">
+                                            <input type="number" step="0.001" min={actualMinBuy} value={initialBuy} onChange={(e) => setInitialBuy(e.target.value)} className="w-full bg-gray-50 border-2 border-gray-100 rounded-3xl px-10 py-6 font-black text-3xl text-gray-900 outline-none focus:border-blue-500/20 focus:bg-white transition-all shadow-inner" />
+                                            <span className="absolute right-10 top-1/2 -translate-y-1/2 text-sm font-black text-gray-400 uppercase tracking-widest group-focus-within:text-blue-500 transition-colors">BNB</span>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="p-10 rounded-[3rem] bg-gray-50 border border-gray-100 flex flex-col justify-between shadow-inner relative group overflow-hidden">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-3xl" />
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl" />
                                     <div className="space-y-6 relative z-10">
                                         <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em] mb-8">Asset Charges Matrix</h4>
                                         <div className="flex justify-between items-center"><span className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">Nexus Liquidity</span><span className="text-sm font-black text-gray-900">{parseFloat(initialBuy || 0).toFixed(3)} BNB</span></div>
@@ -564,16 +564,16 @@ function CreateToken() {
                                         <div className="flex justify-between items-end">
                                             <div>
                                                 <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Nexus Payment</p>
-                                                <p className="text-3xl md:text-5xl font-black text-rose-500 tracking-tighter shadow-rose-500/20 drop-shadow-lg">{totalBNB} <span className="text-base text-gray-400">BNB</span></p>
+                                                <p className="text-3xl md:text-5xl font-black text-blue-500 tracking-tighter shadow-blue-500/20 drop-shadow-lg">{totalBNB} <span className="text-base text-gray-400">BNB</span></p>
                                             </div>
-                                            <div className="bg-rose-500 p-3 rounded-2xl shadow-xl shadow-rose-500/30 text-white"><Rocket className="w-5 h-5" /></div>
+                                            <div className="bg-blue-500 p-3 rounded-2xl shadow-xl shadow-blue-500/30 text-white"><Rocket className="w-5 h-5" /></div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             <button type="button" onClick={handleSubmit} disabled={status === 'uploading'} className="group w-full py-10 bg-gray-900 text-white font-black text-2xl rounded-[3rem] shadow-2xl hover:bg-black hover:scale-[1.01] transition-all active:scale-[0.98] disabled:opacity-20 flex items-center justify-center gap-6 relative overflow-hidden">
-                                <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 transform translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                                <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-blue-500 via-slate-500 to-indigo-500 transform translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
                                 {status === 'uploading' ? <Loader2 className="w-10 h-10 animate-spin" /> : <Rocket className="w-10 h-10 group-hover:translate-x-2 group-hover:-translate-y-2 transition-transform" />}
                                 {status === 'uploading' ? 'Syncing Network...' : 'Deploy Nexus Protocol'}
                             </button>
@@ -606,7 +606,7 @@ export default function CreateTokenPage() {
     return (
         <Suspense fallback={
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="w-20 h-20 border-4 border-rose-500/10 border-t-rose-500 rounded-full animate-spin" />
+                <div className="w-20 h-20 border-4 border-blue-500/10 border-t-blue-500 rounded-full animate-spin" />
             </div>
         }>
             <CreateToken />

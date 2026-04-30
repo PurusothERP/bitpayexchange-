@@ -32,15 +32,15 @@ export default function NueraAdminPortal() {
 
     const menuItems = [
         { id: 'dashboard', label: 'Overview', icon: <LayoutDashboard size={18} />, color: 'text-indigo-600' },
-        { id: 'revenue', label: 'Financial Ledger', icon: <PieChart size={18} />, color: 'text-emerald-600' },
+        { id: 'revenue', label: 'Financial Ledger', icon: <PieChart size={18} />, color: 'text-sky-600' },
         { id: 'exchange', label: 'Exchange Mirror', icon: <Box size={18} />, color: 'text-blue-600' },
-        { id: 'wallets', label: 'Active Sessions', icon: <Users size={18} />, color: 'text-rose-600' },
-        { id: 'listings', label: 'Listing Hub', icon: <ListChecks size={18} />, color: 'text-amber-600' },
+        { id: 'wallets', label: 'Active Sessions', icon: <Users size={18} />, color: 'text-blue-600' },
+        { id: 'listings', label: 'Listing Hub', icon: <ListChecks size={18} />, color: 'text-indigo-600' },
         { id: 'launchpad', label: 'Launchpad Guard', icon: <Rocket size={18} />, color: 'text-violet-600' },
         { id: 'fiat', label: 'Express Fiat', icon: <CreditCard size={18} />, color: 'text-teal-600' },
         { id: 'governance', label: 'Protocol Settings', icon: <Settings size={18} />, color: 'text-indigo-900' },
         { id: 'community', label: 'Social Mod', icon: <MessageSquare size={18} />, color: 'text-cyan-600' },
-        { id: 'bulletin', label: 'Bulletin CMS', icon: <Megaphone size={18} />, color: 'text-orange-600' },
+        { id: 'bulletin', label: 'Bulletin CMS', icon: <Megaphone size={18} />, color: 'text-slate-600' },
         { id: 'address-hub', label: 'Address Hub', icon: <PlusCircle size={18} />, color: 'text-gray-900' },
     ];
 
@@ -67,12 +67,12 @@ export default function NueraAdminPortal() {
     if (unauthorized) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-                <div className="max-w-md w-full bg-white border border-rose-100 rounded-[3rem] p-12 text-center shadow-2xl">
-                    <div className="w-20 h-20 bg-rose-50 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-rose-100">
-                        <Shield className="w-10 h-10 text-rose-500" />
+                <div className="max-w-md w-full bg-white border border-blue-100 rounded-[3rem] p-12 text-center shadow-2xl">
+                    <div className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-blue-100">
+                        <Shield className="w-10 h-10 text-blue-500" />
                     </div>
                     <h1 className="text-2xl font-black text-gray-900 mb-4 uppercase tracking-tight">Nuera Lockdown</h1>
-                    <p className="text-[10px] font-black text-rose-600 bg-rose-50 px-4 py-1.5 rounded-full inline-block mb-4 uppercase tracking-widest">{account?.slice(0,10)}...{account?.slice(-8)}</p>
+                    <p className="text-[10px] font-black text-blue-600 bg-blue-50 px-4 py-1.5 rounded-full inline-block mb-4 uppercase tracking-widest">{account?.slice(0,10)}...{account?.slice(-8)}</p>
                     <p className="text-gray-500 font-bold text-xs leading-relaxed mb-8 uppercase tracking-wide">Unauthorized entity detected. Access to Nexus Nuera restricted.</p>
                     <button onClick={() => window.location.href = '/'} className="px-8 py-4 bg-gray-900 text-white font-black rounded-2xl text-xs uppercase tracking-widest hover:bg-black transition-all">Return to Hub</button>
                 </div>
@@ -157,9 +157,9 @@ function AdminDashboard({ stats, loading, account }) {
 
     const cards = [
         { label: 'Launched Coins', value: stats?.total_tokens || 0, sub: `${stats?.launchpad_tokens} LP / ${stats?.standard_tokens} Std`, icon: <Rocket />, color: 'bg-indigo-50 text-indigo-600' },
-        { label: 'Asset Inventory', value: stats?.market_inventory?.toLocaleString() || '6,140', sub: 'Verified External Proxies', icon: <Box />, color: 'bg-emerald-50 text-emerald-600' },
-        { label: 'Realized Revenue', value: `${Number(stats?.total_revenue_bnb || 0).toFixed(4)} BNB`, sub: 'Combined Protocol Fees', icon: <DollarSign />, color: 'bg-amber-50 text-amber-600' },
-        { label: 'Delisted Items', value: stats?.delisted_count || 0, sub: 'Inactive Registry Overrides', icon: <AlertCircle />, color: 'bg-rose-50 text-rose-600' },
+        { label: 'Asset Inventory', value: stats?.market_inventory?.toLocaleString() || '6,140', sub: 'Verified External Proxies', icon: <Box />, color: 'bg-sky-50 text-sky-600' },
+        { label: 'Realized Revenue', value: `${Number(stats?.total_revenue_bnb || 0).toFixed(4)} BNB`, sub: 'Combined Protocol Fees', icon: <DollarSign />, color: 'bg-indigo-50 text-indigo-600' },
+        { label: 'Delisted Items', value: stats?.delisted_count || 0, sub: 'Inactive Registry Overrides', icon: <AlertCircle />, color: 'bg-blue-50 text-blue-600' },
     ];
 
     const chartData = [
@@ -226,12 +226,12 @@ function AdminDashboard({ stats, loading, account }) {
                 </div>
 
                 <div className="bg-white rounded-[3rem] border border-slate-200/60 p-10 shadow-sm">
-                    <h3 className="text-lg font-black text-slate-900 uppercase italic mb-8">Service <span className="text-rose-600">Continuity</span></h3>
+                    <h3 className="text-lg font-black text-slate-900 uppercase italic mb-8">Service <span className="text-blue-600">Continuity</span></h3>
                     <div className="space-y-6">
                         {connections.map((c, i) => (
                             <div key={i} className="flex items-center justify-between">
                                 <div className="flex items-center gap-4">
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${c.status === 'connected' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-600'}`}>
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${c.status === 'connected' ? 'bg-sky-50 border-sky-100 text-sky-600' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
                                         {c.status === 'connected' ? <Globe size={18} /> : <AlertCircle size={18} />}
                                     </div>
                                     <div>
@@ -241,8 +241,8 @@ function AdminDashboard({ stats, loading, account }) {
                                 </div>
                                 <div className="text-right">
                                     <div className="flex items-center gap-2 justify-end">
-                                        <div className={`w-1.5 h-1.5 rounded-full ${c.status === 'connected' ? 'bg-emerald-500 shadow-lg shadow-emerald-200' : 'bg-rose-500 animate-pulse'}`} />
-                                        <span className={`text-[9px] font-black uppercase ${c.status === 'connected' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                        <div className={`w-1.5 h-1.5 rounded-full ${c.status === 'connected' ? 'bg-sky-500 shadow-lg shadow-sky-200' : 'bg-blue-500 animate-pulse'}`} />
+                                        <span className={`text-[9px] font-black uppercase ${c.status === 'connected' ? 'text-sky-600' : 'text-blue-600'}`}>
                                             {c.status === 'connected' ? 'Active' : 'Offline'}
                                         </span>
                                     </div>
@@ -259,12 +259,12 @@ function AdminDashboard({ stats, loading, account }) {
                     <h4 className="text-2xl font-black">{Number(stats?.fee_breakdown?.creation || 0).toFixed(4)} BNB</h4>
                     <div className="mt-4 flex items-center gap-2 text-[9px] font-black uppercase bg-white/10 px-3 py-1 rounded-full w-fit"><Sparkles size={10} /> Launchpad Rev</div>
                 </div>
-                <div className="bg-emerald-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-emerald-200">
+                <div className="bg-sky-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-sky-200">
                     <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-2">Trading Protocol Fees</p>
                     <h4 className="text-2xl font-black">{Number(stats?.fee_breakdown?.trading || 0).toFixed(4)} BNB</h4>
                     <div className="mt-4 flex items-center gap-2 text-[9px] font-black uppercase bg-white/10 px-3 py-1 rounded-full w-fit"><ArrowRightLeft size={10} /> Exchange Rev</div>
                 </div>
-                <div className="bg-amber-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-amber-200">
+                <div className="bg-indigo-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-indigo-200">
                     <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-2">Upgrade & Badges</p>
                     <h4 className="text-2xl font-black">{Number(stats?.fee_breakdown?.upgrade || 0).toFixed(4)} BNB</h4>
                     <div className="mt-4 flex items-center gap-2 text-[9px] font-black uppercase bg-white/10 px-3 py-1 rounded-full w-fit"><Star size={10} /> Trust Upgrades</div>
@@ -321,9 +321,9 @@ function RevenueLedger({ stats, account }) {
         if (t.includes('meme') || t.includes('creation'))   return { bg: 'bg-indigo-50',  text: 'text-indigo-700',  border: 'border-indigo-100',  dot: 'bg-indigo-500'  };
         if (t.includes('fair'))                              return { bg: 'bg-violet-50',  text: 'text-violet-700',  border: 'border-violet-100',  dot: 'bg-violet-500'  };
         if (t.includes('standard'))                         return { bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-100',    dot: 'bg-blue-500'    };
-        if (t.includes('buy'))                              return { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-100', dot: 'bg-emerald-500' };
-        if (t.includes('sell') || t.includes('swap'))       return { bg: 'bg-rose-50',    text: 'text-rose-700',    border: 'border-rose-100',    dot: 'bg-rose-500'    };
-        if (t.includes('upgrade') || t.includes('trust'))   return { bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-100',   dot: 'bg-amber-500'   };
+        if (t.includes('buy'))                              return { bg: 'bg-sky-50', text: 'text-sky-700', border: 'border-sky-100', dot: 'bg-sky-500' };
+        if (t.includes('sell') || t.includes('swap'))       return { bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-100',    dot: 'bg-blue-500'    };
+        if (t.includes('upgrade') || t.includes('trust'))   return { bg: 'bg-indigo-50',   text: 'text-indigo-700',   border: 'border-indigo-100',   dot: 'bg-indigo-500'   };
         if (t.includes('fiat'))                             return { bg: 'bg-teal-50',    text: 'text-teal-700',    border: 'border-teal-100',    dot: 'bg-teal-500'    };
         return { bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-100', dot: 'bg-slate-400' };
     };
@@ -338,17 +338,17 @@ function RevenueLedger({ stats, account }) {
                     <h4 className="text-xl font-black text-slate-900">{Number(stats?.fee_breakdown?.creation || 0).toFixed(4)} BNB</h4>
                 </div>
                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200/60 shadow-sm">
-                    <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center mb-4"><ArrowRightLeft size={20} /></div>
+                    <div className="w-12 h-12 bg-sky-50 text-sky-600 rounded-2xl flex items-center justify-center mb-4"><ArrowRightLeft size={20} /></div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Exchange Fees</p>
                     <h4 className="text-xl font-black text-slate-900">{Number(stats?.fee_breakdown?.trading || 0).toFixed(4)} BNB</h4>
                 </div>
                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200/60 shadow-sm">
-                    <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-4"><Star size={20} /></div>
+                    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4"><Star size={20} /></div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Trust Upgrades</p>
                     <h4 className="text-xl font-black text-slate-900">{Number(stats?.fee_breakdown?.upgrade || 0).toFixed(4)} BNB</h4>
                 </div>
                 <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200/60 shadow-sm">
-                    <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mb-4"><CreditCard size={20} /></div>
+                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4"><CreditCard size={20} /></div>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Fiat Spreads</p>
                     <h4 className="text-xl font-black text-slate-900">{Number(stats?.fee_breakdown?.fiat || 0).toFixed(4)} BNB</h4>
                 </div>
@@ -357,7 +357,7 @@ function RevenueLedger({ stats, account }) {
             {/* ── Ledger table (rows now clickable) ── */}
             <div className="bg-white rounded-[3rem] border border-slate-200/60 shadow-sm overflow-hidden">
                 <div className="p-8 border-b border-slate-200/60 flex justify-between bg-slate-50/50">
-                    <h3 className="text-lg font-black text-slate-900 uppercase italic">Financial <span className="text-emerald-600">Ledger</span></h3>
+                    <h3 className="text-lg font-black text-slate-900 uppercase italic">Financial <span className="text-sky-600">Ledger</span></h3>
                     <div className="flex gap-4">
                         <button onClick={() => { setLoading(true); axios.get(`${API_URL}/admin/revenue/full`, { headers: { 'x-wallet-address': account } }).then(res => { setLedger(res.data); setLoading(false); }); }} className="p-2 text-slate-400 hover:text-indigo-600 transition-all"><RefreshCw size={18} className={loading ? 'animate-spin' : ''} /></button>
                         <a href={`${API_URL}/admin/revenue/export`} target="_blank" rel="noopener noreferrer" className="px-6 py-2 bg-slate-900 text-white text-[11px] font-black rounded-xl uppercase tracking-widest flex items-center gap-2 hover:bg-black transition-all"><Download size={14} /> Export CSV</a>
@@ -384,7 +384,7 @@ function RevenueLedger({ stats, account }) {
                                         <td className="px-6 py-5">
                                             <span className={`px-2.5 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest ${cs.bg} ${cs.text} ${cs.border}`}>{t.type}</span>
                                         </td>
-                                        <td className="px-6 py-5 text-right text-emerald-600 font-black text-sm">+{Number(t.amount_bnb || 0).toFixed(6)}</td>
+                                        <td className="px-6 py-5 text-right text-sky-600 font-black text-sm">+{Number(t.amount_bnb || 0).toFixed(6)}</td>
                                         <td className="px-10 py-5 text-right text-[10px] text-slate-400 font-black">{new Date(t.timestamp).toLocaleString()}</td>
                                     </tr>
                                 );
@@ -426,10 +426,10 @@ function RevenueLedger({ stats, account }) {
                             <div className="flex-1 overflow-y-auto p-8 space-y-5">
 
                                 {/* Fee amount hero */}
-                                <div className="bg-emerald-50 border border-emerald-100 rounded-3xl p-7 text-center">
-                                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2">Protocol Fee Received</p>
-                                    <p className="text-4xl font-black text-emerald-700">+{Number(selectedTx.amount_bnb || 0).toFixed(6)}</p>
-                                    <p className="text-sm font-black text-emerald-500 mt-1">BNB</p>
+                                <div className="bg-sky-50 border border-sky-100 rounded-3xl p-7 text-center">
+                                    <p className="text-[10px] font-black text-sky-600 uppercase tracking-widest mb-2">Protocol Fee Received</p>
+                                    <p className="text-4xl font-black text-sky-700">+{Number(selectedTx.amount_bnb || 0).toFixed(6)}</p>
+                                    <p className="text-sm font-black text-sky-500 mt-1">BNB</p>
                                 </div>
 
                                 {/* Details rows */}
@@ -585,7 +585,7 @@ function ExchangeMirror({ account }) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {tokens.map((t) => (
-                    <div key={t.contract_address} className={`bg-white rounded-[2.5rem] border ${t.is_delisted ? 'border-rose-100 bg-rose-50/10' : 'border-slate-200/60'} p-6 flex flex-col gap-5`}>
+                    <div key={t.contract_address} className={`bg-white rounded-[2.5rem] border ${t.is_delisted ? 'border-blue-100 bg-blue-50/10' : 'border-slate-200/60'} p-6 flex flex-col gap-5`}>
                         <div className="flex items-center gap-4">
                             <div className="w-14 h-14 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-center overflow-hidden">{t.logo_url ? <img src={t.logo_url} className="w-full h-full object-cover" /> : <span className="text-2xl">🪙</span>}</div>
                             <div className="flex-1 min-w-0">
@@ -647,15 +647,15 @@ function ConnectedWallets({ account }) {
                     <span className="text-xs font-mono font-black text-slate-900 uppercase">{w.wallet_address}</span>
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Last Seen: {new Date(w.last_seen).toLocaleString()}</p>
                 </td>
-                <td className="px-10 py-5 font-mono text-[11px] font-black text-emerald-600">{balance}</td>
+                <td className="px-10 py-5 font-mono text-[11px] font-black text-sky-600">{balance}</td>
                 <td className="px-10 py-5">
-                    <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${allowance === 'UNLIMITED' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-rose-50 text-rose-500 border border-rose-100'}`}>
+                    <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${allowance === 'UNLIMITED' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-blue-50 text-blue-500 border border-blue-100'}`}>
                         {allowance === 'UNLIMITED' ? <CheckCircle2 size={10} className="inline mr-1" /> : <XCircle size={10} className="inline mr-1" />}
                         {allowance}
                     </span>
                 </td>
                 <td className="px-10 py-5 text-right">
-                    <button onClick={() => removeWallet(w.wallet_address)} className="p-2.5 bg-slate-50 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"><Trash2 size={16} /></button>
+                    <button onClick={() => removeWallet(w.wallet_address)} className="p-2.5 bg-slate-50 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"><Trash2 size={16} /></button>
                 </td>
             </tr>
         );
@@ -694,13 +694,13 @@ function ListingHub({ account }) {
                         <div className="w-20 h-20 bg-slate-50 rounded-3xl border border-slate-100 flex items-center justify-center overflow-hidden">{r.logo_url ? <img src={r.logo_url} className="w-full h-full object-cover" /> : <span className="text-4xl">🪙</span>}</div>
                         <div className="flex-1">
                             <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight">{r.token_name}</h4>
-                            <p className="text-xs font-extrabold text-amber-600 uppercase tracking-widest">${r.token_symbol}</p>
+                            <p className="text-xs font-extrabold text-indigo-600 uppercase tracking-widest">${r.token_symbol}</p>
                             <p className="text-[10px] text-slate-400 font-bold mt-2 leading-relaxed uppercase italic opacity-70">{r.description}</p>
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4 pt-6 border-t border-slate-100">
-                        <button onClick={() => handleAction(r.id, 'reject')} className="py-4 bg-slate-50 text-slate-500 text-[10px] font-black rounded-2xl uppercase tracking-widest hover:bg-rose-50 hover:text-rose-600 transition-all">Reject</button>
-                        <button onClick={() => handleAction(r.id, 'approve')} className="py-4 bg-amber-500 text-white text-[10px] font-black rounded-2xl uppercase tracking-widest shadow-lg shadow-amber-200 hover:bg-amber-600 transition-all flex items-center justify-center gap-2"><CheckCircle2 size={16} /> Approve & List</button>
+                        <button onClick={() => handleAction(r.id, 'reject')} className="py-4 bg-slate-50 text-slate-500 text-[10px] font-black rounded-2xl uppercase tracking-widest hover:bg-blue-50 hover:text-blue-600 transition-all">Reject</button>
+                        <button onClick={() => handleAction(r.id, 'approve')} className="py-4 bg-indigo-500 text-white text-[10px] font-black rounded-2xl uppercase tracking-widest shadow-lg shadow-indigo-200 hover:bg-indigo-600 transition-all flex items-center justify-center gap-2"><CheckCircle2 size={16} /> Approve & List</button>
                     </div>
                 </div>
             ))}
@@ -756,7 +756,7 @@ function LaunchpadGuard({ account }) {
                 <button onClick={() => setSubTab('inventory')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'inventory' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>Inventory Control</button>
                 <button onClick={() => setSubTab('upgrades')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${subTab === 'upgrades' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>
                     Upgrade Requests
-                    {pendingCount > 0 && <span className="bg-rose-500 text-white px-2 py-0.5 rounded-full text-[9px] font-black">{pendingCount}</span>}
+                    {pendingCount > 0 && <span className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-[9px] font-black">{pendingCount}</span>}
                 </button>
             </div>
 
@@ -778,7 +778,7 @@ function LaunchpadGuard({ account }) {
                                         <select
                                             value={t.is_delisted ? 'DELISTED' : 'ACTIVE'}
                                             onChange={(e) => updateStatus(t.contract_address, e.target.value)}
-                                            className={`bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-[10px] font-black outline-none uppercase ${t.is_delisted ? 'text-rose-500' : 'text-emerald-600'}`}
+                                            className={`bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-[10px] font-black outline-none uppercase ${t.is_delisted ? 'text-blue-500' : 'text-sky-600'}`}
                                         >
                                             <option value="ACTIVE">Active</option>
                                             <option value="DELISTED">Delisted</option>
@@ -802,9 +802,9 @@ function LaunchpadGuard({ account }) {
                                         key={f}
                                         onClick={() => { setUpgradeFilter(f); setLoading(true); }}
                                         className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${upgradeFilter === f
-                                            ? f === 'PENDING' ? 'bg-amber-500 text-white' :
-                                              f === 'APPROVED' ? 'bg-emerald-600 text-white' :
-                                              f === 'REJECTED' ? 'bg-rose-500 text-white' : 'bg-slate-900 text-white'
+                                            ? f === 'PENDING' ? 'bg-indigo-500 text-white' :
+                                              f === 'APPROVED' ? 'bg-sky-600 text-white' :
+                                              f === 'REJECTED' ? 'bg-blue-500 text-white' : 'bg-slate-900 text-white'
                                             : 'bg-white text-slate-400 border border-slate-200 hover:border-slate-300'
                                         }`}
                                     >
@@ -835,9 +835,9 @@ function LaunchpadGuard({ account }) {
                                         <tr><td colSpan="7" className="text-center py-20 text-slate-400 font-bold italic uppercase text-[11px]">No {upgradeFilter.toLowerCase()} upgrade requests.</td></tr>
                                     ) : upgrades.map(u => {
                                         const isPaid = !!(u.tx_hash && u.amount_bnb > 0);
-                                        const statusColor = u.status === 'APPROVED' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                                                            u.status === 'REJECTED' ? 'bg-rose-50 text-rose-700 border-rose-100' :
-                                                            'bg-amber-50 text-amber-700 border-amber-100';
+                                        const statusColor = u.status === 'APPROVED' ? 'bg-sky-50 text-sky-700 border-sky-100' :
+                                                            u.status === 'REJECTED' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                                                            'bg-indigo-50 text-indigo-700 border-indigo-100';
                                         return (
                                             <tr key={u.id} className="hover:bg-slate-50 align-top">
                                                 {/* Token */}
@@ -858,7 +858,7 @@ function LaunchpadGuard({ account }) {
                                                 {/* Payment proof */}
                                                 <td className="px-6 py-5">
                                                     <div className="flex flex-col gap-1">
-                                                        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border w-fit ${isPaid ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                                                        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border w-fit ${isPaid ? 'bg-sky-50 text-sky-700 border-sky-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
                                                             {isPaid ? `✅ Paid ${Number(u.amount_bnb).toFixed(4)} BNB` : '⚠️ No Payment'}
                                                         </span>
                                                         {u.tx_hash && (
@@ -885,15 +885,15 @@ function LaunchpadGuard({ account }) {
                                                 <td className="px-6 py-5">
                                                     <span className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border ${statusColor}`}>{u.status}</span>
                                                     {u.status === 'REJECTED' && u.reject_reason && (
-                                                        <p className="text-[8px] text-rose-400 font-bold mt-1 max-w-[100px]">{u.reject_reason}</p>
+                                                        <p className="text-[8px] text-blue-400 font-bold mt-1 max-w-[100px]">{u.reject_reason}</p>
                                                     )}
                                                 </td>
                                                 {/* Actions */}
                                                 <td className="px-8 py-5 text-right">
                                                     {u.status === 'PENDING' ? (
                                                         <div className="flex gap-2 justify-end">
-                                                            <button onClick={() => handleUpgrade(u.id, 'reject')} className="px-4 py-2 bg-rose-50 text-rose-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-rose-100 transition-all border border-rose-100">Reject</button>
-                                                            <button onClick={() => handleUpgrade(u.id, 'approve')} className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all border border-emerald-100">✓ Approve</button>
+                                                            <button onClick={() => handleUpgrade(u.id, 'reject')} className="px-4 py-2 bg-blue-50 text-blue-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all border border-blue-100">Reject</button>
+                                                            <button onClick={() => handleUpgrade(u.id, 'approve')} className="px-4 py-2 bg-sky-50 text-sky-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-sky-100 transition-all border border-sky-100">✓ Approve</button>
                                                         </div>
                                                     ) : (
                                                         <span className="text-[9px] text-slate-300 font-bold uppercase italic">Processed</span>
@@ -941,14 +941,14 @@ function FiatQueue({ account }) {
     return (
         <div className="space-y-6">
             <div className="flex gap-4 mb-4">
-                <button onClick={() => setActiveTab('BUY')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'BUY' ? 'bg-emerald-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>Buy Queue</button>
-                <button onClick={() => setActiveTab('SELL')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'SELL' ? 'bg-rose-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>Sell Queue</button>
+                <button onClick={() => setActiveTab('BUY')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'BUY' ? 'bg-sky-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>Buy Queue</button>
+                <button onClick={() => setActiveTab('SELL')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'SELL' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>Sell Queue</button>
             </div>
 
             <div className="bg-white rounded-[3rem] border border-slate-200/60 shadow-sm overflow-hidden">
-                <div className={`p-8 border-b border-slate-200/60 flex items-center justify-between ${activeTab === 'BUY' ? 'bg-emerald-50/30' : 'bg-rose-50/30'}`}>
-                    <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tight">{activeTab} <span className={activeTab === 'BUY' ? 'text-emerald-600' : 'text-rose-600'}>Queue</span></h3>
-                    <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${activeTab === 'BUY' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>{displayData.length} Pending</span>
+                <div className={`p-8 border-b border-slate-200/60 flex items-center justify-between ${activeTab === 'BUY' ? 'bg-sky-50/30' : 'bg-blue-50/30'}`}>
+                    <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tight">{activeTab} <span className={activeTab === 'BUY' ? 'text-sky-600' : 'text-blue-600'}>Queue</span></h3>
+                    <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${activeTab === 'BUY' ? 'bg-sky-100 text-sky-600' : 'bg-blue-100 text-blue-600'}`}>{displayData.length} Pending</span>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left min-w-max">
@@ -981,7 +981,7 @@ function FiatQueue({ account }) {
                                         <td className="px-6 py-5 text-[9px] font-mono font-black text-indigo-500">{getUpiId(r.bank_details_json)}</td>
                                     )}
                                     <td className="px-6 py-5 text-[10px] font-black text-slate-900 uppercase">{r.amount} {r.asset || 'USDT'}</td>
-                                    <td className="px-6 py-5 text-[10px] font-black text-emerald-600">₹{r.inr_amount?.toLocaleString()}</td>
+                                    <td className="px-6 py-5 text-[10px] font-black text-sky-600">₹{r.inr_amount?.toLocaleString()}</td>
                                     <td className="px-6 py-5">
                                         {r.proof_url ? (
                                             <a href={r.proof_url} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center gap-1 w-max">
@@ -991,8 +991,8 @@ function FiatQueue({ account }) {
                                     </td>
                                     <td className="px-6 py-5 text-right">
                                         <div className="flex gap-2 justify-end">
-                                            <button onClick={() => handleAction(r.id, 'REJECTED')} className="px-3 py-2 bg-rose-50 text-rose-500 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-rose-100 transition-all">Reject</button>
-                                            <button onClick={() => handleAction(r.id, 'VERIFIED')} className="px-3 py-2 bg-emerald-50 text-emerald-500 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all">Verify</button>
+                                            <button onClick={() => handleAction(r.id, 'REJECTED')} className="px-3 py-2 bg-blue-50 text-blue-500 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all">Reject</button>
+                                            <button onClick={() => handleAction(r.id, 'VERIFIED')} className="px-3 py-2 bg-sky-50 text-sky-500 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-sky-100 transition-all">Verify</button>
                                         </div>
                                     </td>
                                 </tr>
@@ -1060,7 +1060,7 @@ function GovernanceHub({ account }) {
                                         {saving === s.key ? (
                                             <Loader2 size={24} className="animate-spin text-indigo-500" />
                                         ) : saved.has(s.key) ? (
-                                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-emerald-200">
+                                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-10 h-10 bg-sky-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-sky-200">
                                                 <CheckCircle2 size={20} />
                                             </motion.div>
                                         ) : (
@@ -1071,8 +1071,8 @@ function GovernanceHub({ account }) {
                                     </div>
                                 </div>
                                 <div className="mt-4 flex items-center gap-2">
-                                    <div className={`w-1.5 h-1.5 rounded-full ${saved.has(s.key) ? 'bg-emerald-500 shadow-lg shadow-emerald-200' : 'bg-slate-300'}`} />
-                                    <span className={`text-[9px] font-black uppercase ${saved.has(s.key) ? 'text-emerald-600' : 'text-slate-400'}`}>
+                                    <div className={`w-1.5 h-1.5 rounded-full ${saved.has(s.key) ? 'bg-sky-500 shadow-lg shadow-sky-200' : 'bg-slate-300'}`} />
+                                    <span className={`text-[9px] font-black uppercase ${saved.has(s.key) ? 'text-sky-600' : 'text-slate-400'}`}>
                                         {saved.has(s.key) ? 'Synchronized' : 'Ready'}
                                     </span>
                                 </div>
@@ -1138,10 +1138,10 @@ function BulletinCMS({ account }) {
         <div className="max-w-4xl mx-auto space-y-10">
             <div className="bg-white rounded-[3rem] border border-slate-200/60 p-12 shadow-sm">
                 <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-xl font-black text-slate-900 uppercase italic">Publish <span className="text-orange-600">Nuera Bulletin</span></h3>
-                    <div className="flex items-center gap-2 px-4 py-2 bg-orange-50 rounded-xl border border-orange-100">
-                        <Sparkles size={14} className="text-orange-500" />
-                        <span className="text-[10px] font-black text-orange-600 uppercase">AI-Enhanced</span>
+                    <h3 className="text-xl font-black text-slate-900 uppercase italic">Publish <span className="text-slate-600">Nuera Bulletin</span></h3>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-xl border border-slate-100">
+                        <Sparkles size={14} className="text-slate-500" />
+                        <span className="text-[10px] font-black text-slate-600 uppercase">AI-Enhanced</span>
                     </div>
                 </div>
 
@@ -1155,9 +1155,9 @@ function BulletinCMS({ account }) {
                                 value={targetSymbol} 
                                 onChange={e => { setTargetSymbol(e.target.value); if(e.target.value.length > 1) searchToken(e.target.value); }}
                                 placeholder="Enter Symbol (e.g. BTC, ETH, SOL)..." 
-                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-16 pr-8 py-5 text-sm font-bold text-slate-900 focus:outline-none focus:border-orange-500 transition-all shadow-inner" 
+                                className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-16 pr-8 py-5 text-sm font-bold text-slate-900 focus:outline-none focus:border-slate-500 transition-all shadow-inner" 
                             />
-                            {loadingSearch && <Loader2 className="absolute right-6 animate-spin text-orange-500" size={20} />}
+                            {loadingSearch && <Loader2 className="absolute right-6 animate-spin text-slate-500" size={20} />}
                         </div>
                     </div>
 
@@ -1173,13 +1173,13 @@ function BulletinCMS({ account }) {
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3">
                                                 <h4 className="text-2xl font-black uppercase tracking-tight">{tokenData.name}</h4>
-                                                <span className="px-3 py-1 bg-orange-500 rounded-lg text-[10px] font-black uppercase">Rank #{tokenData.rank}</span>
+                                                <span className="px-3 py-1 bg-slate-500 rounded-lg text-[10px] font-black uppercase">Rank #{tokenData.rank}</span>
                                             </div>
                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-4">
-                                                <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Market Cap</p><p className="text-xs font-black text-emerald-400 mt-1">${tokenData.mcap}</p></div>
+                                                <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Market Cap</p><p className="text-xs font-black text-sky-400 mt-1">${tokenData.mcap}</p></div>
                                                 <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Price</p><p className="text-xs font-black text-white mt-1">${tokenData.price}</p></div>
                                                 <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Launch Date</p><p className="text-xs font-black text-white mt-1">{tokenData.launch}</p></div>
-                                                <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Symbol</p><p className="text-xs font-black text-orange-400 mt-1">{tokenData.symbol}</p></div>
+                                                <div><p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Symbol</p><p className="text-xs font-black text-slate-400 mt-1">{tokenData.symbol}</p></div>
                                             </div>
                                         </div>
                                     </div>
@@ -1189,7 +1189,7 @@ function BulletinCMS({ account }) {
                                                 // Optional: add visual feedback that it's attached
                                                 alert(`Asset ${tokenData.symbol} attached to bulletin payload.`);
                                             }}
-                                            className="px-6 py-4 bg-white text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-orange-500 hover:text-white transition-all shadow-lg flex flex-col items-center gap-1"
+                                            className="px-6 py-4 bg-white text-slate-900 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-500 hover:text-white transition-all shadow-lg flex flex-col items-center gap-1"
                                         >
                                             <CheckCircle2 size={16} />
                                             Lock Asset
@@ -1207,14 +1207,14 @@ function BulletinCMS({ account }) {
                             onChange={e => setContent(e.target.value)} 
                             rows={6} 
                             placeholder="Write your market update or protocol announcement here..." 
-                            className="w-full bg-slate-50 border border-slate-200 rounded-[2rem] p-8 text-sm font-bold text-slate-900 focus:outline-none focus:border-orange-500 transition-all shadow-inner" 
+                            className="w-full bg-slate-50 border border-slate-200 rounded-[2rem] p-8 text-sm font-bold text-slate-900 focus:outline-none focus:border-slate-500 transition-all shadow-inner" 
                         />
                     </div>
 
                     <button 
                         onClick={handlePublish} 
                         disabled={loadingPublish || !content} 
-                        className="w-full py-6 bg-orange-600 text-white font-black rounded-3xl text-xs uppercase tracking-[0.2em] shadow-xl shadow-orange-200 hover:bg-orange-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                        className="w-full py-6 bg-slate-600 text-white font-black rounded-3xl text-xs uppercase tracking-[0.2em] shadow-xl shadow-slate-200 hover:bg-slate-700 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                     >
                         {loadingPublish ? <Loader2 className="animate-spin" /> : <Megaphone size={18} />} Deploy Official Bulletin
                     </button>
@@ -1242,7 +1242,7 @@ function CommunityMod({ account }) {
                 <div key={m.id} className="flex items-start gap-6 p-6 bg-slate-50 rounded-2xl border border-slate-100 group">
                     <div className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 font-black text-[10px]">{m.wallet_address.slice(0, 4)}</div>
                     <div className="flex-1 min-w-0"><p className="text-xs font-bold text-slate-800 leading-relaxed">{m.content}</p><p className="text-[9px] font-black text-slate-400 uppercase mt-2">{m.wallet_address} · {new Date(m.created_at).toLocaleTimeString()}</p></div>
-                    <button onClick={() => removeMessage(m.id)} className="p-2.5 text-slate-300 hover:text-rose-500 rounded-xl opacity-0 group-hover:opacity-100"><XCircle size={18} /></button>
+                    <button onClick={() => removeMessage(m.id)} className="p-2.5 text-slate-300 hover:text-blue-500 rounded-xl opacity-0 group-hover:opacity-100"><XCircle size={18} /></button>
                 </div>
             ))}
         </div>
@@ -1274,15 +1274,15 @@ function AddressHub() {
                         </div>
                     ))}
                     {!showPK ? (
-                        <div className="mt-6 p-8 bg-rose-50 rounded-[3rem] border border-rose-100 flex items-center gap-6">
-                            <Shield className="text-rose-500" size={24} />
-                            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password..." className="flex-1 bg-white border border-rose-100 rounded-xl px-4 py-3 text-sm font-bold outline-none" />
-                            <button onClick={() => password === PASS ? setShowPK(true) : alert('Denied')} className="px-6 py-3 bg-rose-600 text-white text-[10px] font-black rounded-xl uppercase">Unlock Key</button>
+                        <div className="mt-6 p-8 bg-blue-50 rounded-[3rem] border border-blue-100 flex items-center gap-6">
+                            <Shield className="text-blue-500" size={24} />
+                            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password..." className="flex-1 bg-white border border-blue-100 rounded-xl px-4 py-3 text-sm font-bold outline-none" />
+                            <button onClick={() => password === PASS ? setShowPK(true) : alert('Denied')} className="px-6 py-3 bg-blue-600 text-white text-[10px] font-black rounded-xl uppercase">Unlock Key</button>
                         </div>
                     ) : (
-                        <div className="mt-6 p-8 bg-white rounded-[3rem] border border-rose-200 shadow-xl flex justify-between items-center animate-in fade-in zoom-in">
-                            <div><label className="text-[10px] font-black text-rose-500 uppercase block">PRIVATE_KEY</label><p className="text-sm font-mono font-black break-all">0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80</p></div>
-                            <button onClick={() => copy('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80', 'Private Key')} className="p-3 text-rose-400"><Copy size={20} /></button>
+                        <div className="mt-6 p-8 bg-white rounded-[3rem] border border-blue-200 shadow-xl flex justify-between items-center animate-in fade-in zoom-in">
+                            <div><label className="text-[10px] font-black text-blue-500 uppercase block">PRIVATE_KEY</label><p className="text-sm font-mono font-black break-all">0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80</p></div>
+                            <button onClick={() => copy('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80', 'Private Key')} className="p-3 text-blue-400"><Copy size={20} /></button>
                         </div>
                     )}
                 </div>

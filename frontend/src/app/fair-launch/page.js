@@ -250,21 +250,21 @@ export default function FairLaunch() {
     const marketCapEstimate = pricePerToken * 1_000_000_000; // total 1B supply
 
     return (
-        <main className="min-h-screen bg-gray-50/70 p-pattern selection:bg-rose-500 selection:text-white pb-32">
+        <main className="min-h-screen bg-gray-50/70 p-pattern selection:bg-blue-500 selection:text-white pb-32">
             <Navbar />
             
             <div className="pt-20 pb-24 px-4 md:px-8 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 relative z-10">
                 {/* Background Decor */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-rose-500/5 rounded-full blur-[150px] -z-10 animate-pulse" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-blue-500/5 rounded-full blur-[150px] -z-10 animate-pulse" />
 
                 {/* LEFT SIDEBAR */}
                 <div className="lg:col-span-4 space-y-8">
                     <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }}
                         className="p-10 rounded-[3rem] bg-white border border-gray-100 shadow-xl relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-rose-500/5 rounded-full blur-3xl group-hover:bg-rose-500/10 transition-all duration-700" />
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-3xl group-hover:bg-blue-500/10 transition-all duration-700" />
                         <div className="flex items-center gap-4 mb-8">
-                            <div className="w-14 h-14 bg-rose-500/10 rounded-2xl flex items-center justify-center border border-rose-100 shadow-md">
-                                <Zap className="w-7 h-7 text-rose-500" />
+                            <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center border border-blue-100 shadow-md">
+                                <Zap className="w-7 h-7 text-blue-500" />
                             </div>
                             <div>
                                 <h3 className="font-black text-gray-900 text-xl tracking-tight">Fair Launch</h3>
@@ -274,7 +274,7 @@ export default function FairLaunch() {
                         <p className="text-sm text-gray-500 mb-10 leading-relaxed font-medium">
                             Bypass the bonding curve and launch directly to PancakeSwap. This protocol automatically pairs 100% of the initial supply with your BNB liquidity deposit.
                         </p>
-                        <div className="flex items-center gap-3 text-rose-500 pt-6 border-t border-gray-50">
+                        <div className="flex items-center gap-3 text-blue-500 pt-6 border-t border-gray-50">
                              <ShieldCheck className="w-5 h-5" />
                              <span className="text-[10px] font-black uppercase tracking-[0.3em]">Institutional Matrix</span>
                         </div>
@@ -283,14 +283,14 @@ export default function FairLaunch() {
                     <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}
                         className="p-10 rounded-[3rem] bg-white border border-gray-100 shadow-xl">
                         <h4 className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-8 flex items-center gap-2">
-                             <Settings className="w-4 h-4 text-rose-500" /> Protocol Parameters
+                             <Settings className="w-4 h-4 text-blue-500" /> Protocol Parameters
                         </h4>
                         <div className="space-y-6">
                             {[
                                 { label: 'Fixed Supply', value: '1,000,000,000', icon: <Layers className="w-4 h-4" /> },
                                 { label: 'Launch Type', value: 'Direct To DEX', icon: <Cpu className="w-4 h-4" /> },
-                                { label: 'Liquidity Pool', value: '100% (Locked)', icon: <Network className="w-4 h-4" />, color: 'text-amber-500' },
-                                { label: 'Network', value: 'BNB Smart Chain', icon: <Globe className="w-4 h-4" />, color: 'text-rose-500' }
+                                { label: 'Liquidity Pool', value: '100% (Locked)', icon: <Network className="w-4 h-4" />, color: 'text-indigo-500' },
+                                { label: 'Network', value: 'BNB Smart Chain', icon: <Globe className="w-4 h-4" />, color: 'text-blue-500' }
                             ].map((p, i) => (
                                 <div key={i} className="flex justify-between items-center py-4 border-b last:border-0 border-gray-100">
                                     <div className="flex items-center gap-3">
@@ -323,7 +323,7 @@ export default function FairLaunch() {
                                 type="button"
                                 onClick={handleGenerateWP}
                                 disabled={wpThinking || !formData.name}
-                                className="w-full py-5 bg-white text-gray-900 rounded-2xl text-[11px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-rose-500 hover:text-white transition-all disabled:opacity-20 active:scale-95"
+                                className="w-full py-5 bg-white text-gray-900 rounded-2xl text-[11px] font-black uppercase tracking-[0.3em] shadow-2xl hover:bg-blue-500 hover:text-white transition-all disabled:opacity-20 active:scale-95"
                             >
                                 {wpThinking ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Generate + Audit'}
                             </button>
@@ -343,21 +343,21 @@ export default function FairLaunch() {
                                     {status === 'uploading' && (
                                         <>
                                             <div className="relative w-28 h-28 mb-10">
-                                                <div className="absolute inset-0 border-4 border-rose-500/10 rounded-full" />
-                                                <div className="absolute inset-0 border-4 border-rose-500 border-t-transparent rounded-full animate-spin" />
+                                                <div className="absolute inset-0 border-4 border-blue-500/10 rounded-full" />
+                                                <div className="absolute inset-0 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
                                                 <div className="absolute inset-0 flex items-center justify-center">
-                                                    <Zap className="w-10 h-10 text-rose-500 animate-pulse" />
+                                                    <Zap className="w-10 h-10 text-blue-500 animate-pulse" />
                                                 </div>
                                             </div>
                                             <h3 className="text-4xl font-black text-gray-900 mb-4 tracking-tighter uppercase">Direct Anchoring...</h3>
-                                            <p className="text-rose-500 font-black uppercase text-[10px] tracking-[0.4em] animate-pulse">{error}</p>
+                                            <p className="text-blue-500 font-black uppercase text-[10px] tracking-[0.4em] animate-pulse">{error}</p>
                                         </>
                                     )}
 
                                     {status === 'success' && (
                                         <>
-                                            <div className="w-32 h-32 bg-emerald-500/10 rounded-full flex items-center justify-center mb-10 border border-emerald-500/20 shadow-2xl">
-                                                <CheckCircle2 className="w-20 h-20 text-emerald-500" />
+                                            <div className="w-32 h-32 bg-sky-500/10 rounded-full flex items-center justify-center mb-10 border border-sky-500/20 shadow-2xl">
+                                                <CheckCircle2 className="w-20 h-20 text-sky-500" />
                                             </div>
                                             <h3 className="text-5xl font-black text-gray-900 mb-3 tracking-tighter uppercase">Fair Launch Finalized</h3>
                                             <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mb-12">DEX liquidity pool has been initialized</p>
@@ -367,12 +367,12 @@ export default function FairLaunch() {
 
                                     {status === 'error' && (
                                         <>
-                                            <div className="w-28 h-28 bg-rose-500/10 rounded-full flex items-center justify-center mb-10 border border-rose-500/20 shadow-xl">
-                                                <Rocket className="w-14 h-14 text-rose-500" />
+                                            <div className="w-28 h-28 bg-blue-500/10 rounded-full flex items-center justify-center mb-10 border border-blue-500/20 shadow-xl">
+                                                <Rocket className="w-14 h-14 text-blue-500" />
                                             </div>
                                             <h3 className="text-4xl font-black text-gray-900 mb-4 tracking-tighter uppercase">System Collision</h3>
                                             <p className="text-gray-400 font-bold mb-12 max-w-sm text-sm uppercase leading-relaxed tracking-wide">{error}</p>
-                                            <button onClick={() => setStatus('idle')} className="px-16 py-6 bg-rose-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-rose-500/30">Bridge Override</button>
+                                            <button onClick={() => setStatus('idle')} className="px-16 py-6 bg-blue-500 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-blue-500/30">Bridge Override</button>
                                         </>
                                     )}
                                 </motion.div>
@@ -381,10 +381,10 @@ export default function FairLaunch() {
 
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16 border-b border-gray-50 pb-12">
                             <div>
-                                <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter mb-2">Fair Launch <span className="text-rose-500">Nexus</span></h1>
+                                <h1 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter mb-2">Fair Launch <span className="text-blue-500">Nexus</span></h1>
                                 <div className="flex items-center gap-4">
-                                    <span className="px-4 py-1.5 bg-rose-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-rose-500/20">Zero Curve</span>
-                                    <span className="px-4 py-1.5 bg-amber-500/10 text-amber-600 text-[10px] font-black uppercase tracking-[0.2em] rounded-full border border-amber-500/20">Premium Direct</span>
+                                    <span className="px-4 py-1.5 bg-blue-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full shadow-lg shadow-blue-500/20">Zero Curve</span>
+                                    <span className="px-4 py-1.5 bg-indigo-500/10 text-indigo-600 text-[10px] font-black uppercase tracking-[0.2em] rounded-full border border-indigo-500/20">Premium Direct</span>
                                 </div>
                             </div>
                             <div className="text-right">
@@ -396,26 +396,26 @@ export default function FairLaunch() {
                         <div className="space-y-12">
                             <div className="flex flex-col md:flex-row items-center gap-10">
                                 <div className="relative group">
-                                    <div className="w-40 h-40 rounded-[3rem] bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:scale-105 group-hover:border-rose-500/30 shadow-inner">
-                                        {logoPreview ? <img src={logoPreview} alt="Preview" className="w-full h-full object-cover" /> : <Upload className="w-12 h-12 text-gray-200 group-hover:text-rose-500 transition-colors" />}
+                                    <div className="w-40 h-40 rounded-[3rem] bg-gray-50 border border-gray-100 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:scale-105 group-hover:border-blue-500/30 shadow-inner">
+                                        {logoPreview ? <img src={logoPreview} alt="Preview" className="w-full h-full object-cover" /> : <Upload className="w-12 h-12 text-gray-200 group-hover:text-blue-500 transition-colors" />}
                                         <input type="file" accept="image/*" onChange={handleLogoChange} className="absolute inset-0 opacity-0 cursor-pointer" />
                                     </div>
-                                    <div className="absolute -bottom-2 -right-2 bg-rose-500 text-white p-3 rounded-2xl shadow-xl"><Rocket className="w-5 h-5" /></div>
+                                    <div className="absolute -bottom-2 -right-2 bg-blue-500 text-white p-3 rounded-2xl shadow-xl"><Rocket className="w-5 h-5" /></div>
                                 </div>
                                 <div className="flex-1 space-y-6 w-full">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                         <div className="space-y-3">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Nexus Name</label>
-                                            <input type="text" placeholder="Aura Intelligence" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-bold text-gray-900 outline-none focus:bg-white focus:border-rose-500/30 transition-all shadow-sm" />
+                                            <input type="text" placeholder="Aura Intelligence" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-bold text-gray-900 outline-none focus:bg-white focus:border-blue-500/30 transition-all shadow-sm" />
                                         </div>
                                         <div className="space-y-3">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Ticker Symbol</label>
-                                            <input type="text" placeholder="AURA" value={formData.symbol} onChange={(e) => setFormData({...formData, symbol: e.target.value.toUpperCase()})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-black text-gray-900 outline-none focus:bg-white focus:border-rose-500/30 transition-all shadow-sm" />
+                                            <input type="text" placeholder="AURA" value={formData.symbol} onChange={(e) => setFormData({...formData, symbol: e.target.value.toUpperCase()})} className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-black text-gray-900 outline-none focus:bg-white focus:border-blue-500/30 transition-all shadow-sm" />
                                         </div>
                                     </div>
                                     <div className="space-y-3">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Protocol Description</label>
-                                        <textarea placeholder="Describe the utility of your direct launch asset..." value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full h-32 bg-gray-50 border border-gray-100 rounded-2xl p-6 font-medium text-gray-700 outline-none focus:bg-white focus:border-rose-500/30 transition-all resize-none shadow-sm" />
+                                        <textarea placeholder="Describe the utility of your direct launch asset..." value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full h-32 bg-gray-50 border border-gray-100 rounded-2xl p-6 font-medium text-gray-700 outline-none focus:bg-white focus:border-blue-500/30 transition-all resize-none shadow-sm" />
                                     </div>
                                     <div className="space-y-3 border-t border-gray-100 pt-6">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Initial Liquidity (PancakeSwap Starting Price)</label>
@@ -426,10 +426,10 @@ export default function FairLaunch() {
                                                 min="0.01" 
                                                 value={initialLiquidity} 
                                                 onChange={(e) => setInitialLiquidity(e.target.value)} 
-                                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-black text-gray-900 outline-none focus:bg-white focus:border-rose-500/30 transition-all shadow-sm" 
+                                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-black text-gray-900 outline-none focus:bg-white focus:border-blue-500/30 transition-all shadow-sm" 
                                                 placeholder="0.01"
                                             />
-                                            <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase text-rose-500 tracking-widest">BNB</div>
+                                            <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase text-blue-500 tracking-widest">BNB</div>
                                         </div>
                                     </div>
                                     <div className="space-y-3 pt-2 mb-2">
@@ -441,7 +441,7 @@ export default function FairLaunch() {
                                                 max={MAX_LIQUIDATE}
                                                 value={tokensToLiquidate} 
                                                 onChange={(e) => setTokensToLiquidate(Math.min(e.target.value, MAX_LIQUIDATE))} 
-                                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-black text-gray-900 outline-none focus:bg-white focus:border-rose-500/30 transition-all shadow-sm" 
+                                                className="w-full bg-gray-50 border border-gray-100 rounded-2xl px-6 py-4 font-black text-gray-900 outline-none focus:bg-white focus:border-blue-500/30 transition-all shadow-sm" 
                                                 placeholder={MAX_LIQUIDATE.toString()}
                                             />
                                             <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase text-gray-400 tracking-widest">/ 900M Max</div>
@@ -452,7 +452,7 @@ export default function FairLaunch() {
                                             </div>
                                             <div className="space-y-1.5 flex-1 pt-0.5">
                                                 <h5 className="text-[10px] font-black text-indigo-900 uppercase tracking-[0.2em] flex items-center gap-2">
-                                                    Institutional Vault Protocol Active <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                    Institutional Vault Protocol Active <span className="h-1.5 w-1.5 rounded-full bg-sky-500 animate-pulse" />
                                                 </h5>
                                                 <p className="text-[10px] text-indigo-700/70 font-bold leading-relaxed uppercase tracking-tight">
                                                     Your total token capacity is <span className="text-indigo-900 font-black">1,000,000,000 $TOKEN</span>. 
@@ -471,9 +471,9 @@ export default function FairLaunch() {
                                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden mb-8">
                                         <div className={`p-8 rounded-[2.5rem] border-2 transition-all duration-500 shadow-sm ${
                                             mimicData.riskLevel === 'CRITICAL' ? 'bg-red-50 border-red-200' :
-                                            mimicData.riskLevel === 'HIGH' ? 'bg-orange-50 border-orange-200' :
-                                            mimicData.riskLevel === 'MEDIUM' ? 'bg-amber-50 border-amber-200' :
-                                            'bg-emerald-50 border-emerald-200'
+                                            mimicData.riskLevel === 'HIGH' ? 'bg-slate-50 border-slate-200' :
+                                            mimicData.riskLevel === 'MEDIUM' ? 'bg-indigo-50 border-indigo-200' :
+                                            'bg-sky-50 border-sky-200'
                                         }`}>
                                             <div className="flex flex-col md:flex-row items-start gap-6 relative">
                                                 <button onClick={() => setIsMimicIgnored(true)} className="absolute -top-2 -right-2 p-2 hover:bg-black/5 rounded-full transition-colors text-gray-400 hover:text-gray-900">
@@ -481,7 +481,7 @@ export default function FairLaunch() {
                                                 </button>
 
                                                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-sm ${
-                                                    mimicData.riskLevel === 'SAFE' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white animate-pulse'
+                                                    mimicData.riskLevel === 'SAFE' ? 'bg-sky-500 text-white' : 'bg-red-500 text-white animate-pulse'
                                                 }`}>
                                                     {mimicData.riskLevel === 'SAFE' ? <ShieldCheck className="w-7 h-7" /> : <AlertTriangle className="w-7 h-7" />}
                                                 </div>
@@ -490,16 +490,16 @@ export default function FairLaunch() {
                                                         <h4 className="font-black text-gray-900 text-lg uppercase tracking-tight">CoinGecko Mimic Detection</h4>
                                                         <span className={`px-4 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-[0.2em] shadow-sm ${
                                                             mimicData.riskLevel === 'CRITICAL' ? 'bg-red-600' :
-                                                            mimicData.riskLevel === 'HIGH' ? 'bg-orange-500' :
-                                                            mimicData.riskLevel === 'MEDIUM' ? 'bg-amber-500' :
-                                                            'bg-emerald-500'
+                                                            mimicData.riskLevel === 'HIGH' ? 'bg-slate-500' :
+                                                            mimicData.riskLevel === 'MEDIUM' ? 'bg-indigo-500' :
+                                                            'bg-sky-500'
                                                         }`}>
                                                             {mimicData.riskLevel}
                                                         </span>
                                                         {isMimicChecking && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
                                                     </div>
                                                     <p className={`text-sm font-bold mb-6 leading-relaxed ${
-                                                        mimicData.riskLevel === 'SAFE' ? 'text-emerald-700' : 'text-red-700'
+                                                        mimicData.riskLevel === 'SAFE' ? 'text-sky-700' : 'text-red-700'
                                                     }`}>
                                                         {mimicData.alertMessage}
                                                     </p>
@@ -523,11 +523,11 @@ export default function FairLaunch() {
                                                                         <div className="pt-3 border-t border-black/5">
                                                                              <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1 leading-none">Contract Address</p>
                                                                              <div className="flex items-center justify-between bg-white/50 px-3 py-2 rounded-xl border border-black/5">
-                                                                                 <code className="text-[10px] font-mono font-bold text-rose-500 truncate mr-2">{t.contractAddress ? `${t.contractAddress.slice(0,6)}...${t.contractAddress.slice(-4)}` : 'UNKNOWN'}</code>
+                                                                                 <code className="text-[10px] font-mono font-bold text-blue-500 truncate mr-2">{t.contractAddress ? `${t.contractAddress.slice(0,6)}...${t.contractAddress.slice(-4)}` : 'UNKNOWN'}</code>
                                                                                  {t.contractAddress && (
                                                                                      <button 
                                                                                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); navigator.clipboard.writeText(t.contractAddress); alert('Address Copied!'); }}
-                                                                                        className="p-1.5 hover:bg-rose-500 hover:text-white rounded-lg transition-all text-gray-400"
+                                                                                        className="p-1.5 hover:bg-blue-500 hover:text-white rounded-lg transition-all text-gray-400"
                                                                                      >
                                                                                          <Copy className="w-3.5 h-3.5" />
                                                                                      </button>
@@ -547,7 +547,7 @@ export default function FairLaunch() {
                             </AnimatePresence>
 
                                 <div className="p-10 rounded-[3rem] bg-gray-50 border border-gray-100 shadow-inner relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 w-40 h-40 bg-rose-500/5 rounded-full blur-3xl" />
+                                    <div className="absolute top-0 right-0 w-40 h-40 bg-blue-500/5 rounded-full blur-3xl" />
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-10 relative z-10">
                                         <div className="space-y-6">
                                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -556,7 +556,7 @@ export default function FairLaunch() {
                                                     <select
                                                         value={selectedFiat.code}
                                                         onChange={(e) => setSelectedFiat(CURRENCIES.find(c => c.code === e.target.value))}
-                                                        className="appearance-none bg-white border border-gray-200 text-[10px] font-bold text-gray-700 py-1.5 pl-3 pr-8 rounded-lg outline-none focus:border-rose-400 transition-colors shadow-sm cursor-pointer"
+                                                        className="appearance-none bg-white border border-gray-200 text-[10px] font-bold text-gray-700 py-1.5 pl-3 pr-8 rounded-lg outline-none focus:border-blue-400 transition-colors shadow-sm cursor-pointer"
                                                     >
                                                         {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.label}</option>)}
                                                     </select>
@@ -573,8 +573,8 @@ export default function FairLaunch() {
                                             <div className="flex justify-between items-start py-2 border-b border-gray-200/40">
                                                 <span className="text-xs font-bold text-gray-500 mt-0.5">First Trade (Snipe)</span>
                                                 <div className="text-right">
-                                                    <span className="text-sm font-black text-emerald-500 block">{isTreasury ? '0.000' : firstTradeDisplay.toFixed(3)} BNB</span>
-                                                    {!isTreasury && <span className="text-[9px] font-bold text-emerald-400">{toFiat(firstTradeDisplay)}</span>}
+                                                    <span className="text-sm font-black text-sky-500 block">{isTreasury ? '0.000' : firstTradeDisplay.toFixed(3)} BNB</span>
+                                                    {!isTreasury && <span className="text-[9px] font-bold text-sky-400">{toFiat(firstTradeDisplay)}</span>}
                                                 </div>
                                             </div>
                                             <div className="flex justify-between items-start py-2 border-b border-gray-200/40">
@@ -586,16 +586,16 @@ export default function FairLaunch() {
                                             </div>
                                         </div>
                                         <div className="flex flex-col justify-end text-right">
-                                            <p className="text-[10px] font-black text-rose-500 uppercase tracking-[0.4em] mb-1">Nexus Weight</p>
+                                            <p className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mb-1">Nexus Weight</p>
                                             <p className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter">{totalBNB} <span className="text-lg text-gray-400">BNB</span></p>
                                             <p className="text-sm font-bold text-gray-400 tracking-tight mt-1 mb-6">{toFiat(parseFloat(totalBNB))}</p>
-                                            <div className="mt-auto p-4 bg-white/80 rounded-2xl border border-rose-100 text-right space-y-2 relative overflow-hidden">
-                                                <div className="absolute top-0 right-0 w-24 h-24 bg-rose-50 rounded-full blur-2xl -z-10" />
+                                            <div className="mt-auto p-4 bg-white/80 rounded-2xl border border-blue-100 text-right space-y-2 relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-full blur-2xl -z-10" />
                                                 <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest relative z-10">Initial Listing Price</p>
-                                                <p className="text-xl font-black text-rose-600 font-mono relative z-10">{pricePerTokenFormatted} <span className="text-[10px] tracking-widest text-gray-400">BNB</span></p>
+                                                <p className="text-xl font-black text-blue-600 font-mono relative z-10">{pricePerTokenFormatted} <span className="text-[10px] tracking-widest text-gray-400">BNB</span></p>
                                                 <p className="text-xs font-bold text-gray-500 relative z-10">{fiatRate ? `~ ${(pricePerToken * fiatRate).toFixed(14).replace(/\.?0+$/, '')}` : '—'} <span className="text-[9px] uppercase">{selectedFiat.code}</span></p>
                                                 
-                                                <div className="w-full h-px bg-rose-100/50 my-2 relative z-10" />
+                                                <div className="w-full h-px bg-blue-100/50 my-2 relative z-10" />
                                                 
                                                 <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest relative z-10">Est. Market Cap</p>
                                                 <p className="text-sm font-black text-gray-900 font-mono relative z-10">{marketCapEstimate.toFixed(3)} BNB</p>

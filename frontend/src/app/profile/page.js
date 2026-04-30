@@ -150,17 +150,17 @@ function TokenCard({ token, index, account }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.08 }}
             whileHover={{ y: -2 }}
-            className="group bg-white border border-black/8 rounded-2xl shadow-sm hover:shadow-xl hover:border-rose-200 transition-all overflow-hidden"
+            className="group bg-white border border-black/8 rounded-2xl shadow-sm hover:shadow-xl hover:border-blue-200 transition-all overflow-hidden"
         >
             {/* Top colored bar */}
-            <div className="h-1 w-full bg-gradient-to-r from-rose-400 via-orange-400 to-amber-400 opacity-80 group-hover:opacity-100 transition-opacity" />
+            <div className="h-1 w-full bg-gradient-to-r from-blue-400 via-slate-400 to-indigo-400 opacity-80 group-hover:opacity-100 transition-opacity" />
 
             <div className="p-5">
                 {/* Header Row */}
                 <div className="flex items-start gap-4">
                     {/* Logo */}
                     <div className="relative shrink-0">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-rose-100 to-amber-100 border-2 border-rose-200/60 flex items-center justify-center overflow-hidden shadow-md">
+                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 border-2 border-blue-200/60 flex items-center justify-center overflow-hidden shadow-md">
                             {logoUrl ? (
                                 <img src={logoUrl} alt={token.name} className="w-full h-full object-cover rounded-2xl"
                                     onError={e => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<span class="text-3xl">🪙</span>'; }}
@@ -168,8 +168,8 @@ function TokenCard({ token, index, account }) {
                             ) : <span className="text-3xl">🪙</span>}
                         </div>
                         {/* Live dot */}
-                        <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white shadow-sm">
-                            <div className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-75" />
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-sky-500 border-2 border-white shadow-sm">
+                            <div className="absolute inset-0 rounded-full bg-sky-400 animate-ping opacity-75" />
                         </div>
                     </div>
 
@@ -177,14 +177,14 @@ function TokenCard({ token, index, account }) {
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-1">
                             <h3 className="font-black text-gray-900 text-lg leading-none">{token.name}</h3>
-                            <span className="text-xs font-extrabold text-rose-600 bg-rose-500/10 border border-rose-200 px-2.5 py-0.5 rounded-full">
+                            <span className="text-xs font-extrabold text-blue-600 bg-blue-500/10 border border-blue-200 px-2.5 py-0.5 rounded-full">
                                 ${token.symbol}
                             </span>
                             
                             {/* Verification Badges */}
                             <div className="flex gap-1 items-center">
                                 {token.bscscan_verified ? (
-                                    <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-emerald-100 border border-emerald-200 rounded text-[9px] font-black text-emerald-700 uppercase" title="Verified on BSCScan">
+                                    <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-sky-100 border border-sky-200 rounded text-[9px] font-black text-sky-700 uppercase" title="Verified on BSCScan">
                                         <CheckCircle2 className="w-2.5 h-2.5" /> Verified
                                     </div>
                                 ) : (
@@ -208,8 +208,8 @@ function TokenCard({ token, index, account }) {
 
                             {token.trust_status && (
                                 <span className={`text-[8px] font-black px-2 py-0.5 rounded-lg border uppercase tracking-tighter ${
-                                    token.trust_status === 'Premium Token' ? 'bg-amber-500/10 text-amber-600 border-amber-500/20' :
-                                    token.trust_status === 'Highly Trusted' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20' :
+                                    token.trust_status === 'Premium Token' ? 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20' :
+                                    token.trust_status === 'Highly Trusted' ? 'bg-sky-500/10 text-sky-600 border-sky-500/20' :
                                     token.trust_status === 'Scam' ? 'bg-red-500 text-white border-red-500' :
                                     'bg-blue-500/10 text-blue-600 border-blue-500/20'
                                 }`}>
@@ -225,7 +225,7 @@ function TokenCard({ token, index, account }) {
                     {/* BSCScan link */}
                     {token.tx_hash && (
                         <a href={`https://bscscan.com/tx/${token.tx_hash}`} target="_blank" rel="noopener noreferrer"
-                            className="shrink-0 p-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 hover:bg-amber-100 transition-colors"
+                            className="shrink-0 p-2 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-600 hover:bg-indigo-100 transition-colors"
                             title="View Transaction">
                             <ExternalLink className="w-4 h-4" />
                         </a>
@@ -238,12 +238,12 @@ function TokenCard({ token, index, account }) {
                 {/* Stats Row */}
                 <div className="grid grid-cols-4 gap-3 mb-4">
                     <div className="bg-black/3 rounded-xl p-3 text-center">
-                        <Activity className="w-4 h-4 text-emerald-500 mx-auto mb-1" />
+                        <Activity className="w-4 h-4 text-sky-500 mx-auto mb-1" />
                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Price</p>
                         <div className="text-xs font-black text-gray-800">{formatPrice(token.price_bnb || 0.0000001)}</div>
                     </div>
                     <div className="bg-black/3 rounded-xl p-3 text-center">
-                        <TrendingUp className="w-4 h-4 text-rose-500 mx-auto mb-1" />
+                        <TrendingUp className="w-4 h-4 text-blue-500 mx-auto mb-1" />
                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Supply</p>
                         <p className="text-xs font-black text-gray-800">{formatSupply(token.total_supply || 1_000_000_000)}</p>
                     </div>
@@ -253,9 +253,9 @@ function TokenCard({ token, index, account }) {
                         <p className="text-xs font-black text-gray-800">{launchDate}</p>
                     </div>
                     <div className="bg-black/3 rounded-xl p-3 text-center">
-                        <Users className="w-4 h-4 text-amber-500 mx-auto mb-1" />
+                        <Users className="w-4 h-4 text-indigo-500 mx-auto mb-1" />
                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Status</p>
-                        <p className="text-xs font-black text-emerald-600">● Active</p>
+                        <p className="text-xs font-black text-sky-600">● Active</p>
                     </div>
                 </div>
 
@@ -267,12 +267,12 @@ function TokenCard({ token, index, account }) {
                     </div>
                     <button
                         onClick={() => copyToClipboard(token.contract_address, setCopied)}
-                        className="p-1.5 rounded-lg hover:bg-rose-100 transition-colors"
+                        className="p-1.5 rounded-lg hover:bg-blue-100 transition-colors"
                         title="Copy address"
                     >
                         {copied === token.contract_address
-                            ? <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                            : <Copy className="w-4 h-4 text-gray-400 hover:text-rose-500 transition-colors" />
+                            ? <CheckCircle2 className="w-4 h-4 text-sky-500" />
+                            : <Copy className="w-4 h-4 text-gray-400 hover:text-blue-500 transition-colors" />
                         }
                     </button>
                 </div>
@@ -282,7 +282,7 @@ function TokenCard({ token, index, account }) {
                     <Link href={`/token/${token.contract_address}`} className="flex-1">
                         <motion.button
                             whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                            className="w-full py-2.5 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-bold text-sm rounded-xl shadow-md shadow-rose-500/20 flex items-center justify-center gap-2 transition-all"
+                            className="w-full py-2.5 bg-gradient-to-r from-blue-500 to-slate-500 hover:from-blue-600 hover:to-slate-600 text-white font-bold text-sm rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-all"
                         >
                             <Zap className="w-4 h-4" /> Trade Now
                         </motion.button>
@@ -293,7 +293,7 @@ function TokenCard({ token, index, account }) {
                                 key="upgrade-btn"
                                 whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                                 onClick={() => setIsUpgrading(true)}
-                                className="px-4 py-2.5 bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 font-bold text-sm rounded-xl border border-amber-200 flex items-center gap-1.5 transition-all"
+                                className="px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 font-bold text-sm rounded-xl border border-indigo-200 flex items-center gap-1.5 transition-all"
                             >
                                 <ShieldCheck className="w-4 h-4" /> Upgrade
                             </motion.button>
@@ -302,20 +302,20 @@ function TokenCard({ token, index, account }) {
                                 key="upgrade-form"
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                className="flex flex-col gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl w-full"
+                                className="flex flex-col gap-2 p-3 bg-indigo-50 border border-indigo-200 rounded-xl w-full"
                             >
                                 {/* Fee notice */}
-                                <div className="flex items-center gap-2 bg-amber-100 rounded-lg px-3 py-2">
-                                    <span className="text-amber-600 text-lg">🔒</span>
+                                <div className="flex items-center gap-2 bg-indigo-100 rounded-lg px-3 py-2">
+                                    <span className="text-indigo-600 text-lg">🔒</span>
                                     <div>
-                                        <p className="text-[10px] font-black text-amber-800 uppercase tracking-wider">Upgrade requires admin approval</p>
-                                        <p className="text-[9px] text-amber-600 font-bold">Pay 0.01 BNB fee → Submit request → Admin reviews in Launch Guard</p>
+                                        <p className="text-[10px] font-black text-indigo-800 uppercase tracking-wider">Upgrade requires admin approval</p>
+                                        <p className="text-[9px] text-indigo-600 font-bold">Pay 0.01 BNB fee → Submit request → Admin reviews in Launch Guard</p>
                                     </div>
                                 </div>
                                 <select
                                     value={selectedStatus}
                                     onChange={(e) => setSelectedStatus(e.target.value)}
-                                    className="w-full bg-white border border-amber-200 rounded-lg px-2 py-1.5 text-xs font-bold text-gray-800 outline-none"
+                                    className="w-full bg-white border border-indigo-200 rounded-lg px-2 py-1.5 text-xs font-bold text-gray-800 outline-none"
                                 >
                                     <option value="Highly Trusted">⭐ Highly Trusted</option>
                                     <option value="Premium Token">💎 Premium Token</option>
@@ -379,7 +379,7 @@ function TokenCard({ token, index, account }) {
                                                 setIsProcessing(false);
                                             }
                                         }}
-                                        className="flex-1 py-1.5 bg-amber-500 text-white rounded-lg text-[10px] font-black uppercase hover:bg-amber-600 disabled:opacity-50 flex items-center justify-center gap-1"
+                                        className="flex-1 py-1.5 bg-indigo-500 text-white rounded-lg text-[10px] font-black uppercase hover:bg-indigo-600 disabled:opacity-50 flex items-center justify-center gap-1"
                                     >
                                         {isProcessing ? (
                                             <><span className="animate-spin">⏳</span> Processing…</>
@@ -410,15 +410,15 @@ function TokenCard({ token, index, account }) {
 
                 {/* B20-Vault Strategic Hub - Fair Launch / Admin Access */}
                 {isFairLaunch && (isOwner || isAdmin) && (
-                    <div className="mt-6 pt-5 border-t border-emerald-100">
+                    <div className="mt-6 pt-5 border-t border-sky-100">
                         {!isReleasing ? (
                             <motion.button
                                 whileHover={{ scale: 1.01, y: -2 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => setIsReleasing(true)}
-                                className="w-full flex items-center justify-between px-6 py-5 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-[1.5rem] shadow-xl shadow-emerald-600/20 group transition-all duration-300 overflow-hidden relative"
+                                className="w-full flex items-center justify-between px-6 py-5 bg-sky-600 hover:bg-sky-700 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-[1.5rem] shadow-xl shadow-sky-600/20 group transition-all duration-300 overflow-hidden relative"
                             >
-                                <div className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-emerald-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                <div className="absolute inset-0 bg-gradient-to-r from-sky-500 to-sky-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                 <span className="relative z-10 flex items-center gap-4">
                                     <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
                                         <Unlock className="w-5 h-5" />
@@ -440,20 +440,20 @@ function TokenCard({ token, index, account }) {
                             <motion.div 
                                 initial={{ opacity: 0, y: 15, scale: 0.98 }} 
                                 animate={{ opacity: 1, y: 0, scale: 1 }} 
-                                className="p-6 bg-gradient-to-br from-emerald-50/50 via-white to-emerald-50/30 border-2 border-emerald-500/20 rounded-[2.5rem] shadow-2xl shadow-emerald-500/10 space-y-5"
+                                className="p-6 bg-gradient-to-br from-sky-50/50 via-white to-sky-50/30 border-2 border-sky-500/20 rounded-[2.5rem] shadow-2xl shadow-sky-500/10 space-y-5"
                             >
-                                <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-4 border-b border-emerald-100">
+                                <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-4 border-b border-sky-100">
                                     <div className="flex items-center gap-5">
-                                        <div className="w-16 h-16 bg-emerald-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-emerald-600/30 ring-4 ring-emerald-50">
+                                        <div className="w-16 h-16 bg-sky-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-sky-600/30 ring-4 ring-sky-50">
                                             <PlusCircle className="w-8 h-8 text-white" />
                                         </div>
                                         <div>
                                             <h4 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.25em] leading-none mb-2 flex items-center gap-2">
-                                                Vault Distribution <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                                Vault Distribution <span className="h-2 w-2 rounded-full bg-sky-500 animate-pulse" />
                                             </h4>
                                             <div className="flex flex-col gap-1">
                                                 <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-2.5 py-1 rounded-lg uppercase tracking-tight">Available Balance</span>
+                                                    <span className="text-[10px] font-black text-sky-700 bg-sky-100 px-2.5 py-1 rounded-lg uppercase tracking-tight">Available Balance</span>
                                                     <span className="text-xl font-black text-gray-900 tracking-tight">{Number(lockedBalance).toLocaleString()} ${token.symbol}</span>
                                                 </div>
                                                 <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">
@@ -471,30 +471,30 @@ function TokenCard({ token, index, account }) {
                                         <label className="text-[9px] text-gray-400 font-black uppercase tracking-widest ml-1">Tokens to Release</label>
                                         <div className="relative">
                                             <input type="number" placeholder="0.00" value={releaseTokens} onChange={e => setReleaseTokens(e.target.value)}
-                                                className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-4 text-sm font-black text-gray-900 outline-none focus:border-emerald-500/30 focus:bg-emerald-500/5 transition-all shadow-inner" />
-                                            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-[9px] font-black text-emerald-600 uppercase tracking-widest">${token.symbol}</div>
+                                                className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-4 text-sm font-black text-gray-900 outline-none focus:border-sky-500/30 focus:bg-sky-500/5 transition-all shadow-inner" />
+                                            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-[9px] font-black text-sky-600 uppercase tracking-widest">${token.symbol}</div>
                                         </div>
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[9px] text-gray-400 font-black uppercase tracking-widest ml-1">BNB Liquidity to Pair</label>
                                         <div className="relative">
                                             <input type="number" step="0.01" placeholder="0.00" value={releaseLiqBnb} onChange={e => setReleaseLiqBnb(e.target.value)}
-                                                className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-4 text-sm font-black text-gray-900 outline-none focus:border-emerald-500/30 focus:bg-emerald-500/5 transition-all shadow-inner" />
-                                            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-[9px] font-black text-amber-500 uppercase tracking-widest">BNB</div>
+                                                className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-4 text-sm font-black text-gray-900 outline-none focus:border-sky-500/30 focus:bg-sky-500/5 transition-all shadow-inner" />
+                                            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-[9px] font-black text-indigo-500 uppercase tracking-widest">BNB</div>
                                         </div>
                                     </div>
                                 </div>
-                                <div className="p-3 bg-white/70 rounded-xl border border-emerald-100 text-[10px] font-bold text-gray-600 space-y-1.5">
+                                <div className="p-3 bg-white/70 rounded-xl border border-sky-100 text-[10px] font-bold text-gray-600 space-y-1.5">
                                     <div className="flex justify-between"><span>BNB Liquidity</span><span>{releaseLiqBnb || '0.000'} BNB</span></div>
-                                    <div className="flex justify-between"><span>Service Fee</span><span className="text-amber-600">{RELEASE_SERVICE_FEE.toFixed(3)} BNB</span></div>
-                                    <div className="flex justify-between font-black text-gray-900 border-t border-emerald-100 pt-1.5">
+                                    <div className="flex justify-between"><span>Service Fee</span><span className="text-indigo-600">{RELEASE_SERVICE_FEE.toFixed(3)} BNB</span></div>
+                                    <div className="flex justify-between font-black text-gray-900 border-t border-sky-100 pt-1.5">
                                         <span>Total</span><span>{((parseFloat(releaseLiqBnb) || 0) + RELEASE_SERVICE_FEE).toFixed(3)} BNB</span>
                                     </div>
                                 </div>
-                                {releaseError && <p className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-100 px-3 py-2 rounded-lg flex items-start gap-2"><AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />{releaseError}</p>}
-                                {releaseStatus === 'success' && <p className="text-[10px] font-black text-emerald-700 bg-emerald-100 px-3 py-2 rounded-lg flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Tokens released to PancakeSwap!</p>}
+                                {releaseError && <p className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-3 py-2 rounded-lg flex items-start gap-2"><AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />{releaseError}</p>}
+                                {releaseStatus === 'success' && <p className="text-[10px] font-black text-sky-700 bg-sky-100 px-3 py-2 rounded-lg flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Tokens released to PancakeSwap!</p>}
                                 <button onClick={handleReleaseTokens} disabled={releaseStatus === 'loading'}
-                                    className="w-full py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs rounded-xl uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-lg shadow-emerald-500/20">
+                                    className="w-full py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-black text-xs rounded-xl uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-lg shadow-sky-500/20">
                                     {releaseStatus === 'loading' ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</> : <><Unlock className="w-4 h-4" /> Release Tokens to PancakeSwap</>}
                                 </button>
                             </motion.div>
@@ -648,10 +648,10 @@ export default function ProfilePage() {
     const totalEarned = stakes.reduce((s, st) => s + parseFloat(st.earned_so_far || 0), 0);
     const totalStakedAmount = stakes.filter(s => s.status === 'active').reduce((s, st) => s + parseFloat(st.amount_tokens || 0), 0);
     const stats = [
-        { label: 'Tokens Deployed', value: tokens.length, icon: <Rocket className="w-5 h-5" />, color: 'text-rose-500', bg: 'bg-rose-50', border: 'border-rose-200' },
-        { label: 'Total Supply (all)', value: formatSupply(tokens.reduce((s, t) => s + Number(t.total_supply || 1_000_000_000), 0)), icon: <TrendingUp className="w-5 h-5" />, color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-200' },
+        { label: 'Tokens Deployed', value: tokens.length, icon: <Rocket className="w-5 h-5" />, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-200' },
+        { label: 'Total Supply (all)', value: formatSupply(tokens.reduce((s, t) => s + Number(t.total_supply || 1_000_000_000), 0)), icon: <TrendingUp className="w-5 h-5" />, color: 'text-indigo-500', bg: 'bg-indigo-50', border: 'border-indigo-200' },
         { label: 'Wallet Balance', value: bnbBalance !== null ? `${formatBNB(bnbBalance)} BNB` : '…', icon: <Wallet className="w-5 h-5" />, color: 'text-indigo-500', bg: 'bg-indigo-50', border: 'border-indigo-200' },
-        { label: 'Last Deploy', value: tokens[0]?.created_at ? new Date(tokens[0].created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '—', icon: <Clock className="w-5 h-5" />, color: 'text-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+        { label: 'Last Deploy', value: tokens[0]?.created_at ? new Date(tokens[0].created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '—', icon: <Clock className="w-5 h-5" />, color: 'text-sky-500', bg: 'bg-sky-50', border: 'border-sky-200' },
     ];
 
     const filteredTokens = tokens.filter(t => 
@@ -678,7 +678,7 @@ export default function ProfilePage() {
                             activeTab === 'tokens' ? 'bg-white text-gray-900 shadow-xl' : 'text-gray-400 hover:text-gray-600 hover:bg-white/50'
                         }`}
                     >
-                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'tokens' ? 'bg-rose-500 text-white' : 'bg-gray-100 text-gray-400 group-hover:text-gray-600'}`}>
+                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'tokens' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-400 group-hover:text-gray-600'}`}>
                             <Rocket className="w-3.5 h-3.5" />
                         </div>
                         <span className="hidden sm:inline">My Assets</span>
@@ -699,10 +699,10 @@ export default function ProfilePage() {
                     <button
                         onClick={() => setActiveTab('futures')}
                         className={`group flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative ${
-                            activeTab === 'futures' ? 'bg-emerald-600 text-white shadow-xl shadow-emerald-500/20' : 'text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/5'
+                            activeTab === 'futures' ? 'bg-sky-600 text-white shadow-xl shadow-sky-500/20' : 'text-sky-500 hover:text-sky-600 hover:bg-sky-500/5'
                         }`}
                     >
-                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'futures' ? 'bg-white/20 text-white' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'futures' ? 'bg-white/20 text-white' : 'bg-sky-500/10 text-sky-500'}`}>
                             <Activity className="w-3.5 h-3.5" />
                         </div>
                         <span className="hidden sm:inline">Futures Hub</span>
@@ -723,10 +723,10 @@ export default function ProfilePage() {
                     <button
                         onClick={() => setActiveTab('smartmoney')}
                         className={`group flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative ${
-                            activeTab === 'smartmoney' ? 'bg-amber-600 text-white shadow-xl shadow-amber-500/20 col-span-2 md:col-span-1' : 'text-amber-500 hover:text-amber-600 hover:bg-amber-500/5 col-span-2 md:col-span-1'
+                            activeTab === 'smartmoney' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20 col-span-2 md:col-span-1' : 'text-indigo-500 hover:text-indigo-600 hover:bg-indigo-500/5 col-span-2 md:col-span-1'
                         }`}
                     >
-                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'smartmoney' ? 'bg-white/20 text-white' : 'bg-amber-500/10 text-amber-500'}`}>
+                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'smartmoney' ? 'bg-white/20 text-white' : 'bg-indigo-500/10 text-indigo-500'}`}>
                             <TrendingUp className="w-3.5 h-3.5" />
                         </div>
                         <span className="hidden sm:inline">Smart Money</span>
@@ -756,8 +756,8 @@ export default function ProfilePage() {
                 {!account ? (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
                         className="glass-card py-24 text-center flex flex-col items-center gap-6">
-                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-rose-100 to-amber-100 flex items-center justify-center">
-                            <Wallet className="w-12 h-12 text-rose-500" />
+                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
+                            <Wallet className="w-12 h-12 text-blue-500" />
                         </div>
                         <div>
                             <h2 className="text-2xl font-black text-gray-900 mb-2">Connect Your Wallet</h2>
@@ -765,7 +765,7 @@ export default function ProfilePage() {
                         </div>
                         <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                             onClick={connectWallet}
-                            className="px-10 py-3.5 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white font-black rounded-2xl shadow-xl shadow-rose-500/25">
+                            className="px-10 py-3.5 bg-gradient-to-r from-blue-500 to-slate-500 hover:from-blue-600 hover:to-slate-600 text-white font-black rounded-2xl shadow-xl shadow-blue-500/25">
                             🔗 Connect Wallet
                         </motion.button>
                     </motion.div>
@@ -773,7 +773,7 @@ export default function ProfilePage() {
                     <>
                         {/* Wallet badge */}
                         <div className="bg-white border border-black/8 rounded-2xl p-5 mb-6 flex flex-col sm:flex-row items-center gap-4 shadow-sm">
-                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-400 to-rose-500 flex items-center justify-center shadow-lg shrink-0">
+                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-400 to-blue-500 flex items-center justify-center shadow-lg shrink-0">
                                 <Wallet className="w-7 h-7 text-white" />
                             </div>
                             <div className="flex-1 min-w-0 text-center sm:text-left">
@@ -789,18 +789,18 @@ export default function ProfilePage() {
                         <div className="flex flex-wrap items-center gap-2 shrink-0">
                             <Link href="/exchange">
                                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                    className="flex items-center gap-1.5 text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 px-4 py-2 rounded-xl transition-colors shadow-md shadow-amber-500/20">
+                                    className="flex items-center gap-1.5 text-sm font-bold text-white bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded-xl transition-colors shadow-md shadow-indigo-500/20">
                                     <TrendingUp className="w-4 h-4" /> Exchange
                                 </motion.button>
                             </Link>
                             <Link href="/fiat">
                                 <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                    className="flex items-center gap-1.5 text-sm font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 px-4 py-2 rounded-xl transition-colors">
+                                    className="flex items-center gap-1.5 text-sm font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 px-4 py-2 rounded-xl transition-colors">
                                     <Globe className="w-4 h-4" /> Fiat
                                 </motion.button>
                             </Link>
                             <a href={`https://bscscan.com/address/${account}`} target="_blank" rel="noopener noreferrer"
-                                className="flex items-center gap-1.5 text-sm font-bold text-amber-600 hover:text-amber-700 bg-amber-50 border border-amber-200 px-4 py-2 rounded-xl transition-colors">
+                                className="flex items-center gap-1.5 text-sm font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 border border-indigo-200 px-4 py-2 rounded-xl transition-colors">
                                 <ExternalLink className="w-4 h-4" /> BSCScan
                             </a>
                         </div>
@@ -838,12 +838,12 @@ export default function ProfilePage() {
                                                 placeholder="Search by name, symbol, or address..."
                                                 value={searchQuery}
                                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-500/20 transition-all shadow-sm"
+                                                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
                                             />
                                         </div>
                                         <Link href="/create" className="shrink-0">
                                             <motion.button whileHover={{ scale: 1.04 }}
-                                                className="h-full px-5 py-2.5 bg-gradient-to-r from-rose-500 to-orange-500 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-md shadow-rose-500/20">
+                                                className="h-full px-5 py-2.5 bg-gradient-to-r from-blue-500 to-slate-500 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-md shadow-blue-500/20">
                                                 <Rocket className="w-4 h-4" /> Deploy
                                             </motion.button>
                                         </Link>
@@ -852,13 +852,13 @@ export default function ProfilePage() {
 
                                 {loading ? (
                                     <div className="flex flex-col items-center justify-center py-16 gap-4">
-                                        <div className="w-12 h-12 border-4 border-rose-500/20 border-t-rose-500 rounded-full animate-spin" />
+                                        <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
                                         <p className="text-gray-400 text-sm font-semibold">Syncing your deployed assets…</p>
                                     </div>
                                 ) : tokens.length === 0 ? (
                                     <div className="bg-white border border-black/8 rounded-2xl py-20 text-center shadow-sm">
-                                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-rose-100 to-amber-100 flex items-center justify-center mx-auto mb-5">
-                                            <Rocket className="w-10 h-10 text-rose-500" />
+                                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center mx-auto mb-5">
+                                            <Rocket className="w-10 h-10 text-blue-500" />
                                         </div>
                                         <p className="font-black text-xl text-gray-800 mb-2">No Deployed Tokens Yet</p>
                                         <p className="text-sm text-gray-500 mb-6 max-w-xs mx-auto">
@@ -866,12 +866,12 @@ export default function ProfilePage() {
                                         </p>
                                         <div className="flex gap-3 justify-center">
                                             <Link href="/create">
-                                                <motion.button whileHover={{ scale: 1.04 }} className="px-6 py-3 bg-gradient-to-r from-rose-500 to-orange-500 text-white font-bold text-sm rounded-xl shadow-md shadow-rose-500/20 flex items-center gap-2">
+                                                <motion.button whileHover={{ scale: 1.04 }} className="px-6 py-3 bg-gradient-to-r from-blue-500 to-slate-500 text-white font-bold text-sm rounded-xl shadow-md shadow-blue-500/20 flex items-center gap-2">
                                                     <Rocket className="w-4 h-4" /> Launch via Bonding Curve
                                                 </motion.button>
                                             </Link>
                                             <Link href="/fair-launch">
-                                                <motion.button whileHover={{ scale: 1.04 }} className="px-6 py-3 bg-emerald-500 text-white font-bold text-sm rounded-xl shadow-md shadow-emerald-500/20 flex items-center gap-2">
+                                                <motion.button whileHover={{ scale: 1.04 }} className="px-6 py-3 bg-sky-500 text-white font-bold text-sm rounded-xl shadow-md shadow-sky-500/20 flex items-center gap-2">
                                                     <Zap className="w-4 h-4" /> Fair Launch (Direct DEX)
                                                 </motion.button>
                                             </Link>
@@ -925,7 +925,7 @@ export default function ProfilePage() {
                                 <div className="bg-white border border-black/8 rounded-[2.5rem] shadow-xl overflow-hidden mb-20">
                                     <div className="p-8 md:p-12">
                                         <h2 className="text-2xl font-black text-gray-900 mb-8 border-b border-black/5 pb-6 flex items-center gap-3 uppercase italic">
-                                            <Zap className="w-6 h-6 text-amber-500" /> Request a Quote
+                                            <Zap className="w-6 h-6 text-indigo-500" /> Request a Quote
                                         </h2>
 
                                         <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); alert("Request submitted successfully! Our elite team will contact you within 6 hours."); }}>
@@ -976,8 +976,8 @@ export default function ProfilePage() {
                                 <div className="grid grid-cols-3 gap-4 mb-6">
                                     {[
                                         { label: 'Active Stakes', value: activeStakesCount, icon: <Lock className="w-5 h-5" />, color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200' },
-                                        { label: 'Total Staked', value: totalStakedAmount.toFixed(2), icon: <BarChart3 className="w-5 h-5" />, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200' },
-                                        { label: 'Total Earned', value: totalEarned.toFixed(4), icon: <Gift className="w-5 h-5" />, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200' },
+                                        { label: 'Total Staked', value: totalStakedAmount.toFixed(2), icon: <BarChart3 className="w-5 h-5" />, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
+                                        { label: 'Total Earned', value: totalEarned.toFixed(4), icon: <Gift className="w-5 h-5" />, color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-200' },
                                     ].map((s, i) => (
                                         <motion.div key={i} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}
                                             className={`bg-white border ${s.border} rounded-2xl p-4 text-center shadow-sm`}>
@@ -1030,8 +1030,8 @@ export default function ProfilePage() {
                                             const progress = parseFloat(stake.progress_pct) || 0;
                                             const canRelease = stake.is_matured && stake.status === 'active';
                                             const statusColors = {
-                                                active: 'text-emerald-600 bg-emerald-50 border-emerald-200',
-                                                pending_release: 'text-amber-600 bg-amber-50 border-amber-200 animate-pulse',
+                                                active: 'text-sky-600 bg-sky-50 border-sky-200',
+                                                pending_release: 'text-indigo-600 bg-indigo-50 border-indigo-200 animate-pulse',
                                                 released: 'text-blue-600 bg-blue-50 border-blue-200',
                                             };
                                             const statusLabels = { active: '● Active', pending_release: '⏳ Pending Release', released: '✓ Released' };
@@ -1061,10 +1061,10 @@ export default function ProfilePage() {
                                                                 <p className="text-sm font-black text-gray-900">{parseFloat(stake.amount_tokens).toFixed(2)}</p>
                                                                 <p className="text-[9px] text-gray-400">{stake.token_symbol}</p>
                                                             </div>
-                                                            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center">
-                                                                <p className="text-[10px] text-emerald-600 font-bold uppercase mb-0.5">Earned</p>
-                                                                <p className="text-sm font-black text-emerald-700">{parseFloat(stake.earned_so_far).toFixed(4)}</p>
-                                                                <p className="text-[9px] text-emerald-500">{stake.token_symbol}</p>
+                                                            <div className="bg-sky-50 border border-sky-100 rounded-xl p-3 text-center">
+                                                                <p className="text-[10px] text-sky-600 font-bold uppercase mb-0.5">Earned</p>
+                                                                <p className="text-sm font-black text-sky-700">{parseFloat(stake.earned_so_far).toFixed(4)}</p>
+                                                                <p className="text-[9px] text-sky-500">{stake.token_symbol}</p>
                                                             </div>
                                                             <div className="bg-black/3 rounded-xl p-3 text-center">
                                                                 <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Expected</p>
@@ -1109,7 +1109,7 @@ export default function ProfilePage() {
                                                                         .finally(() => setReleasingStake(null));
                                                                 }}
                                                                 disabled={releasingStake === stake.id}
-                                                                className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-emerald-500/20 disabled:opacity-50"
+                                                                className="w-full py-2.5 bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-sky-500/20 disabled:opacity-50"
                                                             >
                                                                 {releasingStake === stake.id
                                                                     ? <><Loader2 className="w-3 h-3 animate-spin" /> Submitting…</>
@@ -1117,7 +1117,7 @@ export default function ProfilePage() {
                                                             </button>
                                                         )}
                                                         {stake.status === 'pending_release' && (
-                                                            <div className="w-full py-2.5 bg-amber-50 border border-amber-200 text-amber-700 font-bold text-xs rounded-xl text-center">
+                                                            <div className="w-full py-2.5 bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold text-xs rounded-xl text-center">
                                                                 ⏳ Pending admin approval
                                                             </div>
                                                         )}
@@ -1152,10 +1152,10 @@ export default function ProfilePage() {
                             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                                 <div className="flex items-center justify-between mb-5">
                                     <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
-                                        <Activity className="w-5 h-5 text-emerald-500" /> Futures Positions
+                                        <Activity className="w-5 h-5 text-sky-500" /> Futures Positions
                                         <span className="ml-1 text-sm font-bold text-gray-400 bg-black/5 px-2 py-0.5 rounded-full">{futuresPositions.length}</span>
                                     </h2>
-                                    <Link href="/exchange?mode=pro" className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition-all">
+                                    <Link href="/exchange?mode=pro" className="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition-all">
                                         Trade Pro Futures
                                     </Link>
                                 </div>
@@ -1172,7 +1172,7 @@ export default function ProfilePage() {
                                     <div className="space-y-3">
                                         {futuresPositions.length > 0 ? (
                                             futuresPositions.map((pos) => (
-                                                <div key={pos.id} className={`grid grid-cols-6 text-[10px] font-black text-gray-900 uppercase tracking-widest p-6 border rounded-[2rem] items-center shadow-sm transition-all hover:shadow-md ${pos.side === 'long' ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-rose-500/20 bg-rose-500/5'}`}>
+                                                <div key={pos.id} className={`grid grid-cols-6 text-[10px] font-black text-gray-900 uppercase tracking-widest p-6 border rounded-[2rem] items-center shadow-sm transition-all hover:shadow-md ${pos.side === 'long' ? 'border-sky-500/20 bg-sky-500/5' : 'border-blue-500/20 bg-blue-500/5'}`}>
                                                     <div className="text-gray-400 text-[9px] font-mono">{pos.time || 'NOW'}</div>
                                                     <div className="flex items-center gap-3">
                                                         <div className="w-10 h-10 bg-white rounded-xl shadow-inner p-1.5 flex items-center justify-center border border-black/5">
@@ -1181,10 +1181,10 @@ export default function ProfilePage() {
                                                         <span className="tracking-tighter">{pos.tokenSymbol || 'BTC'}/BNB</span>
                                                     </div>
                                                     <div>
-                                                        <span className={`${pos.side === 'long' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'} px-4 py-1.5 rounded-full text-[8px] border-2 border-white/50 shadow-sm`}>{pos.side} {pos.leverage}x</span>
+                                                        <span className={`${pos.side === 'long' ? 'bg-sky-500 text-white' : 'bg-blue-500 text-white'} px-4 py-1.5 rounded-full text-[8px] border-2 border-white/50 shadow-sm`}>{pos.side} {pos.leverage}x</span>
                                                     </div>
                                                     <div className="font-mono text-gray-900 font-bold">${Number(pos.entryPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                                                    <div className={`text-right font-mono ${pos.side === 'long' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                    <div className={`text-right font-mono ${pos.side === 'long' ? 'text-sky-600' : 'text-blue-600'}`}>
                                                         {parseFloat(pos.size || 0).toFixed(4)} BNB 
                                                         <span className="block text-[8px] font-black mt-1 text-gray-400 uppercase tracking-widest">VOL</span>
                                                     </div>
@@ -1192,7 +1192,7 @@ export default function ProfilePage() {
                                                         <button 
                                                             disabled={closingPositionId === pos.id}
                                                             onClick={() => closeFuturesPosition(pos.id)} 
-                                                            className={`min-w-[100px] px-3 py-1.5 bg-white border hover:bg-black/5 rounded-lg transition-colors text-[9px] flex items-center justify-center gap-1.5 ${pos.side === 'long' ? 'border-emerald-200 text-emerald-600' : 'border-rose-200 text-rose-600'} disabled:opacity-50`}
+                                                            className={`min-w-[100px] px-3 py-1.5 bg-white border hover:bg-black/5 rounded-lg transition-colors text-[9px] flex items-center justify-center gap-1.5 ${pos.side === 'long' ? 'border-sky-200 text-sky-600' : 'border-blue-200 text-blue-600'} disabled:opacity-50`}
                                                         >
                                                             {closingPositionId === pos.id ? (
                                                                 <><Loader2 className="w-3 h-3 animate-spin" /> Settling...</>
@@ -1221,7 +1221,7 @@ export default function ProfilePage() {
                                     </div>
                                     <div className="bg-white border p-8 rounded-[2rem] shadow-sm">
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Net Profit / Loss</p>
-                                        <p className={`text-3xl font-black ${(tradingStats?.total_pnl_bnb || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                        <p className={`text-3xl font-black ${(tradingStats?.total_pnl_bnb || 0) >= 0 ? 'text-sky-500' : 'text-blue-500'}`}>
                                             {(tradingStats?.total_pnl_bnb || 0) >= 0 ? '+' : ''}{parseFloat(tradingStats?.total_pnl_bnb || 0).toFixed(4)} BNB
                                         </p>
                                     </div>
@@ -1243,8 +1243,8 @@ export default function ProfilePage() {
                                             <div className="flex items-center justify-between mb-8">
                                                 <h3 className="text-white font-black uppercase text-sm tracking-widest">PnL Heatmap</h3>
                                                 <div className="flex gap-2">
-                                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-emerald-500 rounded-sm" /><span className="text-[8px] text-gray-400 font-bold uppercase">Profit</span></div>
-                                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-rose-500 rounded-sm" /><span className="text-[8px] text-gray-400 font-bold uppercase">Loss</span></div>
+                                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-sky-500 rounded-sm" /><span className="text-[8px] text-gray-400 font-bold uppercase">Profit</span></div>
+                                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-blue-500 rounded-sm" /><span className="text-[8px] text-gray-400 font-bold uppercase">Loss</span></div>
                                                     <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-[#1e1b4b] border border-white/20 rounded-sm" /><span className="text-[8px] text-gray-400 font-bold uppercase">No Trade</span></div>
                                                 </div>
                                             </div>
@@ -1271,7 +1271,7 @@ export default function ProfilePage() {
                                                     }
                                                     return days.map((d, i) => (
                                                         <div key={i} className={`aspect-square rounded-xl flex flex-col items-center justify-center border transition-all ${
-                                                            d.hasTrade ? (d.pnl > 0 ? 'bg-emerald-500 border-emerald-400 text-white' : 'bg-rose-500 border-rose-400 text-white') : 'bg-[#1e1b4b] border-white/5 text-gray-500'
+                                                            d.hasTrade ? (d.pnl > 0 ? 'bg-sky-500 border-sky-400 text-white' : 'bg-blue-500 border-blue-400 text-white') : 'bg-[#1e1b4b] border-white/5 text-gray-500'
                                                         }`}>
                                                             <span className="text-[10px] font-black">{d.day}</span>
                                                             {d.hasTrade && <span className="text-[7px] font-bold mt-0.5">{d.pnl > 0 ? '+' : ''}{d.pnl === 0 ? '0' : d.pnl.toFixed(4)}</span>}
@@ -1320,7 +1320,7 @@ export default function ProfilePage() {
                                                                                     {t.token_logo ? (
                                                                                         <img src={t.token_logo} className="w-full h-full object-contain rounded" />
                                                                                     ) : (
-                                                                                        t.trade_type?.toLowerCase().includes('perpetual') ? <Activity className="w-5 h-5 text-indigo-500" /> : <Rocket className="w-5 h-5 text-amber-500" />
+                                                                                        t.trade_type?.toLowerCase().includes('perpetual') ? <Activity className="w-5 h-5 text-indigo-500" /> : <Rocket className="w-5 h-5 text-indigo-500" />
                                                                                     )}
                                                                                 </div>
                                                                                 <div>
@@ -1332,15 +1332,15 @@ export default function ProfilePage() {
                                                                         <td className="py-6">
                                                                             <div className="flex flex-col gap-1">
                                                                                 <span className={`text-[9px] font-black px-2 py-1 rounded-md border uppercase tracking-tighter inline-block w-fit ${
-                                                                                    t.trade_type?.includes('Buy') ? 'text-emerald-600 bg-emerald-50 border-emerald-100' :
-                                                                                    t.trade_type?.includes('Sell') ? 'text-rose-600 bg-rose-50 border-rose-100' :
+                                                                                    t.trade_type?.includes('Buy') ? 'text-sky-600 bg-sky-50 border-sky-100' :
+                                                                                    t.trade_type?.includes('Sell') ? 'text-blue-600 bg-blue-50 border-blue-100' :
                                                                                     'text-indigo-600 bg-indigo-50 border-indigo-100'
                                                                                 }`}>
                                                                                     {t.trade_type || 'Swap Completed'}
                                                                                 </span>
                                                                                 <div className="flex items-center gap-1">
-                                                                                    <div className="w-1 h-1 bg-emerald-500 rounded-full" />
-                                                                                    <span className="text-[7px] font-black text-emerald-500 uppercase tracking-widest">Verified Hub</span>
+                                                                                    <div className="w-1 h-1 bg-sky-500 rounded-full" />
+                                                                                    <span className="text-[7px] font-black text-sky-500 uppercase tracking-widest">Verified Hub</span>
                                                                                 </div>
                                                                             </div>
                                                                         </td>
@@ -1355,7 +1355,7 @@ export default function ProfilePage() {
                                                                             <span className="text-[8px] text-gray-400 ml-1">BNB</span>
                                                                         </td>
                                                                         <td className="py-6">
-                                                                            <p className={`text-xs font-black ${(t.pnl_bnb || 0) > 0 ? 'text-emerald-500' : (t.pnl_bnb || 0) < 0 ? 'text-rose-500' : 'text-gray-400'}`}>
+                                                                            <p className={`text-xs font-black ${(t.pnl_bnb || 0) > 0 ? 'text-sky-500' : (t.pnl_bnb || 0) < 0 ? 'text-blue-500' : 'text-gray-400'}`}>
                                                                                 {(t.pnl_bnb || 0) > 0 ? '+' : ''}{parseFloat(t.pnl_bnb || 0).toFixed(6)}
                                                                             </p>
                                                                         </td>
@@ -1391,32 +1391,32 @@ export default function ProfilePage() {
                                 <div className="flex items-center justify-between mb-8">
                                     <div>
                                         <h2 className="text-xl font-black text-gray-900 flex items-center gap-2 uppercase tracking-tighter italic">
-                                            <TrendingUp className="w-6 h-6 text-amber-500" /> Strategic Hub <span className="text-amber-500">Portfolio</span>
+                                            <TrendingUp className="w-6 h-6 text-indigo-500" /> Strategic Hub <span className="text-indigo-500">Portfolio</span>
                                             <span className="ml-1 text-sm font-bold text-gray-400 bg-black/5 px-3 py-1 rounded-full">{smartMoneyInvestments.length}</span>
                                         </h2>
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Institutional weighting deployment history</p>
                                     </div>
-                                    <Link href="/exchange" className="px-6 py-2.5 bg-amber-600 hover:bg-amber-700 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-amber-500/20 flex items-center gap-2">
+                                    <Link href="/exchange" className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-indigo-500/20 flex items-center gap-2">
                                         <TrendingUp className="w-4 h-4" /> Invest More
                                     </Link>
                                 </div>
 
                                 {loadingSmartMoney ? (
                                     <div className="flex flex-col items-center justify-center py-24 gap-4">
-                                        <Loader2 className="w-10 h-10 text-amber-500 animate-spin" />
+                                        <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Retrieving Strategy Data...</p>
                                     </div>
                                 ) : smartMoneyInvestments.length === 0 ? (
                                     <div className="bg-white border border-black/8 rounded-[3rem] p-20 text-center shadow-sm relative overflow-hidden backdrop-blur-xl">
-                                         <div className="absolute inset-0 bg-gradient-to-br from-amber-50/50 to-transparent pointer-events-none" />
-                                        <div className="w-24 h-24 rounded-[2rem] bg-amber-50 flex items-center justify-center mx-auto mb-8 shadow-inner ring-4 ring-amber-50/50 relative z-10">
-                                            <TrendingUp className="w-10 h-10 text-amber-400" />
+                                         <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-transparent pointer-events-none" />
+                                        <div className="w-24 h-24 rounded-[2rem] bg-indigo-50 flex items-center justify-center mx-auto mb-8 shadow-inner ring-4 ring-indigo-50/50 relative z-10">
+                                            <TrendingUp className="w-10 h-10 text-indigo-400" />
                                         </div>
                                         <h3 className="text-2xl font-black text-gray-900 mb-2 uppercase italic relative z-10">No Strategic Deployments</h3>
                                         <p className="text-xs text-gray-500 font-bold max-w-sm mx-auto mb-10 leading-relaxed uppercase tracking-widest opacity-60 relative z-10">
                                             You haven't deployed capital into the B20 Smart Money indices yet. Start building your weighted institutional portfolio today.
                                         </p>
-                                        <Link href="/exchange" className="relative z-10 inline-flex items-center gap-3 px-10 py-4 bg-amber-600 hover:bg-amber-700 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest transition-all shadow-2xl shadow-amber-500/30">
+                                        <Link href="/exchange" className="relative z-10 inline-flex items-center gap-3 px-10 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest transition-all shadow-2xl shadow-indigo-500/30">
                                             <TrendingUp className="w-4 h-4" /> Go to Smart Money Hub
                                         </Link>
                                     </div>
@@ -1428,21 +1428,21 @@ export default function ProfilePage() {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: idx * 0.05 }}
-                                                className="bg-white border border-black/5 rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl hover:border-amber-500/20 transition-all group overflow-hidden relative"
+                                                className="bg-white border border-black/5 rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl hover:border-indigo-500/20 transition-all group overflow-hidden relative"
                                             >
                                                 <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform">
-                                                    <TrendingUp className="w-24 h-24 text-amber-600" />
+                                                    <TrendingUp className="w-24 h-24 text-indigo-600" />
                                                 </div>
                                                 
                                                 <div className="flex items-center justify-between mb-8 relative z-10">
                                                     <div className="space-y-1">
-                                                        <div className="text-[10px] font-black text-amber-600 uppercase tracking-widest flex items-center gap-2">
+                                                        <div className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2">
                                                             Institutional Alpha Index
                                                         </div>
                                                         <h4 className="text-2xl font-black text-gray-900 uppercase tracking-tighter italic">{inv.bucket_name}</h4>
                                                     </div>
-                                                    <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center border border-amber-100 shadow-sm">
-                                                        <TrendingUp className="w-6 h-6 text-amber-600" />
+                                                    <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center border border-indigo-100 shadow-sm">
+                                                        <TrendingUp className="w-6 h-6 text-indigo-600" />
                                                     </div>
                                                 </div>
 
@@ -1450,14 +1450,14 @@ export default function ProfilePage() {
                                                     <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-2">Bucket Composition</p>
                                                     <div className="flex flex-wrap gap-4">
                                                         {(inv.bucket_json ? JSON.parse(inv.bucket_json) : []).map(token => (
-                                                            <div key={token.symbol} className="flex items-center gap-3 px-5 py-2.5 bg-white border border-black/5 rounded-[1.5rem] shadow-sm group/token hover:border-amber-200 transition-all">
+                                                            <div key={token.symbol} className="flex items-center gap-3 px-5 py-2.5 bg-white border border-black/5 rounded-[1.5rem] shadow-sm group/token hover:border-indigo-200 transition-all">
                                                                 <div className="w-8 h-8 rounded-xl bg-gray-50 p-1.5 border border-black/5 shrink-0">
                                                                      <img src={token.image} className="w-full h-full object-contain" alt="" />
                                                                 </div>
                                                                 <div>
                                                                     <div className="flex items-center gap-2">
                                                                         <span className="text-[10px] font-black text-gray-900 uppercase">{token.symbol}</span>
-                                                                        <span className="text-[8px] font-black text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 italic">14.28%</span>
+                                                                        <span className="text-[8px] font-black text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 italic">14.28%</span>
                                                                     </div>
                                                                     <p className="text-[8px] font-bold text-gray-400 font-mono truncate max-w-[100px]">{token.address}</p>
                                                                 </div>
@@ -1479,13 +1479,13 @@ export default function ProfilePage() {
                                                     </div>
                                                 </div>
 
-                                                <div className="flex items-center justify-between bg-emerald-50/50 border border-emerald-100 rounded-2xl px-6 py-4 relative z-10">
+                                                <div className="flex items-center justify-between bg-sky-50/50 border border-sky-100 rounded-2xl px-6 py-4 relative z-10">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                                        <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Self-Custodial Sync</span>
+                                                        <div className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
+                                                        <span className="text-[10px] font-black text-sky-700 uppercase tracking-widest">Self-Custodial Sync</span>
                                                     </div>
                                                     {inv.tx_hash && (
-                                                        <a href={`https://bscscan.com/tx/${inv.tx_hash}`} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black text-amber-600 border-b border-amber-200 uppercase tracking-widest hover:text-amber-700 transition-colors">
+                                                        <a href={`https://bscscan.com/tx/${inv.tx_hash}`} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black text-indigo-600 border-b border-indigo-200 uppercase tracking-widest hover:text-indigo-700 transition-colors">
                                                             View Transaction
                                                         </a>
                                                     )}

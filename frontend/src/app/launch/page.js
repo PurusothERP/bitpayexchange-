@@ -81,7 +81,7 @@ function TokenCard({ token, index }) {
                     {/* Card Header: Logo + Badges */}
                     <div className="flex items-start justify-between mb-6">
                         <div className="relative">
-                            <div className="w-16 h-16 rounded-2xl bg-zinc-100 border-2 border-white overflow-hidden shadow-sm group-hover:shadow-emerald-500/10 transition-all duration-500">
+                            <div className="w-16 h-16 rounded-2xl bg-zinc-100 border-2 border-white overflow-hidden shadow-sm group-hover:shadow-sky-500/10 transition-all duration-500">
                                 {token.logo_url ? (
                                     <img src={token.logo_url} className="w-full h-full object-cover" alt={token.name} />
                                 ) : (
@@ -89,14 +89,14 @@ function TokenCard({ token, index }) {
                                 )}
                             </div>
                             {isPremium && (
-                                <div className="absolute -top-3 -right-3 w-8 h-8 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg border-4 border-white">
+                                <div className="absolute -top-3 -right-3 w-8 h-8 bg-sky-500 rounded-xl flex items-center justify-center shadow-lg border-4 border-white">
                                     <CheckCircle2 className="w-4 h-4 text-white fill-current" />
                                 </div>
                             )}
                         </div>
                         <div className="text-right">
                             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                                isUp ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600'
+                                isUp ? 'bg-sky-500/10 text-sky-600' : 'bg-blue-500/10 text-blue-600'
                             }`}>
                                 {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
                                 {isUp ? '+12.4%' : '-2.1%'}
@@ -107,20 +107,20 @@ function TokenCard({ token, index }) {
 
                     <div className="mb-6 flex-1">
                         <p className="text-[10px] font-black text-zinc-400 font-mono uppercase tracking-[0.2em] mb-1">{token.symbol}</p>
-                        <h4 className="text-lg font-black text-zinc-900 leading-none group-hover:text-rose-500 transition-colors">{token.name}</h4>
+                        <h4 className="text-lg font-black text-zinc-900 leading-none group-hover:text-blue-500 transition-colors">{token.name}</h4>
                     </div>
 
                     {/* Progress */}
                     <div className="mb-6">
                         <div className="flex justify-between items-end mb-2.5">
                             <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em]">Bonding Process</label>
-                            <span className="text-[10px] font-black text-rose-500 font-mono italic">{progress.toFixed()}%</span>
+                            <span className="text-[10px] font-black text-blue-500 font-mono italic">{progress.toFixed()}%</span>
                         </div>
                         <div className="h-1.5 w-full bg-zinc-100 rounded-full overflow-hidden border border-black/5">
                             <motion.div 
                                 initial={{ width: 0 }}
                                 animate={{ width: `${progress}%` }}
-                                className="h-full bg-gradient-to-r from-rose-400 to-rose-600"
+                                className="h-full bg-gradient-to-r from-blue-400 to-blue-600"
                             />
                         </div>
                     </div>
@@ -143,11 +143,11 @@ function TokenCard({ token, index }) {
                                     <Users className="w-3.5 h-3.5" />
                                 </div>
                             ))}
-                            <div className="w-8 h-8 rounded-full border-2 border-white bg-rose-500 flex items-center justify-center text-[10px] font-black text-white">
+                            <div className="w-8 h-8 rounded-full border-2 border-white bg-blue-500 flex items-center justify-center text-[10px] font-black text-white">
                                 +{Math.floor(Math.random() * 50)}
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 text-zinc-400 font-black text-[10px] uppercase tracking-widest group-hover:text-rose-500 transition-colors">
+                        <div className="flex items-center gap-2 text-zinc-400 font-black text-[10px] uppercase tracking-widest group-hover:text-blue-500 transition-colors">
                             Trade Asset <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                         </div>
                     </div>
@@ -178,7 +178,7 @@ function ListView({ tokens }) {
                                         {token.logo_url ? <img src={token.logo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">🪙</div>}
                                     </div>
                                     <div>
-                                        <p className="text-sm font-black text-zinc-900 italic tracking-tight leading-none mb-1 group-hover:text-rose-600 transition-colors">{token.name}</p>
+                                        <p className="text-sm font-black text-zinc-900 italic tracking-tight leading-none mb-1 group-hover:text-blue-600 transition-colors">{token.name}</p>
                                         <p className="text-[10px] font-black text-zinc-400 font-mono uppercase tracking-widest">${token.symbol}</p>
                                     </div>
                                 </div>
@@ -190,7 +190,7 @@ function ListView({ tokens }) {
                                 <p className="text-sm font-black text-zinc-600">${((token.market_cap || 0) * 600).toLocaleString()}</p>
                             </td>
                             <td className="px-8 py-6 text-right">
-                                <Link href={`/token/${token.contract_address}`} className="inline-flex items-center gap-2 text-rose-600 hover:text-rose-700 transition-colors uppercase text-[10px] font-black tracking-widest">
+                                <Link href={`/token/${token.contract_address}`} className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors uppercase text-[10px] font-black tracking-widest">
                                     Trade <ArrowUpRight className="w-4 h-4" />
                                 </Link>
                             </td>
@@ -240,12 +240,12 @@ function BubbleView({ tokens }) {
                         className="group shrink-0 cursor-pointer"
                     >
                         <Link href={`/token/${token.contract_address}`}>
-                            <div className="w-full h-full rounded-full border border-zinc-200 bg-white flex flex-col items-center justify-center p-4 text-center group-hover:scale-110 group-hover:border-rose-500 transition-all shadow-xl">
+                            <div className="w-full h-full rounded-full border border-zinc-200 bg-white flex flex-col items-center justify-center p-4 text-center group-hover:scale-110 group-hover:border-blue-500 transition-all shadow-xl">
                                 <div className="w-12 h-12 rounded-xl border border-zinc-100 overflow-hidden mb-2 transition-all">
                                     {token.logo_url ? <img src={token.logo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-zinc-100">🪙</div>}
                                 </div>
                                 <p className="text-[10px] font-black text-zinc-900 uppercase tracking-widest truncate w-full">{token.name}</p>
-                                <p className="text-[8px] font-black text-rose-600 mt-1">{token.bonding_progress || 0}% Sold</p>
+                                <p className="text-[8px] font-black text-blue-600 mt-1">{token.bonding_progress || 0}% Sold</p>
                             </div>
                         </Link>
                     </motion.div>
@@ -314,7 +314,7 @@ export default function Launchpad() {
     }, [tokens, view, launchType, search]);
 
     return (
-        <main className="min-h-screen bg-[#FDFDFD] selection:bg-rose-500 selection:text-white pb-32">
+        <main className="min-h-screen bg-[#FDFDFD] selection:bg-blue-500 selection:text-white pb-32">
             <Navbar />
             
             <div className="pt-20 px-4 md:px-8 max-w-[1440px] mx-auto space-y-20 relative z-10">
@@ -327,13 +327,13 @@ export default function Launchpad() {
                             animate={{ opacity: 1, x: 0 }} 
                             className="flex items-center gap-3 mb-6"
                         >
-                            <span className="px-4 py-1.5 bg-rose-500/10 text-rose-600 text-[10px] font-black uppercase tracking-[0.2em] rounded-full border border-rose-500/20">Discovery HUB</span>
-                            <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+                            <span className="px-4 py-1.5 bg-blue-500/10 text-blue-600 text-[10px] font-black uppercase tracking-[0.2em] rounded-full border border-blue-500/20">Discovery HUB</span>
+                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
                             <span className="text-[10px] font-black text-zinc-400 uppercase tracking-widest">Protocol Registry V4.0</span>
                         </motion.div>
                         <h1 className="text-5xl md:text-8xl font-black text-zinc-900 tracking-tighter leading-[0.85] mb-8">
                             Unearth the <br />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-br from-rose-500 to-amber-500">Next Alpha</span>
+                            <span className="text-transparent bg-clip-text bg-gradient-to-br from-blue-500 to-indigo-500">Next Alpha</span>
                         </h1>
                         <p className="text-xl text-zinc-500 font-medium leading-relaxed italic pr-12">
                             The nexus of <span className="text-zinc-900">Institutional Intelligence</span> and 
@@ -342,8 +342,8 @@ export default function Launchpad() {
                     </div>
                     <div className="grid grid-cols-2 gap-4 w-full lg:max-w-md">
                         {[
-                            { label: 'Protocols', val: tokens.length, icon: <Rocket className="w-5 h-5 text-rose-500" /> },
-                            { label: 'Market Cap', val: '$12.4M', icon: <Activity className="w-5 h-5 text-emerald-500" /> },
+                            { label: 'Protocols', val: tokens.length, icon: <Rocket className="w-5 h-5 text-blue-500" /> },
+                            { label: 'Market Cap', val: '$12.4M', icon: <Activity className="w-5 h-5 text-sky-500" /> },
                             { label: 'Holder Alpha', val: '82.1K', icon: <Users className="w-5 h-5 text-blue-500" /> },
                             { label: 'Trade Pulse', val: '928/min', icon: <BarChart3 className="w-5 h-5 text-purple-500" /> }
                         ].map((stat, i) => (
@@ -376,7 +376,7 @@ export default function Launchpad() {
                                 onClick={() => setView(tab.id)}
                                 className={`
                                     flex items-center gap-3 px-8 py-3 rounded-full text-[11px] font-black uppercase tracking-widest whitespace-nowrap transition-all
-                                    ${view === tab.id ? 'bg-rose-500 text-white shadow-xl' : 'text-zinc-500 hover:text-rose-500'}
+                                    ${view === tab.id ? 'bg-blue-500 text-white shadow-xl' : 'text-zinc-500 hover:text-blue-500'}
                                 `}
                             >
                                 {tab.icon} {tab.label}
@@ -384,13 +384,13 @@ export default function Launchpad() {
                         ))}
                     </div>
                     <div className="relative group w-full md:w-96 p-1">
-                        <SearchIcon className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-rose-500 transition-colors" />
+                        <SearchIcon className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-blue-500 transition-colors" />
                         <input 
                             type="text" 
                             placeholder="Protocol Signal Search..." 
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-14 pr-6 py-4 bg-zinc-50 border border-transparent focus:border-rose-500/10 rounded-[1.8rem] text-sm font-black text-zinc-900 outline-none transition-all"
+                            className="w-full pl-14 pr-6 py-4 bg-zinc-50 border border-transparent focus:border-blue-500/10 rounded-[1.8rem] text-sm font-black text-zinc-900 outline-none transition-all"
                         />
                     </div>
                 </div>
@@ -409,7 +409,7 @@ export default function Launchpad() {
                                 onClick={() => setLaunchType(type.id)}
                                 className={`
                                     px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all
-                                    ${launchType === type.id ? 'bg-white text-rose-500 shadow-sm border border-black/5' : 'text-zinc-500 hover:text-zinc-900'}
+                                    ${launchType === type.id ? 'bg-white text-blue-500 shadow-sm border border-black/5' : 'text-zinc-500 hover:text-zinc-900'}
                                 `}
                             >
                                 {type.label}
@@ -428,7 +428,7 @@ export default function Launchpad() {
                                 onClick={() => setViewMode(mode.id)}
                                 className={`
                                     p-3 rounded-xl transition-all
-                                    ${viewMode === mode.id ? 'bg-white text-rose-500 shadow-sm border border-black/5' : 'text-zinc-500 hover:text-zinc-900'}
+                                    ${viewMode === mode.id ? 'bg-white text-blue-500 shadow-sm border border-black/5' : 'text-zinc-500 hover:text-zinc-900'}
                                 `}
                             >
                                 {mode.icon}

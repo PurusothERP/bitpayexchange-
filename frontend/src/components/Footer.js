@@ -25,18 +25,18 @@ export default function Footer() {
                     <div className="space-y-4 text-sm text-gray-600">
                         <h4 className="text-gray-900 font-bold mb-4">Platform</h4>
                         <ul className="space-y-2">
-                            <li><Link href="/launch" className="hover:text-rose-500 transition-colors">Live Launches</Link></li>
-                            <li><Link href="/create" className="hover:text-rose-500 transition-colors">Create Token</Link></li>
+                            <li><Link href="/launch" className="hover:text-blue-500 transition-colors">Live Launches</Link></li>
+                            <li><Link href="/create" className="hover:text-blue-500 transition-colors">Create Token</Link></li>
                         </ul>
                     </div>
 
                     {/* Powered By */}
                     <div className="space-y-4 text-sm text-gray-600 flex flex-col items-center md:items-end">
                         <h4 className="text-gray-900 font-bold mb-4">Powered by Aichainz</h4>
-                        <a href="https://www.aichainz.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-rose-500 transition-colors">
+                        <a href="https://www.aichainz.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-blue-500 transition-colors">
                             <Globe className="w-4 h-4" /> www.aichainz.com
                         </a>
-                        <a href="mailto:support@aichainz.com" className="flex items-center gap-2 hover:text-rose-500 transition-colors">
+                        <a href="mailto:support@aichainz.com" className="flex items-center gap-2 hover:text-blue-500 transition-colors">
                             <Mail className="w-4 h-4" /> support@aichainz.com
                         </a>
                     </div>

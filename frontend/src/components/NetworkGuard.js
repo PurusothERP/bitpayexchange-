@@ -54,7 +54,7 @@ export default function NetworkGuard({ children }) {
     return (
         <>
             {/* Sticky warning banner */}
-            <div className="fixed top-0 left-0 right-0 z-[200] bg-amber-500 text-white py-2.5 px-4 flex items-center justify-between gap-4 shadow-xl">
+            <div className="fixed top-0 left-0 right-0 z-[200] bg-indigo-500 text-white py-2.5 px-4 flex items-center justify-between gap-4 shadow-xl">
                 <div className="flex items-center gap-2 text-sm font-bold">
                     <AlertTriangle className="w-4 h-4 shrink-0" />
                     <span>
@@ -65,7 +65,7 @@ export default function NetworkGuard({ children }) {
                     <button
                         onClick={switchToBSC}
                         disabled={switching}
-                        className="px-4 py-1.5 bg-white text-amber-700 text-xs font-black rounded-lg hover:bg-amber-50 transition-colors disabled:opacity-60"
+                        className="px-4 py-1.5 bg-white text-indigo-700 text-xs font-black rounded-lg hover:bg-indigo-50 transition-colors disabled:opacity-60"
                     >
                         {switching ? 'Switching...' : '⚡ Switch to BSC'}
                     </button>

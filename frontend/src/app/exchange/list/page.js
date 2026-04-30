@@ -60,12 +60,12 @@ export default function ListTokenPage() {
     };
 
     return (
-        <main className="min-h-screen bg-[#050511] text-white selection:bg-rose-500 selection:text-white pb-32 font-sans relative overflow-hidden">
+        <main className="min-h-screen bg-[#050511] text-white selection:bg-blue-500 selection:text-white pb-32 font-sans relative overflow-hidden">
             <Navbar />
             
             {/* Ambient Backgrounds */}
             <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10">
-                <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-rose-500/10 rounded-full blur-[150px]" />
+                <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-blue-500/10 rounded-full blur-[150px]" />
                 <div className="absolute bottom-[-20%] right-[-10%] w-[1000px] h-[1000px] bg-indigo-500/10 rounded-full blur-[150px]" />
             </div>
 
@@ -75,7 +75,7 @@ export default function ListTokenPage() {
                     <motion.span 
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[10px] font-black uppercase tracking-[0.3em] mb-6"
+                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-500 text-[10px] font-black uppercase tracking-[0.3em] mb-6"
                     >
                         <Plus className="w-3 h-3" /> Professional Listing Portal
                     </motion.span>
@@ -95,7 +95,7 @@ export default function ListTokenPage() {
                                 <Rocket className="w-40 h-40" />
                             </div>
                             
-                            <h2 className="text-2xl font-black uppercase tracking-tight">Why List on <span className="text-rose-500">B20 Exchange?</span></h2>
+                            <h2 className="text-2xl font-black uppercase tracking-tight">Why List on <span className="text-blue-500">B20 Exchange?</span></h2>
                             
                             <div className="space-y-6">
                                 {[
@@ -105,7 +105,7 @@ export default function ListTokenPage() {
                                     { icon: <Globe className="w-5 h-5" />, title: 'Global Exposure', desc: 'Featured placement in our trending markets section seen by thousands.' }
                                 ].map((b, i) => (
                                     <div key={i} className="flex gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shrink-0 text-rose-500">
+                                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shrink-0 text-blue-500">
                                             {b.icon}
                                         </div>
                                         <div>
@@ -117,13 +117,13 @@ export default function ListTokenPage() {
                             </div>
 
                             <div className="pt-6 border-t border-white/10">
-                                <div className="p-6 bg-gradient-to-r from-rose-500/20 to-indigo-500/20 rounded-2xl border border-white/10">
+                                <div className="p-6 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 rounded-2xl border border-white/10">
                                     <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest leading-relaxed mb-4">
                                         Listing fee is used to maintain the exchange infrastructure and secure high-priority RPC routing for your token.
                                     </p>
                                     <div className="flex items-center justify-between text-xs font-black uppercase tracking-tighter">
                                         <span>Official Listing Fee</span>
-                                        <span className="text-rose-500 text-lg">0.10 BNB</span>
+                                        <span className="text-blue-500 text-lg">0.10 BNB</span>
                                     </div>
                                 </div>
                             </div>
@@ -140,19 +140,19 @@ export default function ListTokenPage() {
                                         <input 
                                             required type="text" placeholder="e.g. Galactic Star"
                                             value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})}
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-rose-500/50 transition-all text-white" 
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-blue-500/50 transition-all text-white" 
                                         />
                                     </div>
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-white/40 uppercase tracking-widest pl-2 flex items-center justify-between shadow-sm">
                                             Attach Logo
-                                            <span className="text-rose-500/60 font-black text-[8px]">512x512 PNG/JPEG ONLY</span>
+                                            <span className="text-blue-500/60 font-black text-[8px]">512x512 PNG/JPEG ONLY</span>
                                         </label>
                                         <div className="relative group">
                                             <input 
                                                 required type="text" placeholder="Logo IPFS or URL (e.g. https://...)"
                                                 value={formData.logo} onChange={e => setFormData({...formData, logo: e.target.value})}
-                                                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-rose-500/50 transition-all text-white pr-24" 
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-blue-500/50 transition-all text-white pr-24" 
                                             />
                                             <div className="absolute right-2 top-2 bottom-2">
                                                 <label className="h-full px-4 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl flex items-center justify-center cursor-pointer transition-all text-[9px] font-black uppercase tracking-widest">
@@ -179,7 +179,7 @@ export default function ListTokenPage() {
                                     <input 
                                         required type="text" placeholder="0x..."
                                         value={formData.contractId} onChange={e => setFormData({...formData, contractId: e.target.value})}
-                                        className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-rose-500/50 transition-all text-white font-mono" 
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-blue-500/50 transition-all text-white font-mono" 
                                     />
                                 </div>
 
@@ -189,7 +189,7 @@ export default function ListTokenPage() {
                                         <input 
                                             type="url" placeholder="Optional"
                                             value={formData.whitepaper} onChange={e => setFormData({...formData, whitepaper: e.target.value})}
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-rose-500/50 transition-all text-white" 
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-blue-500/50 transition-all text-white" 
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -197,7 +197,7 @@ export default function ListTokenPage() {
                                         <input 
                                             type="url" placeholder="https://..."
                                             value={formData.website} onChange={e => setFormData({...formData, website: e.target.value})}
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-rose-500/50 transition-all text-white" 
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-blue-500/50 transition-all text-white" 
                                         />
                                     </div>
                                 </div>
@@ -208,7 +208,7 @@ export default function ListTokenPage() {
                                         <input 
                                             type="text" placeholder="@channel"
                                             value={formData.telegram} onChange={e => setFormData({...formData, telegram: e.target.value})}
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-rose-500/50 transition-all text-white" 
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-blue-500/50 transition-all text-white" 
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -216,7 +216,7 @@ export default function ListTokenPage() {
                                         <input 
                                             type="text" placeholder="@handle"
                                             value={formData.twitter} onChange={e => setFormData({...formData, twitter: e.target.value})}
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-rose-500/50 transition-all text-white" 
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-blue-500/50 transition-all text-white" 
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -224,7 +224,7 @@ export default function ListTokenPage() {
                                         <input 
                                             type="text" placeholder="profile"
                                             value={formData.facebook} onChange={e => setFormData({...formData, facebook: e.target.value})}
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-rose-500/50 transition-all text-white" 
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-blue-500/50 transition-all text-white" 
                                         />
                                     </div>
                                 </div>
@@ -232,25 +232,25 @@ export default function ListTokenPage() {
                                 <div className="pt-8">
                                     <AnimatePresence>
                                         {status === 'success' && (
-                                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="mb-6 p-6 bg-emerald-500/10 border border-emerald-500/20 rounded-3xl flex items-center gap-4">
-                                                <CheckCircle2 className="w-6 h-6 text-emerald-500" />
-                                                <p className="text-xs font-black text-emerald-500 uppercase tracking-widest">Application Submitted Successfully!</p>
+                                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="mb-6 p-6 bg-sky-500/10 border border-sky-500/20 rounded-3xl flex items-center gap-4">
+                                                <CheckCircle2 className="w-6 h-6 text-sky-500" />
+                                                <p className="text-xs font-black text-sky-500 uppercase tracking-widest">Application Submitted Successfully!</p>
                                             </motion.div>
                                         )}
                                         {error && (
-                                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="mb-6 p-6 bg-rose-500/10 border border-rose-500/20 rounded-3xl flex items-center gap-4">
-                                                <AlertTriangle className="w-6 h-6 text-rose-500" />
-                                                <p className="text-xs font-black text-rose-500 uppercase tracking-widest">{error}</p>
+                                            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="mb-6 p-6 bg-blue-500/10 border border-blue-500/20 rounded-3xl flex items-center gap-4">
+                                                <AlertTriangle className="w-6 h-6 text-blue-500" />
+                                                <p className="text-xs font-black text-blue-500 uppercase tracking-widest">{error}</p>
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
 
                                     <button 
                                         disabled={status === 'loading'}
-                                        className="w-full py-6 bg-white text-black font-black text-lg uppercase tracking-[0.3em] rounded-[2rem] shadow-2xl hover:bg-rose-500 hover:text-white transition-all active:scale-[0.98] flex items-center justify-center gap-4 group disabled:opacity-30"
+                                        className="w-full py-6 bg-white text-black font-black text-lg uppercase tracking-[0.3em] rounded-[2rem] shadow-2xl hover:bg-blue-500 hover:text-white transition-all active:scale-[0.98] flex items-center justify-center gap-4 group disabled:opacity-30"
                                     >
                                         {status === 'loading' ? (
-                                            <span className="flex items-center gap-3">Processing Transaction <Zap className="w-5 h-5 animate-pulse text-amber-500" /></span>
+                                            <span className="flex items-center gap-3">Processing Transaction <Zap className="w-5 h-5 animate-pulse text-indigo-500" /></span>
                                         ) : (
                                             <>Apply for Listing <ArrowRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" /></>
                                         )}

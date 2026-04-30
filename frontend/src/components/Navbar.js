@@ -65,12 +65,12 @@ export default function Navbar() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
                     <div className="flex items-center gap-8">
-                        <Link href="/" className="flex items-center gap-2 group shrink-0">
+                        <Link href="/exchange" className="flex items-center gap-2 group shrink-0">
                             <div className="w-14 h-14 shrink-0 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
-                                <img src="/images/mainlogo.png" alt="B20 Exchange Logo" className="w-full h-full object-contain" />
+                                <img src="/images/mainlogo.png" alt="Exchange Logo" className="w-full h-full object-contain" />
                             </div>
                             <span className="text-2xl font-black tracking-tighter text-gray-900 text-red-gradient drop-shadow-md whitespace-nowrap">
-                                B20-<span className="text-rose-500">Exchange</span>
+                                EXCHANGE
                             </span>
                         </Link>
 
@@ -83,7 +83,7 @@ export default function Navbar() {
                                 onMouseEnter={() => setIsCreateDropdownOpen(true)}
                                 onMouseLeave={() => setIsCreateDropdownOpen(false)}
                             >
-                                <button className="nav-link flex items-center gap-1.5 hover:text-rose-500 transition-colors py-2">
+                                <button className="nav-link flex items-center gap-1.5 hover:text-blue-500 transition-colors py-2">
                                     <Rocket className="w-4 h-4" /> Create Token <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isCreateDropdownOpen ? 'rotate-180' : ''}`} />
                                 </button>
                                 
@@ -97,34 +97,34 @@ export default function Navbar() {
                                             className="absolute top-full left-0 w-80 bg-white/90 backdrop-blur-xl border border-black/10 shadow-2xl rounded-2xl p-3 z-50 overflow-hidden"
                                         >
                                             <div className="flex flex-col gap-2">
-                                                <Link href="/ai-agent" className="flex items-start gap-3 p-3 rounded-xl hover:bg-rose-50 hover:text-rose-600 transition-colors group">
-                                                    <div className="bg-rose-100 p-2 rounded-[12px] group-hover:bg-rose-200 transition-colors">
-                                                        <Sparkles className="w-5 h-5 text-rose-600" />
+                                                <Link href="/ai-agent" className="flex items-start gap-3 p-3 rounded-xl hover:bg-blue-50 hover:text-blue-600 transition-colors group">
+                                                    <div className="bg-blue-100 p-2 rounded-[12px] group-hover:bg-blue-200 transition-colors">
+                                                        <Sparkles className="w-5 h-5 text-blue-600" />
                                                     </div>
                                                     <div>
-                                                        <p className="font-black text-rose-600 text-sm">Nuera AI Brainstorm</p>
+                                                        <p className="font-black text-blue-600 text-sm">Nuera AI Brainstorm</p>
                                                         <p className="text-xs text-gray-500 font-medium">Let AI draft your token plan</p>
                                                     </div>
                                                 </Link>
-                                                <Link href="/create" className="flex items-start gap-3 p-3 rounded-xl hover:bg-rose-50 hover:text-rose-500 transition-colors group">
-                                                    <div className="bg-rose-50 p-2 rounded-[12px] group-hover:bg-rose-100 transition-colors">
-                                                        <Rocket className="w-5 h-5 text-rose-500" />
+                                                <Link href="/create" className="flex items-start gap-3 p-3 rounded-xl hover:bg-blue-50 hover:text-blue-500 transition-colors group">
+                                                    <div className="bg-blue-50 p-2 rounded-[12px] group-hover:bg-blue-100 transition-colors">
+                                                        <Rocket className="w-5 h-5 text-blue-500" />
                                                     </div>
                                                     <div>
                                                         <p className="font-black text-gray-900 text-sm">BondingCurve Launch</p>
                                                         <p className="text-xs text-gray-500 font-medium whitespace-nowrap">Fair launch via bonding curve</p>
                                                     </div>
                                                 </Link>
-                                                <Link href="/fair-launch" className="flex items-start gap-3 p-3 rounded-xl hover:bg-rose-50 hover:text-rose-500 transition-colors group">
-                                                    <div className="bg-emerald-50 p-2 rounded-[12px] group-hover:bg-emerald-100 transition-colors">
-                                                        <Activity className="w-5 h-5 text-emerald-500" />
+                                                <Link href="/fair-launch" className="flex items-start gap-3 p-3 rounded-xl hover:bg-blue-50 hover:text-blue-500 transition-colors group">
+                                                    <div className="bg-sky-50 p-2 rounded-[12px] group-hover:bg-sky-100 transition-colors">
+                                                        <Activity className="w-5 h-5 text-sky-500" />
                                                     </div>
                                                     <div>
                                                         <p className="font-black text-gray-900 text-sm">Fair-Launch DEX</p>
                                                         <p className="text-xs text-gray-500 font-medium">Presale + PancakeSwap Listing</p>
                                                     </div>
                                                 </Link>
-                                                <Link href="/standard" className="flex items-start gap-3 p-3 rounded-xl hover:bg-rose-50 hover:text-rose-500 transition-colors group">
+                                                <Link href="/standard" className="flex items-start gap-3 p-3 rounded-xl hover:bg-blue-50 hover:text-blue-500 transition-colors group">
                                                     <div className="bg-blue-50 p-2 rounded-[12px] group-hover:bg-blue-100 transition-colors">
                                                         <ShieldCheck className="w-5 h-5 text-blue-500" />
                                                     </div>
@@ -139,34 +139,34 @@ export default function Navbar() {
                                 </AnimatePresence>
                             </div>
                             
-                            <Link href="/launch" className="nav-link flex items-center gap-2 hover:text-rose-500 transition-colors">
+                            <Link href="/launch" className="nav-link flex items-center gap-2 hover:text-blue-500 transition-colors">
                                 <Coins className="w-4 h-4" /> Launchpad
                             </Link>
 
-                            <Link href="/exchange" className="group relative flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-gray-900 to-black text-white font-black shadow-[0_15px_30px_-5px_rgba(245,158,11,0.3)] hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.5)] border border-white/10 hover:border-amber-500/50 transition-all duration-300 hover:-translate-y-1 active:scale-95">
-                                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none" />
-                                <div className="p-1.5 bg-white/10 rounded-full border border-white/5 group-hover:border-amber-500/30 group-hover:bg-amber-500/20 transition-colors duration-300">
-                                    <Activity className="w-3.5 h-3.5 text-white group-hover:text-amber-400 transition-colors" />
+                            <Link href="/exchange" className="group relative flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-gray-900 to-black text-white font-black shadow-[0_15px_30px_-5px_rgba(245,158,11,0.3)] hover:shadow-[0_20px_40px_-10px_rgba(245,158,11,0.5)] border border-white/10 hover:border-indigo-500/50 transition-all duration-300 hover:-translate-y-1 active:scale-95">
+                                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-600 opacity-0 group-hover:opacity-20 transition-opacity duration-300 pointer-events-none" />
+                                <div className="p-1.5 bg-white/10 rounded-full border border-white/5 group-hover:border-indigo-500/30 group-hover:bg-indigo-500/20 transition-colors duration-300">
+                                    <Activity className="w-3.5 h-3.5 text-white group-hover:text-indigo-400 transition-colors" />
                                 </div>
                                 <span className="tracking-wide text-xs">Exchange</span>
                             </Link>
 
-                            <Link href="/cards" className="nav-link flex items-center gap-2 text-amber-600 font-black hover:text-amber-700 transition-colors">
+                            <Link href="/cards" className="nav-link flex items-center gap-2 text-indigo-600 font-black hover:text-indigo-700 transition-colors">
                                 <CreditCard className="w-4 h-4" /> Card
                             </Link>
 
-                            <Link href="/services" className="nav-link flex items-center gap-2 hover:text-rose-500 transition-colors">
+                            <Link href="/services" className="nav-link flex items-center gap-2 hover:text-blue-500 transition-colors">
                                 <FileText className="w-4 h-4" /> Service
                             </Link>
 
                             {account && (
-                                <Link href="/profile" className="nav-link flex items-center gap-2 hover:text-rose-500 transition-colors">
+                                <Link href="/profile" className="nav-link flex items-center gap-2 hover:text-blue-500 transition-colors">
                                     <Wallet className="w-4 h-4" /> Profile
                                 </Link>
                             )}
 
                             {isAdmin && (
-                                <Link href="/admin" className="nav-link flex items-center gap-2 text-rose-600 font-black hover:text-rose-700 transition-colors border border-rose-200 bg-rose-50 rounded-lg px-3 py-1">
+                                <Link href="/admin" className="nav-link flex items-center gap-2 text-blue-600 font-black hover:text-blue-700 transition-colors border border-blue-200 bg-blue-50 rounded-lg px-3 py-1">
                                     <Shield className="w-3 h-3" /> Admin
                                 </Link>
                             )}
@@ -233,23 +233,23 @@ export default function Navbar() {
                                     <Link
                                         href="/ai-agent"
                                         onClick={() => setIsMobileMenuOpen(false)}
-                                        className="flex flex-col items-start gap-1.5 p-3 bg-rose-50 border border-rose-100 rounded-2xl hover:bg-rose-100 transition-all active:scale-95"
+                                        className="flex flex-col items-start gap-1.5 p-3 bg-blue-50 border border-blue-100 rounded-2xl hover:bg-blue-100 transition-all active:scale-95"
                                     >
-                                        <div className="bg-rose-500 p-1.5 rounded-xl">
+                                        <div className="bg-blue-500 p-1.5 rounded-xl">
                                             <Sparkles className="w-3.5 h-3.5 text-white" />
                                         </div>
                                         <div>
-                                            <p className="text-[11px] font-black text-rose-600 leading-tight">Nuera AI</p>
-                                            <p className="text-[9px] text-rose-400 font-medium leading-tight">Brainstorm plan</p>
+                                            <p className="text-[11px] font-black text-blue-600 leading-tight">Nuera AI</p>
+                                            <p className="text-[9px] text-blue-400 font-medium leading-tight">Brainstorm plan</p>
                                         </div>
                                     </Link>
                                     <Link
                                         href="/create"
                                         onClick={() => setIsMobileMenuOpen(false)}
-                                        className="flex flex-col items-start gap-1.5 p-3 bg-gray-50 border border-gray-100 rounded-2xl hover:bg-rose-50 hover:border-rose-100 transition-all active:scale-95"
+                                        className="flex flex-col items-start gap-1.5 p-3 bg-gray-50 border border-gray-100 rounded-2xl hover:bg-blue-50 hover:border-blue-100 transition-all active:scale-95"
                                     >
                                         <div className="bg-gray-800 p-1.5 rounded-xl">
-                                            <Rocket className="w-3.5 h-3.5 text-amber-400" />
+                                            <Rocket className="w-3.5 h-3.5 text-indigo-400" />
                                         </div>
                                         <div>
                                             <p className="text-[11px] font-black text-gray-800 leading-tight">BondingCurve</p>
@@ -259,14 +259,14 @@ export default function Navbar() {
                                     <Link
                                         href="/fair-launch"
                                         onClick={() => setIsMobileMenuOpen(false)}
-                                        className="flex flex-col items-start gap-1.5 p-3 bg-emerald-50 border border-emerald-100 rounded-2xl hover:bg-emerald-100 transition-all active:scale-95"
+                                        className="flex flex-col items-start gap-1.5 p-3 bg-sky-50 border border-sky-100 rounded-2xl hover:bg-sky-100 transition-all active:scale-95"
                                     >
-                                        <div className="bg-emerald-500 p-1.5 rounded-xl">
+                                        <div className="bg-sky-500 p-1.5 rounded-xl">
                                             <Activity className="w-3.5 h-3.5 text-white" />
                                         </div>
                                         <div>
-                                            <p className="text-[11px] font-black text-emerald-700 leading-tight">Fair-Launch</p>
-                                            <p className="text-[9px] text-emerald-500 font-medium leading-tight">Presale + DEX</p>
+                                            <p className="text-[11px] font-black text-sky-700 leading-tight">Fair-Launch</p>
+                                            <p className="text-[9px] text-sky-500 font-medium leading-tight">Presale + DEX</p>
                                         </div>
                                     </Link>
                                     <Link
@@ -298,8 +298,8 @@ export default function Navbar() {
                                     onClick={() => setIsMobileMenuOpen(false)}
                                     className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 transition-colors active:scale-95 group"
                                 >
-                                    <div className="w-8 h-8 bg-amber-50 border border-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                                        <Coins className="w-4 h-4 text-amber-500" />
+                                    <div className="w-8 h-8 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <Coins className="w-4 h-4 text-indigo-500" />
                                     </div>
                                     <div>
                                         <p className="text-sm font-bold text-gray-800 leading-tight">Launchpad</p>
@@ -313,29 +313,29 @@ export default function Navbar() {
                                     onClick={() => setIsMobileMenuOpen(false)}
                                     className="relative flex items-center gap-3 px-4 py-3.5 rounded-2xl bg-gradient-to-r from-gray-900 to-gray-800 text-white font-black shadow-lg active:scale-95 transition-all overflow-hidden"
                                 >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 to-transparent pointer-events-none" />
-                                    <div className="p-1.5 bg-amber-500/20 rounded-xl border border-amber-500/30 z-10">
-                                        <Activity className="w-4 h-4 text-amber-400" />
+                                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-transparent pointer-events-none" />
+                                    <div className="p-1.5 bg-indigo-500/20 rounded-xl border border-indigo-500/30 z-10">
+                                        <Activity className="w-4 h-4 text-indigo-400" />
                                     </div>
                                     <div className="z-10">
                                         <p className="text-sm font-black leading-tight">B20 Exchange</p>
                                         <p className="text-[9px] text-gray-400 font-medium">Trade & Futures</p>
                                     </div>
-                                    <div className="ml-auto z-10 bg-amber-500 text-[8px] font-black text-gray-900 px-2 py-0.5 rounded-full">LIVE</div>
+                                    <div className="ml-auto z-10 bg-indigo-500 text-[8px] font-black text-gray-900 px-2 py-0.5 rounded-full">LIVE</div>
                                 </Link>
 
                                 {/* Card */}
                                 <Link
                                     href="/cards"
                                     onClick={() => setIsMobileMenuOpen(false)}
-                                    className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-amber-50 transition-colors active:scale-95 group"
+                                    className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-indigo-50 transition-colors active:scale-95 group"
                                 >
-                                    <div className="w-8 h-8 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                                        <CreditCard className="w-4 h-4 text-amber-500" />
+                                    <div className="w-8 h-8 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <CreditCard className="w-4 h-4 text-indigo-500" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-amber-600 leading-tight">B20 Card</p>
-                                        <p className="text-[10px] text-amber-400">Crypto debit card</p>
+                                        <p className="text-sm font-bold text-indigo-600 leading-tight">B20 Card</p>
+                                        <p className="text-[10px] text-indigo-400">Crypto debit card</p>
                                     </div>
                                 </Link>
 
@@ -359,10 +359,10 @@ export default function Navbar() {
                                     <Link
                                         href="/profile"
                                         onClick={() => setIsMobileMenuOpen(false)}
-                                        className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-rose-50 transition-colors active:scale-95"
+                                        className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-blue-50 transition-colors active:scale-95"
                                     >
-                                        <div className="w-8 h-8 bg-rose-50 border border-rose-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                                            <Wallet className="w-4 h-4 text-rose-500" />
+                                        <div className="w-8 h-8 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <Wallet className="w-4 h-4 text-blue-500" />
                                         </div>
                                         <div>
                                             <p className="text-sm font-bold text-gray-700 leading-tight">My Profile</p>
@@ -376,16 +376,16 @@ export default function Navbar() {
                                     <Link
                                         href="/admin"
                                         onClick={() => setIsMobileMenuOpen(false)}
-                                        className="flex items-center gap-3 px-3 py-3 rounded-xl bg-rose-50 border border-rose-100 hover:bg-rose-100 transition-colors active:scale-95"
+                                        className="flex items-center gap-3 px-3 py-3 rounded-xl bg-blue-50 border border-blue-100 hover:bg-blue-100 transition-colors active:scale-95"
                                     >
-                                        <div className="w-8 h-8 bg-rose-100 border border-rose-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                                            <Shield className="w-4 h-4 text-rose-600" />
+                                        <div className="w-8 h-8 bg-blue-100 border border-blue-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <Shield className="w-4 h-4 text-blue-600" />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-black text-rose-600 leading-tight">Admin Panel</p>
-                                            <p className="text-[10px] text-rose-400">Platform controls</p>
+                                            <p className="text-sm font-black text-blue-600 leading-tight">Admin Panel</p>
+                                            <p className="text-[10px] text-blue-400">Platform controls</p>
                                         </div>
-                                        <div className="ml-auto bg-rose-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full">ADMIN</div>
+                                        <div className="ml-auto bg-blue-500 text-white text-[8px] font-black px-2 py-0.5 rounded-full">ADMIN</div>
                                     </Link>
                                 )}
                             </div>
@@ -412,7 +412,7 @@ export default function Navbar() {
                                     <button
                                         onClick={() => { connectWallet(); setIsMobileMenuOpen(false); }}
                                         disabled={isConnecting}
-                                        className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-rose-500 to-rose-600 text-white font-black text-sm rounded-2xl shadow-lg shadow-rose-200 active:scale-95 transition-all"
+                                        className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-black text-sm rounded-2xl shadow-lg shadow-blue-200 active:scale-95 transition-all"
                                     >
                                         <Wallet className="w-4 h-4" />
                                         {isConnecting ? 'Connecting...' : 'Connect Wallet'}

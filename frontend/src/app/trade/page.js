@@ -49,11 +49,11 @@ function timeAgo(dateStr) {
 function NeonPriceTooltip({ active, payload }) {
     if (active && payload && payload.length) {
         return (
-            <div className="bg-black/80 backdrop-blur-xl border border-white/10 p-4 rounded-xl shadow-2xl shadow-rose-500/20 text-xs font-bold uppercase tracking-widest text-white">
+            <div className="bg-black/80 backdrop-blur-xl border border-white/10 p-4 rounded-xl shadow-2xl shadow-blue-500/20 text-xs font-bold uppercase tracking-widest text-white">
                 <p className="text-gray-400 mb-2 font-mono">{payload[0].payload.time}</p>
                 <p className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                    <span className="text-rose-400">Price:</span>
+                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                    <span className="text-blue-400">Price:</span>
                     <span className="font-mono text-lg">{formatPrice(payload[0].value)}</span>
                     <span className="text-gray-500">BNB</span>
                 </p>
@@ -232,13 +232,13 @@ export default function TradePage() {
     const filteredTokens = allTokens.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()) || t.symbol.toLowerCase().includes(searchQuery.toLowerCase()));
 
     return (
-        <main className="min-h-screen bg-[#050511] text-white selection:bg-rose-500 selection:text-white pb-32 cyber-grid font-sans">
+        <main className="min-h-screen bg-[#050511] text-white selection:bg-blue-500 selection:text-white pb-32 cyber-grid font-sans">
             <Navbar />
 
             <div className="pt-28 px-4 md:px-6 max-w-[1800px] mx-auto grid grid-cols-1 xl:grid-cols-12 gap-6 relative z-10">
                 {/* ── LEFT AMBIENT LIGHT ── */}
-                <div className="fixed top-20 left-0 w-[800px] h-[800px] bg-rose-600/10 rounded-full blur-[150px] pointer-events-none -z-10" />
-                <div className="fixed bottom-0 right-0 w-[800px] h-[800px] bg-emerald-600/10 rounded-full blur-[150px] pointer-events-none -z-10" />
+                <div className="fixed top-20 left-0 w-[800px] h-[800px] bg-blue-600/10 rounded-full blur-[150px] pointer-events-none -z-10" />
+                <div className="fixed bottom-0 right-0 w-[800px] h-[800px] bg-sky-600/10 rounded-full blur-[150px] pointer-events-none -z-10" />
 
                 {/* ── LEFT: MARKET BROWSER ─────────────────────────────────────────── */}
                 <div className="xl:col-span-3 space-y-4 h-auto xl:h-[calc(100vh-140px)] flex flex-col order-3 xl:order-1 relative z-20">
@@ -247,7 +247,7 @@ export default function TradePage() {
 
                         <div className="flex items-center justify-between mb-6 px-1">
                             <h2 className="text-sm font-black text-white tracking-widest uppercase flex items-center gap-2">
-                                <Globe className="w-4 h-4 text-rose-500" /> Nexus Markets
+                                <Globe className="w-4 h-4 text-blue-500" /> Nexus Markets
                             </h2>
                         </div>
 
@@ -255,7 +255,7 @@ export default function TradePage() {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                             <input
                                 type="text" placeholder="Search tokens..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-[11px] font-bold text-white placeholder:text-white/30 outline-none focus:border-rose-500/50 transition-all shadow-inner"
+                                className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-[11px] font-bold text-white placeholder:text-white/30 outline-none focus:border-blue-500/50 transition-all shadow-inner"
                             />
                         </div>
 
@@ -278,7 +278,7 @@ export default function TradePage() {
                                         </div>
                                         <div className="text-right">
                                             <p className={`text-xs font-mono font-bold ${selectedToken?.id === t.id ? 'text-white' : 'text-white/80'}`}>{formatPrice(t.price_bnb)}</p>
-                                            <p className={`text-[10px] font-black flex items-center justify-end gap-1 mt-0.5 ${tPos ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                            <p className={`text-[10px] font-black flex items-center justify-end gap-1 mt-0.5 ${tPos ? 'text-sky-400' : 'text-blue-400'}`}>
                                                 {tPos ? <Up className="w-3 h-3" /> : <Down className="w-3 h-3" />}
                                                 {Math.abs(t.price_change || 0).toFixed(2)}%
                                             </p>
@@ -295,17 +295,17 @@ export default function TradePage() {
 
                     {/* Header Panel */}
                     <div className="p-6 bg-black/40 backdrop-blur-xl border border-white/5 rounded-[2rem] shadow-2xl flex items-center justify-between relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-[1px] h-full bg-gradient-to-b from-transparent via-rose-500/50 to-transparent" />
+                        <div className="absolute top-0 left-0 w-[1px] h-full bg-gradient-to-b from-transparent via-blue-500/50 to-transparent" />
                         <div className="flex items-center gap-5">
                             <div className="w-16 h-16 rounded-[1.25rem] border border-white/10 bg-white/5 p-1 relative shadow-inner">
                                 <img src={selectedToken?.logo_url || '/logo.png'} className="w-full h-full object-cover rounded-xl" />
-                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-[#050511] animate-pulse" />
+                                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-sky-500 rounded-full border-2 border-[#050511] animate-pulse" />
                             </div>
                             <div>
                                 <h1 className="text-3xl font-black text-white tracking-widest flex items-center gap-4">
                                     <span className="bg-clip-text text-transparent bg-gradient-to-r from-white to-white/60">{selectedToken?.symbol}</span>
                                     <span className="text-white/20 font-light">/</span>
-                                    <span className="text-rose-400 font-mono text-xl">BNB</span>
+                                    <span className="text-blue-400 font-mono text-xl">BNB</span>
                                 </h1>
                                 <a href={'https://bscscan.com/token/' + (selectedToken?.contract_address || '')} target="_blank" className="flex items-center gap-2 mt-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 hover:text-white transition-colors">
                                     {selectedToken?.name} <ExternalLink className="w-3 h-3" />
@@ -315,12 +315,12 @@ export default function TradePage() {
 
                         <div className="flex gap-8 text-right pr-4">
                             <div>
-                                <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-1.5 flex items-center gap-1 justify-end"><Activity className="w-3 h-3 text-rose-500" /> Price</p>
+                                <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-1.5 flex items-center gap-1 justify-end"><Activity className="w-3 h-3 text-blue-500" /> Price</p>
                                 <p className="text-lg font-mono font-bold text-white">{formatPrice(selectedToken?.price_bnb)}</p>
                             </div>
                             <div>
                                 <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-1.5 flex items-center gap-1 justify-end"><History className="w-3 h-3 text-white/50" /> 24h Change</p>
-                                <p className={`text-lg font-black flex items-center justify-end gap-1 ${isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                <p className={`text-lg font-black flex items-center justify-end gap-1 ${isPositive ? 'text-sky-400' : 'text-blue-400'}`}>
                                     {isPositive ? '+' : ''}{priceChange}%
                                 </p>
                             </div>
@@ -331,7 +331,7 @@ export default function TradePage() {
                     <div className="p-2 bg-black/40 backdrop-blur-xl border border-white/5 rounded-[2.5rem] shadow-2xl flex-1 flex flex-col relative min-h-[450px]">
                         <div className="absolute top-6 left-8 z-20 flex gap-4 text-[10px] font-black uppercase tracking-widest text-white/30">
                             <div className="px-3 py-1.5 border border-white/10 rounded-lg bg-white/5 text-white/70 shadow-inner flex items-center gap-2">
-                                <span className="w-1.5 h-1.5 bg-rose-500 rounded-full animate-ping" /> Live Sync
+                                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-ping" /> Live Sync
                             </div>
                             <div className="px-3 py-1.5">Depth Curve</div>
                         </div>
@@ -363,7 +363,7 @@ export default function TradePage() {
                                     className={`flex-1 py-5 text-[10px] font-black uppercase tracking-[0.3em] transition-all relative
                                         ${activeBottomTab === t ? 'text-white bg-white/5' : 'text-white/40 hover:text-white/70 hover:bg-white/5'}
                                     `}>
-                                    {activeBottomTab === t && <div className="absolute top-0 left-0 right-0 h-[2px] bg-rose-500 shadow-[0_0_10px_#f43f5e]" />}
+                                    {activeBottomTab === t && <div className="absolute top-0 left-0 right-0 h-[2px] bg-blue-500 shadow-[0_0_10px_#f43f5e]" />}
                                     {t}
                                 </button>
                             ))}
@@ -378,7 +378,7 @@ export default function TradePage() {
                                                 <tr><td colSpan="3" className="py-10 text-center text-white/20 uppercase tracking-widest">No terminal data broadcasted</td></tr>
                                             ) : trades.map((t, i) => (
                                                 <tr key={i} className="hover:bg-white/5 transition-colors group">
-                                                    <td className={`py-4 px-6 flex items-center gap-2 ${t.type === 'buy' ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    <td className={`py-4 px-6 flex items-center gap-2 ${t.type === 'buy' ? 'text-sky-400' : 'text-blue-400'}`}>
                                                         {t.type === 'buy' ? <ArrowDownRight className="w-3 h-3" /> : <ArrowUpRight className="w-3 h-3" />} {t.type}
                                                     </td>
                                                     <td className="text-white group-hover:text-white transition-colors">{formatNumber(t.amount, 2)} {selectedToken?.symbol}</td>
@@ -391,10 +391,10 @@ export default function TradePage() {
                             )}
                             {activeBottomTab === 'info' && (
                                 <div className="p-8 text-xs font-medium text-white/50 leading-relaxed font-mono">
-                                    <Shield className="w-5 h-5 text-emerald-500 mb-4" />
+                                    <Shield className="w-5 h-5 text-sky-500 mb-4" />
                                     <span className="text-white block mb-2 text-sm font-sans font-black tracking-widest uppercase">Verified Contract</span>
                                     {selectedToken?.description || 'No advanced description provided for this specific protocol interface.'}
-                                    <div className="mt-4 p-4 bg-white/5 border border-white/5 rounded-xl break-all select-all hover:border-rose-500/30 transition-colors">
+                                    <div className="mt-4 p-4 bg-white/5 border border-white/5 rounded-xl break-all select-all hover:border-blue-500/30 transition-colors">
                                         {selectedToken?.contract_address}
                                     </div>
                                 </div>
@@ -407,7 +407,7 @@ export default function TradePage() {
                 <div className="xl:col-span-3 h-auto xl:h-[calc(100vh-140px)] flex flex-col gap-6 order-2 xl:order-3">
                     <div className="bg-black/60 backdrop-blur-3xl border border-white/10 rounded-[2.5rem] shadow-2xl p-6 flex flex-col flex-1 overflow-hidden relative">
                         {/* Ambient glow */}
-                        <div className={`absolute top-0 right-0 w-[300px] h-[300px] rounded-full blur-[100px] pointer-events-none transition-colors duration-1000 ${orderSide === 'buy' ? 'bg-emerald-500/10' : 'bg-rose-500/10'}`} />
+                        <div className={`absolute top-0 right-0 w-[300px] h-[300px] rounded-full blur-[100px] pointer-events-none transition-colors duration-1000 ${orderSide === 'buy' ? 'bg-sky-500/10' : 'bg-blue-500/10'}`} />
 
                         <div className="flex justify-between items-center mb-10 mt-2 px-2">
                             <h2 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-3">
@@ -420,8 +420,8 @@ export default function TradePage() {
 
                         {/* Buy / Sell Selector */}
                         <div className="bg-white/5 p-1.5 rounded-2xl flex mb-10 shadow-inner relative z-10">
-                            <button onClick={() => setOrderSide('buy')} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${orderSide === 'buy' ? 'bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'text-white/40 hover:text-white/80'}`}>Protocol Buy</button>
-                            <button onClick={() => setOrderSide('sell')} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${orderSide === 'sell' ? 'bg-rose-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.3)]' : 'text-white/40 hover:text-white/80'}`}>Protocol Sell</button>
+                            <button onClick={() => setOrderSide('buy')} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${orderSide === 'buy' ? 'bg-sky-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'text-white/40 hover:text-white/80'}`}>Protocol Buy</button>
+                            <button onClick={() => setOrderSide('sell')} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${orderSide === 'sell' ? 'bg-blue-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.3)]' : 'text-white/40 hover:text-white/80'}`}>Protocol Sell</button>
                         </div>
 
                         <div className="space-y-8 flex-1 relative z-10">
@@ -429,7 +429,7 @@ export default function TradePage() {
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center px-2">
                                     <label className="text-[10px] font-black text-white/50 uppercase tracking-widest">Execution Quantity</label>
-                                    <span className="text-[10px] font-black text-rose-500 cursor-pointer hover:text-rose-400 flex items-center gap-1 bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20"
+                                    <span className="text-[10px] font-black text-blue-500 cursor-pointer hover:text-blue-400 flex items-center gap-1 bg-blue-500/10 px-2 py-0.5 rounded border border-blue-500/20"
                                         onClick={() => setOrderAmount(orderSide === 'buy' ? userBnb : userTokens)}>
                                         <Wallet className="w-3 h-3" /> MAX
                                     </span>
@@ -461,16 +461,16 @@ export default function TradePage() {
                             <AnimatePresence>
                                 {orderError && (
                                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                                        className="mb-6 p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-start gap-3 backdrop-blur-xl">
-                                        <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
-                                        <p className="text-[10px] font-bold text-rose-200 uppercase tracking-wide leading-relaxed">{orderError}</p>
+                                        className="mb-6 p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl flex items-start gap-3 backdrop-blur-xl">
+                                        <AlertTriangle className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+                                        <p className="text-[10px] font-bold text-blue-200 uppercase tracking-wide leading-relaxed">{orderError}</p>
                                     </motion.div>
                                 )}
                                 {orderStatus === 'success' && (
                                     <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-                                        className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl flex items-center gap-3 backdrop-blur-xl">
-                                        <CheckCircle2 className="w-5 h-5 text-emerald-400" />
-                                        <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Execution Confirmed</p>
+                                        className="mb-6 p-4 bg-sky-500/10 border border-sky-500/30 rounded-xl flex items-center gap-3 backdrop-blur-xl">
+                                        <CheckCircle2 className="w-5 h-5 text-sky-400" />
+                                        <p className="text-[10px] font-black text-sky-400 uppercase tracking-widest">Execution Confirmed</p>
                                     </motion.div>
                                 )}
                             </AnimatePresence>
@@ -478,7 +478,7 @@ export default function TradePage() {
                             <button
                                 onClick={handleExecuteOrder} disabled={orderStatus === 'loading'}
                                 className={`w-full py-6 rounded-2xl font-black text-xl tracking-widest uppercase shadow-2xl transition-all active:scale-[0.98] flex items-center justify-center gap-4 relative overflow-hidden group
-                                    ${orderSide === 'buy' ? 'bg-emerald-500 hover:bg-emerald-400 text-black' : 'bg-rose-500 hover:bg-rose-400 text-white'}
+                                    ${orderSide === 'buy' ? 'bg-sky-500 hover:bg-sky-400 text-black' : 'bg-blue-500 hover:bg-blue-400 text-white'}
                                     ${orderStatus === 'loading' ? 'opacity-40 animate-pulse pointer-events-none' : ''}
                                  `}>
                                 <div className="absolute inset-0 bg-white/20 transform -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out" />

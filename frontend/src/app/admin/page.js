@@ -1083,11 +1083,28 @@ function LaunchpadGuard({ account }) {
 function FiatQueue({ account }) {
     const [requests, setRequests] = useState([]);
     const [activeTab, setActiveTab] = useState('BUY');
+    const [loading, setLoading] = useState(false);
+    const [lastRefresh, setLastRefresh] = useState(null);
 
-    useEffect(() => {
-        axios.get(`${API_URL}/fiat/transactions`, { headers: { 'x-wallet-address': account } }).then(res => {
+    const fetchQueue = async (silent = false) => {
+        if (!account) return;
+        if (!silent) setLoading(true);
+        try {
+            const res = await axios.get(`${API_URL}/fiat/transactions`, { headers: { 'x-wallet-address': account } });
             setRequests(res.data.filter(r => r.status === 'PENDING'));
-        }).catch(err => console.error('[FiatQueue] Failed to load transactions:', err));
+            setLastRefresh(new Date());
+        } catch (err) {
+            console.error('[FiatQueue] Failed to load transactions:', err);
+        } finally {
+            if (!silent) setLoading(false);
+        }
+    };
+
+    // Initial fetch + 15-second polling for live updates
+    useEffect(() => {
+        fetchQueue();
+        const interval = setInterval(() => fetchQueue(true), 15000);
+        return () => clearInterval(interval);
     }, [account]);
 
     const handleAction = async (id, status) => {
@@ -1108,9 +1125,21 @@ function FiatQueue({ account }) {
 
     return (
         <div className="space-y-6">
-            <div className="flex gap-4 mb-4">
-                <button onClick={() => setActiveTab('BUY')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'BUY' ? 'bg-sky-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>Buy Queue</button>
-                <button onClick={() => setActiveTab('SELL')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'SELL' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>Sell Queue</button>
+            <div className="flex items-center justify-between flex-wrap gap-4 mb-2">
+                <div className="flex gap-4">
+                    <button onClick={() => setActiveTab('BUY')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'BUY' ? 'bg-sky-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>Buy Queue</button>
+                    <button onClick={() => setActiveTab('SELL')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'SELL' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>Sell Queue</button>
+                </div>
+                <div className="flex items-center gap-3">
+                    {lastRefresh && (
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
+                            Last sync: {lastRefresh.toLocaleTimeString()}
+                        </span>
+                    )}
+                    <button onClick={() => fetchQueue(false)} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-all">
+                        <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> Refresh
+                    </button>
+                </div>
             </div>
 
             <div className="bg-white rounded-[3rem] border border-slate-200/60 shadow-sm overflow-hidden">
@@ -1152,7 +1181,7 @@ function FiatQueue({ account }) {
                                     <td className="px-6 py-5 text-[10px] font-black text-sky-600">₹{r.inr_amount?.toLocaleString()}</td>
                                     <td className="px-6 py-5">
                                         {r.proof_url ? (
-                                            <a href={r.proof_url} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center gap-1 w-max">
+                                            <a href={`${API_URL.replace('/api', '')}${r.proof_url}`} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center gap-1 w-max">
                                                 <ExternalLink size={10} /> View Proof
                                             </a>
                                         ) : <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">NO PROOF</span>}

@@ -53,13 +53,15 @@ function StatBox({ label, value, icon: Icon, color='amber', sub }) {
     };
     const p = palette[color]||palette.amber;
     return (
-        <div className="rounded-2xl p-4" style={{border:`1px solid ${p.border}`,background:p.bg,boxShadow:`0 2px 10px ${p.border}`}}>
-            <div className="flex items-center gap-2 mb-2">
-                <Icon style={{color:p.ic}} className="w-3.5 h-3.5" />
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{label}</p>
+        <div className="rounded-2xl p-4 h-full flex flex-col" style={{border:`1px solid ${p.border}`,background:p.bg,boxShadow:`0 2px 10px ${p.border}`}}>
+            <div className="flex items-start gap-2 mb-3">
+                <Icon style={{color:p.ic}} className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] leading-tight">{label}</p>
             </div>
-            <p className="text-lg font-black" style={{color:p.txt}}>{value}</p>
-            {sub && <p className="text-[9px] text-gray-400 mt-1">{sub}</p>}
+            <div className="mt-auto">
+                <p className="text-lg font-black leading-none" style={{color:p.txt}}>{value}</p>
+                {sub && <p className="text-[9px] text-gray-400 mt-1.5">{sub}</p>}
+            </div>
         </div>
     );
 }
@@ -504,7 +506,7 @@ function AIDataTab({ tokens }) {
             {/* Intelligence Tiles */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
                 {tileData.map((t,i)=>(
-                    <div key={i} onClick={()=>setTileDetail(t)} className="cursor-pointer hover:scale-105 transition-transform">
+                    <div key={i} onClick={()=>setTileDetail(t)} className="cursor-pointer hover:scale-105 transition-transform h-full">
                         <StatBox label={t.label} value={t.value} sub={t.sub} icon={t.icon} color={t.color} />
                     </div>
                 ))}

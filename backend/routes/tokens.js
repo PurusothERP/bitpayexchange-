@@ -227,11 +227,79 @@ router.get('/markets/bsclist', async (req, res) => {
     }
 });
 
+// ─── API Adapters ─────────────────────────────────────────────────────────────
+const CMC_API_KEY = process.env.COINMARKETCAP_API_KEY || '61a5cf295fde46a39ecb614a63cfd73b';
+
+function mapCmcToCg(cmcData) {
+    if (!cmcData || !cmcData.data) return [];
+    const arr = Array.isArray(cmcData.data) ? cmcData.data : Object.values(cmcData.data);
+    return arr.map(c => ({
+        id: c.slug,
+        symbol: (c.symbol || '').toLowerCase(),
+        name: c.name,
+        image: `https://s2.coinmarketcap.com/static/img/coins/64x64/${c.id}.png`,
+        current_price: c.quote?.USD?.price || 0,
+        market_cap: c.quote?.USD?.market_cap || 0,
+        market_cap_rank: c.cmc_rank || 999,
+        fully_diluted_valuation: c.quote?.USD?.fully_diluted_market_cap || null,
+        total_volume: c.quote?.USD?.volume_24h || 0,
+        high_24h: c.quote?.USD?.price || 0, // Approx fallback
+        low_24h: c.quote?.USD?.price || 0,
+        price_change_24h: 0,
+        price_change_percentage_24h: c.quote?.USD?.percent_change_24h || 0,
+        circulating_supply: c.circulating_supply,
+        total_supply: c.total_supply,
+        max_supply: c.max_supply,
+        ath: 0,
+        ath_change_percentage: 0,
+        ath_date: null,
+        atl: 0,
+        atl_change_percentage: 0,
+        atl_date: null,
+        roi: null,
+        last_updated: c.last_updated
+    }));
+}
+
 // ─── GET /api/tokens/markets/cg ─────────────────────────────────────────────
-// PROXY: Fetch market data from CoinGecko to avoid frontend CORS issues.
+// PROXY: Fetch market data from CoinGecko or CoinMarketCap (50/50 Split)
 router.get('/markets/cg', async (req, res) => {
     const { category, per_page, page, ids } = req.query;
     try {
+        const useCMC = Math.random() < 0.5;
+
+        if (useCMC && !ids) {
+            // CoinMarketCap path
+            try {
+                const response = await axios.get('https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest', {
+                    headers: { 'X-CMC_PRO_API_KEY': CMC_API_KEY },
+                    params: {
+                        limit: per_page || 100,
+                        start: ((page || 1) - 1) * (per_page || 100) + 1,
+                        convert: 'USD'
+                    },
+                    timeout: 15000
+                });
+                return res.json(mapCmcToCg(response.data));
+            } catch (cmcErr) {
+                console.warn('[Token Proxy] CMC failed, falling back to CG:', cmcErr.message);
+            }
+        } else if (useCMC && ids) {
+            // CMC Quotes Latest
+            try {
+                // If ids are passed, they are usually coingecko slugs. CMC uses slugs too.
+                const response = await axios.get('https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest', {
+                    headers: { 'X-CMC_PRO_API_KEY': CMC_API_KEY },
+                    params: { slug: ids, convert: 'USD' },
+                    timeout: 15000
+                });
+                return res.json(mapCmcToCg(response.data));
+            } catch (cmcErr) {
+                console.warn('[Token Proxy] CMC Quotes failed, falling back to CG:', cmcErr.message);
+            }
+        }
+
+        // CoinGecko fallback / primary path
         const headers = process.env.COINGECKO_API_KEY
             ? { 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY }
             : {};
@@ -249,7 +317,7 @@ router.get('/markets/cg', async (req, res) => {
         const response = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
             headers,
             params,
-            timeout: 15000 // 15s timeout
+            timeout: 15000
         });
         res.json(response.data);
     } catch (err) {
@@ -259,14 +327,29 @@ router.get('/markets/cg', async (req, res) => {
 });
 
 // ─── GET /api/tokens/markets/new ──────────────────────────────────────────
-// Fetch newly listed assets from CoinGecko (Alpha Discovery)
+// Fetch newly listed assets from CoinGecko/CMC (Alpha Discovery)
 router.get('/markets/new', async (req, res) => {
     try {
+        const useCMC = Math.random() < 0.5;
+        
+        if (useCMC) {
+            try {
+                // CMC doesn't have a direct "newly listed" endpoint in basic tier,
+                // so we fetch latest listings ordered by date added.
+                const response = await axios.get('https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest', {
+                    headers: { 'X-CMC_PRO_API_KEY': CMC_API_KEY },
+                    params: { limit: 50, sort: 'date_added', sort_dir: 'desc', convert: 'USD' },
+                    timeout: 15000
+                });
+                return res.json(mapCmcToCg(response.data));
+            } catch (cmcErr) {
+                console.warn('[Token Proxy] CMC New listings failed, falling back to CG:', cmcErr.message);
+            }
+        }
+
         const headers = process.env.COINGECKO_API_KEY
             ? { 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY }
             : {};
-        // Use 'newly-listed-coins' category or just general market with 'id_desc' if supported
-        // Demo key usually supports category filtering
         const response = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
             headers,
             params: { 
@@ -281,7 +364,6 @@ router.get('/markets/new', async (req, res) => {
         res.json(response.data);
     } catch (err) {
         console.error('[Token Proxy] New listings fetch failed:', err.message);
-        // Fallback to general tokens sorted by rank if category fail
         res.status(500).json({ error: 'Failed to fetch newly listed data' });
     }
 });
@@ -292,6 +374,48 @@ router.get('/markets/new', async (req, res) => {
 // (proper images, live prices, 24h change) via /coins/markets.
 router.get('/markets/trending', async (req, res) => {
     try {
+        const useCMC = Math.random() < 0.5;
+
+        if (useCMC) {
+            try {
+                // Fetch trending from CMC
+                const trendRes = await axios.get('https://pro-api.coinmarketcap.com/v1/cryptocurrency/trending/latest', {
+                    headers: { 'X-CMC_PRO_API_KEY': CMC_API_KEY },
+                    timeout: 15000
+                });
+                
+                // Map CMC trending to CoinGecko trending structure
+                const enrichedCoins = trendRes.data.data.slice(0, 15).map(c => {
+                    const price = c.quote?.USD?.price || 0;
+                    const change24 = c.quote?.USD?.percent_change_24h || 0;
+                    const img = `https://s2.coinmarketcap.com/static/img/coins/64x64/${c.id}.png`;
+                    return {
+                        item: {
+                            id: c.slug,
+                            coin_id: c.id,
+                            name: c.name,
+                            symbol: (c.symbol || '').toLowerCase(),
+                            market_cap_rank: c.cmc_rank || 999,
+                            thumb: img,
+                            small: img,
+                            large: img,
+                            price_btc: 0,
+                            score: 0,
+                            current_price: price,
+                            price_change_percentage_24h: change24,
+                            data: {
+                                price: price,
+                                price_change_percentage_24h: { usd: change24 }
+                            }
+                        }
+                    };
+                });
+                return res.json({ coins: enrichedCoins });
+            } catch (cmcErr) {
+                console.warn('[Token Proxy] CMC Trending failed, falling back to CG:', cmcErr.message);
+            }
+        }
+
         const headers = process.env.COINGECKO_API_KEY
             ? { 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY }
             : {};

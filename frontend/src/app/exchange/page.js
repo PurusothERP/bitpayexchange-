@@ -1575,7 +1575,7 @@ export default function B20Exchange() {
                                         </p>
                                         <div className="flex items-baseline gap-2">
                                             <span className={`text-xl font-black italic font-mono ${toToken?.price_change_percentage_24h >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                ${toToken?.current_price < 0.01 ? toToken.current_price.toFixed(6) : toToken?.current_price?.toLocaleString()}
+                                                ${(toToken?.current_price || 0) < 0.01 ? (toToken?.current_price || 0).toFixed(6) : (toToken?.current_price || 0).toLocaleString()}
                                             </span>
                                         </div>
                                     </div>
@@ -1600,9 +1600,9 @@ export default function B20Exchange() {
                                     <div className="flex flex-col gap-1.5 hidden 2xl:flex">
                                         <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">24H High / Low</p>
                                         <p className="text-sm font-black text-white font-mono space-x-2">
-                                            <span className="text-emerald-400">H: {toToken?.high_24h < 0.01 ? toToken.high_24h.toFixed(4) : toToken?.high_24h?.toLocaleString()}</span>
+                                            <span className="text-emerald-400">H: {(toToken?.high_24h || 0) < 0.01 ? (toToken?.high_24h || 0).toFixed(4) : (toToken?.high_24h || 0).toLocaleString()}</span>
                                             <span className="text-gray-700">|</span>
-                                            <span className="text-rose-400">L: {toToken?.low_24h < 0.01 ? toToken.low_24h.toFixed(4) : toToken?.low_24h?.toLocaleString()}</span>
+                                            <span className="text-rose-400">L: {(toToken?.low_24h || 0) < 0.01 ? (toToken?.low_24h || 0).toFixed(4) : (toToken?.low_24h || 0).toLocaleString()}</span>
                                         </p>
                                     </div>
                                 </div>
@@ -1868,7 +1868,7 @@ export default function B20Exchange() {
                                             <div className="space-y-4 px-2">
                                                 <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest">
                                                     <span className="text-slate-400">Liquidation Price</span>
-                                                    <span className="text-rose-600 font-mono italic font-bold">${(toToken?.current_price * (tradeSide === 'long' ? (1 - 0.8 / leverage) : (1 + 0.8 / leverage))).toFixed(4)}</span>
+                                                    <span className="text-rose-600 font-mono italic font-bold">${((toToken?.current_price || 0) * (tradeSide === 'long' ? (1 - 0.8 / leverage) : (1 + 0.8 / leverage))).toFixed(4)}</span>
                                                 </div>
                                                 <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest">
                                                     <span className="text-slate-400">Service Fee</span>
@@ -4297,7 +4297,7 @@ const TradingViewChart = ({ symbol, theme = 'light' }) => {
         
         const config = {
             "autosize": true,
-            "symbol": symbol.includes(':') ? symbol : `BINANCE:${symbol}`,
+            "symbol": symbol.includes(':') ? symbol.toUpperCase() : `BINANCE:${symbol.toUpperCase()}`,
             "interval": "15",
             "timezone": "Etc/UTC",
             "theme": theme,

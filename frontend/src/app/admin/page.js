@@ -41,6 +41,7 @@ export default function NueraAdminPortal() {
         { id: 'governance', label: 'Protocol Settings', icon: <Settings size={18} />, color: 'text-indigo-900' },
         { id: 'community', label: 'Social Mod', icon: <MessageSquare size={18} />, color: 'text-cyan-600' },
         { id: 'bulletin', label: 'Bulletin CMS', icon: <Megaphone size={18} />, color: 'text-slate-600' },
+        { id: 'api-panel', label: 'API & Architecture', icon: <Database size={18} />, color: 'text-rose-600' },
         { id: 'address-hub', label: 'Address Hub', icon: <PlusCircle size={18} />, color: 'text-gray-900' },
     ];
 
@@ -144,6 +145,7 @@ export default function NueraAdminPortal() {
                         {activeTab === 'governance' && <GovernanceHub key="gov" account={account} />}
                         {activeTab === 'bulletin' && <BulletinCMS key="bull" account={account} />}
                         {activeTab === 'community' && <CommunityMod key="comm" account={account} />}
+                        {activeTab === 'api-panel' && <ApiPanel key="api" />}
                         {activeTab === 'address-hub' && <AddressHub key="addr" />}
                     </AnimatePresence>
                 </div>
@@ -669,6 +671,172 @@ function ConnectedWallets({ account }) {
                     {wallets.map(w => <WalletRow key={w.wallet_address} w={w} />)}
                 </tbody>
             </table>
+        </div>
+    );
+}
+
+function ApiPanel() {
+    const [subTab, setSubTab] = useState('api'); // 'api' | 'architecture' | 'docs'
+
+    const apiMatrix = [
+        { function: '/markets/cg (Global Market)', cg: 'Active (Primary)', cmc: 'Active (Pro API)', usage: '50/50 Algorithmic Split', color: 'bg-emerald-50 text-emerald-600' },
+        { function: '/markets/new (Alpha Listings)', cg: 'Active (newly-listed)', cmc: 'Active (latest)', usage: '50/50 Algorithmic Split', color: 'bg-emerald-50 text-emerald-600' },
+        { function: '/markets/trending (Hot Coins)', cg: 'Active (enriched)', cmc: 'Active (trending/latest)', usage: '50/50 Algorithmic Split', color: 'bg-emerald-50 text-emerald-600' },
+        { function: 'Simple Price (BNB/Fiat)', cg: 'Active (Dedicated)', cmc: 'Inactive', usage: '100% CoinGecko', color: 'bg-indigo-50 text-indigo-600' },
+        { function: 'Trust Wallet PR Sync', cg: 'N/A', cmc: 'N/A', usage: 'GitHub Actions / IPFS', color: 'bg-slate-50 text-slate-600' },
+        { function: 'Live On-Chain Data', cg: 'N/A', cmc: 'N/A', usage: 'RPC (Pancake Router)', color: 'bg-sky-50 text-sky-600' }
+    ];
+
+    const techStack = [
+        { title: 'Frontend Core', tech: 'Next.js 14, Turbopack, React 18, Tailwind CSS, Framer Motion' },
+        { title: 'Backend APIs', tech: 'Node.js, Express, Axios, Ethers.js v6' },
+        { title: 'Database & Storage', tech: 'SQLite (WAL Mode), Pinata IPFS, TrustWallet Registry' },
+        { title: 'Web3 Infrastructure', tech: 'Binance Smart Chain (BSC), Solidity Factory, PancakeSwap V2 Router' }
+    ];
+
+    return (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex gap-4 mb-4 flex-wrap">
+                <button onClick={() => setSubTab('api')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'api' ? 'bg-rose-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}><Database size={12} className="inline mr-2"/> API Routing Matrix</button>
+                <button onClick={() => setSubTab('architecture')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'architecture' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}><Box size={12} className="inline mr-2"/> Technical Architecture</button>
+                <button onClick={() => setSubTab('docs')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'docs' ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}><Download size={12} className="inline mr-2"/> Documents</button>
+            </div>
+
+            {subTab === 'api' ? (
+                <div className="space-y-6">
+                    <div className="bg-white p-8 rounded-[3rem] border border-slate-200/60 shadow-sm">
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center"><Activity size={24} /></div>
+                            <div>
+                                <h3 className="text-xl font-black text-slate-900 uppercase italic">Data Provider <span className="text-rose-600">Load Balancer</span></h3>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Multi-API Redundancy Engine</p>
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]"><tr className="border-b border-slate-200"><th className="px-8 py-5">Function Endpoint</th><th className="px-6 py-5">CoinGecko API</th><th className="px-6 py-5">CoinMarketCap API</th><th className="px-8 py-5">Traffic Split / Usage</th></tr></thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {apiMatrix.map((row, i) => (
+                                        <tr key={i} className="hover:bg-slate-50 transition-colors">
+                                            <td className="px-8 py-6 font-black text-[11px] text-slate-900 font-mono">{row.function}</td>
+                                            <td className="px-6 py-6 text-xs font-bold text-slate-600"><span className={`px-2 py-1 rounded-md text-[9px] uppercase tracking-widest bg-emerald-50 text-emerald-600`}>{row.cg}</span></td>
+                                            <td className="px-6 py-6 text-xs font-bold text-slate-600"><span className={`px-2 py-1 rounded-md text-[9px] uppercase tracking-widest ${row.cmc.includes('Active') ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400'}`}>{row.cmc}</span></td>
+                                            <td className="px-8 py-6"><span className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border ${row.color} border-current`}>{row.usage}</span></td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div className="bg-white p-10 rounded-[3rem] border border-slate-200/60 shadow-sm flex flex-col justify-center">
+                            <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tight mb-2">B20 Exchange <span className="text-indigo-600">Core</span></h3>
+                            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
+                                A high-performance hybrid institutional protocol merging decentralized smart contracts with high-fidelity off-chain ledgers and dynamic API load-balancing.
+                            </p>
+                            <div className="mt-8 space-y-4">
+                                {techStack.map((t, i) => (
+                                    <div key={i} className="p-5 bg-slate-50 border border-slate-100 rounded-2xl flex flex-col gap-1">
+                                        <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">{t.title}</h4>
+                                        <p className="text-xs font-bold text-slate-700">{t.tech}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        
+                        <div className="bg-slate-900 p-10 rounded-[3rem] border border-slate-800 shadow-xl flex flex-col text-white">
+                            <h3 className="text-lg font-black uppercase italic tracking-widest mb-6 text-slate-300">Execution Flow</h3>
+                            
+                            <div className="flex-1 flex flex-col gap-4">
+                                {/* Flowchart step 1 */}
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20"><Globe size={18} /></div>
+                                    <div className="flex-1 bg-white/10 rounded-2xl p-4 border border-white/5">
+                                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Client Interface</p>
+                                        <p className="text-xs font-bold mt-1 text-slate-300">Next.js Client handles UX, dynamic polling, and institutional wallet approvals.</p>
+                                    </div>
+                                </div>
+                                <div className="ml-5 w-0.5 h-6 bg-slate-700" />
+                                
+                                {/* Flowchart step 2 */}
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 bg-sky-500 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-sky-500/20"><Activity size={18} /></div>
+                                    <div className="flex-1 bg-white/10 rounded-2xl p-4 border border-white/5">
+                                        <p className="text-[10px] font-black text-sky-400 uppercase tracking-widest">API Gateway & Load Balancer</p>
+                                        <p className="text-xs font-bold mt-1 text-slate-300">Express routing 50/50 to CG/CMC. Indexes prices, handles fiat off-ramp queuing.</p>
+                                    </div>
+                                </div>
+                                <div className="ml-5 w-0.5 h-6 bg-slate-700" />
+
+                                {/* Flowchart step 3 */}
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 bg-rose-500 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-rose-500/20"><Box size={18} /></div>
+                                    <div className="flex-1 bg-white/10 rounded-2xl p-4 border border-white/5">
+                                        <p className="text-[10px] font-black text-rose-400 uppercase tracking-widest">On-Chain Settlement</p>
+                                        <p className="text-xs font-bold mt-1 text-slate-300">Ethers.js executes router swaps. Fees sent to Treasury. Syncs ledger via background poll.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {subTab === 'docs' && (
+                <div className="space-y-6">
+                    <div className="bg-white p-10 rounded-[3rem] border border-slate-200/60 shadow-sm">
+                        <div className="flex items-center gap-4 mb-10">
+                            <div className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg"><Download size={22} /></div>
+                            <div>
+                                <h3 className="text-xl font-black text-slate-900 uppercase italic">Official <span className="text-indigo-600">Documentation</span></h3>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Institutional Audit & Technical Reference — Word Format</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Doc 1 */}
+                            <div className="p-8 bg-indigo-50 border border-indigo-100 rounded-[2.5rem] flex flex-col gap-4 group hover:shadow-xl transition-all">
+                                <div className="w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200 group-hover:scale-110 transition-transform">
+                                    <Box size={26} />
+                                </div>
+                                <div>
+                                    <h4 className="text-base font-black text-slate-900 uppercase italic tracking-tight">Technical Blueprint</h4>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">B20 Exchange Institutional Architecture</p>
+                                    <p className="text-[9px] font-bold text-slate-400 mt-2">Full product module breakdown, tech stack, fee model, and security persistence logic.</p>
+                                </div>
+                                <a
+                                    href="/B20_Technical_Blueprint.docx"
+                                    download="B20_Technical_Blueprint.docx"
+                                    className="mt-auto flex items-center justify-center gap-2 w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black rounded-2xl uppercase tracking-widest transition-all shadow-md shadow-indigo-200 active:scale-95"
+                                >
+                                    <Download size={14} /> Download .docx
+                                </a>
+                            </div>
+
+                            {/* Doc 2 */}
+                            <div className="p-8 bg-slate-900 border border-slate-800 rounded-[2.5rem] flex flex-col gap-4 group hover:shadow-2xl transition-all">
+                                <div className="w-14 h-14 bg-white/10 text-white rounded-2xl flex items-center justify-center border border-white/10 group-hover:scale-110 transition-transform">
+                                    <ShieldCheck size={26} />
+                                </div>
+                                <div>
+                                    <h4 className="text-base font-black text-white uppercase italic tracking-tight">Master Audit Document</h4>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Omnibus Ecosystem Reference</p>
+                                    <p className="text-[9px] font-bold text-slate-500 mt-2">Smart contract ABIs, treasury wallet infrastructure, REST API docs, and end-to-end workflow map.</p>
+                                </div>
+                                <a
+                                    href="/B20_Master_Audit_Document.docx"
+                                    download="B20_Master_Audit_Document.docx"
+                                    className="mt-auto flex items-center justify-center gap-2 w-full py-4 bg-white/10 hover:bg-white/20 text-white text-[10px] font-black rounded-2xl uppercase tracking-widest transition-all border border-white/10 active:scale-95"
+                                >
+                                    <Download size={14} /> Download .docx
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -1261,6 +1429,7 @@ function AddressHub() {
         { label: 'Bonding Curve', val: '0xC57C602d847990138541E21972faa2476906BaE7' },
         { label: 'Anthropic AI Key', val: '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' },
         { label: 'CoinGecko API Key', val: 'CG-wAvFy24FgS5GzRa8AfLiKhPi' },
+        { label: 'CoinMarketCap API Key', val: '61a5cf295fde46a39ecb614a63cfd73b' },
     ];
     return (
         <div className="max-w-5xl mx-auto space-y-8 pb-20">

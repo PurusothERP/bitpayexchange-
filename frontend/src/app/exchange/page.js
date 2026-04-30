@@ -1212,147 +1212,73 @@ export default function B20Exchange() {
             <div className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-200 via-indigo-500 to-indigo-200 z-[100]" />
 
             <div className="pt-20 pb-24 px-4 md:px-8 max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="max-w-[1600px] mx-auto flex flex-col xl:flex-row items-center justify-between gap-8 mb-20 px-4 transition-all duration-700">
-                    <div className="flex flex-col gap-4 text-center xl:text-left">
-                        <div className="flex items-center gap-3 mb-2 justify-center xl:justify-start">
-                             <div className="px-4 py-1.5 bg-indigo-600 text-white rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-indigo-500/20">
-                                <span className="w-2 h-2 bg-white rounded-full animate-pulse" /> LIVE EXCHANGE LAYER
-                             </div>
-                             <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest px-3 border-l border-slate-200/60">Institutional B20 LP</span>
+                {/* ── PREMIUM HORIZONTAL NAVIGATION ── */}
+                <div className="max-w-[1400px] mx-auto flex flex-col lg:flex-row items-center lg:items-end justify-between gap-6 mb-12 px-4 transition-all duration-700 mt-4">
+                    
+                    {/* Left side corner medium size title */}
+                    <div className="flex flex-col items-center lg:items-start shrink-0">
+                        <div className="flex items-center gap-3 mb-2">
+                            <h1 className="text-3xl md:text-[2.5rem] font-black tracking-tight text-slate-900 leading-none">
+                                CRYPTO <span className="text-indigo-600">EXCHANGE</span>
+                            </h1>
+                            <div className="px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-md text-[9px] font-bold tracking-widest uppercase flex items-center gap-1.5 border border-emerald-100 shadow-sm">
+                                <span className="relative flex h-1.5 w-1.5">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+                                </span>
+                                ONLINE
+                            </div>
                         </div>
-                        <h1 className="text-5xl md:text-8xl font-black text-slate-900 uppercase tracking-tighter leading-none">
-                            B20 <span className="text-indigo-600 drop-shadow-sm">EXCHANGE</span>
-                        </h1>
-                        <p className="text-sm md:text-xl font-bold text-slate-400 uppercase tracking-[0.25em] max-w-2xl mx-auto xl:mx-0">
-                            Hassle-Free Transactions. Institutional Liquidity. Pure Execution.
+                        <p className="text-[11px] md:text-xs font-bold text-slate-400 uppercase tracking-widest">
+                            Institutional Deep Liquidity &bull; Pure Execution
                         </p>
                     </div>
 
-                    <div className="flex flex-wrap gap-1.5 p-2 bg-slate-50/80 backdrop-blur-3xl shadow-sm rounded-2xl border border-slate-200/50 items-center justify-center transition-all duration-300 mt-12 xl:mt-0">
-                        <button 
-                            onClick={() => setMode('markets')}
-                            className={`px-5 py-2.5 rounded-[14px] text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'markets' ? 'bg-white text-slate-900 shadow-sm border border-slate-200/80 border border-indigo-800' : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'}`}
-                        >
-                            <div className="relative flex items-center justify-center">
-                                
-                                <LayoutGrid className={`w-4 h-4 relative z-10 ${mode === 'markets' ? 'text-white' : 'text-blue-500'}`} />
-                            </div>
-                            Markets
-                        </button>
-                        <button 
-                            onClick={() => setMode('spot')}
-                            className={`px-5 py-2.5 rounded-[14px] text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'spot' ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-500/20' : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'}`}
-                        >
-                            <div className="relative flex items-center justify-center">
-                                
-                                <TrendingUp className={`w-4 h-4 relative z-10 ${mode === 'spot' ? 'text-white' : 'text-indigo-600'}`} />
-                            </div>
-                            Spot
-                        </button>
-                        <button 
-                            onClick={() => setMode('pro')}
-                            className={`px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-2.5 ${mode === 'pro' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm'}`}
-                        >
-                            <div className="relative flex items-center justify-center">
-                                <BarChart3 className={`w-3.5 h-3.5 relative z-10 ${mode === 'pro' ? 'text-white' : 'text-rose-500'}`} />
-                            </div>
-                            Futures & Options
-                        </button>
+                    {/* All other options Navigation bar type */}
+                    <div className="w-full lg:w-auto flex flex-wrap justify-center lg:justify-end gap-1.5 p-1.5 bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/80 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)]">
                         
-                        <button 
-                            onClick={() => setMode('b20ai')}
-                            className={`px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-2.5 relative overflow-hidden group/ai ${mode === 'b20ai' ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm'}`}
-                        >
-                             <div className="relative flex items-center justify-center">
-                                <Brain className={`w-3.5 h-3.5 relative z-10 ${mode === 'b20ai' ? 'animate-pulse text-white' : 'text-indigo-600'}`} /> 
-                            </div>
-                            <span className="relative z-10">B20 AI</span>
+                        <button onClick={() => setMode('markets')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'markets' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
+                            <LayoutGrid className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Markets</span>
                         </button>
 
-                        <button 
-                            onClick={() => setMode('smart-money')}
-                            className={`px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-2.5 ${mode === 'smart-money' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm'}`}
-                        >
-                            <div className="relative flex items-center justify-center">
-                                <Sparkles className={`w-3.5 h-3.5 relative z-10 ${mode === 'smart-money' ? 'animate-pulse text-white' : 'text-indigo-600'}`} /> 
-                            </div>
-                            <span>Smart Money</span>
+                        <button onClick={() => setMode('spot')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'spot' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
+                            <TrendingUp className="w-3.5 h-3.5" /> Spot
                         </button>
 
-                        <button 
-                            onClick={() => setMode('bonding')}
-                            className={`px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-2.5 ${mode === 'bonding' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm'}`}
-                        >
-                            <div className="relative flex items-center justify-center">
-                                <Zap className={`w-3.5 h-3.5 relative z-10 ${mode === 'bonding' ? 'text-white' : 'text-indigo-500'}`} />
-                            </div>
-                            Bonding
+                        <button onClick={() => setMode('pro')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'pro' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
+                            <BarChart3 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Futures</span>
                         </button>
-                        
 
+                        <div className="w-px h-6 bg-slate-200 my-auto mx-1 hidden md:block" />
 
-                        <Link 
-                            href="/staking"
-                            className={`px-5 py-2.5 rounded-[14px] text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-3 text-slate-400 hover:text-slate-900 hover:bg-slate-50`}
-                        >
-                            <div className="relative flex items-center justify-center">
-                                <div className="absolute inset-0 bg-violet-500/30 rounded-full animate-pulse" />
-                                <Lock className="w-4 h-4 relative z-10 text-violet-500" />
-                            </div>
-                            Staking
+                        <button onClick={() => setMode('b20ai')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'b20ai' ? 'bg-fuchsia-600 text-white shadow-md shadow-fuchsia-600/20' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
+                            <Brain className={`w-3.5 h-3.5 ${mode === 'b20ai' ? 'animate-pulse' : ''}`} /> <span className="hidden md:inline">Crypto AI</span>
+                        </button>
+
+                        <button onClick={() => setMode('smart-money')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'smart-money' ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
+                            <Sparkles className="w-3.5 h-3.5" /> <span className="hidden lg:inline">Smart Money</span>
+                        </button>
+
+                        <button onClick={() => setMode('bonding')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'bonding' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
+                            <Zap className="w-3.5 h-3.5" /> <span className="hidden md:inline">Bonding</span>
+                        </button>
+
+                        <Link href="/staking" className="flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100">
+                            <Lock className="w-3.5 h-3.5 text-violet-500" /> <span className="hidden md:inline">Staking</span>
                         </Link>
 
-                        <button 
-                            onClick={() => setMode('web3')}
-                            className={`px-5 py-2.5 rounded-[14px] text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'web3' ? 'bg-emerald-600 text-white shadow-2xl shadow-emerald-600/20 px-12 border-2 border-white/50' : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 border border-emerald-100 shadow-lg shadow-emerald-500/5'}`}
-                        >
-                             <div className="relative flex items-center justify-center">
-                                
-                                <Globe className={`w-4 h-4 relative z-10 ${mode === 'web3' ? 'animate-pulse' : 'text-emerald-600'}`} /> 
-                            </div>
-                            <span>Web3 Portal</span>
+                        <div className="w-px h-6 bg-slate-200 my-auto mx-1 hidden xl:block" />
+
+                        <button onClick={() => setMode('web3')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'web3' ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'text-slate-500 hover:text-emerald-600 hover:bg-emerald-50'}`}>
+                            <Globe className="w-3.5 h-3.5" /> <span className="hidden xl:inline">Web3 Portal</span>
                         </button>
-                        
-                        <button 
-                            onClick={() => setMode('list')}
-                            className={`px-5 py-2.5 rounded-[14px] text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'list' ? 'bg-white text-slate-900 shadow-sm border border-slate-200/80 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'}`}
-                        >
-                            <div className="relative flex items-center justify-center">
-                                
-                                <PlusCircle className={`w-4 h-4 relative z-10 ${mode === 'list' ? 'text-white' : 'text-indigo-600'}`} />
-                            </div>
-                            List your token
+
+                        <button onClick={() => setMode('list')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'list' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:text-indigo-600 hover:bg-indigo-50'}`}>
+                            <PlusCircle className="w-3.5 h-3.5" /> <span className="hidden xl:inline">List Token</span>
                         </button>
-                        <button 
-                            onClick={() => setMode('community')}
-                            className={`px-5 py-2.5 rounded-[14px] text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'community' ? 'bg-white text-slate-900 shadow-sm border border-slate-200/80' : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'}`}
-                        >
-                            <div className="relative flex items-center justify-center">
-                                
-                                <Users className={`w-4 h-4 relative z-10 ${mode === 'community' ? 'text-white' : 'text-blue-500'}`} />
-                            </div>
-                            Community
-                        </button>
-                         <button 
-                            onClick={() => setMode('announcements')}
-                            className={`px-5 py-2.5 rounded-[14px] text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-3 ${mode === 'announcements' ? 'bg-white text-slate-900 shadow-sm border border-slate-200/80' : 'text-slate-500 hover:text-slate-900 hover:bg-white/50'}`}
-                        >
-                            <div className="relative flex items-center justify-center">
-                                
-                                <Megaphone className={`w-4 h-4 relative z-10 ${mode === 'announcements' ? 'text-white' : 'text-purple-500'}`} />
-                            </div>
-                            Bulletin
-                        </button>
-                         <Link 
-                            href="/fiat"
-                            className={`px-5 py-2.5 rounded-[14px] text-[11px] font-bold uppercase tracking-wide transition-all whitespace-nowrap flex items-center gap-3 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 border border-indigo-200/60 shadow-lg shadow-indigo-500/5`}
-                        >
-                            <div className="relative flex items-center justify-center">
-                                <div className="absolute inset-0 bg-indigo-600/30 rounded-full animate-pulse" />
-                                <CreditCard className="w-4 h-4 relative z-10 text-indigo-600" />
-                            </div>
-                            Express Fiat
+
+                        <Link href="/fiat" className="flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 text-indigo-600 bg-indigo-50/50 hover:bg-indigo-100 hover:shadow-sm border border-indigo-100/50">
+                            <CreditCard className="w-3.5 h-3.5" /> <span className="hidden xl:inline">Fiat</span>
                         </Link>
                     </div>
                 </div>
@@ -2268,15 +2194,13 @@ export default function B20Exchange() {
                                 <div className="flex flex-col gap-4">
                                     
                                     {/* Section 1: Ecosystem Hub */}
+                                    {/* Section 1: Ecosystem Hub */}
                                     <div className="flex flex-col gap-3">
                                         <div className="flex items-center justify-between px-2">
                                             <div className="flex items-center gap-2">
-                                                <div className="p-1.5 bg-indigo-50 rounded-lg">
-                                                    <Layers className="w-3.5 h-3.5 text-indigo-600" />
-                                                </div>
+                                                <Layers className="w-3.5 h-3.5 text-slate-400" />
                                                 <div className="flex flex-col">
-                                                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-900">Ecosystem Hub</span>
-                                                    <span className="text-[8px] font-semibold text-slate-400 uppercase tracking-tighter">Filter by native blockchain network</span>
+                                                    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Ecosystem Hub</span>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-1.5 px-2.5 py-0.5 bg-slate-50 border border-slate-200/50 rounded-full">
@@ -2286,25 +2210,25 @@ export default function B20Exchange() {
                                         </div>
 
                                         <div className="max-w-full overflow-x-auto scrollbar-hide">
-                                            <div className="flex items-center gap-1.5 pb-1">
+                                            <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-200/50 gap-1.5 w-max">
                                                 <button 
                                                     onClick={() => setNetworkFilter('ALL')}
-                                                    className={`px-5 py-2.5 rounded-xl flex items-center gap-2.5 transition-all whitespace-nowrap border ${networkFilter === 'ALL' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 border-indigo-700' : 'bg-slate-50 text-slate-500 hover:text-slate-900 hover:bg-white hover:border-slate-300 border-transparent'}`}
+                                                    className={`px-5 py-2.5 rounded-xl flex items-center gap-2.5 transition-all text-[11px] font-bold uppercase tracking-wide whitespace-nowrap ${networkFilter === 'ALL' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm'}`}
                                                 >
-                                                    <Globe className="w-3.5 h-3.5 shrink-0" />
-                                                    <span className="text-[10px] font-bold uppercase tracking-widest">All Assets</span>
+                                                    <Globe className="w-4 h-4 shrink-0" />
+                                                    All Assets
                                                 </button>
                                                 
-                                                <div className="w-px h-6 bg-slate-200 mx-1.5" />
+                                                <div className="w-px h-6 bg-slate-200/60 my-auto mx-1" />
 
                                                 {NETWORKS_LIST.map(net => (
                                                     <button 
                                                         key={net}
                                                         onClick={() => setNetworkFilter(net)}
-                                                        className={`px-4 py-2.5 rounded-xl flex items-center gap-2.5 transition-all whitespace-nowrap border ${networkFilter === net ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 border-indigo-700' : 'bg-slate-50 text-slate-500 hover:text-slate-900 hover:bg-white hover:border-slate-300 border-transparent'}`}
+                                                        className={`px-4 py-2.5 rounded-xl flex items-center gap-2.5 transition-all text-[11px] font-bold uppercase tracking-wide whitespace-nowrap ${networkFilter === net ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm'}`}
                                                     >
                                                         <img src={NETWORK_LOGOS[net] || getNetworkLogo(net)} alt="" className="w-4 h-4 rounded-full object-contain bg-white p-0.5" />
-                                                        <span className="text-[10px] font-bold uppercase tracking-widest">{net}</span>
+                                                        {net}
                                                     </button>
                                                 ))}
                                             </div>

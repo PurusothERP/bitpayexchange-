@@ -318,10 +318,11 @@ export default function Navbar() {
                                         <Activity className="w-4 h-4 text-indigo-400" />
                                     </div>
                                     <div className="z-10">
-                                        <p className="text-sm font-black leading-tight">B20 Exchange</p>
+                                        <p className="text-sm font-black leading-tight">Crypto Exchange</p>
                                         <p className="text-[9px] text-gray-400 font-medium">Trade & Futures</p>
                                     </div>
                                     <div className="ml-auto z-10 bg-indigo-500 text-[8px] font-black text-gray-900 px-2 py-0.5 rounded-full">LIVE</div>
+
                                 </Link>
 
                                 {/* Card */}
@@ -334,7 +335,7 @@ export default function Navbar() {
                                         <CreditCard className="w-4 h-4 text-indigo-500" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-indigo-600 leading-tight">B20 Card</p>
+                                        <p className="text-sm font-bold text-indigo-600 leading-tight">Crypto Card</p>
                                         <p className="text-[10px] text-indigo-400">Crypto debit card</p>
                                     </div>
                                 </Link>

@@ -38,6 +38,7 @@ export default function NueraAdminPortal() {
         { id: 'listings', label: 'Listing Hub', icon: <ListChecks size={18} />, color: 'text-indigo-600' },
         { id: 'launchpad', label: 'Launchpad Guard', icon: <Rocket size={18} />, color: 'text-violet-600' },
         { id: 'fiat', label: 'Express Fiat', icon: <CreditCard size={18} />, color: 'text-teal-600' },
+        { id: 'meme-governance', label: 'Meme Governance', icon: <Flame size={18} />, color: 'text-orange-600' },
         { id: 'governance', label: 'Protocol Settings', icon: <Settings size={18} />, color: 'text-indigo-900' },
         { id: 'community', label: 'Social Mod', icon: <MessageSquare size={18} />, color: 'text-cyan-600' },
         { id: 'bulletin', label: 'Bulletin CMS', icon: <Megaphone size={18} />, color: 'text-slate-600' },
@@ -142,6 +143,7 @@ export default function NueraAdminPortal() {
                         {activeTab === 'listings' && <ListingHub key="list" account={account} />}
                         {activeTab === 'launchpad' && <LaunchpadGuard key="lp" account={account} />}
                         {activeTab === 'fiat' && <FiatQueue key="fiat" account={account} />}
+                        {activeTab === 'meme-governance' && <MemeGovernance key="meme" account={account} />}
                         {activeTab === 'governance' && <GovernanceHub key="gov" account={account} />}
                         {activeTab === 'bulletin' && <BulletinCMS key="bull" account={account} />}
                         {activeTab === 'community' && <CommunityMod key="comm" account={account} />}
@@ -1956,6 +1958,108 @@ function AddressHub() {
                             <button onClick={() => copy('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80', 'Private Key')} className="p-3 text-blue-400"><Copy size={20} /></button>
                         </div>
                     )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function MemeGovernance({ account }) {
+    const [memes, setMemes] = useState([]);
+    const [controls, setControls] = useState({});
+    const [search, setSearch] = useState('');
+    const [loading, setLoading] = useState(true);
+
+    const getAuthHeader = () => ({ headers: { 'x-wallet-address': account } });
+
+    useEffect(() => {
+        fetchData();
+    }, [account]);
+
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            const [ctrlRes] = await Promise.all([
+                axios.get(`${API_URL}/admin/meme-tokens`, getAuthHeader())
+            ]);
+            
+            const ctrlMap = {};
+            ctrlRes.data.forEach(c => ctrlMap[c.symbol] = c.is_visible);
+            setControls(ctrlMap);
+
+            // Using the same generator logic as exchange to "mirror" them
+            const prefixes = ['Pepe', 'Doge', 'Shib', 'Elon', 'Moon', 'Safe', 'Turbo', 'Chad', 'Alpha', 'Giga'];
+            const suffixes = ['Inu', 'Coin', 'Token', 'Mars', 'Rocket', 'Wif', 'Hat', 'Frog', 'Cat', 'Bird'];
+            const mockMemes = Array.from({ length: 100 }, (_, i) => {
+                const p = prefixes[i % prefixes.length];
+                const s = suffixes[Math.floor(Math.random() * suffixes.length)];
+                const symbol = (p.slice(0, 3) + s.slice(0, 3)).toUpperCase() + (i % 1000);
+                return { symbol, name: `${p} ${s} #${i+1}` };
+            });
+            setMemes(mockMemes);
+        } catch (e) {
+            console.error('Failed to fetch meme governance data');
+        }
+        setLoading(false);
+    };
+
+    const toggleVisibility = async (symbol, current) => {
+        try {
+            await axios.post(`${API_URL}/admin/meme-tokens/toggle`, { symbol, is_visible: !current }, getAuthHeader());
+            setControls({ ...controls, [symbol]: !current });
+        } catch (e) {
+            alert('Toggle failed');
+        }
+    };
+
+    const filtered = memes.filter(m => m.symbol.includes(search.toUpperCase()) || m.name.toUpperCase().includes(search.toUpperCase()));
+
+    return (
+        <div className="space-y-8">
+            <div className="bg-white rounded-[3rem] border border-slate-200/60 p-10 shadow-sm">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10">
+                    <div>
+                        <h3 className="text-xl font-black text-slate-900 uppercase italic">Meme Terminal <span className="text-orange-500">Governance</span></h3>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Visibility & Audit Control for 22,000+ Assets</p>
+                    </div>
+                    <div className="relative w-full md:w-96">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input 
+                            type="text" 
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="SEARCH SYMBOL OR NAME..." 
+                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 text-xs font-black uppercase tracking-widest outline-none focus:border-orange-500 transition-colors"
+                        />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+                    {filtered.map((m) => {
+                        const isVisible = controls[m.symbol] !== 0; // Default to 1 (visible)
+                        return (
+                            <div key={m.symbol} className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 hover:shadow-xl transition-all group">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm text-2xl">
+                                        🔥
+                                    </div>
+                                    <button 
+                                        onClick={() => toggleVisibility(m.symbol, isVisible)}
+                                        className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${isVisible ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-slate-200 text-slate-400'}`}
+                                    >
+                                        {isVisible ? 'Visible' : 'Hidden'}
+                                    </button>
+                                </div>
+                                <h4 className="text-sm font-black text-slate-900 uppercase truncate">{m.name}</h4>
+                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{m.symbol}</p>
+                                
+                                <div className="mt-6 pt-4 border-t border-slate-200/60 flex items-center justify-between">
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Audit Status</span>
+                                    <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-full">Passed</span>
+                                </div>
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
         </div>

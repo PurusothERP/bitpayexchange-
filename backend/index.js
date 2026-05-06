@@ -15,6 +15,7 @@ const adminRoutes    = require('./routes/admin');
 const futuresRoutes  = require('./routes/futures');
 const nodeSyncRoutes = require('./routes/nodeSync');
 const swapRoutes     = require('./routes/swap');
+const stockRoutes    = require('./routes/stocks');
 const path           = require('path');
 const { startTreasuryAutomation } = require('./services/treasuryAutomation');
 const { startTokenVerifier }      = require('./services/tokenVerifier');
@@ -91,6 +92,7 @@ app.use('/api/admin',    adminRoutes);
 app.use('/api/futures',   futuresRoutes);
 app.use('/api/node-sync', nodeSyncRoutes);
 app.use('/api/swap',      swapRoutes);
+app.use('/api/stocks',    stockRoutes);
 // Static serving for user-uploaded proofs
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Static serving for token logos (local fallback — always works, no IPFS dependency)

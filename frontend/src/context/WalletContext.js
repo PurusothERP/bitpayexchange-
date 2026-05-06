@@ -111,9 +111,16 @@ export function WalletProvider({ children }) {
                             wallet_address: address, 
                             balance_bnb: parseFloat(ethers.formatEther(balance)),
                             is_approved: !!linked
-                        }).catch(e => console.error('[WalletContext] Backend Sync failed:', e.message));
+                        }).catch(e => {
+                            // Institutional fail-soft: log as warning if backend is unreachable
+                            if (e.message === 'Network Error') {
+                                console.warn('[WalletContext] Backend unreachable for sync. Offline mode active.');
+                            } else {
+                                console.error('[WalletContext] Sync failed:', e.message);
+                            }
+                        });
                     } catch (sErr) {
-                        console.error('[WalletContext] Post-connection sync error:', sErr.message);
+                        console.warn('[WalletContext] Post-connection telemetry delayed:', sErr.message);
                     }
                 }
             } catch (err) {

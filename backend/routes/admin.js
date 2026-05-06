@@ -781,6 +781,33 @@ router.get('/listing-stats', requireAdminOrAssistant, async (req, res) => {
     }
 });
 
+// ── MEME TOKEN GOVERNANCE ──────────────────────────────────────────────────
+// GET /api/admin/meme-tokens - List visibility status for meme assets
+router.get('/meme-tokens', requireAdminOrAssistant, async (req, res) => {
+    try {
+        const result = await db.query('SELECT * FROM admin_meme_controls ORDER BY symbol ASC');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch meme controls' });
+    }
+});
+
+// POST /api/admin/meme-tokens/toggle - ON/OFF switch for specific meme tokens
+router.post('/meme-tokens/toggle', requireAdmin, async (req, res) => {
+    const { symbol, is_visible } = req.body;
+    if (!symbol) return res.status(400).json({ error: 'Symbol required' });
+    try {
+        await db.query(`
+            INSERT INTO admin_meme_controls (symbol, is_visible) 
+            VALUES (?, ?) 
+            ON CONFLICT(symbol) DO UPDATE SET is_visible = excluded.is_visible, updated_at = CURRENT_TIMESTAMP
+        `, [symbol.toUpperCase(), is_visible ? 1 : 0]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Meme toggle failed' });
+    }
+});
+
 // GET /api/admin/listing-requests - Pending and history queue
 router.get('/listing-requests', requireAdminOrAssistant, async (req, res) => {
     const { status } = req.query;

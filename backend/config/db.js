@@ -313,9 +313,41 @@ db.init = () => {
             )
         `, (err) => {
             if (err) console.error('Error creating listing_submissions table:', err);
-            else console.log('Listing submissions table ready (duplicate guard ok).');
+            else console.log('Listing submissions table ready.');
         });
 
+        // Meme Specific Trades (Spot, Futures, Options)
+        db.run(`
+            CREATE TABLE IF NOT EXISTS meme_trades (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                wallet_address TEXT NOT NULL,
+                token_symbol TEXT NOT NULL,
+                token_address TEXT,
+                trade_mode TEXT NOT NULL, -- 'SPOT', 'FUTURES', 'OPTIONS'
+                side TEXT NOT NULL, -- 'BUY', 'SELL', 'LONG', 'SHORT'
+                amount REAL NOT NULL,
+                price REAL NOT NULL,
+                leverage INTEGER DEFAULT 1,
+                fee_paid REAL DEFAULT 0,
+                status TEXT DEFAULT 'COMPLETED',
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `, (err) => {
+            if (err) console.error('Error creating meme_trades table:', err);
+            else console.log('Meme trades table ready.');
+        });
+
+        // Admin Meme Token Visibility Controls
+        db.run(`
+            CREATE TABLE IF NOT EXISTS admin_meme_controls (
+                symbol TEXT PRIMARY KEY,
+                is_visible INTEGER DEFAULT 1,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `, (err) => {
+            if (err) console.error('Error creating admin_meme_controls table:', err);
+            else console.log('Admin meme controls table ready.');
+        });
     } catch (e) {
         console.error('[DB] Critical Initialization Error:', e.message);
     }

@@ -99,12 +99,18 @@ router.get('/quote', async (req, res) => {
             output_amount = (input_amount * basePrice) / selectedPrice;
         }
 
+        const fee_percent = 0.001; // 0.1%
+        const input_fee_amt = input_amount * fee_percent;
+        const output_fee_amt = output_amount * fee_percent;
+
         return res.json({
             base_token: base_symbol || base_token,
             selected_token: selected_symbol || selected_token,
             input_amount: input_amount,
-            output_amount: output_amount,
-            price_source: 'coingecko/cmc', // Handled by cryptoFetcher
+            output_amount: output_amount - output_fee_amt, // Deduct fee from output
+            fee_amount: output_fee_amt,
+            fee_percent: "0.1%",
+            price_source: 'coingecko/cmc', 
             spot_price_base: basePrice,
             spot_price_selected: selectedPrice,
             liquidity_warning: false
@@ -113,6 +119,31 @@ router.get('/quote', async (req, res) => {
     } catch (error) {
         console.error('[Swap Quote API] Error:', error.message);
         return res.status(500).json({ error: 'Failed to fetch swap quote', details: error.message });
+    }
+});
+
+// ── POST /api/swap/execute ──────────────────────────────────────────────────
+router.post('/execute', async (req, res) => {
+    const { trader_wallet, from_symbol, to_symbol, amount, fee_bnb, tx_hash } = req.body;
+    try {
+        const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+        
+        // 1. Log trade
+        await db.query(`
+            INSERT INTO trades (token_address, trader_wallet, trade_type, amount_tokens, fee_bnb, tx_hash)
+            VALUES (?, ?, ?, ?, ?, ?)
+        `, [to_symbol, trader_wallet, 'SWAP', amount, fee_bnb, tx_hash]);
+
+        // 2. Log treasury transfer
+        await db.query(`
+            INSERT INTO treasury_transfers (amount_bnb, transfer_type, source_contract, destination_address, tx_hash)
+            VALUES (?, ?, ?, ?, ?)
+        `, [fee_bnb, 'TRADING_FEE', from_symbol, TREASURY, tx_hash]);
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[Swap Execute] Error:', err.message);
+        res.status(500).json({ error: 'Execution logging failed' });
     }
 });
 

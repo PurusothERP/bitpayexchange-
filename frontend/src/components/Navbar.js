@@ -5,7 +5,7 @@ import { useWallet } from '@/context/WalletContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import axios from 'axios';
-import { Wallet, Rocket, Activity, Image as ImageIcon, Menu, X, FileText, ArrowRightLeft, ChevronDown, Coins, ShieldCheck, Shield, Sparkles, DollarSign, CreditCard, Lock, Brain } from 'lucide-react';
+import { Wallet, Rocket, Activity, Image as ImageIcon, Menu, X, FileText, ArrowRightLeft, ChevronDown, Coins, ShieldCheck, Shield, Sparkles, DollarSign, CreditCard, Lock, Brain, LayoutGrid } from 'lucide-react';
 import Logo from './Logo';
 
 export default function Navbar() {
@@ -152,7 +152,9 @@ export default function Navbar() {
                                 <span className="tracking-wide text-xs">Exchange</span>
                             </Link>
 
-                            <Link href="/cards" className="nav-link flex items-center gap-2 text-indigo-600 font-black hover:text-indigo-700 transition-colors">
+
+
+                            <Link href="/cards" className="nav-link flex items-center gap-2 text-slate-900 font-bold hover:text-blue-500 transition-colors">
                                 <CreditCard className="w-4 h-4" /> Card
                             </Link>
 
@@ -326,18 +328,20 @@ export default function Navbar() {
 
                                 </Link>
 
+
+
                                 {/* Card */}
                                 <Link
                                     href="/cards"
                                     onClick={() => setIsMobileMenuOpen(false)}
-                                    className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-indigo-50 transition-colors active:scale-95 group"
+                                    className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 transition-colors active:scale-95 group"
                                 >
-                                    <div className="w-8 h-8 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                                        <CreditCard className="w-4 h-4 text-indigo-500" />
+                                    <div className="w-8 h-8 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <CreditCard className="w-4 h-4 text-gray-500" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-indigo-600 leading-tight">Crypto Card</p>
-                                        <p className="text-[10px] text-indigo-400">Crypto debit card</p>
+                                        <p className="text-sm font-bold text-gray-800 leading-tight">Crypto Card</p>
+                                        <p className="text-[10px] text-gray-400">Crypto debit card</p>
                                     </div>
                                 </Link>
 

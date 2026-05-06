@@ -230,8 +230,71 @@ router.get('/markets/bsclist', async (req, res) => {
 // ─── API Adapters ─────────────────────────────────────────────────────────────
 // Now uses the robust cryptoFetcher module.
 
+// ─── GET /api/tokens/markets/heatmap ─────────────────────────────────────────
+router.get('/markets/heatmap', async (req, res) => {
+    try {
+        const data = await cryptoFetcher.getMarkets(null, 100, 1);
+        res.json(data);
+    } catch (err) {
+        res.status(500).json({ error: 'Heatmap fetch failed' });
+    }
+});
+
+// ─── GET /api/tokens/detail/:id ──────────────────────────────────────────────
+router.get('/detail/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        const url = `https://api.coingecko.com/api/v3/coins/${id}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`;
+        const resData = await axios.get(url, { headers: cryptoFetcher.getCgHeaders(), timeout: 10000 });
+        const d = resData.data;
+
+        // Extract contract address (platform)
+        const platforms = d.platforms || {};
+        const bscAddr = platforms['binance-smart-chain'] || platforms['ethereum'] || Object.values(platforms)[0] || '';
+
+        // Mock Holders (Standard Top 5 simulation for demo)
+        const holders = [
+            { address: '0x000000000000000000000000000000000000dead', balance: 'Burn Address', percentage: '24.5%' },
+            { address: '0x321...a1b2', balance: 'Binance Hot Wallet', percentage: '12.8%' },
+            { address: '0x789...f5e4', balance: 'Institutional Vault', percentage: '8.2%' },
+            { address: '0x555...c8d9', balance: 'Early Contributor', percentage: '4.5%' },
+            { address: '0xabc...9988', balance: 'DEX Liquidity', percentage: '3.1%' }
+        ];
+
+        // Mock Big Trades
+        const trades = [
+            { type: 'BUY', amount: (Math.random() * 50 + 10).toFixed(2), price: d.market_data.current_price.usd, time: '2 mins ago', hash: '0x' + Math.random().toString(16).slice(2) },
+            { type: 'SELL', amount: (Math.random() * 30 + 5).toFixed(2), price: d.market_data.current_price.usd, time: '8 mins ago', hash: '0x' + Math.random().toString(16).slice(2) },
+            { type: 'BUY', amount: (Math.random() * 100 + 20).toFixed(2), price: d.market_data.current_price.usd, time: '15 mins ago', hash: '0x' + Math.random().toString(16).slice(2) }
+        ];
+
+        res.json({
+            id: d.id,
+            name: d.name,
+            symbol: d.symbol,
+            image: d.image.large,
+            contract_address: bscAddr,
+            price_usd: d.market_data.current_price.usd,
+            market_cap: d.market_data.market_cap.usd,
+            total_supply: d.market_data.total_supply,
+            circulating_supply: d.market_data.circulating_supply,
+            performance: {
+                '24h': d.market_data.price_change_percentage_24h,
+                '7d': d.market_data.price_change_percentage_7d,
+                '30d': d.market_data.price_change_percentage_30d,
+                '200d': d.market_data.price_change_percentage_200d,
+                '1y': d.market_data.price_change_percentage_1y
+            },
+            holders,
+            recent_trades: trades
+        });
+    } catch (err) {
+        console.error('[Token Detail] Error:', err.message);
+        res.status(500).json({ error: 'Failed to fetch token details' });
+    }
+});
+
 // ─── GET /api/tokens/markets/cg ─────────────────────────────────────────────
-// PROXY: Fetch market data from CoinGecko or CoinMarketCap with failover
 router.get('/markets/cg', async (req, res) => {
     const { category, per_page, page, ids } = req.query;
     try {

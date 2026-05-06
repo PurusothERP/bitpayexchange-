@@ -9,7 +9,7 @@ import {
     Smartphone, Mail, User, QRCode, Copy, Upload, 
     CheckCircle2, AlertTriangle, Clock, Landmark, CreditCard,
     ArrowUpRight, ArrowDownLeft, Loader2, Info, Check,
-    Brain, Zap, Sparkles, RefreshCw
+    Brain, Zap, Sparkles, RefreshCw, ArrowLeftRight
 } from 'lucide-react';
 import axios from 'axios';
 
@@ -292,7 +292,13 @@ export default function FiatPage() {
         <main className="min-h-screen bg-[#0A0A0B] text-white pb-24 selection:bg-sky-500/30 font-sans">
             <Navbar />
             
-            <div className="pt-20 px-4 max-w-6xl mx-auto">
+            <div className="pt-24 px-4 max-w-6xl mx-auto flex justify-start mb-4">
+                <Link href="/exchange" className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-sky-400 hover:bg-sky-500/10 hover:border-sky-500/30 transition-all group">
+                    <ArrowLeftRight className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Exchange
+                </Link>
+            </div>
+
+            <div className="pt-8 px-4 max-w-6xl mx-auto">
                 {/* ── Fancy Hero Section ─────────────────────────────────────── */}
                 <div className="text-center mb-8 relative">
                     <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }}

@@ -752,13 +752,133 @@ router.get('/tokens/market', requireAdminOrAssistant, async (req, res) => {
     }
 });
 
-// DELETE /api/admin/wallets/:address - Terminate session / Remove from view
-router.delete('/wallets/:address', requireAdmin, async (req, res) => {
+// ── LISTING HUB MANAGEMENT ──────────────────────────────────────────────────
+
+// GET /api/admin/listing-stats - Metrics for the Listing Hub Dashboard
+router.get('/listing-stats', requireAdminOrAssistant, async (req, res) => {
     try {
-        await db.query('DELETE FROM connected_wallets WHERE wallet_address = ?', [req.params.address]);
+        const stats = await db.query(`
+            SELECT 
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved,
+                SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected,
+                (SELECT COUNT(*) FROM tokens WHERE launch_type = 'ADMIN') as admin_listed,
+                (SELECT COUNT(*) FROM tokens WHERE is_delisted = 1) as total_delisted
+            FROM listing_submissions
+        `);
+        
+        // Revenue calculation (0.10 BNB per submission)
+        const revenue = (stats.rows[0].total || 0) * 0.10;
+        
+        res.json({
+            ...stats.rows[0],
+            revenue_bnb: revenue,
+            total_listed: stats.rows[0].approved + stats.rows[0].admin_listed
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch listing stats' });
+    }
+});
+
+// GET /api/admin/listing-requests - Pending and history queue
+router.get('/listing-requests', requireAdminOrAssistant, async (req, res) => {
+    const { status } = req.query;
+    try {
+        let query = 'SELECT * FROM listing_submissions';
+        let params = [];
+        
+        if (status && status !== 'all') {
+            query += ' WHERE status = ?';
+            params.push(status);
+        }
+        
+        query += ' ORDER BY submitted_at DESC';
+        const result = await db.query(query, params);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch listing requests' });
+    }
+});
+
+// POST /api/admin/listing/approve - Approve a token listing
+router.post('/listing/approve', requireAdminOrAssistant, async (req, res) => {
+    const { id } = req.body;
+    try {
+        const request = await db.query('SELECT * FROM listing_submissions WHERE id = ?', [id]);
+        if (request.rows.length === 0) return res.status(404).json({ error: 'Request not found' });
+        
+        const r = request.rows[0];
+        
+        // 1. Mark as approved
+        await db.query('UPDATE listing_submissions SET status = "approved", processed_at = CURRENT_TIMESTAMP WHERE id = ?', [id]);
+        
+        // 2. Insert into tokens table to make it LIVE
+        await db.query(`
+            INSERT INTO tokens (contract_address, name, symbol, description, logo_url, whitepaper_url, total_supply, launch_type, owner_address)
+            VALUES (?, ?, ?, ?, ?, ?, ?, "LISTED", ?)
+            ON CONFLICT(contract_address) DO UPDATE SET
+                is_delisted = 0,
+                launch_type = "LISTED"
+        `, [r.contract_address, r.name, r.symbol, r.description, r.logo_url, r.whitepaper_url, r.circulation_supply, r.submitter_wallet]);
+        
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: 'Removal failed' });
+        res.status(500).json({ error: 'Approval failed', details: err.message });
+    }
+});
+
+// POST /api/admin/listing/reject - Reject a token listing
+router.post('/listing/reject', requireAdminOrAssistant, async (req, res) => {
+    const { id, reason } = req.body;
+    try {
+        await db.query('UPDATE listing_submissions SET status = "rejected", admin_note = ?, processed_at = CURRENT_TIMESTAMP WHERE id = ?', [reason, id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Rejection failed' });
+    }
+});
+
+// POST /api/admin/listing/direct - Directly list a token (Admin Only)
+router.post('/listing/direct', requireAdmin, async (req, res) => {
+    const { contract_address, name, symbol, description, logo_url, total_supply } = req.body;
+    try {
+        await db.query(`
+            INSERT INTO tokens (contract_address, name, symbol, description, logo_url, total_supply, launch_type)
+            VALUES (?, ?, ?, ?, ?, ?, "ADMIN")
+            ON CONFLICT(contract_address) DO UPDATE SET
+                is_delisted = 0,
+                launch_type = "ADMIN"
+        `, [contract_address.toLowerCase(), name, symbol.toUpperCase(), description, logo_url, total_supply]);
+        
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Direct listing failed' });
+    }
+});
+
+// GET /api/admin/listed-tokens - Inventory of listed tokens
+router.get('/listed-tokens', requireAdminOrAssistant, async (req, res) => {
+    try {
+        const result = await db.query(`
+            SELECT * FROM tokens 
+            WHERE launch_type IN ("LISTED", "ADMIN")
+            ORDER BY created_at DESC
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch inventory' });
+    }
+});
+
+// POST /api/admin/tokens/toggle - Delist/Relist token
+router.post('/tokens/toggle', requireAdminOrAssistant, async (req, res) => {
+    const { address, is_delisted } = req.body;
+    try {
+        await db.query('UPDATE tokens SET is_delisted = ? WHERE LOWER(contract_address) = LOWER(?)', [is_delisted ? 1 : 0, address]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Toggle failed' });
     }
 });
 

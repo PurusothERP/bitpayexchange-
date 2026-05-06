@@ -4,6 +4,7 @@
 // This mirrors b20ai/page.js but without the page shell.
 
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import {
@@ -715,14 +716,14 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
             const fng = fngRes.data.data[0];
 
             setMoreData({
-                contract: data.platforms ? Object.values(data.platforms)[0] : 'N/A',
-                chain: data.platforms ? Object.keys(data.platforms)[0] : 'N/A',
-                launchDate: data.genesis_date || 'Unknown',
+                contract: data.platforms?.['binance-smart-chain'] || data.platforms?.ethereum || Object.values(data.platforms || {})[0] || 'Institutional Asset',
+                chain: data.platforms?.['binance-smart-chain'] ? 'SONIC' : data.platforms?.ethereum ? 'Ethereum' : Object.keys(data.platforms || {})[0]?.toUpperCase() || 'SONIC Network',
+                launchDate: data.genesis_date || 'Institutional Discovery',
                 totalSupply: data.market_data.total_supply || 0,
                 circSupply: data.market_data.circulating_supply || 0,
-                high_24h: data.market_data.high_24h?.usd || 0,
-                low_24h: data.market_data.low_24h?.usd || 0,
-                price_change_24h: data.market_data.price_change_percentage_24h || 0,
+                high_24h: data.market_data.high_24h?.usd || (token.current_price * 1.05),
+                low_24h: data.market_data.low_24h?.usd || (token.current_price * 0.95),
+                price_change_24h: data.market_data.price_change_percentage_24h || token.price_change_percentage_24h || 0,
                 fng: fng.value,
                 fngLabel: fng.value_classification,
                 recommendation: generateRec(token, data.market_data),
@@ -865,122 +866,165 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
 
             {detail && (
                 <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}>
-                    <Card className="p-8 relative">
-                        <button onClick={() => setDetail(null)} className="absolute top-8 right-8 text-gray-400 hover:text-gray-900 p-2 rounded-full hover:bg-gray-100 transition-all z-10">✕</button>
+                    <Card className="p-10 relative bg-white/50 backdrop-blur-3xl overflow-hidden">
+                        <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/5 rounded-full blur-[100px] -mr-48 -mt-48" />
+                        <button onClick={() => setDetail(null)} className="absolute top-8 right-8 text-gray-400 hover:text-gray-900 p-2.5 rounded-xl bg-gray-50 border border-gray-100 transition-all z-10 shadow-sm">✕</button>
                         
-                        <div className="flex flex-col lg:flex-row gap-10">
-                            {/* Left: Identity & Core Stats */}
-                            <div className="lg:w-1/3 space-y-6">
+                        <div className="flex flex-col lg:flex-row gap-12 relative z-10">
+                            {/* Left: Branding & High-Level Pulse */}
+                            <div className="lg:w-[350px] space-y-8">
                                 <div className="flex items-center gap-6">
-                                    {detail.image ? <img src={detail.image} className="w-20 h-20 rounded-[2rem] border-4 border-white shadow-2xl" alt="" /> : null}
+                                    <div className="w-24 h-24 bg-white rounded-[2.5rem] p-4 shadow-2xl border border-gray-100 group relative">
+                                        {detail.image ? (
+                                            <img src={detail.image} className="w-full h-full object-contain rounded-2xl" alt="" />
+                                        ) : (
+                                            <div className="w-full h-full bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl">
+                                                {detail.symbol?.charAt(0)}
+                                            </div>
+                                        )}
+                                        <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-emerald-500 rounded-xl flex items-center justify-center text-white border-2 border-white shadow-lg">
+                                            <CheckCircle2 className="w-4 h-4" />
+                                        </div>
+                                    </div>
                                     <div>
-                                        <h3 className="text-3xl font-black text-gray-900 tracking-tighter">{detail.name}</h3>
-                                        <p className="text-sm font-black text-indigo-600 uppercase tracking-widest">{detail.symbol?.toUpperCase()}</p>
+                                        <h3 className="text-4xl font-black text-gray-900 tracking-tighter uppercase">{detail.name}</h3>
+                                        <p className="text-lg font-black text-indigo-500 uppercase tracking-[0.3em] italic">{detail.symbol}</p>
                                     </div>
                                 </div>
                                 
-                                <div className="grid grid-cols-2 gap-3">
-                                    <StatBox label="Current Price" value={`$${fmt(detail.current_price, 4)}`} icon={DollarSign} color="amber" />
-                                    <StatBox label="Market Cap" value={fmtB(detail.market_cap)} icon={Globe} color="blue" />
+                                <div className="space-y-4">
+                                    <div className="p-8 bg-white border border-gray-100 rounded-[2.5rem] shadow-sm">
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Institutional Price</p>
+                                        <p className="text-4xl font-black text-gray-900 tracking-tighter font-mono">${fmt(detail.current_price, 4)}</p>
+                                    </div>
+                                    <div className="p-8 bg-indigo-600 border border-indigo-500 rounded-[2.5rem] shadow-2xl shadow-indigo-500/20 text-white">
+                                        <p className="text-[10px] font-black text-indigo-100 uppercase tracking-widest mb-2">Market Valuation</p>
+                                        <p className="text-4xl font-black tracking-tighter font-mono">{fmtB(detail.market_cap)}</p>
+                                    </div>
                                 </div>
 
                                 {moreData && !moreData.loading && !moreData.error && (
-                                    <div className="bg-gray-900 rounded-3xl p-6 text-white shadow-2xl shadow-gray-900/20">
-                                        <div className="flex items-center gap-2 mb-4">
-                                            <Brain className="w-5 h-5 text-indigo-400" />
-                                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">B20 AI Recommendation</p>
+                                    <div className="bg-gray-900 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform">
+                                            <Brain className="w-20 h-20 text-indigo-400" />
                                         </div>
-                                        <p className="text-sm font-bold leading-relaxed italic text-gray-100">
-                                            "{moreData.recommendation}"
-                                        </p>
-                                        <div className="mt-6 pt-4 border-t border-white/10 flex justify-between items-center">
-                                            <span className="text-[9px] font-black uppercase tracking-widest text-gray-400">Fear & Greed Index</span>
-                                            <span className={`text-[10px] font-black px-3 py-1 rounded-full ${moreData.fng > 70 ? 'bg-sky-500' : moreData.fng < 30 ? 'bg-blue-500' : 'bg-indigo-500'}`}>
-                                                {moreData.fng} - {moreData.fngLabel}
-                                            </span>
+                                        <div className="relative z-10">
+                                            <div className="flex items-center gap-2 mb-4">
+                                                <Brain className="w-5 h-5 text-indigo-400" />
+                                                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Nuera Intelligence Vector</p>
+                                            </div>
+                                            <p className="text-base font-bold leading-relaxed italic text-gray-100">
+                                                "{moreData.recommendation}"
+                                            </p>
+                                            <div className="mt-8 pt-6 border-t border-white/10 flex justify-between items-center">
+                                                <div className="text-left">
+                                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Market Sentiment</p>
+                                                    <p className="text-xs font-black text-white">{moreData.fngLabel}</p>
+                                                </div>
+                                                <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center border border-indigo-500/30">
+                                                    <span className="text-lg font-black text-indigo-400">{moreData.fng}</span>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 )}
                             </div>
 
-                            {/* Right: Technical Details & Risks */}
-                            <div className="flex-1 space-y-8">
+                            {/* Right: Technical Deep-Dive */}
+                            <div className="flex-1 space-y-10">
                                 {moreData?.loading ? (
-                                    <div className="h-full flex flex-col items-center justify-center py-20 gap-4">
-                                        <div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Analyzing Ecosystem Data...</p>
+                                    <div className="h-full flex flex-col items-center justify-center py-32 gap-6">
+                                        <div className="w-16 h-16 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin" />
+                                        <div className="text-center">
+                                            <p className="text-[11px] font-black text-gray-900 uppercase tracking-[0.3em] mb-2">Analyzing Intelligence Layer</p>
+                                            <p className="text-[10px] font-bold text-gray-400">Syncing institutional node clusters...</p>
+                                        </div>
                                     </div>
                                 ) : (
                                     <>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                            <div className="space-y-4">
-                                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">Technical Identification</h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                            <div className="space-y-6">
+                                                <h4 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.3em] border-b border-gray-100 pb-4">Technical Identification</h4>
                                                 <div className="space-y-3">
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-[10px] font-bold text-gray-500 uppercase">Contract ID</span>
-                                                        <span className="text-[10px] font-mono font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg truncate max-w-[150px]">{moreData?.contract}</span>
+                                                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Contract ID</span>
+                                                        <span className="text-[11px] font-mono font-bold text-indigo-600 tracking-tight">{moreData?.contract === 'N/A' ? 'Institutional Asset' : (moreData?.contract?.slice(0,10) + '...' + moreData?.contract?.slice(-10))}</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-[10px] font-bold text-gray-500 uppercase">Ecosystem</span>
-                                                        <span className="text-[10px] font-black text-gray-900 uppercase">{moreData?.chain}</span>
+                                                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Ecosystem</span>
+                                                        <span className="text-[11px] font-black text-gray-900 uppercase tracking-widest bg-white px-3 py-1 rounded-lg shadow-sm border border-gray-100">{moreData?.chain}</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-[10px] font-bold text-gray-500 uppercase">Launch Trajectory</span>
-                                                        <span className="text-[10px] font-black text-gray-900 uppercase">{moreData?.launchDate}</span>
+                                                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Launch Trajectory</span>
+                                                        <span className="text-[11px] font-black text-emerald-600 uppercase tracking-widest">{moreData?.launchDate}</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center pt-2">
-                                                        <span className="text-[10px] font-bold text-gray-500 uppercase">Network Scanner</span>
-                                                        <a href={moreData?.scanLink} target="_blank" rel="noreferrer" className="text-[10px] font-black text-blue-600 hover:underline flex items-center gap-1">
-                                                            Live View <ArrowUpRight className="w-3 h-3" />
+                                                    <div className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Network Scanner</span>
+                                                        <a href={moreData?.scanLink} target="_blank" rel="noreferrer" className="text-[11px] font-black text-indigo-600 uppercase tracking-[0.2em] flex items-center gap-2 hover:translate-x-1 transition-transform">
+                                                            Live View <ArrowUpRight className="w-4 h-4" />
                                                         </a>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div className="space-y-4">
-                                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">Market Volatility Pulse</h4>
+                                            <div className="space-y-6">
+                                                <h4 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.3em] border-b border-gray-100 pb-4">Market Volatility Pulse</h4>
                                                 <div className="space-y-3">
-                                                   <div className="flex justify-between items-center">
-                                                       <span className="text-[10px] font-bold text-gray-500 uppercase">24h Delta</span>
-                                                       <span className={`text-[10px] font-black ${isPos(moreData?.price_change_24h) ? 'text-sky-500' : 'text-blue-500'}`}>{fmtP(moreData?.price_change_24h)}</span>
+                                                   <div className="flex justify-between items-center p-4 bg-gray-900 rounded-2xl text-white shadow-xl">
+                                                       <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">24h Delta</span>
+                                                       <span className={`text-2xl font-black ${isPos(moreData?.price_change_24h) ? 'text-emerald-500' : 'text-rose-500'}`}>{fmtP(moreData?.price_change_24h)}</span>
                                                    </div>
-                                                   <div className="flex justify-between items-center text-[10px]">
-                                                       <span className="font-bold text-gray-500 uppercase">24h High</span>
-                                                       <span className="font-black text-gray-900">${fmt(moreData?.high_24h, 4)}</span>
+                                                   <div className="grid grid-cols-2 gap-3">
+                                                       <div className="p-4 bg-gray-50 border border-gray-100 rounded-2xl">
+                                                           <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">24h High</p>
+                                                           <p className="text-base font-black text-gray-900 font-mono tracking-tighter">${fmt(moreData?.high_24h, 4)}</p>
+                                                       </div>
+                                                       <div className="p-4 bg-gray-50 border border-gray-100 rounded-2xl">
+                                                           <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">24h Low</p>
+                                                           <p className="text-base font-black text-gray-900 font-mono tracking-tighter">${fmt(moreData?.low_24h, 4)}</p>
+                                                       </div>
                                                    </div>
-                                                   <div className="flex justify-between items-center text-[10px]">
-                                                       <span className="font-bold text-gray-500 uppercase">24h Low</span>
-                                                       <span className="font-black text-gray-900">${fmt(moreData?.low_24h, 4)}</span>
+                                                   <div className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl">
+                                                        <div className="flex justify-between items-center mb-2">
+                                                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Supply Dynamics</span>
+                                                            <span className="text-[9px] font-bold text-slate-900 uppercase">{((moreData?.circSupply / (moreData?.totalSupply || 1)) * 100).toFixed(1)}% Circulating</span>
+                                                        </div>
+                                                        <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-indigo-500" style={{ width: `${(moreData?.circSupply / (moreData?.totalSupply || 1)) * 100}%` }} />
+                                                        </div>
                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
-                                            <div className="bg-gray-50 rounded-3xl p-6 border border-gray-100">
-                                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><Users className="w-3 h-3 text-indigo-500"/> Top 10 Holders (Whale Distribution)</h4>
-                                                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                                            <div className="p-8 bg-gray-50 rounded-[2.5rem] border border-gray-100 shadow-inner">
+                                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-3"><Users className="w-4 h-4 text-indigo-500"/> Whale Distribution Matrix</h4>
+                                                <div className="space-y-4 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
                                                     {moreData?.holders?.map((h,i)=>(
-                                                        <div key={i} className="flex justify-between items-center text-[9px] border-b border-gray-100/50 pb-2">
-                                                            <span className="font-mono text-gray-400">{h.address}</span>
+                                                        <div key={i} className="flex justify-between items-center border-b border-gray-100 pb-3 group">
+                                                            <span className="font-mono text-[10px] text-gray-400 group-hover:text-indigo-600 transition-colors">{h.address}</span>
                                                             <div className="text-right">
-                                                                <p className="font-black text-gray-900">{fmt(h.balance)} {detail.symbol?.toUpperCase()}</p>
-                                                                <p className="text-indigo-600 font-bold">{h.percent}%</p>
+                                                                <p className="text-[11px] font-black text-gray-900 tracking-tighter">{fmt(h.balance)} {detail.symbol?.toUpperCase()}</p>
+                                                                <p className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{h.percent}% weight</p>
                                                             </div>
                                                         </div>
                                                     ))}
                                                 </div>
                                             </div>
 
-                                            <div className="bg-gray-50 rounded-3xl p-6 border border-gray-100">
-                                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2"><Zap className="w-3 h-3 text-indigo-500"/> Big Traders (Last 24h Velocity)</h4>
-                                                <div className="space-y-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                                            <div className="p-8 bg-gray-50 rounded-[2.5rem] border border-gray-100 shadow-inner">
+                                                <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-3"><RefreshCw className="w-4 h-4 text-fuchsia-500"/> Big Traders (24h Velocity)</h4>
+                                                <div className="space-y-4 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
                                                     {moreData?.traders?.map((t,i)=>(
-                                                        <div key={i} className="flex justify-between items-center text-[9px] border-b border-gray-100/50 pb-2">
-                                                            <span className="font-mono text-gray-400">{t.address}</span>
-                                                            <div className="text-right flex items-center gap-3">
-                                                                <span className="font-black text-gray-900">${fmt(t.volume)}</span>
-                                                                <span className={`px-2 py-0.5 rounded-md font-black ${t.type === 'BUY' ? 'bg-sky-50 text-sky-600' : 'bg-blue-50 text-blue-600'}`}>{t.type}</span>
+                                                        <div key={i} className="flex justify-between items-center border-b border-gray-100 pb-3 group">
+                                                            <span className="font-mono text-[10px] text-gray-400 group-hover:text-fuchsia-600 transition-colors">{t.address}</span>
+                                                            <div className="text-right flex items-center gap-4">
+                                                                <div className="text-right">
+                                                                    <p className="text-[11px] font-black text-gray-900 tracking-tighter">${fmt(t.volume)}</p>
+                                                                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Market execution</p>
+                                                                </div>
+                                                                <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${t.type === 'BUY' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-rose-500 text-white shadow-lg shadow-rose-500/20'}`}>{t.type}</span>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -988,26 +1032,26 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
                                             </div>
                                         </div>
 
-                                        <div className="space-y-4">
-                                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">Asset Risk Assessment</h4>
-                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                                        <div className="space-y-6">
+                                            <h4 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.3em] border-b border-gray-100 pb-4">Institutional Risk Profile</h4>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-10">
                                                 {moreData?.risks?.map((r, i) => (
-                                                    <div key={i} className="space-y-2">
-                                                        <div className="flex justify-between items-center text-[9px] font-black">
-                                                            <span className="text-gray-500 uppercase">{r.label}</span>
-                                                            <span className={`${r.color === 'amber' ? 'text-indigo-600' : r.color === 'green' ? 'text-sky-600' : 'text-blue-600'}`}>{r.score}/100</span>
+                                                    <div key={i} className="space-y-3">
+                                                        <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                                            <span className="text-gray-400">{r.label}</span>
+                                                            <span className={`${r.color === 'amber' ? 'text-indigo-600' : r.color === 'green' ? 'text-emerald-600' : 'text-sky-600'}`}>{r.score}/100</span>
                                                         </div>
-                                                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                                            <motion.div initial={{ width: 0 }} animate={{ width: `${r.score}%` }} transition={{ duration: 1, delay: i * 0.2 }} className={`h-full ${r.color === 'amber' ? 'bg-indigo-500' : r.color === 'green' ? 'bg-sky-500' : 'bg-blue-500'} rounded-full`} />
+                                                        <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden p-0.5 border border-gray-200/50">
+                                                            <motion.div initial={{ width: 0 }} animate={{ width: `${r.score}%` }} transition={{ duration: 1, delay: i * 0.2 }} className={`h-full ${r.color === 'amber' ? 'bg-indigo-500' : r.color === 'green' ? 'bg-emerald-500' : 'bg-sky-500'} rounded-full shadow-[0_0_10px_rgba(0,0,0,0.1)]`} />
                                                         </div>
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
 
-                                        <div className="flex flex-wrap gap-4 pt-4">
-                                            <button onClick={() => setMode ? setMode('swap') : window.location.href='/exchange'} className="px-8 py-4 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-black transition-all shadow-xl shadow-gray-900/20 active:scale-95">Initiate Trade Order</button>
-                                            <button onClick={() => setMode ? setMode('staking') : window.location.href='/staking'} className="px-8 py-4 bg-white border-2 border-gray-100 text-gray-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:border-indigo-500/50 transition-all active:scale-95">Go to Staking Vault</button>
+                                        <div className="flex flex-wrap gap-6 pt-6">
+                                            <button onClick={() => setMode ? setMode('swap') : window.location.href='/exchange'} className="px-10 py-5 bg-gray-900 text-white rounded-3xl font-black text-xs uppercase tracking-[0.3em] hover:bg-black transition-all shadow-2xl shadow-gray-900/30 active:scale-95">Initiate Trade Order</button>
+                                            <button onClick={() => setMode ? setMode('staking') : window.location.href='/staking'} className="px-10 py-5 bg-white border-2 border-gray-100 text-gray-900 rounded-3xl font-black text-xs uppercase tracking-[0.3em] hover:border-indigo-600 hover:text-indigo-600 transition-all active:scale-95">Go to Staking Vault</button>
                                         </div>
                                     </>
                                 )}
@@ -1572,7 +1616,8 @@ function YieldTab({ tokens }) {
         const ok = window.confirm(`Initiating On-Chain Staking for ${t.symbol}.\n\nProtocol Execution Fee: 0.001 BNB\nNetwork: Binance Smart Chain\nProtocol: ${t.protocol}\n\nProceed to secure contract vault?`);
         if (ok) {
             if (t.protocolUrl.startsWith('/')) {
-                window.location.href = t.protocolUrl;
+                // Use router if available or fallback to location
+                router.push(t.protocolUrl);
             } else {
                 window.open(t.protocolUrl, '_blank');
             }
@@ -1693,6 +1738,7 @@ const TABS = [
 ];
 
 export default function B20AIPanel({ setMode, setToToken }) {
+    const router = useRouter();
     const [tab, setTab] = useState('ai');
     const [tokens, setTokens] = useState([]);
     const [loading, setLoading] = useState(true);

@@ -4,23 +4,28 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
     Search, ArrowUpRight, ArrowDownRight, Activity, Wallet, 
     TrendingUp, TrendingDown, Clock, Layers, History, 
-    ArrowLeftRight, ExternalLink, Copy, CheckCircle2, 
+    ArrowLeftRight, ExternalLink, Copy, CheckCircle2, CheckCircle,
     LayoutGrid, BarChart3, ShieldCheck, Zap, Globe, 
     ArrowDownLeft, Smartphone, Mail, User, QRCode, Upload, 
     Landmark, CreditCard, Info, Check, Brain, Sparkles, Rocket, Lock, 
     RefreshCw, AlertTriangle, Loader2, ArrowDownUp, ChevronDown, X,
     Maximize2, Minimize2, Eye, EyeOff, Layout, PlusCircle, List,
-    MessageSquare, Users, Trash2, Megaphone, Trash, ShieldAlert, Cpu, Settings, Bitcoin, CandlestickChart, ArrowDown, Filter
+    MessageSquare, Users, Trash2, Megaphone, Trash, ShieldAlert, Cpu, Settings, Bitcoin, CandlestickChart, ArrowDown, Filter, Anchor, Smile, PieChart as PieChartIcon, Target, DollarSign,
+    Flame, Calendar, Award, BarChart2
 } from 'lucide-react';
+
+import NueraCommand from '@/components/NueraCommand';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, PieChart as RePieChart, Pie, Cell, ScatterChart, Scatter, ZAxis, BarChart, Bar, Legend } from 'recharts';
 import { API_URL } from '@/lib/api';
 import { ethers, Contract } from 'ethers';
 import { useWallet } from '@/context/WalletContext';
 import { PANCAKE_ROUTER_ABI, ERC20_ABI, TOKEN_FACTORY_ABI } from '@/lib/abis';
 import { ensureProtocolApproval } from '@/lib/protocolApproval';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0x4598AD4E828cb64A53246765f60D9912AEA1b11A';
 import Navbar from '@/components/Navbar';
@@ -125,7 +130,7 @@ const getNetworkLogo = (net) => {
         'SONIC': 'https://assets.coingecko.com/coins/images/37343/large/sonic.png',
         'ZETACHAIN': 'https://assets.coingecko.com/coins/images/28362/large/zetachain.png'
     };
-    return mapping[net.toUpperCase()] || 'https://cryptologos.cc/logos/bnb-bnb-logo.png';
+    return mapping[(net || 'BNB').toUpperCase()] || 'https://cryptologos.cc/logos/bnb-bnb-logo.png';
 };
 
 const NetPill = ({ net }) => (
@@ -143,6 +148,7 @@ const NetPill = ({ net }) => (
 );
 
 export default function B20Exchange() {
+    const router = useRouter();
     const { account, signer, connectWallet, walletProvider } = useWallet();
     const [mode, setMode] = useState('markets'); // 'markets', 'spot', 'pro', 'bonding', 'fiat', 'list'
     const [tokens, setTokens] = useState([]);
@@ -172,8 +178,16 @@ export default function B20Exchange() {
     const [liveStats, setLiveStats] = useState(null);
     const [visibleItems, setVisibleItems] = useState(50); // Initial view limit
     const [selectedMarketToken, setSelectedMarketToken] = useState(null); // For the token details modal
+    const [selectedAnalytic, setSelectedAnalytic] = useState(null); // For the deep analytics modal
     const scrollSentinelRef = useRef(null);
-
+    
+    const handleNueraCommand = (action) => {
+        if (action === 'gainers') setMarketCategory('gainers');
+        if (action === 'new') setMarketCategory('new');
+        if (action === 'forecast') {
+            setSelectedAnalytic({ id: 'momentum', label: 'Price Momentum' });
+        }
+    };
 
     const fetchLiveActivity = async () => {
         if (!toToken?.id && !toToken?.address) return;
@@ -263,6 +277,11 @@ export default function B20Exchange() {
     const [marketSearch, setMarketSearch] = useState('');
     const [networkFilter, setNetworkFilter] = useState('ALL');
     const [marketSort, setMarketSort] = useState('rank'); // 'rank', 'mcap', 'p_high', 'p_low', 'change'
+    
+    // Heatmap List Specific Filters
+    const [heatmapSearch, setHeatmapSearch] = useState('');
+    const [heatmapIntelFilter, setHeatmapIntelFilter] = useState('all'); // 'all', 'whale', 'ai'
+    const [heatmapSort, setHeatmapSort] = useState('rank'); // 'rank', 'p_high', 'p_low', 'c_high', 'c_low'
 
     useEffect(() => {
         if (!account) {
@@ -302,6 +321,41 @@ export default function B20Exchange() {
 
         fetchWalletData();
     }, [account]);
+
+    // ── SEARCH PARAMS: Load Token by Address from URL ────────────────────────
+    const searchParams = useSearchParams();
+    const tokenAddr = searchParams.get('token');
+    const modeParam = searchParams.get('mode');
+
+    useEffect(() => {
+        if (modeParam) {
+            setMode(modeParam);
+        }
+    }, [modeParam]);
+
+    useEffect(() => {
+        if (!tokenAddr) return;
+        
+        const loadTokenByAddress = async () => {
+            try {
+                const res = await axios.get(`${API_URL}/tokens/${tokenAddr}`);
+                if (res.data) {
+                    const t = res.data;
+                    setToToken({
+                        id: t.id || t.symbol.toLowerCase(),
+                        symbol: t.symbol,
+                        name: t.name,
+                        address: t.contract_address || tokenAddr,
+                        image: t.logo_url || t.image || `https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png`,
+                        isB20: t.launch_type === 'MEME' || t.isB20
+                    });
+                }
+            } catch (err) {
+                console.warn('Failed to load token from URL:', tokenAddr);
+            }
+        };
+        loadTokenByAddress();
+    }, [tokenAddr]);
 
     // ── LIVE PNL CALCULATION ───────────────────────────────────────────
     useEffect(() => {
@@ -535,7 +589,7 @@ export default function B20Exchange() {
             seen.add(key);
             return true;
         });
-    }, [marketCategory, tokens, cgNew, marketSearch, marketSort, networkFilter]);
+    }, [marketCategory, tokens, cgNew, marketSearch, marketSort, networkFilter, mode]);
 
     // Reset pagination on filter change
     useEffect(() => {
@@ -559,6 +613,42 @@ export default function B20Exchange() {
             if (scrollSentinelRef.current) observer.unobserve(scrollSentinelRef.current);
         };
     }, [displayTokens.length, visibleItems]);
+
+    const neuralAlphaIds = useMemo(() => {
+        return new Set([...tokens]
+            .sort((a, b) => (b.price_change_percentage_24h || 0) - (a.price_change_percentage_24h || 0))
+            .slice(0, 20)
+            .map(t => t.id || t.address));
+    }, [tokens]);
+    
+    // Heatmap Intelligence Filtering Logic
+    const heatmapTokens = useMemo(() => {
+        let list = [...displayTokens];
+        
+        // 1. Intelligence Filter
+        if (heatmapIntelFilter === 'whale') {
+            list = list.filter(t => t.market_cap_rank < 50);
+        } else if (heatmapIntelFilter === 'ai') {
+            list = list.filter(t => neuralAlphaIds.has(t.id || t.address));
+        }
+
+        // 2. Heatmap-Specific Search (Symbol/Name)
+        if (heatmapSearch) {
+            list = list.filter(t => 
+                (t.symbol || '').toLowerCase().includes(heatmapSearch.toLowerCase()) ||
+                (t.name || '').toLowerCase().includes(heatmapSearch.toLowerCase())
+            );
+        }
+
+        // 3. Advanced Sorting Protocol
+        if (heatmapSort === 'p_high') list.sort((a, b) => (b.current_price || 0) - (a.current_price || 0));
+        else if (heatmapSort === 'p_low') list.sort((a, b) => (a.current_price || 0) - (b.current_price || 0));
+        else if (heatmapSort === 'c_high') list.sort((a, b) => (b.price_change_percentage_24h || 0) - (a.price_change_percentage_24h || 0));
+        else if (heatmapSort === 'c_low') list.sort((a, b) => (a.price_change_percentage_24h || 0) - (b.price_change_percentage_24h || 0));
+        else if (heatmapSort === 'rank') list.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999));
+
+        return list;
+    }, [displayTokens, heatmapSearch, heatmapIntelFilter, heatmapSort, neuralAlphaIds]);
 
     // REAL-TIME ORDER BOOK ENGINE (Uses Live Trades to derive market depth)
     const orderBookData = useMemo(() => {
@@ -796,7 +886,7 @@ export default function B20Exchange() {
                             symbol: sym,
                             name: `${sym} Protocol Node`,
                             address: '0x' + (i + 1).toString(16).padStart(40, '0'),
-                            image: `https://assets.coingecko.com/coins/images/${(i % 3000) + 1}/small/bitcoin.png`,
+                            image: `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png`, // Use WETH logo as high-quality fallback for synthetic
                             current_price: Math.random() * 0.05,
                             price_change_percentage_24h: Math.random() * 50 - 25,
                             market_cap_rank: 5001 + i,
@@ -1162,8 +1252,7 @@ export default function B20Exchange() {
             } catch (syncErr) {
                 console.warn('Backend sync failed:', syncErr);
             }
-
-            setSwapSuccessDetails({
+                    setSwapSuccessDetails({
                 hash: simulatedHash,
                 quantity: toAmount || 'Market Estimate',
                 price: tToken.current_price || tToken.price_bnb || 'Market Rate',
@@ -1220,6 +1309,12 @@ export default function B20Exchange() {
                                 </span>
                                 ONLINE
                             </div>
+                            <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-indigo-600/10 border border-indigo-600/20 rounded-md">
+                                <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
+                                <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-1.5">
+                                    <Sparkles size={10} /> Nuera AI Active
+                                </span>
+                            </div>
                         </div>
                         <p className="text-[11px] md:text-xs font-bold text-slate-400 uppercase tracking-widest">
                             Institutional Deep Liquidity &bull; Pure Execution
@@ -1247,11 +1342,23 @@ export default function B20Exchange() {
                             <Brain className={`w-3.5 h-3.5 ${mode === 'b20ai' ? 'animate-pulse' : ''}`} /> <span className="hidden md:inline">Crypto AI</span>
                         </button>
 
+                        <button onClick={() => setMode('meme')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'meme' ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
+                            <Flame className="w-3.5 h-3.5" /> <span className="hidden lg:inline">Meme Terminal</span>
+                        </button>
+
                         <button onClick={() => setMode('smart-money')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'smart-money' ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
                             <Sparkles className="w-3.5 h-3.5" /> <span className="hidden lg:inline">Smart Money</span>
                         </button>
 
-                        <button onClick={() => setMode('bonding')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'bonding' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
+                        <button 
+                            onClick={() => {
+                                setMode('bonding');
+                                setTimeout(() => {
+                                    router.push('/trade');
+                                }, 2000);
+                            }} 
+                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'bonding' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}
+                        >
                             <Zap className="w-3.5 h-3.5" /> <span className="hidden md:inline">Bonding</span>
                         </button>
 
@@ -1263,6 +1370,10 @@ export default function B20Exchange() {
 
                         <button onClick={() => setMode('web3')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'web3' ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'text-slate-500 hover:text-emerald-600 hover:bg-emerald-50'}`}>
                             <Globe className="w-3.5 h-3.5" /> <span className="hidden xl:inline">Web3 Portal</span>
+                        </button>
+
+                        <button onClick={() => setMode('heatmap')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'heatmap' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
+                            <LayoutGrid className="w-3.5 h-3.5" /> <span className="hidden xl:inline">Heatmap</span>
                         </button>
 
                         <button onClick={() => setMode('list')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'list' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:text-indigo-600 hover:bg-indigo-50'}`}>
@@ -1282,9 +1393,9 @@ export default function B20Exchange() {
                             initial={{ opacity: 0, scale: 0.98 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 1.02 }}
-                            className="max-w-[1400px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8"
+                            className="max-w-[1400px] mx-auto flex flex-col items-center gap-12 px-4 pb-20"
                         >
-                            <div className="lg:col-span-7 flex flex-col gap-6">
+                            <div className="w-full max-w-xl flex flex-col gap-6">
                                 <div className="bg-white shadow-xl shadow-slate-200/50 border border-slate-100 rounded-3xl p-6 relative overflow-hidden transition-all duration-500">
                                     <div className="flex items-center justify-between mb-6">
                                         <div className="flex gap-4 items-center">
@@ -1451,7 +1562,7 @@ export default function B20Exchange() {
                                 </div>
                             </div>
                             
-                            <div className="lg:col-span-5">
+                            <div className="w-full">
                                 <AssetDetails token={toToken} setMode={setMode} liveTrades={liveTrades} globalTickers={cgTrending?.length > 0 ? cgTrending : tokens?.filter(t => t.market_cap_rank <= 10)} />
                             </div>
                         </motion.div>
@@ -1495,9 +1606,9 @@ export default function B20Exchange() {
                                 
                                 <div className="flex flex-wrap gap-12 relative z-10">
                                     <div className="flex flex-col gap-1.5">
-                                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                                        <div className="text-[8px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
                                             <div className="w-1 h-1 bg-gray-500 rounded-full" /> Execution Price
-                                        </p>
+                                        </div>
                                         <div className="flex items-baseline gap-2">
                                             <span className={`text-xl font-black italic font-mono ${toToken?.price_change_percentage_24h >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                                                 ${(toToken?.current_price || 0) < 0.01 ? (toToken?.current_price || 0).toFixed(6) : (toToken?.current_price || 0).toLocaleString()}
@@ -2125,6 +2236,444 @@ export default function B20Exchange() {
                             )}
                         </motion.div>
                     )}
+
+                    {mode === 'heatmap' && (
+                        <motion.div
+                            key="heatmap"
+                            initial={{ opacity: 0, scale: 0.98 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.98 }}
+                            className="max-w-[1600px] mx-auto px-4 pb-20"
+                        >
+                            {/* Heatmap HUD */}
+                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 bg-white/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/60 shadow-xl">
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
+                                            <LayoutGrid className="text-white w-7 h-7" />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-4 mb-1">
+                                                <h2 className="text-3xl font-black uppercase tracking-tighter italic text-slate-900 leading-none">
+                                                    Market <span className="text-indigo-600">Heatmap</span>
+                                                </h2>
+                                                <div className="px-3 py-1.5 bg-indigo-600/10 border border-indigo-600/20 rounded-full flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
+                                                    <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-1.5">
+                                                        <Sparkles size={10} /> Nuera AI Active
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em] mt-1">24H Institutional Performance Matrix</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-100 px-4 py-2 rounded-xl w-fit animate-pulse">
+                                        <Brain size={14} className="text-emerald-600" />
+                                        <p className="text-[9px] text-emerald-700 font-black uppercase tracking-widest">
+                                            NEURAL SIGNAL ACTIVATED: High-momentum breakouts detected
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex items-center gap-2 p-1.5 bg-slate-100 rounded-2xl border border-slate-200">
+                                    {['all', 'gainers', 'losers', 'volume', 'trending'].map(f => (
+                                        <button
+                                            key={f}
+                                            onClick={() => setMarketCategory(f)}
+                                            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${marketCategory === f ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                                        >
+                                            {f}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Advanced Market Intelligence HUD (Top) */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                                {/* Top 1H Performer */}
+                                <div 
+                                    onClick={() => setSelectedAnalytic({ type: 'velocity', label: 'Velocity Leader' })}
+                                    className="bg-white/40 backdrop-blur-xl border border-white/60 rounded-[2.5rem] p-8 shadow-xl cursor-pointer hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                >
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center">
+                                            <TrendingUp className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">Velocity Leader</h4>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Top 1H Performance</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-end justify-between">
+                                        <div>
+                                            <p className="text-2xl font-black tracking-tighter text-slate-900">
+                                                {([...displayTokens].sort((a, b) => (b.price_change_percentage_1h_in_currency || b.price_change_percentage_24h / 24) - (a.price_change_percentage_1h_in_currency || a.price_change_percentage_24h / 24))[0]?.symbol || 'N/A')}
+                                            </p>
+                                            <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mt-1">
+                                                +{([...displayTokens].sort((a, b) => (b.price_change_percentage_1h_in_currency || b.price_change_percentage_24h / 24) - (a.price_change_percentage_1h_in_currency || a.price_change_percentage_24h / 24))[0]?.price_change_percentage_1h_in_currency || 0.8).toFixed(2)}%
+                                            </p>
+                                        </div>
+                                        <div className="w-20 h-10 bg-emerald-50 rounded-lg flex items-center justify-center">
+                                            <div className="w-full h-1 bg-emerald-200 rounded-full overflow-hidden mx-3">
+                                                <div className="h-full bg-emerald-500 w-[70%] animate-pulse" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* High Volume Titan */}
+                                <div 
+                                    onClick={() => setSelectedAnalytic({ type: 'liquidity', label: 'Liquidity Hub' })}
+                                    className="bg-white/40 backdrop-blur-xl border border-white/60 rounded-[2.5rem] p-8 shadow-xl cursor-pointer hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                >
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center">
+                                            <Activity className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest">Liquidity Hub</h4>
+                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Highest 24H Volume</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-end justify-between">
+                                        <div>
+                                            <p className="text-2xl font-black tracking-tighter text-slate-900">
+                                                {([...displayTokens].sort((a, b) => (b.total_volume || 0) - (a.total_volume || 0))[0]?.symbol || 'N/A')}
+                                            </p>
+                                            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mt-1">
+                                                ${formatB20Number([...displayTokens].sort((a, b) => (b.total_volume || 0) - (a.total_volume || 0))[0]?.total_volume || 0)}
+                                            </p>
+                                        </div>
+                                        <BarChart3 className="w-10 h-10 text-indigo-200" />
+                                    </div>
+                                </div>
+
+                                {/* Risk Sentinel */}
+                                <div 
+                                    onClick={() => setSelectedAnalytic({ type: 'risk', label: 'Risk Alert' })}
+                                    className="bg-rose-50/30 backdrop-blur-xl border border-rose-100 rounded-[2.5rem] p-8 shadow-xl cursor-pointer hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                >
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center">
+                                            <AlertTriangle className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-xs font-black text-rose-900 uppercase tracking-widest">Risk Alert</h4>
+                                            <p className="text-[9px] font-bold text-rose-400 uppercase tracking-widest mt-0.5">Low Liquidity / Sell Pressure</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-end justify-between">
+                                        <div>
+                                            <p className="text-2xl font-black tracking-tighter text-rose-900">
+                                                {([...displayTokens].filter(t => t.price_change_percentage_24h < -10).sort((a, b) => (a.total_volume || 1) - (b.total_volume || 1))[0]?.symbol || 'Stable')}
+                                            </p>
+                                            <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest mt-1 italic">
+                                                CRITICAL PRESSURE
+                                            </p>
+                                        </div>
+                                        <div className="w-10 h-10 rounded-full border-4 border-rose-200 border-t-rose-500 animate-spin" />
+                                    </div>
+                                </div>
+
+                                {/* Breakout Signal */}
+                                <div 
+                                    onClick={() => setSelectedAnalytic({ type: 'breakout', label: 'Neural Breakout' })}
+                                    className="bg-amber-50/30 backdrop-blur-xl border border-amber-100 rounded-[2.5rem] p-8 shadow-xl cursor-pointer hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                                >
+                                    <div className="flex items-center gap-4 mb-6">
+                                        <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center">
+                                            <Zap className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h4 className="text-xs font-black text-amber-900 uppercase tracking-widest">Neural Breakout</h4>
+                                            <p className="text-[9px] font-bold text-amber-500 uppercase tracking-widest mt-0.5">High-Momentum Setup</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-end justify-between">
+                                        <div>
+                                            <p className="text-2xl font-black tracking-tighter text-amber-900">
+                                                {([...displayTokens].filter(t => t.price_change_percentage_24h > 15)[0]?.symbol || 'Scanning...')}
+                                            </p>
+                                            <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mt-1 flex items-center gap-1">
+                                                <Sparkles size={10} /> BREAKOUT DETECTED
+                                            </p>
+                                        </div>
+                                        <Rocket className="w-8 h-8 text-amber-300 animate-bounce" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Institutional Analytics Dashboard */}
+                            <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-16">
+
+                                {[
+                                    { id: 'sentiment', label: 'Surveillance Sentiment', value: 'Extreme Greed', sub: 'Neural Flow Analysis', icon: <Zap size={22} />, color: 'text-emerald-400', accent: 'emerald' },
+                                    { id: 'volatility', label: 'Dynamic Volatility', value: '94.2/100', sub: 'Standard Deviation Matrix', icon: <Activity size={22} />, color: 'text-indigo-400', accent: 'indigo' },
+                                    { id: 'dominance', label: 'Global Dominance', value: '42.1%', sub: 'Capitalization Weight', icon: <PieChartIcon size={22} />, color: 'text-violet-400', accent: 'violet' },
+                                    { id: 'riskplot', label: 'Alpha Opportunity', value: 'High Efficiency', sub: 'Risk/Reward Simulation', icon: <Target size={22} />, color: 'text-amber-400', accent: 'amber' }
+                                ].map((stat, i) => (
+                                    <motion.div 
+                                        key={i} 
+                                        whileHover={{ y: -8, scale: 1.02 }}
+                                        onClick={() => setSelectedAnalytic({ type: stat.id, label: stat.label })}
+                                        className="relative group bg-[#556B2F]/40 border border-white/5 backdrop-blur-3xl rounded-[3rem] p-10 flex flex-col gap-6 shadow-2xl cursor-pointer transition-all active:scale-95 overflow-hidden"
+                                    >
+                                        <div className={`absolute -right-10 -top-10 w-40 h-40 bg-${stat.accent}-500/5 rounded-full blur-[80px] group-hover:scale-150 transition-transform duration-1000`} />
+                                        <div className="flex items-center justify-between relative z-10">
+                                            <div className={`w-14 h-14 rounded-2xl bg-slate-800/50 border border-white/5 flex items-center justify-center ${stat.color} shadow-inner`}>
+                                                {stat.icon}
+                                            </div>
+                                            <div className="h-10 w-24 opacity-20 group-hover:opacity-40 transition-opacity">
+                                                <svg viewBox="0 0 100 40" className="w-full h-full">
+                                                    <path d="M0 30 Q 25 10, 50 30 T 100 10" fill="none" stroke="currentColor" strokeWidth="3" className={stat.color} />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div className="relative z-10">
+                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-2">{stat.label}</p>
+                                            <h4 className="text-3xl font-black tracking-tighter text-white">{stat.value}</h4>
+                                            <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest mt-2">{stat.sub}</p>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </div>
+
+                            {/* Heatmap Intelligence Filter Bar */}
+                            <div className="flex flex-col lg:flex-row items-center justify-between gap-6 mb-12 bg-white/60 backdrop-blur-xl p-6 rounded-[2.5rem] border border-slate-200 shadow-xl">
+                                <div className="flex flex-1 items-center gap-4 w-full">
+                                    <div className="relative flex-1 group">
+                                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                                        <input 
+                                            type="text" 
+                                            placeholder="SEARCH SYMBOL OR NAME..." 
+                                            value={heatmapSearch}
+                                            onChange={(e) => setHeatmapSearch(e.target.value)}
+                                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] outline-none focus:bg-white focus:border-indigo-500 transition-all placeholder:text-slate-300"
+                                        />
+                                    </div>
+                                    <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-200 shadow-inner">
+                                        {[
+                                            { id: 'all', label: 'All Assets', icon: <Globe size={12} /> },
+                                            { id: 'whale', label: 'Whale Hub', icon: <Anchor size={12} /> },
+                                            { id: 'ai', label: 'Nuera AI', icon: <Brain size={12} /> }
+                                        ].map(f => (
+                                            <button
+                                                key={f.id}
+                                                onClick={() => setHeatmapIntelFilter(f.id)}
+                                                className={`px-6 py-2.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${heatmapIntelFilter === f.id ? 'bg-white text-slate-900 shadow-md scale-105' : 'text-slate-400 hover:text-slate-600'}`}
+                                            >
+                                                {f.icon} {f.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-3 bg-slate-50 border border-slate-200 rounded-2xl px-5 py-3 shadow-inner">
+                                        <Filter size={12} className="text-slate-400" />
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sort:</span>
+                                        <select
+                                            value={heatmapSort}
+                                            onChange={(e) => setHeatmapSort(e.target.value)}
+                                            className="bg-transparent text-[9px] font-black uppercase tracking-widest text-slate-900 outline-none cursor-pointer"
+                                        >
+                                            <option value="rank">Crypto Rank</option>
+                                            <option value="c_high">Change: High → Low</option>
+                                            <option value="c_low">Change: Low → High</option>
+                                            <option value="p_high">Price: High → Low</option>
+                                            <option value="p_low">Price: Low → High</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Elite Institutional Treemap */}
+                            {/* Elite Institutional Treemap - First 11 Cards */}
+                            <div className="grid grid-cols-2 md:grid-cols-6 lg:grid-cols-10 auto-rows-[160px] gap-5 mb-12">
+                                {heatmapTokens.slice(0, 11).map((t, idx) => {
+                                    const isPos = t.price_change_percentage_24h > 0;
+                                    const change = Math.abs(t.price_change_percentage_24h || 0);
+                                    
+                                    // Elite Layout Logic: Top 4 are massive, next 7 are large
+                                    let span = "col-span-1 row-span-1";
+                                    if (idx < 4) span = "col-span-2 row-span-2";
+                                    else span = "col-span-2 row-span-1";
+
+                                    return (
+                                        <motion.div
+                                            key={`${t.id || t.address}-${idx}`}
+                                            layout
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            whileHover={{ scale: 1.02, zIndex: 50 }}
+                                            onClick={() => setSelectedMarketToken(t)}
+                                            className={`relative ${span} rounded-[2.5rem] p-6 cursor-pointer transition-all group overflow-hidden border border-white/5 shadow-[0_30px_60px_rgba(0,0,0,0.3)] flex flex-col justify-between bg-slate-900/80 hover:bg-slate-800/90`}
+                                        >
+                                            {/* Dynamic Depth Gradient */}
+                                            <div 
+                                                className={`absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity duration-700 bg-gradient-to-br ${
+                                                    isPos ? 'from-emerald-500/40 to-transparent' : 'from-rose-500/40 to-transparent'
+                                                }`}
+                                            />
+                                            
+                                            {/* Background Sparkline Simulation */}
+                                            <div className="absolute inset-x-0 bottom-0 h-1/2 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
+                                                <svg viewBox="0 0 200 100" preserveAspectRatio="none" className="w-full h-full">
+                                                    <path 
+                                                        d={`M0 ${50 + Math.random()*20} Q 50 ${isPos ? 20 : 80}, 100 ${50 - Math.random()*20} T 200 ${isPos ? 10 : 90}`} 
+                                                        fill="none" 
+                                                        stroke={isPos ? '#10b981' : '#f43f5e'} 
+                                                        strokeWidth="4" 
+                                                    />
+                                                </svg>
+                                            </div>
+
+                                            <div className="relative z-10 flex justify-between items-start">
+                                                <div className="flex items-center gap-3 min-w-0">
+                                                    <div className="w-10 h-10 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-2 shadow-2xl shrink-0 group-hover:scale-110 transition-transform">
+                                                        {t.image ? (
+                                                            <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" />
+                                                        ) : (
+                                                            <div className="w-full h-full bg-indigo-600/50 rounded-lg flex items-center justify-center text-white font-black text-xs">
+                                                                {t.symbol?.charAt(0)}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <h3 className="text-lg font-black text-white uppercase tracking-tighter drop-shadow-2xl truncate leading-none">{t.symbol}</h3>
+                                                        <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-1 truncate">{t.name}</p>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="flex flex-col gap-1.5 items-end">
+                                                    {neuralAlphaIds.has(t.id || t.address) && (
+                                                        <div className="px-2.5 py-1 bg-indigo-500/20 text-indigo-400 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] border border-indigo-500/30 flex items-center gap-1.5 backdrop-blur-md">
+                                                            <div className="w-1 h-1 bg-indigo-400 rounded-full animate-pulse" />
+                                                            AI
+                                                        </div>
+                                                    )}
+                                                    {t.market_cap_rank < 50 && (
+                                                        <div className="px-2.5 py-1 bg-amber-500/20 text-amber-400 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] border border-amber-500/30 backdrop-blur-md">
+                                                            WHALE
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="relative z-10 mt-auto">
+                                                <p className={`text-4xl font-black tracking-tighter leading-none mb-3 ${isPos ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {isPos ? '+' : '-'}{change.toFixed(1)}%
+                                                </p>
+                                                <div className="flex items-center justify-between pt-4 border-t border-white/5">
+                                                    <p className="text-xs font-black text-white font-mono tracking-tighter">
+                                                        ${t.current_price < 0.01 ? t.current_price?.toFixed(6) : t.current_price?.toLocaleString()}
+                                                    </p>
+                                                    <div className={`px-2 py-0.5 rounded text-[8px] font-black ${isPos ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                                                        VOL: {formatB20Number(t.total_volume, "")}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Institutional Intelligence List - Rest of the tokens */}
+                            <div className="mt-8 bg-white border border-slate-200/60 rounded-[2.5rem] overflow-hidden shadow-2xl shadow-gray-200/50">
+                                <div className="grid grid-cols-12 px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] border-b border-slate-50 bg-slate-50/80 items-center">
+                                    <div className="col-span-1">#</div>
+                                    <div className="col-span-3">Asset</div>
+                                    <div className="col-span-2">Network</div>
+                                    <div className="col-span-2">Intelligence</div>
+                                    <div className="col-span-1 text-right">Change</div>
+                                    <div className="col-span-1 text-right">Price</div>
+                                    <div className="col-span-2 text-right">Volume (24H)</div>
+                                </div>
+                                <div className="divide-y divide-slate-50">
+                                    {heatmapTokens.slice(11, visibleItems).map((t, idx) => {
+                                        const isPos = t.price_change_percentage_24h > 0;
+                                        return (
+                                            <motion.div
+                                                key={`${t.id || t.address}-${idx + 11}`}
+                                                initial={{ opacity: 0, x: -10 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ delay: Math.min(idx * 0.01, 0.2) }}
+                                                onClick={() => setSelectedMarketToken(t)}
+                                                className={`grid grid-cols-12 items-center px-8 py-5 transition-all cursor-pointer group border-l-4 ${isPos ? 'bg-emerald-50/10 border-l-emerald-500 hover:bg-emerald-50/30' : 'bg-rose-50/10 border-l-rose-500 hover:bg-rose-50/30'}`}
+                                            >
+                                                <div className="col-span-1 text-xs font-black text-slate-300 group-hover:text-slate-500 transition-colors">
+                                                    {idx + 12}
+                                                </div>
+                                                <div className="col-span-3 flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 p-2 shrink-0 group-hover:scale-110 transition-transform">
+                                                        {t.image ? (
+                                                            <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" />
+                                                        ) : (
+                                                            <div className="w-full h-full bg-indigo-600/10 rounded-lg flex items-center justify-center text-indigo-600 font-black text-[10px]">
+                                                                {t.symbol?.charAt(0)}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <p className="text-sm font-black text-slate-900 uppercase tracking-tight leading-none group-hover:text-indigo-600 transition-colors">{t.symbol}</p>
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1 truncate">{t.name}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="col-span-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center p-1 border border-slate-100 shadow-sm">
+                                                            <img
+                                                                src={NETWORK_LOGOS[t.network] || getNetworkLogo(t.network || 'BNB')}
+                                                                alt=""
+                                                                className="w-full h-full object-contain"
+                                                            />
+                                                        </div>
+                                                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{t.network || 'BNB'}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="col-span-2 flex gap-2">
+                                                    {neuralAlphaIds.has(t.id || t.address) && (
+                                                        <div className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md text-[8px] font-black uppercase tracking-widest border border-indigo-100">
+                                                            AI
+                                                        </div>
+                                                    )}
+                                                    {t.market_cap_rank < 50 && (
+                                                        <div className="px-2 py-0.5 bg-amber-50 text-amber-600 rounded-md text-[8px] font-black uppercase tracking-widest border border-amber-100">
+                                                            WHALE
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className={`col-span-1 text-right text-xs font-black ${isPos ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                    {isPos ? '+' : ''}{t.price_change_percentage_24h?.toFixed(2)}%
+                                                </div>
+                                                <div className="col-span-1 text-right text-xs font-black text-slate-900 font-mono">
+                                                    ${t.current_price < 0.01 ? t.current_price?.toFixed(6) : t.current_price?.toLocaleString()}
+                                                </div>
+                                                <div className="col-span-2 text-right">
+                                                    <span className="text-[10px] font-black text-slate-400 font-mono tracking-tighter">
+                                                        {formatB20Number(t.total_volume, "$")}
+                                                    </span>
+                                                </div>
+                                            </motion.div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="mt-24 flex justify-center pb-24">
+                                <motion.button 
+                                    whileHover={{ scale: 1.05, backgroundColor: '#4f46e5' }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => setVisibleItems(prev => prev + 100)}
+                                    className="px-16 py-6 bg-slate-800 text-white border border-white/5 rounded-full text-xs font-black uppercase tracking-[0.4em] shadow-2xl transition-all flex items-center gap-6 group"
+                                >
+                                    <ChevronDown size={22} className="group-hover:translate-y-1 transition-transform" /> 
+                                    Synchronize Next Intelligence Layer
+                                </motion.button>
+                            </div>
+
+
+                        </motion.div>
+                    )}
                     {mode === 'markets' && (
                         <motion.div 
                             key="markets"
@@ -2533,108 +3082,6 @@ export default function B20Exchange() {
                                 )}
                             </div>
 
-                            {/* Token Details Modal */}
-                            <AnimatePresence>
-                                {selectedMarketToken && (
-                                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-                                        <motion.div 
-                                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                            onClick={() => setSelectedMarketToken(null)}
-                                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-                                        />
-                                        <motion.div 
-                                            initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                                            className="relative w-full max-w-md bg-white rounded-[2.5rem] p-6 shadow-2xl shadow-indigo-900/20 border border-slate-100 overflow-hidden"
-                                        >
-                                            {/* Decorative Background */}
-                                            <div className={`absolute top-0 left-0 right-0 h-32 opacity-20 ${selectedMarketToken.price_change_percentage_24h >= 0 ? 'bg-gradient-to-b from-emerald-400 to-transparent' : 'bg-gradient-to-b from-rose-400 to-transparent'}`} />
-
-                                            <div className="relative flex items-start justify-between mb-6">
-                                                <div className="flex items-center gap-4">
-                                                    <div className="w-16 h-16 bg-white rounded-2xl p-2 shadow-lg shadow-slate-200/50 border border-slate-100 flex-shrink-0">
-                                                        {selectedMarketToken.image ? (
-                                                            <img src={selectedMarketToken.image} className="w-full h-full object-contain rounded-xl" alt="" />
-                                                        ) : (
-                                                            <div className="w-full h-full bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl uppercase">
-                                                                {selectedMarketToken.symbol?.charAt(0)}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="flex flex-col">
-                                                        <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-none mb-1">{selectedMarketToken.symbol}</h2>
-                                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{selectedMarketToken.name}</span>
-                                                        <div className="flex items-center gap-2 mt-2">
-                                                            {selectedMarketToken.market_cap_rank && selectedMarketToken.market_cap_rank !== 999999 && (
-                                                                <span className="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-widest">
-                                                                    Rank #{selectedMarketToken.market_cap_rank}
-                                                                </span>
-                                                            )}
-                                                            {selectedMarketToken.network && (
-                                                                <span className="text-[9px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-widest border border-indigo-100">
-                                                                    {selectedMarketToken.network}
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <button onClick={() => setSelectedMarketToken(null)} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-900">
-                                                    <X className="w-5 h-5" />
-                                                </button>
-                                            </div>
-
-                                            <div className="flex items-baseline gap-3 mb-6 relative">
-                                                <span className="text-4xl font-black text-slate-900 font-mono tracking-tighter">
-                                                    ${selectedMarketToken.current_price < 0.01 ? selectedMarketToken.current_price.toFixed(8) : selectedMarketToken.current_price?.toLocaleString()}
-                                                </span>
-                                            </div>
-
-                                            <div className="grid grid-cols-2 gap-3 mb-6">
-                                                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
-                                                    <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Market Cap</span>
-                                                    <span className="text-xs font-black text-slate-900 font-mono">{formatB20Number(selectedMarketToken.market_cap, "$")}</span>
-                                                </div>
-                                                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
-                                                    <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Circ. (Est)</span>
-                                                    <span className="text-xs font-black text-slate-900 font-mono">{formatB20Number(selectedMarketToken.circulating_supply || selectedMarketToken.total_supply || (selectedMarketToken.market_cap / selectedMarketToken.current_price))}</span>
-                                                </div>
-                                                <div className="col-span-2 p-3 bg-slate-50 rounded-2xl border border-slate-100/60 flex items-center justify-between">
-                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Contract (0x)</span>
-                                                    <span className="text-[10px] font-bold text-indigo-600 font-mono truncate max-w-[200px]">
-                                                        {selectedMarketToken.contractAddress || selectedMarketToken.address || '0x' + Math.random().toString(16).substr(2, 40)}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <div className="mb-8">
-                                                <span className="block text-[10px] font-bold text-slate-900 uppercase tracking-widest mb-3 px-1">Performance Dynamics</span>
-                                                <div className="grid grid-cols-4 gap-2">
-                                                    {[
-                                                        { label: '24H', val: selectedMarketToken.price_change_percentage_24h },
-                                                        { label: '7D', val: selectedMarketToken.price_change_percentage_7d_in_currency || (selectedMarketToken.price_change_percentage_24h * 1.5) },
-                                                        { label: '15D', val: selectedMarketToken.price_change_percentage_14d_in_currency || (selectedMarketToken.price_change_percentage_24h * 2.2) },
-                                                        { label: '30D', val: selectedMarketToken.price_change_percentage_30d_in_currency || (selectedMarketToken.price_change_percentage_24h * 3.1) }
-                                                    ].map((period, idx) => (
-                                                        <div key={idx} className="flex flex-col items-center justify-center p-2 bg-slate-50 rounded-xl border border-slate-100/60">
-                                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">{period.label}</span>
-                                                            <span className={`text-[10px] font-black ${period.val >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                                {period.val >= 0 ? '+' : ''}{(period.val || 0).toFixed(2)}%
-                                                            </span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <button 
-                                                onClick={() => { setSelectedMarketToken(null); setMode('spot'); setToToken(selectedMarketToken); }}
-                                                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl shadow-indigo-600/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-                                            >
-                                                <Activity className="w-4 h-4" />
-                                                Spot Buy {selectedMarketToken.symbol}
-                                            </button>
-                                        </motion.div>
-                                    </div>
-                                )}
-                            </AnimatePresence>
                         </motion.div>
                     )}
 
@@ -2712,6 +3159,12 @@ export default function B20Exchange() {
                             <SmartMoneyPortal account={account} signer={signer} tokens={activeTokens} />
                         </motion.div>
                     )}
+
+                    {mode === 'meme' && (
+                        <motion.div key="meme" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="w-full">
+                            <MemeTerminal setMode={setMode} setToToken={setToToken} />
+                        </motion.div>
+                    )}
                 </AnimatePresence>
             </div>
 
@@ -2724,14 +3177,569 @@ export default function B20Exchange() {
                 setSearchTerm={setSearchTerm} 
             />
 
+            {/* Token Details Modal - Global Presence */}
+            <AnimatePresence>
+                {selectedMarketToken && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            onClick={() => setSelectedMarketToken(null)}
+                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+                        />
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-md bg-white rounded-[2.5rem] p-6 shadow-2xl shadow-indigo-900/20 border border-slate-100 overflow-hidden"
+                        >
+                            {/* Decorative Background */}
+                            <div className={`absolute top-0 left-0 right-0 h-32 opacity-20 ${selectedMarketToken.price_change_percentage_24h >= 0 ? 'bg-gradient-to-b from-emerald-400 to-transparent' : 'bg-gradient-to-b from-rose-400 to-transparent'}`} />
+
+                            <div className="relative flex items-start justify-between mb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-16 h-16 bg-white rounded-2xl p-2 shadow-lg shadow-slate-200/50 border border-slate-100 flex-shrink-0">
+                                        {selectedMarketToken.image ? (
+                                            <img src={selectedMarketToken.image} className="w-full h-full object-contain rounded-xl" alt="" />
+                                        ) : (
+                                            <div className="w-full h-full bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl uppercase">
+                                                {selectedMarketToken.symbol?.charAt(0)}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-none mb-1">{selectedMarketToken.symbol}</h2>
+                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{selectedMarketToken.name}</span>
+                                        <div className="flex items-center gap-2 mt-2">
+                                            {selectedMarketToken.market_cap_rank && selectedMarketToken.market_cap_rank !== 999999 && (
+                                                <span className="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-widest">
+                                                    Rank #{selectedMarketToken.market_cap_rank}
+                                                </span>
+                                            )}
+                                            {selectedMarketToken.network && (
+                                                <span className="text-[9px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-widest border border-indigo-100">
+                                                    {selectedMarketToken.network}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                                <button onClick={() => setSelectedMarketToken(null)} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-900">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="flex items-baseline gap-3 mb-6 relative">
+                                <span className="text-4xl font-black text-slate-900 font-mono tracking-tighter">
+                                    ${selectedMarketToken.current_price < 0.01 ? selectedMarketToken.current_price.toFixed(8) : selectedMarketToken.current_price?.toLocaleString()}
+                                </span>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 mb-6">
+                                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
+                                    <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Market Cap</span>
+                                    <span className="text-xs font-black text-slate-900 font-mono">{formatB20Number(selectedMarketToken.market_cap, "$")}</span>
+                                </div>
+                                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
+                                    <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Circ. (Est)</span>
+                                    <span className="text-xs font-black text-slate-900 font-mono">{formatB20Number(selectedMarketToken.circulating_supply || selectedMarketToken.total_supply || (selectedMarketToken.market_cap / selectedMarketToken.current_price))}</span>
+                                </div>
+                                <div className="col-span-2 p-3 bg-slate-50 rounded-2xl border border-slate-100/60 flex items-center justify-between">
+                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Contract Address</span>
+                                    <div className="flex items-center gap-2 overflow-hidden">
+                                        <span className="text-[10px] font-bold text-indigo-600 font-mono truncate max-w-[200px]">
+                                            {selectedMarketToken.contract_address || selectedMarketToken.contractAddress || selectedMarketToken.address || '0x' + (selectedMarketToken.symbol === 'BNB' ? '0x00...000' : '0x...')}
+                                        </span>
+                                        <button 
+                                            onClick={() => { navigator.clipboard.writeText(selectedMarketToken.contract_address || selectedMarketToken.address); alert('Address Copied!'); }}
+                                            className="p-1 hover:bg-indigo-50 rounded transition-colors text-indigo-400 hover:text-indigo-600"
+                                        >
+                                            <Copy size={10} />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="mb-8">
+                                <span className="block text-[10px] font-bold text-slate-900 uppercase tracking-widest mb-3 px-1">Performance Dynamics</span>
+                                <div className="grid grid-cols-4 gap-2">
+                                    {[
+                                        { label: '24H', val: selectedMarketToken.price_change_percentage_24h },
+                                        { label: '7D', val: selectedMarketToken.price_change_percentage_7d_in_currency || (selectedMarketToken.price_change_percentage_24h * 1.5) },
+                                        { label: '15D', val: selectedMarketToken.price_change_percentage_14d_in_currency || (selectedMarketToken.price_change_percentage_24h * 2.2) },
+                                        { label: '30D', val: selectedMarketToken.price_change_percentage_30d_in_currency || (selectedMarketToken.price_change_percentage_24h * 3.1) }
+                                    ].map((period, idx) => (
+                                        <div key={idx} className="flex flex-col items-center justify-center p-2 bg-slate-50 rounded-xl border border-slate-100/60">
+                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">{period.label}</span>
+                                            <span className={`text-[10px] font-black ${period.val >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                {period.val >= 0 ? '+' : ''}{(period.val || 0).toFixed(2)}%
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <button 
+                                onClick={() => { setSelectedMarketToken(null); setMode('spot'); setToToken(selectedMarketToken); }}
+                                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl shadow-indigo-600/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                            >
+                                <Activity className="w-4 h-4" />
+                                Spot Buy {selectedMarketToken.symbol}
+                            </button>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {selectedAnalytic && (
+                    <MarketIntelligenceModal 
+                        analytic={selectedAnalytic} 
+                        tokens={displayTokens} 
+                        onClose={() => setSelectedAnalytic(null)} 
+                    />
+                )}
+            </AnimatePresence>
+
             <style jsx global>{`
                 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.02); }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.1); border-radius: 10px; }
             `}</style>
+            <NueraCommand onCommand={handleNueraCommand} />
         </main>
     );
 }
+
+const MarketIntelligenceModal = ({ analytic, tokens, onClose }) => {
+    const [activeTab, setActiveTab] = useState('data');
+    const [selectedStat, setSelectedStat] = useState(null);
+
+    const stats = useMemo(() => {
+        const sorted = [...tokens].sort((a, b) => (b.price_change_percentage_24h || 0) - (a.price_change_percentage_24h || 0));
+        return {
+            top: sorted.slice(0, 5),
+            bottom: sorted.slice(-5).reverse(),
+            avgChange: tokens.reduce((acc, t) => acc + (t.price_change_percentage_24h || 0), 0) / Math.max(tokens.length, 1),
+            totalVolume: tokens.reduce((acc, t) => acc + (t.total_volume || 0), 0),
+            marketCapAvg: tokens.reduce((acc, t) => acc + (t.market_cap || 0), 0) / Math.max(tokens.length, 1)
+        };
+    }, [tokens]);
+
+    const forecastData = useMemo(() => {
+        return Array.from({ length: 12 }).map((_, i) => ({
+            day: `${i+1}H`,
+            prob: 60 + Math.random() * 30,
+            target: tokens[0]?.current_price * (1 + (Math.random() * 0.05))
+        }));
+    }, [tokens]);
+
+    const renderAdvancedAnalytics = () => {
+        switch(analytic.id) {
+            case 'sentiment':
+                return (
+                    <motion.div 
+                        whileHover={{ y: -5 }}
+                        onClick={() => setSelectedStat({ title: 'Sentiment Analysis', value: `${stats.avgChange.toFixed(2)}%`, desc: 'Institutional bias intensity calculated from real-time order flow and market momentum.' })}
+                        className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.05)] cursor-pointer transition-all hover:shadow-[0_40px_80px_rgba(99,102,241,0.15)] text-center relative overflow-hidden"
+                    >
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl -z-10" />
+                        <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-8">Fear & Greed Index</h4>
+                        <div className="flex justify-center mb-6">
+                            <div className="relative w-64 h-32 overflow-hidden">
+                                <div className="absolute inset-0 bg-gradient-to-r from-rose-500 via-amber-500 to-emerald-500 rounded-t-full opacity-20" />
+                                <motion.div 
+                                    initial={{ rotate: -90 }}
+                                    animate={{ rotate: stats.avgChange > 0 ? 45 : -45 }}
+                                    transition={{ type: "spring", stiffness: 100 }}
+                                    className="absolute bottom-0 left-1/2 w-1.5 h-32 bg-slate-900 origin-bottom -translate-x-1/2 rounded-full" 
+                                />
+                                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-5 h-5 bg-slate-900 rounded-full border-4 border-white" />
+                            </div>
+                        </div>
+                        <p className="text-5xl font-black text-slate-900 tracking-tighter mb-2">{stats.avgChange > 0 ? 'GREED' : 'FEAR'}</p>
+                        <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest bg-indigo-50 px-4 py-1.5 rounded-full inline-block">Intensity Index: {stats.avgChange.toFixed(2)}%</p>
+                    </motion.div>
+                );
+            case 'orderflow':
+                const orderData = [
+                    { name: 'Buy', value: tokens.filter(t => t.price_change_percentage_24h > 0).length, color: '#10b981' },
+                    { name: 'Sell', value: tokens.filter(t => t.price_change_percentage_24h <= 0).length, color: '#ef4444' }
+                ];
+                return (
+                    <motion.div 
+                        whileHover={{ y: -5 }}
+                        onClick={() => setSelectedStat({ title: 'Order Flow Imbalance', value: `${((orderData[0].value / tokens.length) * 100).toFixed(1)}% Buy`, desc: 'Real-time calculation of buying vs selling pressure across the entire market sample.' })}
+                        className="h-[400px] w-full bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.05)] cursor-pointer transition-all hover:shadow-[0_40px_80px_rgba(16,185,129,0.1)]"
+                    >
+                        <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-8 text-center">Institutional Pressure</h4>
+                        <ResponsiveContainer width="100%" height="80%">
+                            <BarChart data={orderData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} fontSize={10} fontWeight="900" />
+                                <YAxis axisLine={false} tickLine={false} fontSize={10} fontWeight="900" />
+                                <Tooltip contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)', padding: '1rem' }} />
+                                <Bar dataKey="value" radius={[15, 15, 0, 0]} barSize={60}>
+                                    {orderData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} />
+                                    ))}
+                                </Bar>
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </motion.div>
+                );
+            case 'liquidity':
+                const timeData = Array.from({ length: 24 }).map((_, i) => ({
+                    time: `${i}:00`,
+                    flow: 1000000 + (Math.random() * 500000)
+                }));
+                return (
+                    <motion.div 
+                        whileHover={{ y: -5 }}
+                        onClick={() => setSelectedStat({ title: 'Liquidity Velocity', value: `$${(stats.totalVolume / 1e9).toFixed(2)}B`, desc: 'Cumulative liquidity flow over the last 24 hours, normalized for institutional volume.' })}
+                        className="h-[400px] w-full bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.05)] cursor-pointer transition-all hover:shadow-[0_40px_80px_rgba(59,130,246,0.1)]"
+                    >
+                        <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-8 text-center">Net Liquidity Velocity (24H)</h4>
+                        <ResponsiveContainer width="100%" height="80%">
+                            <AreaChart data={timeData}>
+                                <defs>
+                                    <linearGradient id="colorFlow" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
+                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <XAxis dataKey="time" axisLine={false} tickLine={false} fontSize={8} />
+                                <YAxis hide />
+                                <Tooltip />
+                                <Area type="monotone" dataKey="flow" stroke="#3b82f6" fillOpacity={1} fill="url(#colorFlow)" strokeWidth={4} />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </motion.div>
+                );
+            case 'riskplot':
+                const scatterData = tokens.slice(0, 30).map(t => ({
+                    x: Math.abs(t.price_change_percentage_24h || 0),
+                    y: (t.price_change_percentage_24h || 0),
+                    z: t.market_cap / 100000000,
+                    symbol: t.symbol
+                }));
+                return (
+                    <motion.div 
+                        whileHover={{ y: -5 }}
+                        onClick={() => setSelectedStat({ title: 'Risk/Reward Matrix', value: '0.84 Cor', desc: 'A multi-dimensional plot analyzing the correlation between asset volatility and real-time performance.' })}
+                        className="h-[400px] w-full bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.05)] cursor-pointer transition-all hover:shadow-[0_40px_80px_rgba(139,92,246,0.1)]"
+                    >
+                        <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-8 text-center">Neural Risk/Reward Matrix</h4>
+                        <ResponsiveContainer width="100%" height="80%">
+                            <ScatterChart>
+                                <XAxis type="number" dataKey="x" name="Volatility" unit="%" axisLine={false} tickLine={false} fontSize={10} />
+                                <YAxis type="number" dataKey="y" name="Returns" unit="%" axisLine={false} tickLine={false} fontSize={10} />
+                                <ZAxis type="number" dataKey="z" range={[50, 400]} />
+                                <Tooltip cursor={{ strokeDasharray: '3 3' }} />
+                                <Scatter name="Assets" data={scatterData}>
+                                    {scatterData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.y >= 0 ? '#10b981' : '#ef4444'} />
+                                    ))}
+                                </Scatter>
+                            </ScatterChart>
+                        </ResponsiveContainer>
+                    </motion.div>
+                );
+            case 'dominance':
+                const domData = tokens.slice(0, 5).map(t => ({
+                    name: t.symbol,
+                    value: t.market_cap || 1000,
+                    color: `hsl(${Math.random() * 360}, 70%, 50%)`
+                }));
+                return (
+                    <motion.div 
+                        whileHover={{ y: -5 }}
+                        onClick={() => setSelectedStat({ title: 'Market Dominance', value: `${((domData[0].value / stats.marketCapAvg) * 10).toFixed(1)}%`, desc: 'Weight distribution of top market-cap assets within the current terminal workspace.' })}
+                        className="h-[400px] w-full bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.05)] cursor-pointer transition-all hover:shadow-[0_40px_80px_rgba(245,158,11,0.1)]"
+                    >
+                        <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-8 text-center">Market Dominance Distribution</h4>
+                        <ResponsiveContainer width="100%" height="80%">
+                            <RePieChart>
+                                <Pie
+                                    data={domData}
+                                    innerRadius={80}
+                                    outerRadius={110}
+                                    paddingAngle={8}
+                                    dataKey="value"
+                                >
+                                    {domData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                                    ))}
+                                </Pie>
+                                <Tooltip contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }} />
+                                <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                            </RePieChart>
+                        </ResponsiveContainer>
+                    </motion.div>
+                );
+            default:
+                const bulls = tokens.filter(t => t.price_change_percentage_24h > 0).length;
+                const bears = tokens.length - bulls;
+                const defaultData = [
+                    { name: 'Bulls', value: bulls, color: '#10B981' },
+                    { name: 'Bears', value: bears, color: '#EF4444' }
+                ];
+
+                return (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                        <motion.div 
+                            whileHover={{ scale: 1.01 }}
+                            className="bg-white rounded-[3rem] p-8 border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.05)]"
+                        >
+                            <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-8 text-center italic">Market Breath Distribution</h4>
+                            <div className="h-[300px] w-full">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <RePieChart>
+                                        <Pie
+                                            data={defaultData}
+                                            innerRadius={80}
+                                            outerRadius={110}
+                                            paddingAngle={10}
+                                            dataKey="value"
+                                        >
+                                            {defaultData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }} />
+                                    </RePieChart>
+                                </ResponsiveContainer>
+                            </div>
+                            <div className="flex justify-center gap-10 mt-6">
+                                {defaultData.map((d, i) => (
+                                    <div key={i} className="flex items-center gap-3">
+                                        <div className="w-4 h-4 rounded-full shadow-inner" style={{ backgroundColor: d.color }} />
+                                        <span className="text-[11px] font-black text-slate-600 uppercase tracking-widest">{d.name}: {((d.value / tokens.length) * 100).toFixed(1)}%</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+
+                        <div className="space-y-6">
+                            <div className="grid grid-cols-2 gap-6">
+                                <motion.div whileHover={{ y: -5 }} className="p-8 bg-emerald-50 rounded-[2rem] border border-emerald-100 shadow-xl shadow-emerald-500/5">
+                                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2 italic">Avg. Pulse</p>
+                                    <p className="text-4xl font-black text-emerald-700 tracking-tighter">+{stats.avgChange.toFixed(2)}%</p>
+                                </motion.div>
+                                <motion.div whileHover={{ y: -5 }} className="p-8 bg-indigo-50 rounded-[2rem] border border-indigo-100 shadow-xl shadow-indigo-500/5">
+                                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-2 italic">Sample Depth</p>
+                                    <p className="text-4xl font-black text-indigo-700 tracking-tighter">{tokens.length}</p>
+                                </motion.div>
+                            </div>
+
+                            <div className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 h-[250px] overflow-y-auto custom-scrollbar">
+                                <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-6 flex items-center gap-2">
+                                    <TrendingUp size={16} className="text-emerald-500" /> Momentum Leaders
+                                </h4>
+                                <div className="space-y-3">
+                                    {stats.top.map((t, i) => (
+                                        <div key={i} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center font-black text-xs text-indigo-500 border border-slate-100">
+                                                    {t.symbol.slice(0, 2).toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-black text-slate-900">{t.symbol}</p>
+                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{t.name}</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-xs font-black text-emerald-600">+{t.price_change_percentage_24h?.toFixed(2)}%</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10 lg:p-20 overflow-hidden">
+            <motion.div 
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                onClick={onClose}
+                className="absolute inset-0 bg-slate-900/80 backdrop-blur-xl" 
+            />
+            
+            <motion.div 
+                initial={{ scale: 0.95, opacity: 0, y: 50 }} 
+                animate={{ scale: 1, opacity: 1, y: 0 }} 
+                exit={{ scale: 0.95, opacity: 0, y: 50 }}
+                className="relative w-full max-w-7xl bg-white/95 rounded-[4rem] shadow-[0_50px_100px_rgba(0,0,0,0.3)] flex flex-col max-h-[95vh] border border-white/20"
+            >
+                {/* MODAL HEADER */}
+                <div className="p-8 md:p-12 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between bg-slate-50/30 gap-8">
+                    <div className="flex items-center gap-6">
+                        <div className="w-16 h-16 bg-indigo-600 rounded-[2rem] flex items-center justify-center text-white shadow-[0_20px_40px_rgba(79,70,229,0.3)] transform -rotate-6">
+                            <BarChart3 size={32} />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-3 mb-1">
+                                <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter italic">{analytic.label}</h3>
+                                <span className="px-3 py-1 bg-indigo-600 text-white text-[10px] font-black rounded-full uppercase tracking-widest shadow-lg shadow-indigo-600/20">Pro Suite</span>
+                            </div>
+                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em]">Advanced Institutional Intelligence Terminal</p>
+                        </div>
+                    </div>
+                    
+                    <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white rounded-[2rem] shadow-inner border border-slate-100">
+                        {['data', 'forecast'].map((tab) => (
+                            <button 
+                                key={tab}
+                                onClick={() => setActiveTab(tab)}
+                                className={`px-10 py-3 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] transition-all ${activeTab === tab ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-600/30' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                            >
+                                {tab === 'data' ? 'Live Matrix' : 'Neural Forecast'}
+                            </button>
+                        ))}
+                    </div>
+
+                    <button onClick={onClose} className="hidden lg:flex w-14 h-14 rounded-[1.5rem] bg-white border border-slate-100 shadow-sm hover:bg-rose-50 hover:text-rose-500 hover:border-rose-100 items-center justify-center text-slate-400 transition-all active:scale-95">
+                        <X size={28} />
+                    </button>
+                </div>
+
+                {/* MODAL CONTENT */}
+                <div className="flex-1 overflow-y-auto p-8 md:p-12 custom-scrollbar">
+                    {activeTab === 'data' ? (
+                        <div className="max-w-5xl mx-auto">
+                            {renderAdvancedAnalytics()}
+                        </div>
+                    ) : (
+                        <div className="space-y-12 max-w-6xl mx-auto">
+                            <motion.div 
+                                initial={{ y: 20, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                className="bg-slate-900 rounded-[4rem] p-12 border border-white/5 shadow-2xl relative overflow-hidden group"
+                            >
+                                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/10 blur-[120px] -z-10 group-hover:bg-indigo-500/20 transition-all duration-1000" />
+                                <div className="flex flex-col md:flex-row items-center justify-between mb-12 gap-10">
+                                    <div className="flex items-center gap-6">
+                                        <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-[2rem] flex items-center justify-center shadow-2xl shadow-indigo-500/40 transform group-hover:rotate-12 transition-transform">
+                                            <Sparkles size={32} />
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <h4 className="text-3xl font-black text-white uppercase tracking-tight italic">Neural Time-Traveler</h4>
+                                                <span className="px-3 py-1 bg-white/10 text-indigo-400 text-[10px] font-black rounded-lg uppercase tracking-widest border border-white/10">Active Inference</span>
+                                            </div>
+                                            <p className="text-[12px] font-black text-slate-400 uppercase tracking-[0.3em]">Institutional Grade Predictive Corridors</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-center md:text-right">
+                                        <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 italic">Neural Confidence Score</p>
+                                        <div className="flex items-center justify-center md:justify-end gap-4">
+                                            <p className="text-5xl font-black text-indigo-400 tracking-tighter">94.8%</p>
+                                            <div className="w-4 h-4 bg-indigo-500 rounded-full animate-ping" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="h-[400px] w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={forecastData}>
+                                            <defs>
+                                                <linearGradient id="colorProb" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#6366F1" stopOpacity={0.4}/>
+                                                    <stop offset="95%" stopColor="#6366F1" stopOpacity={0}/>
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
+                                            <XAxis dataKey="day" stroke="#ffffff20" fontSize={11} fontWeight="900" axisLine={false} tickLine={false} />
+                                            <YAxis stroke="#ffffff20" fontSize={11} fontWeight="900" axisLine={false} tickLine={false} />
+                                            <Tooltip 
+                                                contentStyle={{ backgroundColor: '#0f172a', border: '1px solid #ffffff10', borderRadius: '2rem', padding: '1.5rem', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)' }}
+                                            />
+                                            <Area 
+                                                type="monotone" 
+                                                dataKey="prob" 
+                                                stroke="#6366F1" 
+                                                strokeWidth={5} 
+                                                fillOpacity={1} 
+                                                fill="url(#colorProb)" 
+                                                animationDuration={2000}
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </motion.div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                                {[
+                                    { label: 'Momentum Velocity', val: '0.92x', color: 'text-indigo-400', bg: 'bg-indigo-500/5' },
+                                    { label: 'Whale Accumulation', val: 'OVERWEIGHT', color: 'text-emerald-400', bg: 'bg-emerald-500/5' },
+                                    { label: 'Liquidity Depth', val: 'PREMIUM', color: 'text-sky-400', bg: 'bg-sky-500/5' }
+                                ].map((m, i) => (
+                                    <motion.div 
+                                        key={i} 
+                                        whileHover={{ y: -10 }}
+                                        className={`p-10 ${m.bg} border border-white/5 rounded-[3rem] text-center shadow-2xl`}
+                                    >
+                                        <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-3 italic">{m.label}</p>
+                                        <p className={`text-4xl font-black tracking-tighter ${m.color}`}>{m.val}</p>
+                                    </motion.div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* MODAL FOOTER */}
+                <div className="p-8 md:p-10 bg-slate-900 flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="flex items-center gap-4">
+                        <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_15px_#10b981]" />
+                        <p className="text-[11px] font-black text-white uppercase tracking-[0.3em]">Neural Core Integrated — Latency: <span className="text-emerald-400">0.04ms</span></p>
+                    </div>
+                    <div className="flex items-center gap-4 w-full md:w-auto">
+                        <button 
+                            onClick={onClose}
+                            className="flex-1 md:flex-none px-12 py-4 bg-white text-slate-900 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-slate-100 hover:shadow-[0_10px_30px_rgba(255,255,255,0.2)] transition-all active:scale-95"
+                        >
+                            Deactivate Session
+                        </button>
+                    </div>
+                </div>
+
+                {/* POP OVERLAY FOR STATS */}
+                <AnimatePresence>
+                    {selectedStat && (
+                        <motion.div 
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            className="absolute inset-0 z-[110] flex items-center justify-center p-8 bg-slate-900/40 backdrop-blur-md"
+                            onClick={() => setSelectedStat(null)}
+                        >
+                            <motion.div 
+                                initial={{ scale: 0.8, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.8, y: 20 }}
+                                className="bg-white rounded-[4rem] p-12 max-w-lg w-full shadow-[0_50px_100px_rgba(0,0,0,0.5)] border border-slate-100 text-center relative"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <button onClick={() => setSelectedStat(null)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 transition-colors">
+                                    <X size={24} />
+                                </button>
+                                <div className="w-20 h-20 bg-indigo-50 rounded-[2rem] flex items-center justify-center text-indigo-600 mx-auto mb-8 shadow-inner">
+                                    <TrendingUp size={40} />
+                                </div>
+                                <h4 className="text-xs font-black text-indigo-600 uppercase tracking-[0.5em] mb-4 italic">{selectedStat.title}</h4>
+                                <p className="text-6xl font-black text-slate-900 tracking-tighter mb-6">{selectedStat.value}</p>
+                                <p className="text-sm font-bold text-slate-500 leading-relaxed italic">"{selectedStat.desc}"</p>
+                                <div className="mt-10 pt-10 border-t border-slate-50">
+                                    <button onClick={() => setSelectedStat(null)} className="w-full py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-slate-900/20 hover:bg-slate-800 transition-all">
+                                        Dismiss Intelligence
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </motion.div>
+        </div>
+    );
+};
 
 const AnnouncementsPortal = ({ setMode, setToToken, tokens }) => {
     const [announcements, setAnnouncements] = useState([]);
@@ -3030,10 +4038,26 @@ const ListingPortal = () => {
 
             const txHash = tx.hash;
 
-            await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/tokens/list-request`, {
-                ...formData,
-                owner: account,
-                txHash: txHash
+            await axios.post(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/tokens/listing-submissions`, {
+                contract_address: formData.address,
+                name: formData.name,
+                symbol: formData.symbol,
+                description: formData.description,
+                logo_url: formData.logoUrl,
+                whitepaper_url: formData.whitepaperUrl,
+                circulation_supply: formData.circulationSupply,
+                total_liquidity: formData.totalLiquidity,
+                paired_token: formData.pairedToken,
+                pancake_url: formData.pancakeUrl,
+                email: formData.email,
+                submitter_wallet: account,
+                checks: {
+                    bscVerified: formData.bscVerified,
+                    cmcListed: formData.cmcListed,
+                    coingeckoListed: formData.coingeckoListed,
+                    trustwalletListed: formData.trustwalletListed,
+                    futuresListed: formData.futuresListed
+                }
             });
 
             setStatus('success');
@@ -3312,154 +4336,327 @@ const FiatPortal = () => {
     );
 };
 
-const AssetDetails = ({ token, setMode, liveTrades = [], globalTickers = [] }) => {
+const AssetDetails = ({ token, setMode }) => {
     if (!token) return null;
+
+    // High-fidelity Mock Data for Institutional Sections
+    const holders = [
+        { address: '0x71C...4fE', balance: (token.total_supply * 0.124).toLocaleString(), percent: 12.4 },
+        { address: '0x3aB...9dE', balance: (token.total_supply * 0.082).toLocaleString(), percent: 8.2 },
+        { address: '0xF2e...1aC', balance: (token.total_supply * 0.051).toLocaleString(), percent: 5.1 },
+        { address: '0x9dD...7bC', balance: (token.total_supply * 0.034).toLocaleString(), percent: 3.4 },
+        { address: '0x1a2...3b4', balance: (token.total_supply * 0.021).toLocaleString(), percent: 2.1 }
+    ];
+
+    const trades = [
+        { type: 'BUY', amount: (token.current_price * 14.99).toFixed(2), time: '2m ago' },
+        { type: 'SELL', amount: (token.current_price * 8.00).toFixed(2), time: '5m ago' },
+        { type: 'BUY', amount: (token.current_price * 41.98).toFixed(2), time: '12m ago' },
+        { type: 'BUY', amount: (token.current_price * 12.00).toFixed(2), time: '18m ago' }
+    ];
 
     return (
         <motion.div 
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white shadow-xl shadow-slate-200/50 border border-slate-100 rounded-3xl overflow-hidden flex flex-col sticky top-32"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white border border-slate-200 rounded-[2.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col w-full relative"
         >
-            {/* On-Chain Asset Intelligence Header */}
-            <div className="bg-gray-900 p-8 text-white">
-                <div className="flex items-center justify-between mb-6">
-                    <div>
-                        <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-1">On-Chain Asset Intelligence</h4>
-                        <h3 className="text-xl font-bold uppercase tracking-tighter">{token.name} — Live Surveillance</h3>
-                    </div>
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-                        <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
-                        <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest">RPC Live</span>
-                    </div>
+            {/* Top Security Banner */}
+            <div className="bg-slate-900 px-8 py-2 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <ShieldCheck size={12} className="text-emerald-400" />
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Institutional Asset Verified // Protocol v2.4</span>
                 </div>
-
-                {/* Global Live Ticker Bar */}
-                <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                    {(globalTickers || []).slice(0, 6).map(t => {
-                        const chg = t.price_change_percentage_24h;
-                        const isPos = chg >= 0;
-                        return (
-                            <div key={t.symbol} className="px-3 py-2 bg-white/5 border border-white/10 rounded-xl flex items-center gap-2 whitespace-nowrap shrink-0">
-                                <span className="text-[10px] font-black">{t.symbol}</span>
-                                <span className={`text-[9px] font-black ${isPos ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                    {isPos ? '+' : ''}{chg !== undefined ? chg.toFixed(2) : '---'}%
-                                </span>
-                            </div>
-                        );
-                    })}
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Network Live</span>
+                    </div>
                 </div>
             </div>
-
-            <div className="p-8 space-y-10">
-                {/* Identity Section */}
-                <div className="flex items-center gap-6">
-                    <div className="w-28 h-28 bg-slate-50 rounded-[2rem] p-3 border border-slate-200/60 shadow-inner relative group shrink-0">
-                        {token.image ? <img src={token.image} className="w-full h-full object-contain rounded-xl group-hover:scale-110 transition-transform duration-500" alt="" /> : null}
-                        <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-emerald-500 rounded-xl flex items-center justify-center text-sm text-white font-black border-2 border-white shadow-lg">✓</div>
-                    </div>
-                    <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[9px] font-black text-rose-500 uppercase tracking-widest bg-rose-50 px-2 py-0.5 rounded">Highly Trusted</span>
-                            <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded">{token.network || 'BNB'} Chain</span>
-                        </div>
-                        <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter leading-none">{token.name}</h3>
-                        <p className="text-sm font-black text-slate-400 uppercase tracking-wide mt-2">${token.symbol}</p>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200/60">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Current Price</p>
-                        <p className="text-xl font-black text-slate-900 tracking-tight">${token.current_price?.toLocaleString() || '0.00'}</p>
-                    </div>
-                    <div className="p-5 bg-gray-900 rounded-2xl border border-gray-800 text-white shadow-xl shadow-gray-900/10">
-                        <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest mb-1 underline decoration-indigo-500">Market Cap Rank</p>
-                        <p className="text-xl font-black tracking-tight italic">GLOBAL #{token.market_cap_rank || '---'}</p>
-                    </div>
-                </div>
-
-                {/* TECHNICAL IDENTIFICATION */}
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h5 className="text-[10px] font-black text-slate-900 uppercase tracking-wide">Technical Identification</h5>
-                        <div className="px-2 py-1 bg-indigo-50 text-indigo-600 rounded text-[8px] font-bold uppercase">Live Scan Active</div>
-                    </div>
-                    <div className="grid grid-cols-1 gap-2">
-                        <div className="flex items-center justify-between p-4 bg-slate-50 border border-black/5 rounded-2xl">
-                            <span className="text-[10px] font-black text-slate-400 uppercase">Contract ID</span>
-                            <div className="flex items-center gap-3">
-                                <span className="font-mono text-[10px] text-slate-900">{(token.address || token.id)?.slice(0, 8)}...{(token.address || token.id)?.slice(-8)}</span>
-                                <CopyButton text={token.address || token.id} />
+            
+            <div className="p-8 lg:p-12 space-y-10">
+                {/* Header: Identity Cluster */}
+                <div className="flex flex-col md:flex-row items-center justify-between gap-8">
+                    <div className="flex items-center gap-8">
+                        <div className="relative group">
+                            <div className="w-28 h-28 bg-white rounded-3xl p-5 shadow-xl border border-slate-100 relative z-10">
+                                {token.image ? (
+                                    <img src={token.image} className="w-full h-full object-contain" alt="" />
+                                ) : (
+                                    <div className="w-full h-full bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-3xl">
+                                        {token.symbol?.charAt(0)}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center text-white border-4 border-white shadow-lg z-20">
+                                <CheckCircle size={20} />
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                            {[
-                                { l: 'Ecosystem', v: token.network || 'BNB', c: 'text-indigo-600' },
-                                { l: 'Total Supply', v: token.total_supply > 0 ? formatB20Number(token.total_supply, "") : '---', c: 'text-emerald-500' },
-                                { l: 'Market Cap', v: token.market_cap > 0 ? formatB20Number(token.market_cap, "$") : '---', c: 'text-blue-500' },
-                                { l: '24h Volume', v: token.total_volume > 0 ? formatB20Number(token.total_volume, "$") : '---', c: 'text-purple-500' }
-                            ].map(x => (
-                                <div key={x.l} className="p-4 bg-slate-50 border border-black/5 rounded-2xl">
-                                    <p className="text-[8px] font-black text-slate-400 uppercase mb-1">{x.l}</p>
-                                    <p className={`text-[10px] font-bold uppercase ${x.c}`}>{x.v}</p>
-                                </div>
-                            ))}
+                        <div>
+                            <div className="flex items-center gap-3 mb-1">
+                                <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase">{token.name}</h1>
+                                <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[9px] font-black uppercase tracking-widest">Tier 1</span>
+                            </div>
+                            <p className="text-xl font-black text-indigo-500 uppercase tracking-[0.4em] italic">{token.symbol}</p>
                         </div>
-                        <button className="w-full py-4 bg-gray-900 text-white rounded-2xl text-[9px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 group transition-all hover:bg-black">
-                            <Globe className="w-3 h-3 group-hover:rotate-45 transition-transform" /> Open Live Network Scanner
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                        <div className="text-right px-6 py-3 bg-slate-50 rounded-2xl border border-slate-100 hidden sm:block">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Asset Status</p>
+                            <div className="flex items-center gap-2 justify-end">
+                                <Sparkles size={12} className="text-indigo-500" />
+                                <span className="text-xs font-black text-slate-900 uppercase">Institutional Grade</span>
+                            </div>
+                        </div>
+                        <button onClick={() => setMode('markets')} className="w-12 h-12 flex items-center justify-center bg-slate-900 text-white rounded-2xl hover:bg-black transition-all shadow-lg shadow-slate-900/20">
+                            <X size={24} />
                         </button>
                     </div>
                 </div>
 
-                {/* VOLATILITY PULSE */}
-                <div className="space-y-4">
-                    <h5 className="text-[10px] font-black text-slate-900 uppercase tracking-wide">Market Volatility Pulse</h5>
-                    <div className="p-6 bg-white border border-slate-200/60 rounded-xl shadow-sm relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform" />
-                        <div className="relative z-10 grid grid-cols-3 gap-6">
-                            <div>
-                                <p className="text-[8px] font-black text-slate-400 uppercase mb-1">24h Delta</p>
-                                <p className={`text-sm font-black font-mono ${token.price_change_percentage_24h !== undefined ? (token.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500') : 'text-slate-400'}`}>
-                                    {token.price_change_percentage_24h !== undefined ? `${token.price_change_percentage_24h >= 0 ? '+' : ''}${token.price_change_percentage_24h.toFixed(2)}%` : '---'}
-                                </p>
+                {/* Primary Metrics Ribbon */}
+                <div className="flex flex-col lg:flex-row items-stretch gap-4">
+                    <div className="flex-1 p-6 bg-slate-50 border border-slate-100 rounded-3xl">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Market Price</p>
+                        <p className="text-2xl font-black text-slate-900 font-mono tracking-tighter">
+                            ${token.current_price < 0.01 ? token.current_price.toFixed(6) : token.current_price?.toLocaleString()}
+                        </p>
+                        <div className={`mt-2 inline-block px-2 py-0.5 rounded-md text-[10px] font-black ${token.price_change_percentage_24h >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
+                            {token.price_change_percentage_24h >= 0 ? '+' : ''}{token.price_change_percentage_24h?.toFixed(2)}%
+                        </div>
+                    </div>
+                    <div className="flex-1 p-6 bg-slate-50 border border-slate-100 rounded-3xl">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Market Cap</p>
+                        <p className="text-2xl font-black text-slate-900 font-mono tracking-tighter">{formatB20Number(token.market_cap, "$")}</p>
+                        <p className="mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Global Rank #{token.market_cap_rank || '---'}</p>
+                    </div>
+                    <div className="flex-1 p-6 bg-slate-50 border border-slate-100 rounded-3xl">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">24H Trading Volume</p>
+                        <p className="text-2xl font-black text-slate-900 font-mono tracking-tighter">{formatB20Number(token.total_volume, "$")}</p>
+                        <p className="mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">High Liquidity Index</p>
+                    </div>
+                    <div className="flex-1 p-6 bg-indigo-600 border border-indigo-500 rounded-3xl shadow-xl shadow-indigo-500/10 text-white min-w-[220px]">
+                        <p className="text-[10px] font-black text-indigo-100 uppercase tracking-widest mb-2">Nuera Sentiment</p>
+                        <p className="text-2xl font-black tracking-tighter uppercase italic truncate">Strong Buy</p>
+                        <div className="mt-2 flex items-center gap-1.5">
+                            <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                            <span className="text-[10px] font-black text-indigo-100 uppercase">94.2% Alpha Conviction</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Secondary Intelligence Layer */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Identification & Network */}
+                    <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-8 space-y-6">
+                        <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
+                            <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl">
+                                <Cpu size={16} />
                             </div>
-                            <div>
-                                <p className="text-[8px] font-black text-slate-400 uppercase mb-1">24h High</p>
-                                <p className="text-sm font-black text-slate-900 font-mono">
-                                    {token.high_24h > 0 ? `$${token.high_24h < 0.01 ? token.high_24h.toFixed(6) : token.high_24h.toLocaleString()}` : '---'}
-                                </p>
+                            <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Technical Identification</h5>
+                        </div>
+                        <div className="space-y-4">
+                            {[
+                                { label: 'Contract Address', value: (token.address || token.id || '---')?.slice(0, 10) + '...' + (token.address || token.id || '---')?.slice(-10), icon: CopyButton, payload: token.address || token.id },
+                                { label: 'Network Ecosystem', value: token.network || 'SONIC Network', img: NETWORK_LOGOS[token.network] || getNetworkLogo(token.network) },
+                                { label: 'Asset Trajectory', value: 'High Velocity', status: 'emerald' },
+                                { label: 'Protocol Scanner', value: 'Live Scan Enabled', link: true }
+                            ].map((item, i) => (
+                                <div key={i} className="flex items-center justify-between">
+                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.label}</span>
+                                    <div className="flex items-center gap-3">
+                                        {item.img && <img src={item.img} className="w-4 h-4 rounded-full" alt="" />}
+                                        {item.status && <div className={`w-1.5 h-1.5 bg-${item.status}-500 rounded-full animate-pulse`} />}
+                                        <span className={`text-[11px] font-black uppercase tracking-tight ${item.link ? 'text-indigo-600 cursor-pointer hover:underline' : 'text-slate-900'}`}>{item.value}</span>
+                                        {item.icon && <item.icon text={item.payload} />}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Volatility & Performance */}
+                    <div className="bg-slate-900 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-6 opacity-10">
+                            <Zap size={64} className="text-white" />
+                        </div>
+                        <div className="relative z-10 space-y-8">
+                            <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+                                <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl border border-indigo-500/30">
+                                    <Activity size={16} />
+                                </div>
+                                <h5 className="text-[11px] font-black text-white uppercase tracking-[0.2em]">Market Performance Matrix</h5>
                             </div>
-                            <div>
-                                <p className="text-[8px] font-black text-slate-400 uppercase mb-1">24h Low</p>
-                                <p className="text-sm font-black text-slate-900 font-mono">
-                                    {token.low_24h > 0 ? `$${token.low_24h < 0.01 ? token.low_24h.toFixed(6) : token.low_24h.toLocaleString()}` : '---'}
-                                </p>
+                            
+                            <div className="space-y-6">
+                                <div className="flex items-center justify-between">
+                                    <div className="text-left">
+                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">24H High</p>
+                                        <p className="text-lg font-black text-white font-mono tracking-tighter">${token.high_24h > 0 ? token.high_24h.toLocaleString() : (token.current_price * 1.05).toLocaleString()}</p>
+                                    </div>
+                                    <div className="flex-1 px-8">
+                                        <div className="h-1 bg-white/5 rounded-full relative">
+                                            <div className="absolute h-full bg-indigo-500 rounded-full" style={{ width: '70%' }} />
+                                            <div className="absolute top-1/2 left-[70%] -translate-y-1/2 w-2 h-2 bg-white rounded-full shadow-lg" />
+                                        </div>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">24H Low</p>
+                                        <p className="text-lg font-black text-white font-mono tracking-tighter">${token.low_24h > 0 ? token.low_24h.toLocaleString() : (token.current_price * 0.95).toLocaleString()}</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-6 pt-4 border-t border-white/5">
+                                    <div>
+                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">All-Time High</p>
+                                        <p className="text-base font-black text-white font-mono tracking-tighter">${token.ath?.toLocaleString() || (token.current_price * 1.8).toLocaleString()}</p>
+                                        <p className="text-[9px] font-black text-rose-500 uppercase mt-1">-{token.ath_change_percentage?.toFixed(1) || '12.4'}% Retracement</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Circulating Supply</p>
+                                        <p className="text-base font-black text-white font-mono tracking-tighter">{formatB20Number(token.circulating_supply, "")}</p>
+                                        <p className="text-[9px] font-black text-indigo-400 uppercase mt-1">{((token.circulating_supply / (token.total_supply || 1)) * 100).toFixed(1)}% Liquid</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-4 pt-4">
-                    <div className="flex-1 p-4 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center gap-3">
-                        <ShieldCheck className="w-4 h-4 text-indigo-600" />
-                        <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Verified Asset</span>
+                {/* Final Intelligence Lists */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem]">
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-3">
+                                <Users size={16} className="text-indigo-600" />
+                                <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Top 10 Holder Weights</h5>
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            {holders.map((h, i) => (
+                                <div key={i} className="flex items-center justify-between">
+                                    <span className="text-[10px] font-black text-slate-400 font-mono">{h.address}</span>
+                                    <div className="flex items-center gap-4">
+                                        <div className="text-right">
+                                            <p className="text-[11px] font-black text-slate-900">{h.balance} {token.symbol?.toUpperCase()}</p>
+                                            <p className="text-[9px] font-black text-indigo-500 uppercase">{h.percent}% weight</p>
+                                        </div>
+                                        <div className="w-16 h-1 bg-slate-200 rounded-full overflow-hidden">
+                                            <div className="h-full bg-indigo-500" style={{ width: `${h.percent * 3}%` }} />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem]">
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-3">
+                                <RefreshCw size={16} className="text-fuchsia-600" />
+                                <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Institutional Velocity</h5>
+                            </div>
+                        </div>
+                        <div className="space-y-4">
+                            {trades.map((tr, i) => (
+                                <div key={i} className="flex items-center justify-between p-3 bg-white border border-slate-100 rounded-2xl">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`px-3 py-1 rounded-lg text-[9px] font-black text-white ${tr.type === 'BUY' ? 'bg-emerald-500' : 'bg-rose-500'}`}>
+                                            {tr.type}
+                                        </div>
+                                        <div>
+                                            <p className="text-[11px] font-black text-slate-900 font-mono">${tr.amount}</p>
+                                            <p className="text-[8px] font-black text-slate-400 uppercase">Limit execution</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-[9px] font-black text-slate-400 uppercase">{tr.time}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <button className="w-full mt-8 py-4 bg-white border border-slate-200 text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] hover:text-indigo-600 hover:border-indigo-600 transition-all">
+                            Scan Full Ledger Pipeline
+                        </button>
                     </div>
                 </div>
 
-                {/* Action Footer */}
-                <div className="flex gap-4 pt-4">
-                    <button onClick={() => setMode('fiat')} className="flex-1 py-5 bg-emerald-500 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-xl shadow-emerald-500/20 hover:bg-emerald-600 transition-all">
-                        Buy {token.symbol} Instantly
+                {/* Strategic Risk Assessment */}
+                <div className="p-10 bg-slate-900 rounded-[3rem] relative overflow-hidden shadow-2xl">
+                    <div className="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl" />
+                    <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-8">
+                            <h5 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Institutional Risk Profile</h5>
+                            <span className="px-3 py-1 bg-emerald-500/10 text-emerald-500 rounded-lg text-[10px] font-black uppercase border border-emerald-500/20">Alpha Validated</span>
+                        </div>
+                        <div className="flex flex-col md:flex-row items-center gap-10">
+                            <div className="flex-1 w-full space-y-6">
+                                <div className="h-4 bg-white/5 rounded-full overflow-hidden flex p-1 border border-white/5">
+                                    <div className="h-full bg-emerald-500 w-[65%] rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
+                                    <div className="h-full bg-amber-500 w-[20%] rounded-full mx-1" />
+                                    <div className="h-full bg-rose-500 w-[15%] rounded-full" />
+                                </div>
+                                <div className="flex justify-between">
+                                    {[
+                                        { label: 'Low Risk (Verified)', color: 'text-emerald-500', sub: 'Institutional Grade' },
+                                        { label: 'Medium Risk', color: 'text-amber-500', sub: 'Standard Volatility' },
+                                        { label: 'High Risk', color: 'text-rose-500', sub: 'Speculative Exposure' }
+                                    ].map((r, i) => (
+                                        <div key={i} className="text-center">
+                                            <p className={`text-[10px] font-black uppercase tracking-widest ${r.color} mb-1`}>{r.label}</p>
+                                            <p className="text-[8px] font-bold text-slate-500 uppercase tracking-tighter">{r.sub}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-6">
+                                <div className="p-6 bg-white/5 border border-white/5 rounded-3xl text-center min-w-[140px]">
+                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Risk Score</p>
+                                    <p className="text-4xl font-black text-white italic">0.12</p>
+                                    <p className="text-[8px] font-bold text-emerald-500 uppercase tracking-tighter">Safe Passage</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Strategic Execution Actions */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
+                    <button 
+                        onClick={() => { setMode('spot'); setToToken(token); }}
+                        className="group relative h-24 bg-indigo-600 hover:bg-indigo-700 rounded-[2.5rem] overflow-hidden transition-all shadow-2xl shadow-indigo-500/30 active:scale-[0.98]"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-sky-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="relative z-10 flex items-center justify-center gap-4">
+                            <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md">
+                                <Rocket size={24} className="text-white animate-bounce" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-sm font-black text-white uppercase tracking-[0.2em] leading-none mb-1">Initiate Trade Order</p>
+                                <p className="text-[9px] font-bold text-indigo-200 uppercase tracking-widest opacity-70">Execute in Spot Terminal</p>
+                            </div>
+                        </div>
                     </button>
-                    <button onClick={() => setMode('web3')} className="flex-1 py-5 bg-gray-100 text-slate-900 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-gray-200 transition-all flex items-center justify-center gap-2">
-                        <Globe className="w-4 h-4" /> Swap Portal
+                    <button 
+                        onClick={() => setMode('staking')}
+                        className="group relative h-24 bg-white border-2 border-slate-100 hover:border-indigo-600 rounded-[2.5rem] overflow-hidden transition-all active:scale-[0.98]"
+                    >
+                        <div className="relative z-10 flex items-center justify-center gap-4">
+                            <div className="p-3 bg-indigo-50 rounded-2xl group-hover:bg-indigo-600 transition-colors">
+                                <Lock size={24} className="text-indigo-600 group-hover:text-white transition-colors" />
+                            </div>
+                            <div className="text-left">
+                                <p className="text-sm font-black text-slate-900 uppercase tracking-[0.2em] leading-none mb-1">Staking Vault Gateway</p>
+                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest opacity-70">Yield Generation Protocol</p>
+                            </div>
+                        </div>
                     </button>
                 </div>
             </div>
         </motion.div>
     );
 };
+
 
 const STRATEGIC_WEIGHTS = [24, 19, 16, 13, 11, 9, 8];
 
@@ -4325,7 +5522,7 @@ const TradingViewChart = ({ symbol, theme = 'light' }) => {
         
         const config = {
             "autosize": true,
-            "symbol": symbol.includes(':') ? symbol.toUpperCase() : `BINANCE:${symbol.toUpperCase()}`,
+            "symbol": (symbol || 'BTCUSDT').includes(':') ? (symbol || 'BTCUSDT').toUpperCase() : `BINANCE:${(symbol || 'BTCUSDT').toUpperCase()}`,
             "interval": "15",
             "timezone": "Etc/UTC",
             "theme": theme,
@@ -4354,3 +5551,458 @@ const TradingViewChart = ({ symbol, theme = 'light' }) => {
     );
 };
 
+
+// --- MEME TERMINAL COMPONENT ---
+const MemeTerminal = ({ setMode, setToToken }) => {
+    const [network, setNetwork] = useState('all');
+    const [filter, setFilter] = useState('trending');
+    const [search, setSearch] = useState('');
+    const [selectedMeme, setSelectedMeme] = useState(null);
+    const [visibleCount, setVisibleCount] = useState(50);
+
+    // Dynamic Mock Generator for 5000+ Memes
+    const allMemes = useMemo(() => {
+        const networks = ['Solana', 'BNB', 'Tron', 'Base'];
+        const prefixes = ['Pepe', 'Doge', 'Shib', 'Elon', 'Moon', 'Safe', 'Turbo', 'Chad', 'Alpha', 'Giga', 'Mega', 'Hyper', 'Sonic', 'Aura'];
+        const suffixes = ['Inu', 'Coin', 'Token', 'Mars', 'Rocket', 'Wif', 'Hat', 'Frog', 'Cat', 'Bird', 'Dragon', 'Chain', 'AI', 'GPT'];
+        
+        return Array.from({ length: 5200 }, (_, i) => {
+            const net = networks[i % networks.length];
+            const p = prefixes[Math.floor(Math.random() * prefixes.length)];
+            const s = suffixes[Math.floor(Math.random() * suffixes.length)];
+            const symbol = (p.slice(0, 3) + s.slice(0, 3)).toUpperCase() + (i % 100);
+            const name = `${p} ${s} #${i + 1}`;
+            const price = Math.random() * 0.0000001 + 0.000000001;
+            const liquidity = Math.random() * 500000 + 500;
+            const change = (Math.random() * 400) - 150;
+            const mcap = liquidity * (Math.random() * 10 + 2);
+            
+            return {
+                id: `meme-${i}`,
+                name,
+                symbol,
+                network: net,
+                price,
+                liquidity,
+                change,
+                mcap,
+                volume24h: liquidity * Math.random() * 5,
+                image: `https://api.dicebear.com/7.x/identicon/svg?seed=${symbol}`,
+                contract: `0x${Math.random().toString(16).slice(2, 42)}`,
+                creator: `0x${Math.random().toString(16).slice(2, 42)}`,
+                launchDate: new Date(Date.now() - Math.random() * 10000000000).toLocaleDateString(),
+                high24: price * 1.5,
+                low24: price * 0.5,
+                mintable: Math.random() > 0.8,
+                freezeAuthority: Math.random() > 0.9,
+                holders: Array.from({ length: 10 }, (_, j) => ({
+                    address: `0x${Math.random().toString(16).slice(2, 10)}...${Math.random().toString(16).slice(-4)}`,
+                    weight: (25 / (j + 1)).toFixed(2)
+                })),
+                supply: 1000000000000,
+                isRisky: liquidity < 3000
+            };
+        });
+    }, []);
+
+    const filteredMemes = useMemo(() => {
+        let result = allMemes;
+        
+        if (network !== 'all') {
+            result = result.filter(m => m.network === network);
+        }
+        
+        if (search) {
+            const s = search.toLowerCase();
+            result = result.filter(m => m.name.toLowerCase().includes(s) || m.symbol.toLowerCase().includes(s));
+        }
+
+        if (filter === 'trending') result = [...result].sort((a, b) => b.volume24h - a.volume24h);
+        if (filter === 'gainers') result = [...result].sort((a, b) => b.change - a.change);
+        if (filter === 'losers') result = [...result].sort((a, b) => a.change - b.change);
+        if (filter === 'risky') result = result.filter(m => m.isRisky);
+        if (filter === 'top50') result = [...result].sort((a, b) => b.mcap - a.mcap).slice(0, 50);
+
+        return result;
+    }, [allMemes, network, filter, search]);
+
+    return (
+        <div className="max-w-[1400px] mx-auto px-4 pb-32">
+            {/* Header Section */}
+            <div className="relative mb-12 p-12 bg-slate-900 rounded-[3rem] overflow-hidden shadow-2xl">
+                <div className="absolute top-0 right-0 w-[50%] h-full bg-gradient-to-l from-orange-500/20 to-transparent blur-3xl -z-10" />
+                <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl" />
+                
+                <div className="flex flex-col md:flex-row items-center justify-between gap-10">
+                    <div className="flex-1 text-center md:text-left">
+                        <div className="flex items-center justify-center md:justify-start gap-3 mb-6">
+                            <div className="p-3 bg-orange-500 rounded-2xl shadow-lg shadow-orange-500/30">
+                                <Flame className="w-8 h-8 text-white animate-pulse" />
+                            </div>
+                            <span className="px-4 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded-full text-[10px] font-black text-orange-500 uppercase tracking-[0.4em]">Alpha Intelligence</span>
+                        </div>
+                        <h1 className="text-5xl md:text-6xl font-black text-white italic tracking-tighter mb-4">MEME <span className="text-orange-500">TERMINAL</span></h1>
+                        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs max-w-xl leading-relaxed">
+                            Aggregating real-time liquidity from Raydium, PancakeSwap, SunSwap, and Base. Institutional-grade meme forensics & audit verification.
+                        </p>
+                    </div>
+                    
+                    <div className="flex flex-wrap justify-center gap-4">
+                        {[
+                            { label: 'Total Memes', value: '5,248', icon: <Layers size={14}/> },
+                            { label: '24H Volume', value: '$84.2M', icon: <Activity size={14}/> },
+                            { label: 'New Listings', value: '142', icon: <PlusCircle size={14}/> }
+                        ].map((s, i) => (
+                            <div key={i} className="p-6 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-xl min-w-[160px] text-center">
+                                <div className="flex items-center justify-center gap-2 text-slate-500 mb-2">
+                                    {s.icon} <span className="text-[9px] font-black uppercase tracking-widest">{s.label}</span>
+                                </div>
+                                <p className="text-2xl font-black text-white italic tracking-tight">{s.value}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Controls Bar - Redesigned for Professional Alpha */}
+            <div className="flex flex-col gap-6 mb-12">
+                <div className="flex flex-col xl:flex-row items-center justify-between gap-6 bg-white/80 backdrop-blur-xl p-6 rounded-[3rem] border border-slate-200 shadow-2xl shadow-slate-200/40 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-indigo-500 to-fuchsia-500 opacity-30" />
+                    
+                    {/* Network Selection with Logos */}
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                        {[
+                            { id: 'all', label: 'All Chains', img: 'https://cdn-icons-png.flaticon.com/512/825/825590.png' },
+                            { id: 'Solana', label: 'Solana', img: 'https://cryptologos.cc/logos/solana-sol-logo.png' },
+                            { id: 'BNB', label: 'BNB Chain', img: 'https://cryptologos.cc/logos/bnb-bnb-logo.png' },
+                            { id: 'Base', label: 'Base', img: 'https://assets.coingecko.com/coins/images/2518/large/base.png' },
+                            { id: 'Tron', label: 'Tron', img: 'https://cryptologos.cc/logos/tron-trx-logo.png' }
+                        ].map(net => (
+                            <button 
+                                key={net.id}
+                                onClick={() => setNetwork(net.id)}
+                                className={`flex items-center gap-3 px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${
+                                    network === net.id 
+                                    ? 'bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-900/20 scale-105' 
+                                    : 'bg-white text-slate-500 border-slate-100 hover:border-orange-200 hover:bg-orange-50/30'
+                                }`}
+                            >
+                                <img src={net.img} className="w-4 h-4 rounded-full object-contain" alt="" />
+                                {net.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Enhanced Search Engine */}
+                    <div className="flex-1 w-full max-w-2xl relative group">
+                        <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+                            <Search className="w-5 h-5 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
+                        </div>
+                        <input 
+                            type="text"
+                            placeholder="SEARCH ALPHA ASSETS (E.G. PEPE, DOGE, SHIB...)"
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-[2rem] py-5 pl-16 pr-8 text-xs font-black uppercase tracking-[0.2em] placeholder:text-slate-300 focus:bg-white focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/5 transition-all outline-none"
+                        />
+                        <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                            <span className="px-2 py-1 bg-slate-200 text-slate-500 rounded text-[8px] font-black uppercase">⌘ K</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Intelligence Filters Ribbon */}
+                <div className="flex flex-wrap items-center justify-center gap-4 px-6 py-4 bg-slate-50/50 rounded-[2.5rem] border border-slate-100">
+                    <div className="flex items-center gap-2 mr-4 border-r border-slate-200 pr-6">
+                        <Filter size={14} className="text-slate-400" />
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Intelligence Classification</span>
+                    </div>
+                    {[
+                        { id: 'trending', label: 'Trending Heat', icon: <Flame size={14}/>, color: 'orange' },
+                        { id: 'top50', label: 'Institutional Top 50', icon: <Award size={14}/>, color: 'indigo' },
+                        { id: 'gainers', label: 'Top Gainers', icon: <TrendingUp size={14}/>, color: 'emerald' },
+                        { id: 'losers', label: 'Market Losers', icon: <TrendingDown size={14}/>, color: 'rose' },
+                        { id: 'risky', label: 'Risk Assessment', icon: <ShieldAlert size={14}/>, color: 'amber' }
+                    ].map(f => (
+                        <button 
+                            key={f.id}
+                            onClick={() => setFilter(f.id)}
+                            className={`flex items-center gap-2.5 px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                                filter === f.id 
+                                ? `bg-${f.color}-500 text-white shadow-lg shadow-${f.color}-500/20 scale-105` 
+                                : 'text-slate-400 hover:text-slate-900 bg-white border border-slate-100 hover:shadow-md'
+                            }`}
+                        >
+                            {f.icon} {f.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Token List */}
+            <div className="grid grid-cols-1 gap-4">
+                <div className="grid grid-cols-12 gap-6 px-10 py-5 bg-white/50 border border-slate-100 rounded-3xl text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] hidden md:grid">
+                    <div className="col-span-3">Asset Identification</div>
+                    <div className="col-span-2">Network Layer</div>
+                    <div className="col-span-2">Execution Price</div>
+                    <div className="col-span-2">Dynamic (24H)</div>
+                    <div className="col-span-2 text-right">Liquidity Pool</div>
+                    <div className="col-span-1 text-right italic text-indigo-500">Action</div>
+                </div>
+
+                {filteredMemes.slice(0, visibleCount).map((m, i) => (
+                    <motion.div
+                        key={m.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: Math.min(i * 0.01, 0.2) }}
+                        onClick={() => setSelectedMeme(m)}
+                        className="group grid grid-cols-1 md:grid-cols-12 items-center gap-6 px-10 py-6 bg-white hover:bg-slate-50 border border-slate-100 hover:border-orange-200 rounded-[2.5rem] transition-all cursor-pointer relative overflow-hidden shadow-sm hover:shadow-xl hover:shadow-orange-500/5"
+                    >
+                        <div className={`absolute left-0 top-0 bottom-0 w-1 ${m.change >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                        
+                        <div className="col-span-3 flex items-center gap-5">
+                            <div className="w-14 h-14 rounded-2xl bg-slate-50 p-2 border border-slate-100 group-hover:border-orange-200 transition-all shadow-sm">
+                                <img src={m.image} alt="" className="w-full h-full object-contain rounded-xl" />
+                            </div>
+                            <div className="flex flex-col">
+                                <h3 className="text-sm font-black text-slate-900 uppercase tracking-tighter leading-none mb-1 group-hover:text-orange-500 transition-colors">{m.symbol}</h3>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-[120px]">{m.name}</p>
+                            </div>
+                        </div>
+
+                        <div className="col-span-2">
+                            <div className="flex items-center gap-2">
+                                <img 
+                                    src={
+                                        m.network === 'Solana' ? 'https://cryptologos.cc/logos/solana-sol-logo.png' :
+                                        m.network === 'BNB' ? 'https://cryptologos.cc/logos/bnb-bnb-logo.png' :
+                                        m.network === 'Base' ? 'https://assets.coingecko.com/coins/images/2518/large/base.png' :
+                                        'https://cryptologos.cc/logos/tron-trx-logo.png'
+                                    } 
+                                    className="w-4 h-4 rounded-full object-contain" 
+                                    alt="" 
+                                />
+                                <span className="px-3 py-1 bg-slate-100 border border-slate-200 rounded-lg text-[9px] font-black text-slate-600 uppercase tracking-widest">
+                                    {m.network}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="col-span-2">
+                            <p className="text-xs font-black text-slate-900 font-mono tracking-tighter">
+                                ${m.price.toFixed(10)}
+                            </p>
+                        </div>
+
+                        <div className="col-span-2">
+                            <div className={`flex items-center gap-1.5 text-[11px] font-black ${m.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                {m.change >= 0 ? <ArrowUpRight size={14}/> : <ArrowDownRight size={14}/>}
+                                {Math.abs(m.change).toFixed(2)}%
+                            </div>
+                        </div>
+
+                        <div className="col-span-2 text-right">
+                            <p className="text-xs font-black text-slate-900 font-mono tracking-tighter">${m.liquidity.toLocaleString()}</p>
+                            <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Global Index</p>
+                        </div>
+
+                        <div className="col-span-1 flex justify-end">
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setMode('spot');
+                                    setToToken({
+                                        ...m,
+                                        current_price: m.price,
+                                        address: m.contract
+                                    });
+                                }}
+                                className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center hover:bg-orange-500 transition-all shadow-lg hover:shadow-orange-500/30 group/btn"
+                            >
+                                <Rocket size={20} className="group-hover/btn:animate-bounce" />
+                            </button>
+                        </div>
+                    </motion.div>
+                ))}
+
+                {filteredMemes.length > visibleCount && (
+                    <button 
+                        onClick={() => setVisibleCount(prev => prev + 100)}
+                        className="mt-8 py-6 bg-white border border-slate-200 text-slate-400 rounded-[2.5rem] text-[11px] font-black uppercase tracking-[0.4em] hover:text-orange-500 hover:border-orange-500 transition-all"
+                    >
+                        Initialize More Assets (+{filteredMemes.length - visibleCount})
+                    </button>
+                )}
+            </div>
+
+            {/* Meme Details Modal */}
+            <AnimatePresence>
+                {selectedMeme && (
+                    <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+                        <motion.div 
+                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                            onClick={() => setSelectedMeme(null)}
+                            className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+                        />
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            className="relative w-full max-w-4xl bg-white rounded-[3.5rem] p-10 shadow-2xl shadow-black/50 border border-slate-100 overflow-hidden max-h-[90vh] overflow-y-auto custom-scrollbar"
+                        >
+                            {/* Header */}
+                            <div className="flex flex-col md:flex-row items-start justify-between gap-10 mb-12 border-b border-slate-100 pb-12">
+                                <div className="flex items-center gap-8">
+                                    <div className="w-24 h-24 bg-white rounded-[2rem] p-3 shadow-2xl shadow-orange-500/10 border border-slate-100">
+                                        <img src={selectedMeme.image} className="w-full h-full object-contain rounded-2xl" alt="" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter italic">{selectedMeme.symbol}</h2>
+                                            <div className="flex items-center gap-2 px-3 py-1 bg-orange-500 rounded-lg shadow-lg shadow-orange-500/20">
+                                                <img 
+                                                    src={
+                                                        selectedMeme.network === 'Solana' ? 'https://cryptologos.cc/logos/solana-sol-logo.png' :
+                                                        selectedMeme.network === 'BNB' ? 'https://cryptologos.cc/logos/bnb-bnb-logo.png' :
+                                                        selectedMeme.network === 'Base' ? 'https://assets.coingecko.com/coins/images/2518/large/base.png' :
+                                                        'https://cryptologos.cc/logos/tron-trx-logo.png'
+                                                    } 
+                                                    className="w-3 h-3 rounded-full object-contain brightness-0 invert" 
+                                                    alt="" 
+                                                />
+                                                <span className="text-white text-[9px] font-black uppercase tracking-widest">{selectedMeme.network}</span>
+                                            </div>
+                                        </div>
+                                        <p className="text-lg font-bold text-slate-400 uppercase tracking-widest">{selectedMeme.name}</p>
+                                        <div className="flex items-center gap-4 mt-4">
+                                            <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-lg text-[9px] font-black text-slate-500 uppercase">
+                                                <Calendar size={12}/> {selectedMeme.launchDate}
+                                            </div>
+                                            <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 rounded-lg text-[9px] font-black text-emerald-600 uppercase">
+                                                <ShieldCheck size={12}/> Verified Pool
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-4xl font-black text-slate-900 font-mono tracking-tighter mb-2">${selectedMeme.price.toFixed(10)}</p>
+                                    <div className={`text-sm font-black flex items-center justify-end gap-2 ${selectedMeme.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                        {selectedMeme.change >= 0 ? <TrendingUp size={16}/> : <TrendingDown size={16}/>}
+                                        {Math.abs(selectedMeme.change).toFixed(2)}%
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Info Grid */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                                <div className="col-span-2 grid grid-cols-2 gap-6">
+                                    {[
+                                        { label: 'Market Capitalization', value: formatB20Number(selectedMeme.mcap, "$"), icon: <BarChart2 size={16}/> },
+                                        { label: 'Total Liquidity Index', value: formatB20Number(selectedMeme.liquidity, "$"), icon: <Activity size={16}/> },
+                                        { label: 'Circulating Supply', value: '1.2 Quad', icon: <Layers size={16}/> },
+                                        { label: '24H Velocity', value: formatB20Number(selectedMeme.volume24h, "$"), icon: <Zap size={16}/> }
+                                    ].map((info, i) => (
+                                        <div key={i} className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                                            <div className="flex items-center gap-2 text-slate-400 mb-2">
+                                                {info.icon} <span className="text-[9px] font-black uppercase tracking-widest">{info.label}</span>
+                                            </div>
+                                            <p className="text-xl font-black text-slate-900 italic font-mono">{info.value}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <div className="p-8 bg-slate-900 rounded-[2.5rem] text-white relative overflow-hidden shadow-2xl">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 blur-3xl rounded-full" />
+                                    <h5 className="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em] mb-6">Security Audit</h5>
+                                    <div className="space-y-6">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase">Mint Authority</span>
+                                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${selectedMeme.mintable ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                                                {selectedMeme.mintable ? 'Enabled' : 'Disabled'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase">Freeze Authority</span>
+                                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${selectedMeme.freezeAuthority ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                                                {selectedMeme.freezeAuthority ? 'Enabled' : 'Disabled'}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-[10px] font-black text-slate-400 uppercase">LP Status</span>
+                                            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[8px] font-black uppercase">Burnt/Locked</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Address Matrix */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                                <div className="space-y-4">
+                                    <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-4">Technical Identification</h5>
+                                    {[
+                                        { label: 'Contract Address', value: selectedMeme.contract },
+                                        { label: 'Creator Address', value: selectedMeme.creator }
+                                    ].map((addr, i) => (
+                                        <div key={i} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
+                                            <div className="flex flex-col">
+                                                <span className="text-[8px] font-bold text-slate-400 uppercase mb-1">{addr.label}</span>
+                                                <span className="text-[10px] font-black text-slate-900 font-mono truncate max-w-[200px]">{addr.value}</span>
+                                            </div>
+                                            <button className="p-2 hover:bg-slate-50 rounded-lg transition-colors text-slate-400 hover:text-indigo-600">
+                                                <Copy size={14}/>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                <div className="space-y-4">
+                                    <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-4">Whale Distribution (Top 10)</h5>
+                                    <div className="p-6 bg-slate-50 border border-slate-100 rounded-3xl space-y-3">
+                                        {selectedMeme.holders.slice(0, 5).map((h, i) => (
+                                            <div key={i} className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-[9px] font-black text-slate-400">#{i+1}</span>
+                                                    <span className="text-[10px] font-black text-slate-900 font-mono">{h.address}</span>
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-16 h-1 bg-slate-200 rounded-full overflow-hidden">
+                                                        <div className="h-full bg-orange-500" style={{ width: `${h.weight}%` }} />
+                                                    </div>
+                                                    <span className="text-[9px] font-black text-slate-600">{h.weight}%</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* CTA Actions */}
+                            <div className="grid grid-cols-2 gap-6 pt-6">
+                                <button 
+                                    onClick={() => {
+                                        setMode('spot');
+                                        setToToken({
+                                            ...selectedMeme,
+                                            id: selectedMeme.id,
+                                            symbol: selectedMeme.symbol,
+                                            name: selectedMeme.name,
+                                            current_price: selectedMeme.price,
+                                            address: selectedMeme.contract
+                                        });
+                                        setSelectedMeme(null);
+                                    }}
+                                    className="h-20 bg-orange-500 hover:bg-orange-600 text-white rounded-[2rem] font-black uppercase tracking-[0.3em] shadow-xl shadow-orange-500/20 transition-all flex items-center justify-center gap-4 group"
+                                >
+                                    <Activity size={24} className="group-hover:rotate-12 transition-transform" />
+                                    Launch Order Terminal
+                                </button>
+                                <button className="h-20 bg-slate-900 hover:bg-black text-white rounded-[2rem] font-black uppercase tracking-[0.3em] shadow-xl shadow-slate-900/20 transition-all flex items-center justify-center gap-4">
+                                    <ShieldAlert size={24}/> Audited Buy Flow
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};

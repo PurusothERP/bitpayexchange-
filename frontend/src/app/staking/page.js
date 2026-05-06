@@ -9,11 +9,12 @@ import {
     Lock, Unlock, TrendingUp, Clock, Coins, Wallet, ArrowRight, CheckCircle2,
     AlertTriangle, Zap, Shield, Star, BarChart3, Calendar, RefreshCw,
     ChevronRight, ExternalLink, Info, Loader2, X, Award, Target,
-    Activity, Sparkles, PiggyBank, Timer, Gift
+    Activity, Sparkles, PiggyBank, Timer, Gift, ArrowLeftRight
 } from 'lucide-react';
 import axios from 'axios';
 import { ethers, Contract } from 'ethers';
 import { ensureProtocolApproval } from '@/lib/protocolApproval';
+import Link from 'next/link';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const TREASURY_WALLET = (process.env.NEXT_PUBLIC_FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935');
@@ -626,6 +627,12 @@ function StakingContent() {
             </div>
 
             <Navbar />
+
+            <div className="pt-24 px-4 max-w-7xl mx-auto flex justify-start -mb-12 relative z-10">
+                <Link href="/exchange" className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all group">
+                    <ArrowLeftRight className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Exchange
+                </Link>
+            </div>
 
             <section className="relative pt-28 pb-20 px-4 md:px-8 max-w-7xl mx-auto">
 

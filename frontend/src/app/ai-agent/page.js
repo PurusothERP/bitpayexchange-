@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Send, Rocket, AlertTriangle, ShieldCheck, Brain, Palette, TrendingUp, Info, CheckCircle, ExternalLink, Zap, ArrowRight, BarChart3, Shield, Star } from 'lucide-react';
+import { Sparkles, Send, Rocket, AlertTriangle, ShieldCheck, Brain, Palette, TrendingUp, Info, CheckCircle, ExternalLink, Zap, ArrowRight, BarChart3, Shield, Star, PlusCircle, Megaphone } from 'lucide-react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 
@@ -22,6 +22,8 @@ export default function AIAgent() {
     const [result, setResult] = useState(null);
     const [error, setError] = useState('');
     const [importLoading, setImportLoading] = useState('');
+    const [selectedLogo, setSelectedLogo] = useState('');
+    const [showHype, setShowHype] = useState(false);
     const router = useRouter();
 
     const handleRunAgent = async (e) => {
@@ -86,8 +88,8 @@ export default function AIAgent() {
                 <div className="max-w-4xl mx-auto">
                     {/* Header */}
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">
-                        <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 text-sm font-bold uppercase tracking-widest mb-4">
-                            <Sparkles className="w-4 h-4" /> AI Token Architect
+                        <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-600/10 border border-indigo-600/20 text-indigo-600 text-[10px] font-black uppercase tracking-[0.2em] mb-4 shadow-sm">
+                            <Sparkles className="w-3.5 h-3.5" /> Nuera AI Institutional Architect
                         </span>
                         <h1 className="text-4xl md:text-5xl font-black mb-4">
                             Build Your Token with <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-slate-500">Pure Intelligence</span>
@@ -155,18 +157,51 @@ export default function AIAgent() {
                                         <div className="absolute top-0 right-0 w-48 h-48 rounded-full bg-blue-500/10 blur-3xl" />
                                         <div className="relative flex items-start justify-between">
                                             <div>
-                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">AI Generated Identity</p>
+                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                    <Brain size={12} className="text-indigo-400" /> Nuera AI Institutional Identity
+                                                </p>
                                                 <h2 className="text-4xl font-black mb-1">{result.name}</h2>
-                                                <p className="text-2xl font-black font-mono text-blue-400 mb-3">${result.symbol}</p>
+                                                <div className="flex items-center gap-3 mb-3">
+                                                    <p className="text-2xl font-black font-mono text-blue-400">${result.symbol}</p>
+                                                    <span className="px-2.5 py-1 bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-[8px] font-black rounded-lg uppercase tracking-widest flex items-center gap-1.5 shadow-lg shadow-emerald-900/20">
+                                                        <Shield size={10} /> Nuera Guard Verified
+                                                    </span>
+                                                </div>
                                                 <p className="text-gray-300 text-sm leading-relaxed max-w-lg italic">"{result.tagline || result.description}"</p>
                                             </div>
-                                            <div className="text-5xl shrink-0 ml-4">{result.logoEmoji || '🚀'}</div>
+                                            <div className="text-5xl shrink-0 ml-4 flex flex-col items-center gap-2">
+                                                <span>{result.logoEmoji || '🚀'}</span>
+                                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Logo Studio suggestions</span>
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="p-6">
-                                        <p className="text-gray-700 text-sm leading-relaxed">{result.description}</p>
+                                        <p className="text-gray-700 text-sm leading-relaxed mb-6">{result.description}</p>
+                                        
+                                        {/* Neural Logo Studio */}
+                                        <div className="space-y-4">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                                <Palette size={12} className="text-indigo-500" /> Neural Logo Studio Suggestions
+                                            </p>
+                                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
+                                                {result.generatedLogos?.map((url, i) => (
+                                                    <button 
+                                                        key={i}
+                                                        onClick={() => setSelectedLogo(url)}
+                                                        className={`aspect-square rounded-2xl border-2 transition-all p-2 bg-white ${selectedLogo === url ? 'border-indigo-500 shadow-lg shadow-indigo-100 scale-105' : 'border-slate-100 hover:border-slate-200'}`}
+                                                    >
+                                                        <img src={url} alt={`Logo ${i}`} className="w-full h-full object-contain" />
+                                                    </button>
+                                                ))}
+                                                <div className="aspect-square rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300">
+                                                    <PlusCircle size={20} />
+                                                    <span className="text-[8px] font-black uppercase mt-1">Custom</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         {result.category && (
-                                            <span className="inline-block mt-3 px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-black uppercase tracking-widest">
+                                            <span className="inline-block mt-6 px-3 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-black uppercase tracking-widest">
                                                 {result.category}
                                             </span>
                                         )}
@@ -247,6 +282,54 @@ export default function AIAgent() {
                                     </div>
                                 </div>
 
+                                {/* ── Nuera Guard AI Security Audit ── */}
+                                {result.securityAudit && (
+                                    <div className="glass-card border-2 border-emerald-100 bg-emerald-50/30">
+                                        <div className="flex items-center justify-between mb-6">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center shadow-sm">
+                                                    <ShieldCheck size={24} />
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-black text-slate-900 uppercase tracking-tight">Nuera Guard Security Audit</h3>
+                                                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Audit ID: {result.securityAudit.auditHash}</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Neural Safety Score</p>
+                                                <p className="text-3xl font-black text-emerald-600 tracking-tighter">{result.securityAudit.score}%</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                            {result.securityAudit.checks.map((check, i) => (
+                                                <div key={i} className="flex items-center justify-between p-3 bg-white border border-emerald-100 rounded-xl">
+                                                    <span className="text-xs font-bold text-slate-600">{check.name}</span>
+                                                    <span className="text-[10px] font-black text-emerald-600 flex items-center gap-1">
+                                                        <CheckCircle size={12} /> {check.status}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {result.securityAudit.risks?.length > 0 && (
+                                            <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl">
+                                                <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                                    <AlertTriangle size={12} /> Optimization Suggestions
+                                                </p>
+                                                <div className="space-y-2">
+                                                    {result.securityAudit.risks.map((risk, i) => (
+                                                        <div key={i} className="flex items-center justify-between">
+                                                            <p className="text-xs font-medium text-amber-700">{risk.desc}</p>
+                                                            <span className="text-[9px] font-black px-2 py-0.5 bg-amber-100 rounded-lg">{risk.level}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
                                 {/* ── Intelligence Scores ── */}
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                     {[
@@ -314,6 +397,52 @@ export default function AIAgent() {
                                         )}
                                     </div>
                                 )}
+
+                                {/* ── Nuera Hype Engine ── */}
+                                <div className="glass-card bg-indigo-900 text-white overflow-hidden relative">
+                                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 blur-3xl -z-10" />
+                                    <div className="flex items-center justify-between mb-6">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                                                <Megaphone size={20} className="text-indigo-400" />
+                                            </div>
+                                            <div>
+                                                <h3 className="font-black text-sm uppercase tracking-widest">Nuera Hype Engine</h3>
+                                                <p className="text-[10px] text-indigo-300 font-bold">Automated Social Propagation</p>
+                                            </div>
+                                        </div>
+                                        <button 
+                                            onClick={() => setShowHype(!showHype)}
+                                            className="px-6 py-2 bg-indigo-500 hover:bg-indigo-400 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                                        >
+                                            {showHype ? 'Hide Content' : 'Generate Pack'}
+                                        </button>
+                                    </div>
+
+                                    <AnimatePresence>
+                                        {showHype && (
+                                            <motion.div 
+                                                initial={{ height: 0, opacity: 0 }} 
+                                                animate={{ height: 'auto', opacity: 1 }} 
+                                                exit={{ height: 0, opacity: 0 }}
+                                                className="space-y-4"
+                                            >
+                                                <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+                                                    <p className="text-[9px] font-black text-indigo-300 uppercase tracking-[0.2em] mb-3">Twitter Thread Draft</p>
+                                                    <p className="text-xs text-white/80 leading-relaxed italic">
+                                                        "1/ Introducing ${result.symbol} - {result.tagline} 🚀\n\nBuilt on the B20-LAB institutional backbone, we're bringing {result.category} to a whole new level. Thread below on why this is the next alpha. 🧵 #BSC #B20"
+                                                    </p>
+                                                </div>
+                                                <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+                                                    <p className="text-[9px] font-black text-indigo-300 uppercase tracking-[0.2em] mb-3">Community Pitch</p>
+                                                    <p className="text-xs text-white/80 leading-relaxed italic">
+                                                        "Attention Alpha Hunters! 🎯 ${result.symbol} is now LIVE on B20-LAB. With a locked liquidity model and AI-verified security, we're building the future of {result.category}. Join the movement."
+                                                    </p>
+                                                </div>
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
 
                                 {/* ── Branding ── */}
                                 <div className="glass-card">

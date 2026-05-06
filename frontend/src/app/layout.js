@@ -9,7 +9,7 @@ import MobileBottomNav from "@/components/MobileBottomNav";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-  title: "B20- Exchange | Intelligence Hub",
+  title: "Mexapay | Intelligence Hub",
   description: "Institutional-grade market data, Traders Hub, and automated high-yield staking on BNB Smart Chain.",
 };
 

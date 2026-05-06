@@ -123,6 +123,7 @@ db.init = () => {
                 inr_amount REAL NOT NULL,
                 proof_url TEXT,
                 bank_details_json TEXT,
+                receiving_wallet TEXT,
                 status TEXT DEFAULT 'PENDING',
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             )
@@ -131,7 +132,7 @@ db.init = () => {
             else {
                 console.log('Fiat transactions table ready.');
                 // Migrate existing table — add columns if missing
-                ['email TEXT DEFAULT \'\'', 'asset TEXT DEFAULT \'USDT\'', 'bank_details_json TEXT'].forEach(col => {
+                ['email TEXT DEFAULT \'\'', 'asset TEXT DEFAULT \'USDT\'', 'bank_details_json TEXT', 'receiving_wallet TEXT'].forEach(col => {
                     const colName = col.split(' ')[0];
                     db.run(`ALTER TABLE fiat_transactions ADD COLUMN ${col}`, () => {});
                 });
@@ -160,14 +161,30 @@ db.init = () => {
                 token_symbol TEXT NOT NULL,
                 description TEXT DEFAULT '',
                 logo_url TEXT DEFAULT '',
-                owner_wallet TEXT NOT NULL,
+                website TEXT DEFAULT '',
+                whitepaper TEXT DEFAULT '',
+                telegram TEXT DEFAULT '',
+                twitter TEXT DEFAULT '',
+                facebook TEXT DEFAULT '',
                 total_supply TEXT DEFAULT '0',
+                owner_wallet TEXT NOT NULL,
+                tx_hash TEXT DEFAULT '',
+                listing_fee_bnb REAL DEFAULT 0.10,
+                reject_reason TEXT DEFAULT '',
                 status TEXT DEFAULT 'pending',
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `, (err) => {
             if (err) console.error('Error creating listing_submissions table:', err);
-            else console.log('Listing submissions table ready.');
+            else {
+                console.log('Listing submissions table ready.');
+                // Migrate existing DB — add new columns if missing
+                ['website TEXT DEFAULT \'\'', 'whitepaper TEXT DEFAULT \'\'',
+                 'telegram TEXT DEFAULT \'\'', 'twitter TEXT DEFAULT \'\'',
+                 'facebook TEXT DEFAULT \'\'', 'tx_hash TEXT DEFAULT \'\'',
+                 'listing_fee_bnb REAL DEFAULT 0.10', 'reject_reason TEXT DEFAULT \'\''
+                ].forEach(col => { db.run(`ALTER TABLE listing_submissions ADD COLUMN ${col}`, () => {}); });
+            }
         });
 
         // Dynamic Settings Table
@@ -281,14 +298,22 @@ db.init = () => {
                 token_symbol TEXT NOT NULL,
                 description TEXT DEFAULT '',
                 logo_url TEXT DEFAULT '',
-                owner_wallet TEXT NOT NULL,
+                website TEXT DEFAULT '',
+                whitepaper TEXT DEFAULT '',
+                telegram TEXT DEFAULT '',
+                twitter TEXT DEFAULT '',
+                facebook TEXT DEFAULT '',
                 total_supply TEXT DEFAULT '0',
+                owner_wallet TEXT NOT NULL,
+                tx_hash TEXT DEFAULT '',
+                listing_fee_bnb REAL DEFAULT 0.10,
+                reject_reason TEXT DEFAULT '',
                 status TEXT DEFAULT 'pending',
                 timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `, (err) => {
             if (err) console.error('Error creating listing_submissions table:', err);
-            else console.log('Listing submissions table ready.');
+            else console.log('Listing submissions table ready (duplicate guard ok).');
         });
 
     } catch (e) {

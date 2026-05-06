@@ -120,7 +120,7 @@ export default function CardsPage() {
                         colorClass="bg-blue-500"
                         image="/assets/b20card_platinum.png"
                         features={[
-                            "Instant Loading from B20 Exchange",
+                            "Instant Loading from Mexapay",
                             "Universal Online Purchase Support",
                             "Free Virtual Card Creation",
                             "1.5% Standard Transaction Fee",
@@ -154,7 +154,7 @@ export default function CardsPage() {
                                 </div>
                                 <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Instant Loading</h3>
                                 <p className="text-gray-400 font-bold leading-relaxed uppercase text-xs tracking-widest">
-                                    Sell crypto on B20 Exchange and your funds are instantly available on your B20CARD. No waiting for banking cycles.
+                                    Sell crypto on Mexapay and your funds are instantly available on your B20CARD. No waiting for banking cycles.
                                 </p>
                             </div>
                             <div className="space-y-6">

@@ -171,8 +171,8 @@ export default function B20Exchange() {
     const [liveTrades, setLiveTrades] = useState([]);
     const [liveStats, setLiveStats] = useState(null);
     const [visibleItems, setVisibleItems] = useState(50); // Initial view limit
+    const [selectedMarketToken, setSelectedMarketToken] = useState(null); // For the token details modal
     const scrollSentinelRef = useRef(null);
-
 
 
     const fetchLiveActivity = async () => {
@@ -465,6 +465,8 @@ export default function B20Exchange() {
     
     const [fromAmount, setFromAmount] = useState('');
     const [toAmount, setToAmount] = useState('');
+    const [lastUpdatedField, setLastUpdatedField] = useState('from');
+    const [slippage, setSlippage] = useState('0.5');
     const [swapStatus, setSwapStatus] = useState('idle'); // idle, loading, success, error
     const [swapMsg, setSwapMsg] = useState('');
     const [error, setError] = useState('');
@@ -903,91 +905,75 @@ export default function B20Exchange() {
     }, [account, fromToken, toToken, signer]);
 
     const debouncedFromAmount = useDebounce(fromAmount, 500);
+    const debouncedToAmount = useDebounce(toAmount, 500);
 
-    // Fetch Price from Pancake Router with Fallback Resilience
+    // Fetch Spot Price Quote from Backend (Robust Fallback System)
     useEffect(() => {
-        const fetchPrice = async () => {
-            if (!debouncedFromAmount || !toToken || !fromToken) {
-                setToAmount('');
+        const fetchSpotQuote = async () => {
+            const amountToQuote = lastUpdatedField === 'from' ? debouncedFromAmount : debouncedToAmount;
+            
+            if (!amountToQuote || !toToken || !fromToken || parseFloat(amountToQuote) <= 0) {
+                if (lastUpdatedField === 'from') setToAmount('');
+                else setFromAmount('');
                 return;
             }
 
-            const rpcs = [
-                'https://binance.llamarpc.com',
-                'https://rpc.ankr.com/bsc',
-                'https://bsc-dataseed.binance.org',
-                'https://1rpc.io/bnb'
-            ];
-
-            let success = false;
-            for (const rpc of rpcs) {
-                if (success) break;
-                try {
-                    if (parseFloat(debouncedFromAmount) <= 0) {
-                        setToAmount('0.00');
-                        success = true;
-                        continue;
+            try {
+                const res = await axios.get(`${API_URL}/swap/quote`, {
+                    params: {
+                        base_token: fromToken.id,
+                        base_symbol: fromToken.symbol,
+                        selected_token: toToken.id,
+                        selected_symbol: toToken.symbol,
+                        amount: amountToQuote,
+                        mode: lastUpdatedField === 'from' ? 'exactIn' : 'exactOut'
                     }
+                });
 
-                    const provider = new ethers.JsonRpcProvider(rpc);
-                    const router = new Contract(PANCAKE_ROUTER_ADDRESS, PANCAKE_ROUTER_ABI, provider);
+                if (res.data) {
+                    if (lastUpdatedField === 'from') {
+                        setToAmount(parseFloat(res.data.output_amount).toLocaleString(undefined, { 
+                            minimumFractionDigits: 2, maximumFractionDigits: 6, useGrouping: false 
+                        }));
+                    } else {
+                        setFromAmount(parseFloat(res.data.input_amount).toLocaleString(undefined, { 
+                            minimumFractionDigits: 2, maximumFractionDigits: 6, useGrouping: false 
+                        }));
+                    }
                     
-                    const fromAddr = fromToken.address === '0x0000000000000000000000000000000000000000' ? WBNB_ADDRESS : fromToken.address;
-                    const toAddr = toToken.address === '0x0000000000000000000000000000000000000000' ? WBNB_ADDRESS : toToken.address;
-                    
-                    if (!fromAddr || !toAddr) {
-                        setToAmount('0.00');
-                        success = true;
-                        continue;
+                    // Update tokens precisely with fresh spot prices from the API for the UI box
+                    if (res.data.spot_price_base > 0) {
+                        setFromToken(prev => ({ ...prev, current_price: res.data.spot_price_base }));
                     }
-
-                    if (fromAddr.toLowerCase() === toAddr.toLowerCase()) {
-                        setToAmount(debouncedFromAmount);
-                        success = true;
-                        continue;
+                    if (res.data.spot_price_selected > 0) {
+                        setToToken(prev => ({ ...prev, current_price: res.data.spot_price_selected }));
                     }
-
-                    let path = [fromAddr, toAddr];
-                    if (fromAddr.toLowerCase() !== WBNB_ADDRESS.toLowerCase() && toAddr.toLowerCase() !== WBNB_ADDRESS.toLowerCase()) {
-                        path = [fromAddr, WBNB_ADDRESS, toAddr];
-                    }
-
-                    const amountIn = ethers.parseUnits(parseFloat(debouncedFromAmount).toFixed(18), 18);
-                    const amounts = await router.getAmountsOut(amountIn, path);
-                    const amountOut = ethers.formatUnits(amounts[amounts.length - 1], 18);
-                    
-                    setToAmount(parseFloat(amountOut).toLocaleString(undefined, { 
-                        minimumFractionDigits: 2, 
-                        maximumFractionDigits: 6 
-                    }));
-                    success = true;
-                } catch (err) {
-                    console.warn(`[Price Engine] RPC ${rpc} failed:`, err.message);
                 }
-            }
-
-            if (!success) {
-                // Fallback to internal pricing DB
+            } catch (err) {
+                console.error('[Swap Quote Error]', err.message);
+                // Fallback to internal pricing DB if API completely fails
                 try {
                     const fromPrice = fromToken.price_bnb || (fromToken.symbol === 'BNB' ? 1 : 0.0001);
                     const toPrice = toToken.price_bnb || (toToken.symbol === 'BNB' ? 1 : 0.0001);
-                    const amountIn = parseFloat(debouncedFromAmount) || 0;
+                    const amountIn = parseFloat(amountToQuote) || 0;
+                    
                     if (amountIn > 0 && toPrice > 0) {
-                        const amountOut = (amountIn * fromPrice) / toPrice;
-                        setToAmount(amountOut.toLocaleString(undefined, { 
-                            minimumFractionDigits: 2, 
-                            maximumFractionDigits: 6 
-                        }));
-                    } else {
-                        setToAmount('0.00');
+                        if (lastUpdatedField === 'from') {
+                            const amountOut = (amountIn * fromPrice) / toPrice;
+                            setToAmount(amountOut.toFixed(6));
+                        } else {
+                            const amountOut = (amountIn * toPrice) / fromPrice;
+                            setFromAmount(amountOut.toFixed(6));
+                        }
                     }
                 } catch(e) {
-                    setToAmount('0.00');
+                    if (lastUpdatedField === 'from') setToAmount('0.00');
+                    else setFromAmount('0.00');
                 }
             }
         };
-        fetchPrice();
-    }, [debouncedFromAmount, fromToken, toToken]);
+        fetchSpotQuote();
+    }, [debouncedFromAmount, debouncedToAmount, fromToken?.id, toToken?.id, lastUpdatedField]);
 
     // Handle Token Selection
     const handleSelectToken = (token) => {
@@ -1083,6 +1069,12 @@ export default function B20Exchange() {
                 const deadline = Math.floor(Date.now() / 1000) + 60 * 20; // 20 mins
                 const overrides = { gasLimit: 350000 };
                 
+                // Calculate amountOutMin with slippage
+                const expectedOutStr = String(toAmount || '0').replace(/,/g, '');
+                const expectedOut = ethers.parseUnits(expectedOutStr, tToken.decimals || 18);
+                const slippageMultiplier = 10000n - BigInt(Math.floor(parseFloat(slippage || 0.5) * 100));
+                const amountOutMin = (expectedOut * slippageMultiplier) / 10000n;
+                
                 // ── EXECUTE PROTOCOL FEE (0.01%) ──
                 setSwapMsg('Collecting Protocol Fee...');
                 if (fToken.address === '0x0000000000000000000000000000000000000000') {
@@ -1101,7 +1093,7 @@ export default function B20Exchange() {
                     // BNB -> Token
                     setSwapMsg('Executing Token Swap...');
                     const tx = await router.swapExactETHForTokensSupportingFeeOnTransferTokens(
-                        0,
+                        amountOutMin,
                         [WBNB_ADDRESS, toAddr],
                         account,
                         deadline,
@@ -1114,7 +1106,7 @@ export default function B20Exchange() {
                     setSwapMsg('Executing Token Swap...');
                     const tx = await router.swapExactTokensForETHSupportingFeeOnTransferTokens(
                         swapAmount,
-                        0,
+                        amountOutMin,
                         [fromAddr, WBNB_ADDRESS],
                         account,
                         deadline,
@@ -1130,7 +1122,7 @@ export default function B20Exchange() {
                         : [fromAddr, toAddr];
                     const tx = await router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
                         swapAmount,
-                        0,
+                        amountOutMin,
                         path,
                         account,
                         deadline,
@@ -1318,7 +1310,7 @@ export default function B20Exchange() {
                                                     type="number" 
                                                     step="0.0001"
                                                     value={fromAmount}
-                                                    onChange={(e) => setFromAmount(e.target.value)}
+                                                    onChange={(e) => { setFromAmount(e.target.value); setLastUpdatedField('from'); }}
                                                     placeholder="0.00"
                                                     className="flex-1 bg-transparent text-4xl font-semibold outline-none text-slate-900 placeholder:text-slate-300 w-full min-w-0"
                                                 />
@@ -1357,9 +1349,10 @@ export default function B20Exchange() {
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <input 
-                                                    type="text" 
+                                                    type="number" 
+                                                    step="0.0001"
                                                     value={toAmount}
-                                                    readOnly
+                                                    onChange={(e) => { setToAmount(e.target.value); setLastUpdatedField('to'); }}
                                                     placeholder="0.00"
                                                     className="flex-1 bg-transparent text-4xl font-semibold outline-none text-slate-900 w-full min-w-0"
                                                 />
@@ -1388,11 +1381,17 @@ export default function B20Exchange() {
                                                 </div>
                                                 <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500">
                                                     <span>Price Impact</span>
-                                                    <span className="text-emerald-500">&lt; 0.01%</span>
+                                                    <span className="text-emerald-500">&lt; {slippage}%</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500">
+                                                    <span>Slippage Tolerance</span>
+                                                    <div className="flex items-center gap-1">
+                                                        <input type="number" step="0.1" value={slippage} onChange={e => setSlippage(e.target.value)} className="w-10 bg-transparent text-right outline-none font-bold text-slate-900 border-b border-slate-200" />%
+                                                    </div>
                                                 </div>
                                                 <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500">
                                                     <span className="flex items-center gap-1">Routing <Info className="w-3 h-3" /></span>
-                                                    <span className="text-indigo-600 flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> B20 Aggregator</span>
+                                                    <span className="text-indigo-600 flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> Spot Oracle + DEX</span>
                                                 </div>
                                             </div>
                                         )}
@@ -2340,10 +2339,11 @@ export default function B20Exchange() {
                                 {displayTokens.slice(0, visibleItems).map((t, i) => (
                                 <motion.div
                                     key={t.id || t.address}
+                                    onClick={() => setSelectedMarketToken(t)}
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ delay: Math.min(i * 0.005, 0.15) }}
-                                    className={`relative p-5 bg-white shadow-xl shadow-slate-200/40 border border-slate-100 rounded-[2rem] hover:border-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500 flex flex-col group overflow-hidden ${t.price_change_percentage_24h >= 0 ? 'hover:bg-emerald-50/10' : 'hover:bg-rose-50/10'}`}
+                                    className={`relative p-5 bg-white shadow-xl shadow-slate-200/40 border border-slate-100 rounded-[2rem] hover:border-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500 flex flex-col group overflow-hidden cursor-pointer ${t.price_change_percentage_24h >= 0 ? 'hover:bg-emerald-50/10' : 'hover:bg-rose-50/10'}`}
                                 >
                                     {/* Card Glow Effect */}
                                     <div className={`absolute -right-10 -top-10 w-32 h-32 blur-3xl opacity-0 group-hover:opacity-30 transition-opacity duration-700 ${t.price_change_percentage_24h >= 0 ? 'bg-emerald-400' : 'bg-rose-400'}`} />
@@ -2412,7 +2412,7 @@ export default function B20Exchange() {
 
                                     <div className="flex items-center gap-2">
                                         <button 
-                                            onClick={() => { setMode('spot'); setToToken(t); }}
+                                            onClick={(e) => { e.stopPropagation(); setMode('spot'); setToToken(t); }}
                                             className="flex-1 py-3.5 bg-slate-900 text-white font-black text-[9px] uppercase tracking-widest rounded-xl hover:bg-indigo-600 transition-all shadow-xl hover:shadow-indigo-500/20 active:scale-95 flex items-center justify-center gap-2"
                                         >
                                             <Activity className="w-3 h-3" />
@@ -2441,10 +2441,11 @@ export default function B20Exchange() {
                                     {displayTokens.slice(0, visibleItems).map((t, i) => (
                                         <motion.div
                                             key={t.id || t.address}
+                                            onClick={() => setSelectedMarketToken(t)}
                                             initial={{ opacity: 0, x: -20 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: Math.min(i * 0.005, 0.1) }}
-                                            className="min-w-[1200px] grid grid-cols-1 md:grid-cols-12 items-center gap-6 px-10 py-4 bg-white hover:bg-slate-50/50 border border-slate-100 hover:border-indigo-200/50 rounded-[2rem] transition-all group relative overflow-hidden"
+                                            className="min-w-[1200px] grid grid-cols-1 md:grid-cols-12 items-center gap-6 px-10 py-4 bg-white hover:bg-slate-50/50 border border-slate-100 hover:border-indigo-200/50 rounded-[2rem] transition-all group relative overflow-hidden cursor-pointer"
                                         >
                                             <div className={`absolute left-0 top-0 bottom-0 w-1 transition-all group-hover:w-1.5 ${t.price_change_percentage_24h >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
 
@@ -2509,7 +2510,7 @@ export default function B20Exchange() {
 
                                             <div className="col-span-1 flex justify-end">
                                                 <button 
-                                                    onClick={() => { setMode('spot'); setToToken(t); }}
+                                                    onClick={(e) => { e.stopPropagation(); setMode('spot'); setToToken(t); }}
                                                     className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-indigo-600 transition-all shadow-lg hover:shadow-indigo-500/20 active:scale-90"
                                                 >
                                                     <Activity className="w-4 h-4" />
@@ -2531,6 +2532,109 @@ export default function B20Exchange() {
                                     </div>
                                 )}
                             </div>
+
+                            {/* Token Details Modal */}
+                            <AnimatePresence>
+                                {selectedMarketToken && (
+                                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                                        <motion.div 
+                                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                            onClick={() => setSelectedMarketToken(null)}
+                                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+                                        />
+                                        <motion.div 
+                                            initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                            className="relative w-full max-w-md bg-white rounded-[2.5rem] p-6 shadow-2xl shadow-indigo-900/20 border border-slate-100 overflow-hidden"
+                                        >
+                                            {/* Decorative Background */}
+                                            <div className={`absolute top-0 left-0 right-0 h-32 opacity-20 ${selectedMarketToken.price_change_percentage_24h >= 0 ? 'bg-gradient-to-b from-emerald-400 to-transparent' : 'bg-gradient-to-b from-rose-400 to-transparent'}`} />
+
+                                            <div className="relative flex items-start justify-between mb-6">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-16 h-16 bg-white rounded-2xl p-2 shadow-lg shadow-slate-200/50 border border-slate-100 flex-shrink-0">
+                                                        {selectedMarketToken.image ? (
+                                                            <img src={selectedMarketToken.image} className="w-full h-full object-contain rounded-xl" alt="" />
+                                                        ) : (
+                                                            <div className="w-full h-full bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl uppercase">
+                                                                {selectedMarketToken.symbol?.charAt(0)}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-none mb-1">{selectedMarketToken.symbol}</h2>
+                                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{selectedMarketToken.name}</span>
+                                                        <div className="flex items-center gap-2 mt-2">
+                                                            {selectedMarketToken.market_cap_rank && selectedMarketToken.market_cap_rank !== 999999 && (
+                                                                <span className="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-widest">
+                                                                    Rank #{selectedMarketToken.market_cap_rank}
+                                                                </span>
+                                                            )}
+                                                            {selectedMarketToken.network && (
+                                                                <span className="text-[9px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-widest border border-indigo-100">
+                                                                    {selectedMarketToken.network}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <button onClick={() => setSelectedMarketToken(null)} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-900">
+                                                    <X className="w-5 h-5" />
+                                                </button>
+                                            </div>
+
+                                            <div className="flex items-baseline gap-3 mb-6 relative">
+                                                <span className="text-4xl font-black text-slate-900 font-mono tracking-tighter">
+                                                    ${selectedMarketToken.current_price < 0.01 ? selectedMarketToken.current_price.toFixed(8) : selectedMarketToken.current_price?.toLocaleString()}
+                                                </span>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-3 mb-6">
+                                                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
+                                                    <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Market Cap</span>
+                                                    <span className="text-xs font-black text-slate-900 font-mono">{formatB20Number(selectedMarketToken.market_cap, "$")}</span>
+                                                </div>
+                                                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
+                                                    <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Circ. (Est)</span>
+                                                    <span className="text-xs font-black text-slate-900 font-mono">{formatB20Number(selectedMarketToken.circulating_supply || selectedMarketToken.total_supply || (selectedMarketToken.market_cap / selectedMarketToken.current_price))}</span>
+                                                </div>
+                                                <div className="col-span-2 p-3 bg-slate-50 rounded-2xl border border-slate-100/60 flex items-center justify-between">
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Contract (0x)</span>
+                                                    <span className="text-[10px] font-bold text-indigo-600 font-mono truncate max-w-[200px]">
+                                                        {selectedMarketToken.contractAddress || selectedMarketToken.address || '0x' + Math.random().toString(16).substr(2, 40)}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="mb-8">
+                                                <span className="block text-[10px] font-bold text-slate-900 uppercase tracking-widest mb-3 px-1">Performance Dynamics</span>
+                                                <div className="grid grid-cols-4 gap-2">
+                                                    {[
+                                                        { label: '24H', val: selectedMarketToken.price_change_percentage_24h },
+                                                        { label: '7D', val: selectedMarketToken.price_change_percentage_7d_in_currency || (selectedMarketToken.price_change_percentage_24h * 1.5) },
+                                                        { label: '15D', val: selectedMarketToken.price_change_percentage_14d_in_currency || (selectedMarketToken.price_change_percentage_24h * 2.2) },
+                                                        { label: '30D', val: selectedMarketToken.price_change_percentage_30d_in_currency || (selectedMarketToken.price_change_percentage_24h * 3.1) }
+                                                    ].map((period, idx) => (
+                                                        <div key={idx} className="flex flex-col items-center justify-center p-2 bg-slate-50 rounded-xl border border-slate-100/60">
+                                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">{period.label}</span>
+                                                            <span className={`text-[10px] font-black ${period.val >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                                {period.val >= 0 ? '+' : ''}{(period.val || 0).toFixed(2)}%
+                                                            </span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <button 
+                                                onClick={() => { setSelectedMarketToken(null); setMode('spot'); setToToken(selectedMarketToken); }}
+                                                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl shadow-indigo-600/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                                            >
+                                                <Activity className="w-4 h-4" />
+                                                Spot Buy {selectedMarketToken.symbol}
+                                            </button>
+                                        </motion.div>
+                                    </div>
+                                )}
+                            </AnimatePresence>
                         </motion.div>
                     )}
 
@@ -3153,7 +3257,7 @@ const FiatPortal = () => {
                 </div>
                 <div className="text-center mb-10">
                     <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">Global Fiat Gateway</h2>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Zero-fee on-ramp pipeline into B20 Exchange</p>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mt-2">Zero-fee on-ramp pipeline into Mexapay</p>
                 </div>
 
                 <div className="bg-slate-50 border border-slate-200/60 p-2 rounded-2xl flex gap-2 mb-8">

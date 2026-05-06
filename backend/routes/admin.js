@@ -316,13 +316,100 @@ router.post('/tokens/toggle', requireAdmin, async (req, res) => {
 
 // ── LISTING APPROVALS (List Your Token) ──────────────────────────────────────
 
-// GET /api/admin/listing-requests - Queue for external token approvals
+// POST /api/admin/listing/submit  (PUBLIC — called from list/page.js after fee tx)
+router.post('/listing/submit', async (req, res) => {
+    const { contract_address, token_name, token_symbol, description, logo_url,
+            website, whitepaper, telegram, twitter, facebook, total_supply,
+            owner_wallet, tx_hash, listing_fee_bnb } = req.body;
+
+    if (!contract_address || !token_name || !token_symbol || !owner_wallet)
+        return res.status(400).json({ error: 'Missing required fields: contract_address, token_name, token_symbol, owner_wallet' });
+
+    try {
+        await db.query(`
+            INSERT INTO listing_submissions
+            (contract_address, token_name, token_symbol, description, logo_url,
+             website, whitepaper, telegram, twitter, facebook, total_supply,
+             owner_wallet, tx_hash, listing_fee_bnb, status)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending')
+        `, [
+            contract_address, token_name, token_symbol,
+            description || '', logo_url || '',
+            website || '', whitepaper || '',
+            telegram || '', twitter || '', facebook || '',
+            total_supply || '0', owner_wallet,
+            tx_hash || '', listing_fee_bnb || 0.10
+        ]);
+        res.json({ success: true, message: 'Listing application received. Admin will review shortly.' });
+    } catch (err) {
+        console.error('[Listing Submit] Error:', err.message);
+        res.status(500).json({ error: 'Failed to submit listing application', detail: err.message });
+    }
+});
+
+// GET /api/admin/listing-requests?status=pending|approved|rejected|all
 router.get('/listing-requests', requireAdminOrAssistant, async (req, res) => {
     try {
-        const result = await db.query('SELECT * FROM listing_submissions WHERE status = "pending" ORDER BY timestamp DESC');
+        const status = req.query.status || 'pending';
+        let sql = 'SELECT * FROM listing_submissions';
+        const params = [];
+        if (status !== 'all') { sql += ' WHERE status = ?'; params.push(status); }
+        sql += ' ORDER BY timestamp DESC';
+        const result = await db.query(sql, params);
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch listing requests' });
+    }
+});
+
+// GET /api/admin/listing-stats  — Dashboard metrics
+router.get('/listing-stats', requireAdminOrAssistant, async (req, res) => {
+    try {
+        const [totals, tokenStats] = await Promise.all([
+            db.query(`
+                SELECT
+                    COUNT(*) as total,
+                    SUM(CASE WHEN status='pending'  THEN 1 ELSE 0 END) as pending,
+                    SUM(CASE WHEN status='approved' THEN 1 ELSE 0 END) as approved,
+                    SUM(CASE WHEN status='rejected' THEN 1 ELSE 0 END) as rejected,
+                    COALESCE(SUM(CASE WHEN status='approved' THEN listing_fee_bnb ELSE 0 END), 0) as revenue_bnb
+                FROM listing_submissions
+            `),
+            db.query(`
+                SELECT
+                    COUNT(*) as total_listed,
+                    SUM(CASE WHEN is_delisted=1 THEN 1 ELSE 0 END) as total_delisted,
+                    SUM(CASE WHEN launch_type='EXCHANGE_LISTING' THEN 1 ELSE 0 END) as admin_listed
+                FROM tokens
+            `)
+        ]);
+        const t = totals.rows[0];
+        const tk = tokenStats.rows[0];
+        res.json({
+            total: t.total || 0,
+            pending: t.pending || 0,
+            approved: t.approved || 0,
+            rejected: t.rejected || 0,
+            revenue_bnb: parseFloat(t.revenue_bnb || 0),
+            total_listed: tk.total_listed || 0,
+            total_delisted: tk.total_delisted || 0,
+            admin_listed: tk.admin_listed || 0
+        });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch listing stats' });
+    }
+});
+
+// GET /api/admin/listed-tokens  — All listed tokens for contract address view panel
+router.get('/listed-tokens', requireAdminOrAssistant, async (req, res) => {
+    try {
+        const result = await db.query(
+            `SELECT contract_address, name, symbol, logo_url, is_delisted, launch_type, created_at
+             FROM tokens ORDER BY created_at DESC`
+        );
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch listed tokens' });
     }
 });
 
@@ -332,19 +419,15 @@ router.post('/listing/approve', requireAdmin, async (req, res) => {
     try {
         const reqResult = await db.query('SELECT * FROM listing_submissions WHERE id = ?', [id]);
         if (reqResult.rows.length === 0) return res.status(404).json({ error: 'Request not found' });
-        
         const r = reqResult.rows[0];
-        
-        // Add to main tokens table
+
         await db.query(`
             INSERT INTO tokens (contract_address, name, symbol, creator_wallet, logo_url, description, launch_type, is_delisted)
             VALUES (?, ?, ?, ?, ?, ?, 'STANDARD', 0)
             ON CONFLICT(contract_address) DO UPDATE SET is_delisted = 0
         `, [r.contract_address, r.token_name, r.token_symbol, r.owner_wallet, r.logo_url, r.description]);
-        
-        // Mark request as approved
+
         await db.query('UPDATE listing_submissions SET status = "approved" WHERE id = ?', [id]);
-        
         res.json({ success: true });
     } catch (err) {
         console.error('Approval error:', err);
@@ -352,15 +435,44 @@ router.post('/listing/approve', requireAdmin, async (req, res) => {
     }
 });
 
+// POST /api/admin/listing/reject — with optional reason
 router.post('/listing/reject', requireAdmin, async (req, res) => {
-    const { id } = req.body;
+    const { id, reason } = req.body;
     try {
-        await db.query('UPDATE listing_submissions SET status = "rejected" WHERE id = ?', [id]);
+        await db.query(
+            'UPDATE listing_submissions SET status = "rejected", reject_reason = ? WHERE id = ?',
+            [reason || 'Rejected by admin', id]
+        );
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: 'Rejection failed' });
     }
 });
+
+// POST /api/admin/listing/direct  — Admin lists a token directly (no submission needed)
+router.post('/listing/direct', requireAdmin, async (req, res) => {
+    const { contract_address, name, symbol, description, logo_url,
+            website, telegram, twitter, total_supply } = req.body;
+
+    if (!contract_address || !name || !symbol)
+        return res.status(400).json({ error: 'contract_address, name, and symbol are required' });
+
+    try {
+        await db.query(`
+            INSERT INTO tokens (contract_address, name, symbol, creator_wallet, logo_url, description, launch_type, is_delisted, total_supply)
+            VALUES (?, ?, ?, 'ADMIN', ?, ?, 'EXCHANGE_LISTING', 0, ?)
+            ON CONFLICT(contract_address) DO UPDATE SET
+                name = excluded.name, symbol = excluded.symbol,
+                logo_url = excluded.logo_url, description = excluded.description,
+                is_delisted = 0
+        `, [contract_address, name, symbol, logo_url || '', description || '', total_supply || '0']);
+        res.json({ success: true, message: `${symbol} is now live on the exchange.` });
+    } catch (err) {
+        console.error('[Direct List] Error:', err.message);
+        res.status(500).json({ error: 'Direct listing failed', detail: err.message });
+    }
+});
+
 
 // ── TOKEN UPGRADE MANAGEMENT (Verifications/Badges) ──────────────────────────
 

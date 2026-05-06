@@ -69,9 +69,9 @@ router.post('/transaction', upload.single('proof'), async (req, res) => {
         const result = await db.query(
             `INSERT INTO fiat_transactions (
                 user_wallet, user_name, phone_number, email, type, asset, 
-                amount, inr_amount, proof_url, bank_details_json, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING')`,
-            [user_wallet, user_name, phone_number, email, type, asset, amount, inr_amount, proof_url, bank_details_json]
+                amount, inr_amount, proof_url, bank_details_json, receiving_wallet, status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING')`,
+            [user_wallet, user_name, phone_number, email, type, asset, amount, inr_amount, proof_url, bank_details_json, req.body.receiving_wallet]
         );
 
         res.status(201).json({ 

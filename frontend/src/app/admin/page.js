@@ -7,7 +7,7 @@ import {
     Search, Filter, ChevronRight, CheckCircle2, XCircle,
     Download, RefreshCw, ExternalLink, ArrowUpRight,
     TrendingUp, Users, Box, Zap, AlertCircle, Eye, EyeOff, Loader2, DollarSign, PlusCircle, ChevronDown, Trash2, Image as ImageIcon,
-    Activity, Database, Globe, Lock, Unlock, Copy, TrendingDown, ArrowRightLeft, CreditCard as CardIcon, Edit3, Save, History,
+    Activity, Database, Globe, Lock, Unlock, Copy, TrendingDown, ArrowRightLeft, CreditCard as CardIcon, Edit3, Save, History, Clock,
     Sparkles, Star, BarChart3, Info, ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -121,7 +121,7 @@ export default function NueraAdminPortal() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-sm shadow-indigo-500/20"
-                            title="Open B20 Exchange"
+                            title="Open Mexapay"
                         >
                             <ArrowRightLeft size={13} />
                             Exchange
@@ -546,7 +546,7 @@ function RevenueLedger({ stats, account }) {
 
                             {/* Footer */}
                             <div className="px-8 py-5 border-t border-slate-100 bg-slate-50/50">
-                                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest text-center">B20 Exchange · Nexus Nuera Admin · Verified Ledger</p>
+                                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest text-center">Mexapay · Nexus Nuera Admin · Verified Ledger</p>
                             </div>
                         </motion.div>
                     </>
@@ -733,7 +733,7 @@ function ApiPanel() {
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="bg-white p-10 rounded-[3rem] border border-slate-200/60 shadow-sm flex flex-col justify-center">
-                            <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tight mb-2">B20 Exchange <span className="text-indigo-600">Core</span></h3>
+                            <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tight mb-2">Mexapay <span className="text-indigo-600">Core</span></h3>
                             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
                                 A high-performance hybrid institutional protocol merging decentralized smart contracts with high-fidelity off-chain ledgers and dynamic API load-balancing.
                             </p>
@@ -803,7 +803,7 @@ function ApiPanel() {
                                 </div>
                                 <div>
                                     <h4 className="text-base font-black text-slate-900 uppercase italic tracking-tight">Technical Blueprint</h4>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">B20 Exchange Institutional Architecture</p>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Mexapay Institutional Architecture</p>
                                     <p className="text-[9px] font-bold text-slate-400 mt-2">Full product module breakdown, tech stack, fee model, and security persistence logic.</p>
                                 </div>
                                 <a
@@ -842,36 +842,379 @@ function ApiPanel() {
 }
 
 function ListingHub({ account }) {
+    const [subTab, setSubTab] = useState('dashboard');
+    const [stats, setStats] = useState({
+        total: 0, pending: 0, approved: 0, rejected: 0,
+        revenue_bnb: 0, total_listed: 0, total_delisted: 0, admin_listed: 0
+    });
     const [requests, setRequests] = useState([]);
-    useEffect(() => {
-        axios.get(`${API_URL}/admin/listing-requests`, { headers: { 'x-wallet-address': account } }).then(res => setRequests(res.data));
-    }, [account]);
+    const [inventory, setInventory] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [historyFilter, setHistoryFilter] = useState('all');
+    const [showContractsModal, setShowContractsModal] = useState(false);
+    const [directForm, setDirectForm] = useState({
+        contract_address: '', name: '', symbol: '', description: '',
+        logo_url: '', website: '', telegram: '', twitter: '', total_supply: ''
+    });
+
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            if (subTab === 'dashboard') {
+                const res = await axios.get(`${API_URL}/admin/listing-stats`, { headers: { 'x-wallet-address': account } });
+                setStats(res.data);
+            } else if (subTab === 'pending') {
+                const res = await axios.get(`${API_URL}/admin/listing-requests?status=pending`, { headers: { 'x-wallet-address': account } });
+                setRequests(res.data);
+                // Also update stats for the bubble
+                const sRes = await axios.get(`${API_URL}/admin/listing-stats`, { headers: { 'x-wallet-address': account } });
+                setStats(sRes.data);
+            } else if (subTab === 'history') {
+                const res = await axios.get(`${API_URL}/admin/listing-requests?status=${historyFilter}`, { headers: { 'x-wallet-address': account } });
+                setRequests(res.data.filter(r => r.status !== 'pending' || historyFilter === 'all'));
+            } else if (subTab === 'inventory') {
+                const res = await axios.get(`${API_URL}/admin/listed-tokens`, { headers: { 'x-wallet-address': account } });
+                setInventory(res.data);
+            }
+        } catch (e) { console.error(e); }
+        setLoading(false);
+    };
+
+    useEffect(() => { 
+        fetchData(); 
+        // Initial stats fetch for the bubble even if not in dashboard
+        if (subTab !== 'dashboard') {
+            axios.get(`${API_URL}/admin/listing-stats`, { headers: { 'x-wallet-address': account } })
+                .then(res => setStats(res.data)).catch(() => {});
+        }
+    }, [subTab, account, historyFilter]);
 
     const handleAction = async (id, action) => {
         try {
-            await axios.post(`${API_URL}/admin/listing/${action}`, { id }, { headers: { 'x-wallet-address': account } });
-            setRequests(requests.filter(r => r.id !== id));
+            let reason = '';
+            if (action === 'reject') reason = prompt('Reason for rejection:') || 'Rejected by admin';
+            await axios.post(`${API_URL}/admin/listing/${action}`, { id, reason }, { headers: { 'x-wallet-address': account } });
+            fetchData();
         } catch (e) { alert('Action failed'); }
     };
 
+    const handleDirectList = async (e) => {
+        e.preventDefault();
+        try {
+            await axios.post(`${API_URL}/admin/listing/direct`, directForm, { headers: { 'x-wallet-address': account } });
+            alert('Token listed successfully!');
+            setDirectForm({
+                contract_address: '', name: '', symbol: '', description: '',
+                logo_url: '', website: '', telegram: '', twitter: '', total_supply: ''
+            });
+            setSubTab('inventory');
+        } catch (e) { alert('Direct listing failed: ' + (e.response?.data?.error || e.message)); }
+    };
+
+    const toggleDelist = async (address, currentStatus) => {
+        try {
+            await axios.post(`${API_URL}/admin/tokens/toggle`, { address, is_delisted: !currentStatus }, { headers: { 'x-wallet-address': account } });
+            fetchData();
+        } catch (e) { alert('Toggle failed'); }
+    };
+
+    const copy = (val) => { navigator.clipboard.writeText(val); alert('Copied to clipboard'); };
+
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {requests.map(r => (
-                <div key={r.id} className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-sm group">
-                    <div className="flex gap-6 mb-8">
-                        <div className="w-20 h-20 bg-slate-50 rounded-3xl border border-slate-100 flex items-center justify-center overflow-hidden">{r.logo_url ? <img src={r.logo_url} className="w-full h-full object-cover" /> : <span className="text-4xl">🪙</span>}</div>
-                        <div className="flex-1">
-                            <h4 className="text-lg font-black text-slate-900 uppercase tracking-tight">{r.token_name}</h4>
-                            <p className="text-xs font-extrabold text-indigo-600 uppercase tracking-widest">${r.token_symbol}</p>
-                            <p className="text-[10px] text-slate-400 font-bold mt-2 leading-relaxed uppercase italic opacity-70">{r.description}</p>
-                        </div>
+        <div className="space-y-6">
+            {/* Sub-Tabs */}
+            <div className="flex gap-2 flex-wrap pb-2 border-b border-slate-100">
+                {[
+                    { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={14} /> },
+                    { id: 'pending', label: 'Pending Queue', icon: <Clock size={14} /> },
+                    { id: 'history', label: 'History', icon: <History size={14} /> },
+                    { id: 'direct', label: 'Admin List Token', icon: <PlusCircle size={14} /> },
+                    { id: 'inventory', label: 'Listed Inventory', icon: <ListChecks size={14} /> },
+                ].map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setSubTab(tab.id)}
+                        className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${subTab === tab.id ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200 hover:border-slate-300'}`}
+                    >
+                        {tab.icon} {tab.label}
+                        {tab.id === 'pending' && stats.pending > 0 && <span className="bg-red-500 text-white px-1.5 py-0.5 rounded-full text-[8px]">{stats.pending}</span>}
+                    </button>
+                ))}
+            </div>
+
+            {/* DASHBOARD */}
+            {subTab === 'dashboard' && (
+                <div className="space-y-8 animate-in fade-in duration-500">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {[
+                            { label: 'Total Submissions', value: stats.total, color: 'bg-indigo-50 text-indigo-600 border-indigo-100', icon: '📩' },
+                            { label: 'Approved Requests', value: stats.approved, color: 'bg-emerald-50 text-emerald-600 border-emerald-100', icon: '✅' },
+                            { label: 'Rejected Requests', value: stats.rejected, color: 'bg-red-50 text-red-600 border-red-100', icon: '❌' },
+                        ].map((s, i) => (
+                            <div key={i} className={`rounded-3xl border p-8 flex flex-col gap-3 ${s.color}`}>
+                                <span className="text-3xl">{s.icon}</span>
+                                <p className="text-[10px] font-black uppercase tracking-widest opacity-70">{s.label}</p>
+                                <p className="text-4xl font-black">{s.value}</p>
+                            </div>
+                        ))}
                     </div>
-                    <div className="grid grid-cols-2 gap-4 pt-6 border-t border-slate-100">
-                        <button onClick={() => handleAction(r.id, 'reject')} className="py-4 bg-slate-50 text-slate-500 text-[10px] font-black rounded-2xl uppercase tracking-widest hover:bg-blue-50 hover:text-blue-600 transition-all">Reject</button>
-                        <button onClick={() => handleAction(r.id, 'approve')} className="py-4 bg-indigo-500 text-white text-[10px] font-black rounded-2xl uppercase tracking-widest shadow-lg shadow-indigo-200 hover:bg-indigo-600 transition-all flex items-center justify-center gap-2"><CheckCircle2 size={16} /> Approve & List</button>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {[
+                            { label: 'Admin-Listed Tokens', value: stats.admin_listed, color: 'bg-sky-50 text-sky-600 border-sky-100', icon: '🛠️' },
+                            { label: 'Currently Delisted', value: stats.total_delisted, color: 'bg-slate-50 text-slate-600 border-slate-100', icon: '🚫' },
+                            { label: 'Listing Revenue', value: `${stats.revenue_bnb.toFixed(2)} BNB`, color: 'bg-violet-50 text-violet-600 border-violet-100', icon: '💰' },
+                        ].map((s, i) => (
+                            <div key={i} className={`rounded-3xl border p-8 flex flex-col gap-3 ${s.color}`}>
+                                <span className="text-3xl">{s.icon}</span>
+                                <p className="text-[10px] font-black uppercase tracking-widest opacity-70">{s.label}</p>
+                                <p className="text-2xl font-black">{s.value}</p>
+                            </div>
+                        ))}
                     </div>
                 </div>
-            ))}
+            )}
+
+            {/* PENDING / HISTORY */}
+            {(subTab === 'pending' || subTab === 'history') && (
+                <div className="bg-white rounded-[2.5rem] border border-slate-200/60 shadow-sm overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
+                    {subTab === 'history' && (
+                        <div className="p-6 bg-slate-50 border-b border-slate-100 flex gap-2">
+                            {['all', 'approved', 'rejected'].map(f => (
+                                <button key={f} onClick={() => setHistoryFilter(f)} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${historyFilter === f ? 'bg-slate-900 text-white' : 'bg-white text-slate-400 border border-slate-200'}`}>{f}</button>
+                            ))}
+                        </div>
+                    )}
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead className="bg-slate-50 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                <tr className="border-b border-slate-200">
+                                    <th className="px-8 py-5">Token</th>
+                                    <th className="px-6 py-5">Contract</th>
+                                    <th className="px-6 py-5">Socials</th>
+                                    <th className="px-6 py-5">Payment Proof</th>
+                                    <th className="px-6 py-5">Status</th>
+                                    <th className="px-8 py-5 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {requests.map((r, i) => (
+                                    <tr key={i} className="hover:bg-slate-50/50 transition-all group">
+                                        <td className="px-8 py-5">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                                                    {r.logo_url ? <img src={r.logo_url} className="w-full h-full object-cover" /> : <span className="text-xl">🪙</span>}
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-black text-slate-900 uppercase truncate max-w-[120px]">{r.token_name}</p>
+                                                    <p className="text-[9px] font-bold text-indigo-600 uppercase tracking-tighter">${r.token_symbol}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <div className="flex items-center gap-2">
+                                                <button onClick={() => copy(r.contract_address)} className="font-mono text-[9px] text-slate-400 hover:text-indigo-600 font-black transition-all">{r.contract_address.slice(0,6)}...{r.contract_address.slice(-4)}</button>
+                                                <ExternalLink size={10} className="text-slate-300" />
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <div className="flex gap-2">
+                                                {r.website && <a href={r.website} target="_blank" className="p-2 bg-slate-50 border border-slate-100 rounded-lg text-slate-400 hover:text-blue-500 hover:border-blue-200 transition-all"><Globe size={12}/></a>}
+                                                {r.telegram && <a href={`https://t.me/${r.telegram.replace('@','')}`} target="_blank" className="p-2 bg-slate-50 border border-slate-100 rounded-lg text-slate-400 hover:text-sky-500 hover:border-sky-200 transition-all"><MessageSquare size={12}/></a>}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <a href={`https://bscscan.com/tx/${r.tx_hash}`} target="_blank" className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-100 rounded-lg text-[9px] font-black text-indigo-600 hover:bg-indigo-500 hover:text-white transition-all uppercase tracking-widest">View TX <ArrowUpRight size={10}/></a>
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${r.status === 'pending' ? 'bg-amber-100 text-amber-600' : r.status === 'approved' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>{r.status}</span>
+                                        </td>
+                                        <td className="px-8 py-5 text-right">
+                                            {r.status === 'pending' ? (
+                                                <div className="flex justify-end gap-2">
+                                                    <button onClick={() => handleAction(r.id, 'reject')} className="w-9 h-9 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all flex items-center justify-center shadow-sm"><XCircle size={16}/></button>
+                                                    <button onClick={() => handleAction(r.id, 'approve')} className="w-9 h-9 bg-emerald-50 text-emerald-500 rounded-xl hover:bg-emerald-500 hover:text-white transition-all flex items-center justify-center shadow-sm"><CheckCircle2 size={16}/></button>
+                                                </div>
+                                            ) : (
+                                                <div className="text-right">
+                                                    <p className="text-[9px] font-black text-slate-800 uppercase">{r.status === 'approved' ? 'Processed' : 'Rejected'}</p>
+                                                    <p className="text-[8px] text-slate-400 font-bold italic mt-0.5 truncate max-w-[100px] ml-auto">{r.reject_reason || 'Manual Verification'}</p>
+                                                </div>
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                                {requests.length === 0 && !loading && <tr><td colSpan={6} className="py-24 text-center">
+                                    <div className="flex flex-col items-center gap-3 opacity-20">
+                                        <Box size={48} />
+                                        <p className="text-[10px] font-black uppercase tracking-[0.3em]">No listing applications found</p>
+                                    </div>
+                                </td></tr>}
+                                {loading && <tr><td colSpan={6} className="py-24 text-center"><Loader2 size={24} className="animate-spin text-indigo-500 mx-auto opacity-50" /></td></tr>}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+
+            {/* DIRECT LIST FORM */}
+            {subTab === 'direct' && (
+                <div className="bg-white rounded-[3rem] border border-slate-200/60 p-12 shadow-sm max-w-4xl mx-auto animate-in zoom-in-95 duration-500">
+                    <div className="mb-10 text-center">
+                        <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <PlusCircle size={32} />
+                        </div>
+                        <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Admin Protocol Listing</h3>
+                        <p className="text-xs font-bold text-slate-400 uppercase mt-2 tracking-widest">Inject assets directly into the B20 exchange registry</p>
+                    </div>
+                    <form onSubmit={handleDirectList} className="space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Token Identity</label>
+                                <input required type="text" placeholder="Token Name" value={directForm.name} onChange={e => setDirectForm({...directForm, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm font-black outline-none focus:border-indigo-500 focus:bg-white transition-all uppercase shadow-inner" />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Symbol</label>
+                                <input required type="text" placeholder="SYMBOL" value={directForm.symbol} onChange={e => setDirectForm({...directForm, symbol: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm font-black outline-none focus:border-indigo-500 focus:bg-white transition-all uppercase shadow-inner" />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Smart Contract Address (BEP-20)</label>
+                            <input required type="text" placeholder="0x..." value={directForm.contract_address} onChange={e => setDirectForm({...directForm, contract_address: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm font-black font-mono outline-none focus:border-indigo-500 focus:bg-white transition-all shadow-inner" />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Logo Endpoint (URL)</label>
+                                <input type="text" placeholder="https://..." value={directForm.logo_url} onChange={e => setDirectForm({...directForm, logo_url: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-xs font-bold outline-none focus:border-indigo-500 focus:bg-white transition-all shadow-inner" />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Maximum Token Supply</label>
+                                <input type="text" placeholder="e.g. 1B" value={directForm.total_supply} onChange={e => setDirectForm({...directForm, total_supply: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-xs font-bold outline-none focus:border-indigo-500 focus:bg-white transition-all shadow-inner" />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Ecosystem Description</label>
+                            <textarea rows={3} placeholder="Provide utility context..." value={directForm.description} onChange={e => setDirectForm({...directForm, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-xs font-bold outline-none focus:border-indigo-500 focus:bg-white transition-all resize-none shadow-inner" />
+                        </div>
+                        <button type="submit" className="w-full py-6 bg-indigo-600 text-white font-black text-sm uppercase tracking-[0.3em] rounded-3xl shadow-xl shadow-indigo-200 hover:bg-indigo-700 active:scale-[0.98] transition-all flex items-center justify-center gap-3">
+                            <Zap size={20} /> Deploy to Global Markets
+                        </button>
+                    </form>
+                </div>
+            )}
+
+            {/* INVENTORY */}
+            {subTab === 'inventory' && (
+                <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                    <div className="flex justify-between items-center px-2">
+                        <div>
+                            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Market Inventory</h3>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Global assets currently active across Spot & Futures</p>
+                        </div>
+                        <button onClick={() => setShowContractsModal(true)} className="px-6 py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-2xl hover:bg-slate-800 transition-all">
+                            <Eye size={14}/> Active Asset Registry
+                        </button>
+                    </div>
+                    <div className="bg-white rounded-[3rem] border border-slate-200/60 shadow-sm overflow-hidden">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead className="bg-slate-50 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                    <tr className="border-b border-slate-200">
+                                        <th className="px-8 py-5">Asset</th>
+                                        <th className="px-6 py-5">Registry ID</th>
+                                        <th className="px-6 py-5">Channel</th>
+                                        <th className="px-6 py-5">Status</th>
+                                        <th className="px-8 py-5 text-right">Governance</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {inventory.map((t, i) => (
+                                        <tr key={i} className="hover:bg-slate-50/50 transition-all group">
+                                            <td className="px-8 py-5">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-slate-50 rounded-xl border border-slate-100 flex items-center justify-center overflow-hidden shrink-0">
+                                                        {t.logo_url ? <img src={t.logo_url} className="w-full h-full object-cover" /> : <span className="text-xl">🪙</span>}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-black text-slate-900 uppercase">{t.name}</p>
+                                                        <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-tighter">${t.symbol}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5 font-mono text-[10px] text-slate-400 font-black group-hover:text-indigo-600 transition-all">{t.contract_address.slice(0,12)}...</td>
+                                            <td className="px-6 py-5">
+                                                <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${t.launch_type === 'EXCHANGE_LISTING' ? 'bg-indigo-50 text-indigo-600' : 'bg-violet-50 text-violet-600'}`}>
+                                                    {t.launch_type === 'EXCHANGE_LISTING' ? 'B20 Direct' : 'Launchpad'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`w-2 h-2 rounded-full ${t.is_delisted ? 'bg-red-500 animate-pulse' : 'bg-emerald-500'}`} />
+                                                    <span className={`text-[8px] font-black uppercase tracking-widest ${t.is_delisted ? 'text-red-500' : 'text-emerald-600'}`}>{t.is_delisted ? 'Inactive' : 'Active'}</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-8 py-5 text-right">
+                                                <button onClick={() => toggleDelist(t.contract_address, t.is_delisted)} className={`px-5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest border shadow-sm transition-all ${t.is_delisted ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700' : 'bg-white text-red-500 border-red-100 hover:bg-red-50 hover:border-red-200'}`}>
+                                                    {t.is_delisted ? 'Re-List Asset' : 'De-List Asset'}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {inventory.length === 0 && !loading && <tr><td colSpan={5} className="py-24 text-center opacity-20"><Box size={48} className="mx-auto mb-3"/><p className="text-[10px] font-black uppercase">No inventory indexed</p></td></tr>}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* CONTRACTS REGISTRY MODAL */}
+            <AnimatePresence>
+                {showContractsModal && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-10">
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowContractsModal(false)} className="absolute inset-0 bg-slate-900/80 backdrop-blur-md" />
+                        <motion.div initial={{ scale: 0.95, y: 30, opacity: 0 }} animate={{ scale: 1, y: 0, opacity: 1 }} exit={{ scale: 0.95, y: 30, opacity: 0 }} className="relative bg-white rounded-[4rem] shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col border border-white/20">
+                            <div className="p-10 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                <div>
+                                    <div className="flex items-center gap-3 mb-1">
+                                        <ShieldCheck className="text-emerald-500" size={24} />
+                                        <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter">Verified Asset Registry</h3>
+                                    </div>
+                                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em] ml-9">Official contract addresses for cross-protocol verification</p>
+                                </div>
+                                <button onClick={() => setShowContractsModal(false)} className="w-12 h-12 bg-white border border-slate-200 rounded-2xl text-slate-400 hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all flex items-center justify-center shadow-sm"><XCircle size={24}/></button>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-10 space-y-4 custom-scrollbar">
+                                {inventory.filter(t => !t.is_delisted).map((t, i) => (
+                                    <div key={i} className="p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex items-center justify-between group hover:border-indigo-300 hover:bg-white hover:shadow-xl hover:shadow-indigo-500/5 transition-all">
+                                        <div className="flex items-center gap-5">
+                                            <div className="w-12 h-12 bg-white rounded-2xl border border-slate-200 flex items-center justify-center font-black text-xs text-indigo-600 shadow-sm group-hover:scale-110 transition-transform">
+                                                {t.logo_url ? <img src={t.logo_url} className="w-full h-full object-cover" /> : t.symbol.slice(0,3)}
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-0.5">
+                                                    <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{t.name}</p>
+                                                    <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-lg">${t.symbol}</span>
+                                                </div>
+                                                <p className="text-[11px] font-mono text-slate-400 font-bold tracking-tight selection:bg-indigo-100 selection:text-indigo-700">{t.contract_address}</p>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => copy(t.contract_address)} className="w-12 h-12 bg-white border border-slate-200 rounded-2xl text-slate-300 hover:text-indigo-600 hover:border-indigo-300 transition-all flex items-center justify-center shadow-sm group-hover:bg-indigo-50 group-hover:scale-105 active:scale-95"><Copy size={18}/></button>
+                                    </div>
+                                ))}
+                                {inventory.filter(t => !t.is_delisted).length === 0 && (
+                                    <div className="py-20 text-center opacity-30 flex flex-col items-center gap-4">
+                                        <Shield size={64} />
+                                        <p className="text-xs font-black uppercase tracking-[0.4em]">Registry is currently empty</p>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="p-8 bg-slate-50 border-t border-slate-100 text-center">
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.5em]">Nexus Governance Protocol • Institutional Grade Security</p>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
@@ -1081,7 +1424,7 @@ function LaunchpadGuard({ account }) {
 }
 
 function FiatQueue({ account }) {
-    const [requests, setRequests] = useState([]);
+    const [allRequests, setAllRequests] = useState([]);
     const [activeTab, setActiveTab] = useState('BUY');
     const [loading, setLoading] = useState(false);
     const [lastRefresh, setLastRefresh] = useState(null);
@@ -1091,7 +1434,7 @@ function FiatQueue({ account }) {
         if (!silent) setLoading(true);
         try {
             const res = await axios.get(`${API_URL}/fiat/transactions`, { headers: { 'x-wallet-address': account } });
-            setRequests(res.data.filter(r => r.status === 'PENDING'));
+            setAllRequests(Array.isArray(res.data) ? res.data : []);
             setLastRefresh(new Date());
         } catch (err) {
             console.error('[FiatQueue] Failed to load transactions:', err);
@@ -1100,7 +1443,6 @@ function FiatQueue({ account }) {
         }
     };
 
-    // Initial fetch + 15-second polling for live updates
     useEffect(() => {
         fetchQueue();
         const interval = setInterval(() => fetchQueue(true), 15000);
@@ -1110,91 +1452,222 @@ function FiatQueue({ account }) {
     const handleAction = async (id, status) => {
         try {
             await axios.patch(`${API_URL}/fiat/transaction/${id}`, { status }, { headers: { 'x-wallet-address': account } });
-            setRequests(prev => prev.filter(r => r.id !== id));
+            setAllRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
         } catch (e) { alert('Update failed: ' + (e.response?.data?.error || e.message)); }
     };
 
     const getUpiId = (jsonStr) => {
-        try {
-            const data = JSON.parse(jsonStr);
-            return data.upiId || 'N/A';
-        } catch (e) { return 'N/A'; }
+        try { const d = JSON.parse(jsonStr); return d.upiId || d.accNumber || 'N/A'; } catch { return 'N/A'; }
     };
 
-    const displayData = requests.filter(r => r.type === activeTab);
+    // Stats
+    const totalTx = allRequests.length;
+    const totalBuy = allRequests.filter(r => r.type === 'BUY');
+    const totalSell = allRequests.filter(r => r.type === 'SELL');
+    const totalRejected = allRequests.filter(r => r.status === 'REJECTED').length;
+    const totalVerified = allRequests.filter(r => r.status === 'VERIFIED').length;
+    const successRatio = totalTx > 0 ? ((totalVerified / totalTx) * 100).toFixed(1) : '0.0';
+
+    const buyVerifiedINR  = totalBuy.filter(r => r.status === 'VERIFIED').reduce((s, r) => s + Number(r.inr_amount || 0), 0);
+    const buyRejectedINR  = totalBuy.filter(r => r.status === 'REJECTED').reduce((s, r) => s + Number(r.inr_amount || 0), 0);
+    const sellVerifiedINR = totalSell.filter(r => r.status === 'VERIFIED').reduce((s, r) => s + Number(r.inr_amount || 0), 0);
+    const sellRejectedINR = totalSell.filter(r => r.status === 'REJECTED').reduce((s, r) => s + Number(r.inr_amount || 0), 0);
+    const totalBuyINR  = totalBuy.reduce((s, r) => s + Number(r.inr_amount || 0), 0);
+    const totalSellINR = totalSell.reduce((s, r) => s + Number(r.inr_amount || 0), 0);
+    const avgBuy  = totalBuy.length  > 0 ? (totalBuyINR  / totalBuy.length)  : 0;
+    const avgSell = totalSell.length > 0 ? (totalSellINR / totalSell.length) : 0;
+
+    const fmt = (n) => `₹${Math.round(n).toLocaleString('en-IN')}`;
+
+
+
+    const pendingBuy  = allRequests.filter(r => r.type === 'BUY'  && r.status === 'PENDING');
+    const pendingSell = allRequests.filter(r => r.type === 'SELL' && r.status === 'PENDING');
+    const history     = allRequests.filter(r => r.status === 'VERIFIED' || r.status === 'REJECTED');
+
+    const displayData = activeTab === 'HISTORY' ? history
+                      : activeTab === 'BUY'     ? pendingBuy
+                      :                           pendingSell;
+
+    const TableHead = ({ isSell }) => (
+        <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-[0.15em]">
+            <tr className="border-b border-slate-200">
+                <th className="px-5 py-4 whitespace-nowrap">S.No</th>
+                <th className="px-5 py-4 whitespace-nowrap">Name</th>
+                <th className="px-5 py-4 whitespace-nowrap">Phone / Email</th>
+                <th className="px-5 py-4 whitespace-nowrap">{isSell ? 'UPI / Bank' : 'Wallet Address'}</th>
+                <th className="px-5 py-4 whitespace-nowrap">Quantity</th>
+                <th className="px-5 py-4 whitespace-nowrap">₹ Amount</th>
+                <th className="px-5 py-4 whitespace-nowrap">Screenshot</th>
+                <th className="px-5 py-4 whitespace-nowrap">Status</th>
+                {activeTab !== 'HISTORY' && <th className="px-5 py-4 whitespace-nowrap text-right">Action</th>}
+            </tr>
+        </thead>
+    );
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center justify-between flex-wrap gap-4 mb-2">
-                <div className="flex gap-4">
-                    <button onClick={() => setActiveTab('BUY')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'BUY' ? 'bg-sky-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>Buy Queue</button>
-                    <button onClick={() => setActiveTab('SELL')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'SELL' ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>Sell Queue</button>
+
+            {/* ── KPI Stats ── */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+
+                {/* Total Transactions */}
+                <div className="rounded-2xl border p-4 flex flex-col gap-2 bg-indigo-50 text-indigo-600 border-indigo-100">
+                    <span className="text-xl">📊</span>
+                    <p className="text-xs font-black uppercase tracking-widest opacity-70 leading-tight">Total Transactions</p>
+                    <p className="text-2xl font-black leading-none">{totalTx}</p>
+                </div>
+
+                {/* Buy Amount — split */}
+                <div className="rounded-2xl border p-4 flex flex-col gap-2 bg-sky-50 border-sky-100">
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-xl">📥</span>
+                        <p className="text-xs font-black text-sky-700 uppercase tracking-widest opacity-80 leading-tight">Total Buy</p>
+                    </div>
+                    <div className="flex flex-col gap-1 mt-1">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600">✅ Success</span>
+                            <span className="text-xs font-black text-emerald-600">{fmt(buyVerifiedINR)}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-red-500">❌ Rejected</span>
+                            <span className="text-xs font-black text-red-500">{fmt(buyRejectedINR)}</span>
+                        </div>
+                        <div className="border-t border-sky-200 mt-1 pt-1 flex items-center justify-between">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-sky-600">Total</span>
+                            <span className="text-sm font-black text-sky-700">{fmt(totalBuyINR)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Sell Amount — split */}
+                <div className="rounded-2xl border p-4 flex flex-col gap-2 bg-blue-50 border-blue-100">
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-xl">📤</span>
+                        <p className="text-xs font-black text-blue-700 uppercase tracking-widest opacity-80 leading-tight">Total Sell</p>
+                    </div>
+                    <div className="flex flex-col gap-1 mt-1">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600">✅ Success</span>
+                            <span className="text-xs font-black text-emerald-600">{fmt(sellVerifiedINR)}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-red-500">❌ Rejected</span>
+                            <span className="text-xs font-black text-red-500">{fmt(sellRejectedINR)}</span>
+                        </div>
+                        <div className="border-t border-blue-200 mt-1 pt-1 flex items-center justify-between">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-blue-600">Total</span>
+                            <span className="text-sm font-black text-blue-700">{fmt(totalSellINR)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Total Rejections */}
+                <div className="rounded-2xl border p-4 flex flex-col gap-2 bg-red-50 text-red-600 border-red-100">
+                    <span className="text-xl">❌</span>
+                    <p className="text-xs font-black uppercase tracking-widest opacity-70 leading-tight">Total Rejections</p>
+                    <p className="text-2xl font-black leading-none">{totalRejected}</p>
+                </div>
+
+                {/* Success Ratio */}
+                <div className="rounded-2xl border p-4 flex flex-col gap-2 bg-emerald-50 text-emerald-700 border-emerald-100">
+                    <span className="text-xl">✅</span>
+                    <p className="text-xs font-black uppercase tracking-widest opacity-70 leading-tight">Success Ratio</p>
+                    <p className="text-2xl font-black leading-none">{successRatio}%</p>
+                </div>
+
+                {/* Avg Buy / Sell */}
+                <div className="rounded-2xl border p-4 flex flex-col gap-2 bg-violet-50 text-violet-700 border-violet-100">
+                    <span className="text-xl">⚖️</span>
+                    <p className="text-xs font-black uppercase tracking-widest opacity-70 leading-tight">Avg Buy / Sell</p>
+                    <p className="text-sm font-black leading-snug">{fmt(avgBuy)}<br /><span className="text-violet-400">/</span> {fmt(avgSell)}</p>
+                </div>
+
+            </div>
+
+            {/* ── Tab Bar + Controls ── */}
+            <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex gap-2 flex-wrap">
+                    <button onClick={() => setActiveTab('BUY')}  className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'BUY'     ? 'bg-sky-600 text-white shadow-lg'    : 'bg-white text-slate-400 border border-slate-200 hover:border-sky-200'}`}>Buy Queue <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded">{pendingBuy.length}</span></button>
+                    <button onClick={() => setActiveTab('SELL')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'SELL'    ? 'bg-blue-600 text-white shadow-lg'   : 'bg-white text-slate-400 border border-slate-200 hover:border-blue-200'}`}>Sell Queue <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded">{pendingSell.length}</span></button>
+                    <button onClick={() => setActiveTab('HISTORY')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'HISTORY' ? 'bg-slate-800 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200 hover:border-slate-300'}`}>History <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded">{history.length}</span></button>
                 </div>
                 <div className="flex items-center gap-3">
-                    {lastRefresh && (
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">
-                            Last sync: {lastRefresh.toLocaleTimeString()}
-                        </span>
-                    )}
+                    {lastRefresh && <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Last sync: {lastRefresh.toLocaleTimeString()}</span>}
                     <button onClick={() => fetchQueue(false)} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-all">
                         <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> Refresh
                     </button>
                 </div>
             </div>
 
-            <div className="bg-white rounded-[3rem] border border-slate-200/60 shadow-sm overflow-hidden">
-                <div className={`p-8 border-b border-slate-200/60 flex items-center justify-between ${activeTab === 'BUY' ? 'bg-sky-50/30' : 'bg-blue-50/30'}`}>
-                    <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tight">{activeTab} <span className={activeTab === 'BUY' ? 'text-sky-600' : 'text-blue-600'}>Queue</span></h3>
-                    <span className={`px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${activeTab === 'BUY' ? 'bg-sky-100 text-sky-600' : 'bg-blue-100 text-blue-600'}`}>{displayData.length} Pending</span>
+            {/* ── Table ── */}
+            <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden">
+                <div className={`px-8 py-5 border-b border-slate-100 flex items-center justify-between ${activeTab === 'BUY' ? 'bg-sky-50/40' : activeTab === 'SELL' ? 'bg-blue-50/40' : 'bg-slate-50/60'}`}>
+                    <h3 className="text-sm font-black text-slate-900 uppercase italic tracking-tight">
+                        {activeTab === 'HISTORY' ? 'Transaction History' : `${activeTab} Queue`}
+                        <span className={`ml-3 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${activeTab === 'BUY' ? 'bg-sky-100 text-sky-600' : activeTab === 'SELL' ? 'bg-blue-100 text-blue-600' : 'bg-slate-200 text-slate-600'}`}>{displayData.length} records</span>
+                    </h3>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left min-w-max">
-                        <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                            <tr className="border-b border-slate-200">
-                                <th className="px-6 py-5">S.No</th>
-                                <th className="px-6 py-5">Name</th>
-                                <th className="px-6 py-5">Phone / Email</th>
-                                {activeTab === 'BUY' ? <th className="px-6 py-5">Wallet Address</th> : <th className="px-6 py-5">UPI ID</th>}
-                                <th className="px-6 py-5">Quantity</th>
-                                <th className="px-6 py-5">Paid Amount</th>
-                                <th className="px-6 py-5">Screenshot</th>
-                                <th className="px-6 py-5 text-right">Action</th>
-                            </tr>
-                        </thead>
+                <div className="overflow-x-auto w-full">
+                    <table className="w-full text-left" style={{minWidth:'860px'}}>
+                        <TableHead isSell={activeTab === 'SELL' || (activeTab === 'HISTORY')} />
                         <tbody className="divide-y divide-slate-100">
                             {displayData.map((r, i) => (
-                                <tr key={r.id} className="hover:bg-slate-50">
-                                    <td className="px-6 py-5 text-[10px] font-black text-slate-400">#{(i+1).toString().padStart(2, '0')}</td>
-                                    <td className="px-6 py-5 text-xs font-black text-slate-900 uppercase">{r.user_name}</td>
-                                    <td className="px-6 py-5">
-                                        <div className="flex flex-col gap-1">
-                                            <span className="text-[10px] font-bold text-slate-700">{r.phone_number}</span>
-                                            <span className="text-[9px] font-bold text-slate-400">{r.email || 'N/A'}</span>
+                                <tr key={r.id} className="hover:bg-slate-50 align-middle">
+                                    <td className="px-5 py-4 text-[10px] font-black text-slate-400 whitespace-nowrap">#{(i+1).toString().padStart(2,'0')}</td>
+                                    <td className="px-5 py-4 text-xs font-black text-slate-900 uppercase whitespace-nowrap">{r.user_name}</td>
+                                    <td className="px-5 py-4">
+                                        <div className="flex flex-col gap-0.5">
+                                            <span className="text-[10px] font-bold text-slate-700 whitespace-nowrap">{r.phone_number}</span>
+                                            <span className="text-[9px] font-bold text-slate-400 whitespace-nowrap">{r.email || '—'}</span>
                                         </div>
                                     </td>
-                                    {activeTab === 'BUY' ? (
-                                        <td className="px-6 py-5 text-[9px] font-mono font-black text-indigo-500 uppercase">{r.user_wallet.slice(0,6)}...{r.user_wallet.slice(-4)}</td>
-                                    ) : (
-                                        <td className="px-6 py-5 text-[9px] font-mono font-black text-indigo-500">{getUpiId(r.bank_details_json)}</td>
-                                    )}
-                                    <td className="px-6 py-5 text-[10px] font-black text-slate-900 uppercase">{r.amount} {r.asset || 'USDT'}</td>
-                                    <td className="px-6 py-5 text-[10px] font-black text-sky-600">₹{r.inr_amount?.toLocaleString()}</td>
-                                    <td className="px-6 py-5">
+                                    <td className="px-5 py-4 whitespace-nowrap">
+                                        <div className="flex items-center gap-2 group">
+                                            <span className="text-[9px] font-mono font-black text-indigo-500">
+                                                {r.type === 'BUY' 
+                                                    ? (r.receiving_wallet ? `${r.receiving_wallet.slice(0,6)}...${r.receiving_wallet.slice(-4)}` : `${r.user_wallet.slice(0,6)}...${r.user_wallet.slice(-4)}`)
+                                                    : getUpiId(r.bank_details_json)
+                                                }
+                                            </span>
+                                            {(r.type === 'BUY' || r.receiving_wallet) && (
+                                                <button onClick={() => { navigator.clipboard.writeText(r.receiving_wallet || r.user_wallet); alert('Address copied'); }} className="p-1 text-slate-300 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-all">
+                                                    <Copy size={12}/>
+                                                </button>
+                                            )}
+                                        </div>
+                                    </td>
+                                    <td className="px-5 py-4 text-[10px] font-black text-slate-900 uppercase whitespace-nowrap">{r.amount} {r.asset || 'USDT'}</td>
+                                    <td className="px-5 py-4 text-[10px] font-black text-sky-600 whitespace-nowrap">₹{Number(r.inr_amount||0).toLocaleString('en-IN',{maximumFractionDigits:0})}</td>
+                                    <td className="px-5 py-4">
                                         {r.proof_url ? (
-                                            <a href={`${API_URL.replace('/api', '')}${r.proof_url}`} target="_blank" rel="noopener noreferrer" className="px-3 py-1 bg-slate-100 text-slate-600 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all flex items-center gap-1 w-max">
-                                                <ExternalLink size={10} /> View Proof
+                                            <a href={`${API_URL.replace('/api','')}${r.proof_url}`} target="_blank" rel="noopener noreferrer" className="px-3 py-1.5 bg-slate-100 text-slate-600 rounded-lg text-[9px] font-black uppercase hover:bg-slate-200 transition-all flex items-center gap-1 w-max">
+                                                <ExternalLink size={10}/> View Proof
                                             </a>
-                                        ) : <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest">NO PROOF</span>}
+                                        ) : <span className="text-[9px] font-black text-slate-300 uppercase">—</span>}
                                     </td>
-                                    <td className="px-6 py-5 text-right">
-                                        <div className="flex gap-2 justify-end">
-                                            <button onClick={() => handleAction(r.id, 'REJECTED')} className="px-3 py-2 bg-blue-50 text-blue-500 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all">Reject</button>
-                                            <button onClick={() => handleAction(r.id, 'VERIFIED')} className="px-3 py-2 bg-sky-50 text-sky-500 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-sky-100 transition-all">Verify</button>
-                                        </div>
+                                    <td className="px-5 py-4 whitespace-nowrap">
+                                        <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
+                                            r.status === 'VERIFIED' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                            r.status === 'REJECTED' ? 'bg-red-50 text-red-500 border-red-100' :
+                                            'bg-amber-50 text-amber-600 border-amber-100'
+                                        }`}>{r.status}</span>
                                     </td>
+                                    {activeTab !== 'HISTORY' && (
+                                        <td className="px-5 py-4 text-right">
+                                            <div className="flex gap-2 justify-end">
+                                                <button onClick={() => handleAction(r.id, 'REJECTED')} className="px-3 py-1.5 bg-red-50 text-red-500 rounded-lg text-[9px] font-black uppercase hover:bg-red-100 transition-all whitespace-nowrap border border-red-100">Reject</button>
+                                                <button onClick={() => handleAction(r.id, 'VERIFIED')} className="px-3 py-1.5 bg-sky-50 text-sky-600 rounded-lg text-[9px] font-black uppercase hover:bg-sky-100 transition-all whitespace-nowrap border border-sky-100">✓ Verify</button>
+                                            </div>
+                                        </td>
+                                    )}
                                 </tr>
                             ))}
-                            {displayData.length === 0 && <tr><td colSpan="8" className="px-10 py-20 text-center text-slate-400 font-bold italic uppercase">No pending {activeTab} requests.</td></tr>}
+                            {displayData.length === 0 && (
+                                <tr><td colSpan="9" className="px-10 py-16 text-center text-slate-400 font-bold italic uppercase text-[11px]">
+                                    No {activeTab === 'HISTORY' ? 'completed' : `pending ${activeTab}`} transactions found.
+                                </td></tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

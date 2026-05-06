@@ -31,12 +31,14 @@ export default function FiatPage() {
     const [userTransactions, setUserTransactions] = useState([]);
     const [loadingTransactions, setLoadingTransactions] = useState(false);
     const [onChainTxHash, setOnChainTxHash] = useState('');
+    const [sellForm, setSellForm] = useState({ qtyTransferred: '', txHash: '' });
 
     // Form Data
     const [userDetails, setUserDetails] = useState({
         fullName: '',
         phoneNumber: '',
-        email: ''
+        email: '',
+        receivingWallet: ''
     });
     const [asset, setAsset] = useState('BNB');
     const [amount, setAmount] = useState('');
@@ -109,6 +111,12 @@ export default function FiatPage() {
     }, [account]);
 
     useEffect(() => {
+        if (account && !userDetails.receivingWallet) {
+            setUserDetails(prev => ({ ...prev, receivingWallet: account }));
+        }
+    }, [account]);
+
+    useEffect(() => {
         fetchUserTransactions();
     }, [fetchUserTransactions, status]);
 
@@ -167,6 +175,9 @@ export default function FiatPage() {
             if (!userDetails.fullName || !userDetails.phoneNumber || !userDetails.email) {
                 return alert('Please fill in all personal details.');
             }
+            if (activeTab === 'buy' && !userDetails.receivingWallet) {
+                return alert('Please provide a receiving wallet address.');
+            }
         }
         if (step === 2) {
             if (!amount || parseFloat(amount) <= 0) return alert('Please enter a valid amount.');
@@ -206,17 +217,19 @@ export default function FiatPage() {
     };
 
     const handleSubmit = async () => {
-        if (!proofFile) return alert('Please upload payment proof screenshot.');
-        
+        if (!proofFile) return alert('Please upload the crypto transfer screenshot.');
+
         if (activeTab === 'sell') {
-            if (bankDetails.method === 'UPI' && !bankDetails.upiId) {
-                return alert('Please enter your target UPI ID for withdrawal.');
-            }
-            if (bankDetails.method === 'BANK' && (!bankDetails.accNumber || !bankDetails.ifscCode || !bankDetails.accHolderName)) {
-                return alert('Please enter complete bank account details for withdrawal.');
-            }
+            if (!sellForm.qtyTransferred || parseFloat(sellForm.qtyTransferred) <= 0)
+                return alert('Please enter the quantity you transferred.');
+            if (!sellForm.txHash || sellForm.txHash.trim().length < 10)
+                return alert('Please enter a valid transaction hash.');
+            if (bankDetails.method === 'UPI' && !bankDetails.upiId)
+                return alert('Please enter your UPI ID (PhonePe / Google Pay / Paytm).');
+            if (bankDetails.method === 'BANK' && (!bankDetails.accNumber || !bankDetails.ifscCode || !bankDetails.accHolderName))
+                return alert('Please fill in all bank account details.');
         }
-        
+
         setStatus('submitting');
         try {
             const formData = new FormData();
@@ -224,21 +237,21 @@ export default function FiatPage() {
             formData.append('user_name', userDetails.fullName);
             formData.append('phone_number', userDetails.phoneNumber);
             formData.append('email', userDetails.email);
+            formData.append('receiving_wallet', userDetails.receivingWallet || account);
             formData.append('type', activeTab.toUpperCase());
             formData.append('asset', asset);
-            formData.append('amount', amount);
+            formData.append('amount', activeTab === 'sell' ? (sellForm.qtyTransferred || amount) : amount);
             formData.append('inr_amount', fiatAmount);
             formData.append('proof', proofFile);
-            
+
             if (activeTab === 'sell') {
                 formData.append('bank_details', JSON.stringify(bankDetails));
-                if (onChainTxHash) formData.append('on_chain_tx', onChainTxHash);
+                formData.append('on_chain_tx', sellForm.txHash);
             }
 
             await axios.post(`${API_URL}/fiat/transaction`, formData);
-            
             setStatus('success');
-            setTimer(15 * 60); // 15 minutes
+            setTimer(15 * 60);
             fetchUserTransactions();
         } catch (err) {
             setError(err.response?.data?.error || err.message);
@@ -384,6 +397,18 @@ export default function FiatPage() {
                                                             className="w-full pl-14 pr-6 py-4 bg-white/5 border border-white/10 rounded-2xl font-bold text-white focus:bg-white/10 focus:border-sky-500/30 outline-none transition-all" />
                                                     </div>
                                                 </div>
+
+                                                {activeTab === 'buy' && (
+                                                    <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                                        <label className="text-[10px] font-black text-sky-400 uppercase tracking-widest ml-2">Receiving Wallet Address (BEP-20)</label>
+                                                        <div className="relative">
+                                                            <Wallet className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-sky-500/50" />
+                                                            <input type="text" placeholder="0x..." value={userDetails.receivingWallet} onChange={(e) => setUserDetails({...userDetails, receivingWallet: e.target.value})}
+                                                                className="w-full pl-14 pr-6 py-4 bg-sky-500/5 border border-sky-500/20 rounded-2xl font-mono font-bold text-sky-300 focus:bg-sky-500/10 focus:border-sky-500/40 outline-none transition-all" />
+                                                        </div>
+                                                        <p className="text-[9px] text-gray-500 font-bold uppercase ml-2 italic">We will send your {asset} to this address after verification.</p>
+                                                    </div>
+                                                )}
                                                 <div className={`p-6 rounded-2xl border ${account ? 'bg-sky-500/10 border-sky-500/20 text-sky-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'} flex items-center justify-between`}>
                                                     <div className="flex items-center gap-4">
                                                         <Wallet className="w-6 h-6" />
@@ -448,50 +473,159 @@ export default function FiatPage() {
                                         {/* STEP 3: Payment / Transfer */}
                                         {step === 3 && (
                                             <div className="space-y-8">
-                                                <div className="text-center">
-                                                    <h3 className="text-2xl font-black text-white tracking-tight mb-2">
-                                                        {activeTab === 'buy' ? 'Complete Nexus Payment' : 'Transfer to Treasury Node'}
-                                                    </h3>
-                                                    <p className="text-sm text-gray-500 font-medium">Verify the parameters and execute the bridge transfer.</p>
-                                                </div>
-                                                <div className="bg-black/40 p-10 rounded-[3.5rem] border border-white/5 flex flex-col items-center">
-                                                    <div className="w-64 h-64 bg-white p-5 rounded-[2.5rem] shadow-[0_0_50px_rgba(16,185,129,0.15)] border-4 border-sky-500/20 mb-8 relative group">
-                                                        <img src={activeTab === 'buy' ? '/images/fiat_pay_qr.png' : '/images/treasury_wallet_qr.png'} alt="QR Code" className="w-full h-full object-contain grayscale group-hover:grayscale-0 transition-all duration-500" />
-                                                    </div>
-                                                    <div className="w-full space-y-4">
-                                                        <div className="flex items-center justify-between p-5 bg-white/5 rounded-2xl border border-white/10">
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">
-                                                                    {activeTab === 'buy' ? 'Official UPI Nexus' : 'Treasury Link Address'}
+                                                {activeTab === 'buy' ? (
+                                                    /* ── BUY Step 3: Show QR / UPI ── */
+                                                    <>
+                                                        <div className="text-center">
+                                                            <h3 className="text-2xl font-black text-white tracking-tight mb-2">Complete Nexus Payment</h3>
+                                                            <p className="text-sm text-gray-500 font-medium">Scan QR or copy UPI ID and complete your INR payment.</p>
+                                                        </div>
+                                                        <div className="bg-black/40 p-10 rounded-[3.5rem] border border-white/5 flex flex-col items-center">
+                                                            <div className="w-64 h-64 bg-white p-5 rounded-[2.5rem] shadow-[0_0_50px_rgba(16,185,129,0.15)] border-4 border-sky-500/20 mb-8 relative group">
+                                                                <img src="/images/fiat_pay_qr.png" alt="QR Code" className="w-full h-full object-contain grayscale group-hover:grayscale-0 transition-all duration-500" />
+                                                            </div>
+                                                            <div className="w-full">
+                                                                <div className="flex items-center justify-between p-5 bg-white/5 rounded-2xl border border-white/10">
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Official UPI Nexus</p>
+                                                                        <p className="font-mono text-sm font-bold text-white">purusothhrm1@ybl</p>
+                                                                    </div>
+                                                                    <button onClick={() => handleCopy('purusothhrm1@ybl')} className="p-3.5 bg-sky-500 text-white rounded-xl shadow-lg shadow-sky-500/20 hover:scale-110 transition-all active:scale-95">
+                                                                        {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex gap-4">
+                                                            <button onClick={() => setStep(2)} className="flex-1 py-5 bg-white/5 text-gray-500 rounded-2xl font-black uppercase tracking-widest hover:bg-white/10 transition-all border border-white/5">Back</button>
+                                                            <button onClick={nextStep} className="flex-[2] py-5 bg-sky-500 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-sky-500/20 hover:bg-sky-600 transition-all">I Have Executed Transfer</button>
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    /* ── SELL Step 3: Manual Submission Form ── */
+                                                    <>
+                                                        <div className="text-center">
+                                                            <h3 className="text-2xl font-black text-white tracking-tight mb-2">Submit Transfer Details</h3>
+                                                            <p className="text-sm text-gray-500 font-medium">Fill in your crypto transfer proof and withdrawal details below.</p>
+                                                        </div>
+
+                                                        {/* Treasury address to send to */}
+                                                        <div className="bg-blue-500/10 border border-blue-500/20 p-5 rounded-2xl flex items-start gap-4">
+                                                            <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                                                            <div>
+                                                                <p className="text-xs text-blue-200 font-bold leading-relaxed mb-1">
+                                                                    Send <span className="text-blue-300 font-black">{asset}</span> via BNB Smart Chain (BEP-20) to:
                                                                 </p>
-                                                                <p className="font-mono text-sm font-bold text-white truncate pr-4">
-                                                                    {activeTab === 'buy' ? 'purusothhrm1@ybl' : TREASURY_WALLET}
+                                                                <div className="flex items-center gap-2">
+                                                                    <p className="font-mono text-[10px] text-blue-300 break-all">{TREASURY_WALLET}</p>
+                                                                    <button onClick={() => handleCopy(TREASURY_WALLET)} className="shrink-0 p-1.5 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/40 transition-all">
+                                                                        {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Qty + TX Hash */}
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                                            <div className="space-y-2">
+                                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Quantity Transferred</label>
+                                                                <div className="relative">
+                                                                    <input type="number" step="0.0001" placeholder={`e.g. ${amount || '0.5'}`}
+                                                                        value={sellForm.qtyTransferred}
+                                                                        onChange={e => setSellForm(f => ({...f, qtyTransferred: e.target.value}))}
+                                                                        className="w-full pl-6 pr-20 py-4 bg-white/5 border border-white/10 rounded-2xl font-bold text-white focus:bg-white/10 focus:border-blue-500/30 outline-none transition-all" />
+                                                                    <span className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-500 font-black text-xs">{asset}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Transaction Hash</label>
+                                                                <input type="text" placeholder="0x..."
+                                                                    value={sellForm.txHash}
+                                                                    onChange={e => setSellForm(f => ({...f, txHash: e.target.value}))}
+                                                                    className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl font-mono font-bold text-white text-sm focus:bg-white/10 focus:border-blue-500/30 outline-none transition-all" />
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Screenshot Upload */}
+                                                        <div className="space-y-2">
+                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Upload Crypto Transfer Screenshot</label>
+                                                            <div onClick={() => document.getElementById('sell-proof-file').click()}
+                                                                className="w-full h-40 rounded-[2rem] bg-white/5 border-2 border-dashed border-white/10 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500/40 hover:bg-blue-500/5 transition-all overflow-hidden group">
+                                                                {proofPreview ? (
+                                                                    <div className="relative w-full h-full">
+                                                                        <img src={proofPreview} alt="Proof" className="w-full h-full object-cover" />
+                                                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                            <p className="text-xs font-black uppercase tracking-widest bg-white text-black px-4 py-2 rounded-full">Change</p>
+                                                                        </div>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="text-center p-6">
+                                                                        <Upload className="w-8 h-8 text-blue-400 mx-auto mb-3" />
+                                                                        <p className="text-xs font-black text-white uppercase tracking-widest">Click to Upload Screenshot</p>
+                                                                        <p className="text-[10px] text-gray-500 mt-1">PNG, JPG up to 5MB</p>
+                                                                    </div>
+                                                                )}
+                                                                <input id="sell-proof-file" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Bank / UPI Details */}
+                                                        <div className="space-y-5 pt-6 border-t border-white/10">
+                                                            <div className="flex items-center gap-3">
+                                                                <Landmark className="w-5 h-5 text-blue-400" />
+                                                                <h4 className="text-sm font-black text-white uppercase tracking-tight">Withdrawal Details</h4>
+                                                            </div>
+
+                                                            {/* Warning */}
+                                                            <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-4 flex items-start gap-3">
+                                                                <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
+                                                                <p className="text-[11px] text-yellow-200 font-semibold leading-relaxed">
+                                                                    ⚠️ Please verify your UPI ID / Bank details carefully. <span className="font-black text-yellow-300">Any mismatch — Mexapay is not responsible</span> for incorrect transfers.
                                                                 </p>
                                                             </div>
-                                                            <button onClick={() => handleCopy(activeTab === 'buy' ? 'purusothhrm1@ybl' : TREASURY_WALLET)} className="p-3.5 bg-sky-500 text-white rounded-xl shadow-lg shadow-sky-500/20 hover:scale-110 transition-all active:scale-95">
-                                                                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+
+                                                            <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5">
+                                                                <button onClick={() => setBankDetails({...bankDetails, method: 'UPI'})} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${bankDetails.method === 'UPI' ? 'bg-blue-500 text-white shadow-xl' : 'text-gray-500'}`}>UPI (PhonePe / GPay / Paytm)</button>
+                                                                <button onClick={() => setBankDetails({...bankDetails, method: 'BANK'})} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${bankDetails.method === 'BANK' ? 'bg-blue-500 text-white shadow-xl' : 'text-gray-500'}`}>Bank Transfer</button>
+                                                            </div>
+
+                                                            {bankDetails.method === 'UPI' ? (
+                                                                <div className="space-y-3">
+                                                                    <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-3">UPI ID (PhonePe / Google Pay / Paytm)</label>
+                                                                    <input type="text" placeholder="yourname@upi / yourname@paytm"
+                                                                        value={bankDetails.upiId}
+                                                                        onChange={e => setBankDetails({...bankDetails, upiId: e.target.value})}
+                                                                        className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl font-bold text-white focus:bg-white/10 focus:border-blue-500/30 outline-none transition-all" />
+                                                                </div>
+                                                            ) : (
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                    {[
+                                                                        { label: 'Account Holder Name', key: 'accHolderName', placeholder: 'Full name as in bank' },
+                                                                        { label: 'Account Number', key: 'accNumber', placeholder: 'e.g. 1234567890' },
+                                                                        { label: 'IFSC Code', key: 'ifscCode', placeholder: 'e.g. SBIN0001234' },
+                                                                        { label: 'Bank Name', key: 'bankName', placeholder: 'e.g. State Bank of India' },
+                                                                        { label: 'Branch', key: 'branch', placeholder: 'e.g. Coimbatore Main' },
+                                                                    ].map(f => (
+                                                                        <div key={f.key} className="space-y-2">
+                                                                            <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">{f.label}</label>
+                                                                            <input type="text" placeholder={f.placeholder}
+                                                                                value={bankDetails[f.key]}
+                                                                                onChange={e => setBankDetails({...bankDetails, [f.key]: e.target.value})}
+                                                                                className="w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-2xl font-bold text-white focus:border-blue-500/30 outline-none transition-all" />
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="flex gap-4 pt-2">
+                                                            <button onClick={() => setStep(2)} className="flex-1 py-5 bg-white/5 text-gray-500 rounded-2xl font-black uppercase tracking-widest hover:bg-white/10 transition-all border border-white/5">Back</button>
+                                                            <button onClick={handleSubmit} className="flex-[2] py-5 bg-blue-500 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 hover:bg-blue-600 transition-all flex items-center justify-center gap-2">
+                                                                <ArrowUpRight className="w-5 h-5" /> Submit Sell Order
                                                             </button>
                                                         </div>
-                                                        {activeTab === 'sell' && (
-                                                            <div className="bg-blue-500/10 border border-blue-500/20 p-4 rounded-2xl flex items-start gap-4">
-                                                                <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-                                                                <p className="text-xs text-blue-200 font-bold leading-relaxed">
-                                                                    Protocol Requirement: Ensure <span className="text-blue-400 underline font-black">{asset}</span> is sent via <span className="text-blue-400 underline font-black">BNB Smart Chain (BEP-20)</span> only.
-                                                                </p>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <div className="flex gap-4">
-                                                    <button onClick={() => setStep(2)} className="flex-1 py-5 bg-white/5 text-gray-500 rounded-2xl font-black uppercase tracking-widest hover:bg-white/10 transition-all border border-white/5">Back</button>
-                                                    {activeTab === 'sell' ? (
-                                                        <button onClick={handleCryptoTransfer} className="flex-[2] py-5 bg-indigo-500 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-indigo-500/20 hover:bg-indigo-600 transition-all flex items-center justify-center gap-2">
-                                                            <ArrowUpRight className="w-5 h-5" /> Execute Sell Order
-                                                        </button>
-                                                    ) : (
-                                                        <button onClick={nextStep} className="flex-[2] py-5 bg-sky-500 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-sky-500/20 hover:bg-sky-600 transition-all">I Have Executed Transfer</button>
-                                                    )}
-                                                </div>
+                                                    </>
+                                                )}
                                             </div>
                                         )}
                                         {/* STEP 4: Submit Proof */}

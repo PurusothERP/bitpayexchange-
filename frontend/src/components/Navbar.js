@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import axios from 'axios';
 import { Wallet, Rocket, Activity, Image as ImageIcon, Menu, X, FileText, ArrowRightLeft, ChevronDown, Coins, ShieldCheck, Shield, Sparkles, DollarSign, CreditCard, Lock, Brain } from 'lucide-react';
+import Logo from './Logo';
 
 export default function Navbar() {
     const { account, connectWallet, disconnectWallet, isConnecting } = useWallet();
@@ -66,11 +67,11 @@ export default function Navbar() {
                 <div className="flex items-center justify-between h-20">
                     <div className="flex items-center gap-8">
                         <Link href="/exchange" className="flex items-center gap-2 group shrink-0">
-                            <div className="w-14 h-14 shrink-0 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
-                                <img src="/images/mainlogo.png" alt="Exchange Logo" className="w-full h-full object-contain" />
+                            <div className="w-12 h-12 shrink-0 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
+                                <Logo className="w-full h-full" />
                             </div>
-                            <span className="text-2xl font-black tracking-tighter text-gray-900 text-red-gradient drop-shadow-md whitespace-nowrap">
-                                EXCHANGE
+                            <span className="text-2xl font-black tracking-tighter text-gray-900 text-premium-gradient drop-shadow-md whitespace-nowrap">
+                                MEXAPAY
                             </span>
                         </Link>
 

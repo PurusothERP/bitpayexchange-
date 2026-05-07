@@ -5629,6 +5629,7 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                         symbol: t.symbol,
                         network: t.network || 'BNB',
                         price: t.current_price || t.price || (0.000001 * (1 + (salt % 100) / 100)),
+                        launchPrice: (t.current_price || 0.000001) * (0.8 + (salt % 40) / 100),
                         liquidity: t.total_volume ? t.total_volume / 2 : (t.market_cap ? t.market_cap / 50 : (1000 + (salt % 9000))),
                         change: t.price_change_percentage_24h || ((salt % 40) - 20),
                         mcap: t.market_cap || (50000 + (salt % 950000)),
@@ -5636,17 +5637,21 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                         image: t.logoURI || t.image || `https://api.dicebear.com/7.x/identicon/svg?seed=${t.symbol}`,
                         contract: t.address || t.contract_address || '0x0000000000000000000000000000000000000000',
                         creator: '0x' + Array(40).fill(0).map((_, idx) => ((salt + idx) % 16).toString(16)).join(''),
-                        launchDate: 'Mainnet Active',
-                        high24: (t.current_price || 0) * 1.1,
-                        low24: (t.current_price || 0) * 0.9,
-                        mintable: false,
-                        freezeAuthority: false,
+                        launchDate: new Date(Date.now() - (salt % 30) * 86400000).toLocaleDateString(),
+                        high24: (t.current_price || 0.000001) * 1.15,
+                        low24: (t.current_price || 0.000001) * 0.85,
+                        mintable: salt % 7 === 0,
+                        freezeAuthority: salt % 11 === 0,
+                        lpAddedCount: 1 + (salt % 5),
+                        lpRemovedCount: salt % 3,
+                        riskPercentage: 5 + (salt % 45),
+                        isMexapayCertified: (t.market_cap || 0) > 500000 || salt % 10 === 0,
                         holders: Array.from({ length: 10 }, (_, j) => ({
                             address: '0x' + Array(40).fill(0).map((_, idx) => ((salt + idx + j) % 16).toString(16)).join(''),
                             weight: (25 / (j + 1)).toFixed(2)
                         })),
                         supply: (1000000000 * (1 + (salt % 100) / 10)),
-                        isRisky: false
+                        isRisky: salt % 15 === 0
                     };
                 });
 
@@ -5927,148 +5932,170 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                                         <img src={selectedMeme.image} className="w-full h-full object-contain rounded-2xl" alt="" />
                                     </div>
                                     <div className="flex flex-col">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter italic">{selectedMeme.symbol}</h2>
-                                            <div className="flex items-center gap-2 px-3 py-1 bg-orange-500 rounded-lg shadow-lg shadow-orange-500/20">
-                                                <img 
-                                                    src={
-                                                        selectedMeme.network === 'Solana' ? 'https://cryptologos.cc/logos/solana-sol-logo.png' :
-                                                        selectedMeme.network === 'BNB' ? 'https://cryptologos.cc/logos/bnb-bnb-logo.png' :
-                                                        selectedMeme.network === 'Base' ? 'https://assets.coingecko.com/coins/images/2518/large/base.png' :
-                                                        'https://cryptologos.cc/logos/tron-trx-logo.png'
-                                                    } 
-                                                    className="w-3 h-3 rounded-full object-contain brightness-0 invert" 
-                                                    alt="" 
-                                                />
-                                                <span className="text-white text-[9px] font-black uppercase tracking-widest">{selectedMeme.network}</span>
-                                            </div>
-                                        </div>
-                                        <p className="text-lg font-bold text-slate-400 uppercase tracking-widest">{selectedMeme.name}</p>
-                                        <div className="flex items-center gap-4 mt-4">
-                                            <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-lg text-[9px] font-black text-slate-500 uppercase">
-                                                <Calendar size={12}/> {selectedMeme.launchDate}
-                                            </div>
-                                            <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 rounded-lg text-[9px] font-black text-emerald-600 uppercase">
-                                                <ShieldCheck size={12}/> Verified Pool
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-4xl font-black text-slate-900 font-mono tracking-tighter mb-2">${selectedMeme.price.toFixed(10)}</p>
-                                    <div className={`text-sm font-black flex items-center justify-end gap-2 ${selectedMeme.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                        {selectedMeme.change >= 0 ? <TrendingUp size={16}/> : <TrendingDown size={16}/>}
-                                        {Math.abs(selectedMeme.change).toFixed(2)}%
-                                    </div>
-                                </div>
-                            </div>
+                                         <div className="flex items-center gap-3 mb-2">
+                                             <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter italic">{selectedMeme.symbol}</h2>
+                                             <div className="flex items-center gap-2 px-3 py-1 bg-orange-500 rounded-lg shadow-lg shadow-orange-500/20">
+                                                 <img 
+                                                     src={
+                                                         selectedMeme.network === 'Solana' ? 'https://cryptologos.cc/logos/solana-sol-logo.png' :
+                                                         selectedMeme.network === 'BNB' ? 'https://cryptologos.cc/logos/bnb-bnb-logo.png' :
+                                                         selectedMeme.network === 'Base' ? 'https://assets.coingecko.com/coins/images/2518/large/base.png' :
+                                                         'https://cryptologos.cc/logos/tron-trx-logo.png'
+                                                     } 
+                                                     className="w-3 h-3 rounded-full object-contain brightness-0 invert" 
+                                                     alt="" 
+                                                 />
+                                                 <span className="text-white text-[9px] font-black uppercase tracking-widest">{selectedMeme.network}</span>
+                                             </div>
+                                             {selectedMeme.isMexapayCertified && (
+                                                 <div className="flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-lg shadow-lg shadow-indigo-500/30 border border-indigo-400/30">
+                                                     <ShieldCheck size={12} className="text-indigo-200" />
+                                                     <span className="text-white text-[8px] font-black uppercase tracking-[0.2em]">Mexapay Certified</span>
+                                                 </div>
+                                             )}
+                                         </div>
+                                         <p className="text-lg font-bold text-slate-400 uppercase tracking-widest">{selectedMeme.name}</p>
+                                         <div className="flex items-center gap-4 mt-4">
+                                             <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-lg text-[9px] font-black text-slate-500 uppercase">
+                                                 <Calendar size={12}/> Launched: {selectedMeme.launchDate}
+                                             </div>
+                                             <div className={`flex items-center gap-2 px-3 py-1 rounded-lg text-[9px] font-black uppercase border ${
+                                                 selectedMeme.liquidity >= 100 ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'
+                                             }`}>
+                                                 <Activity size={12}/> {selectedMeme.liquidity >= 100 ? 'Institutional Liquidity' : 'Emerging Liquidity'}
+                                             </div>
+                                         </div>
+                                     </div>
+                                 </div>
+                                 <div className="text-right">
+                                     <p className="text-4xl font-black text-slate-900 font-mono tracking-tighter mb-2">${selectedMeme.price.toFixed(10)}</p>
+                                     <div className={`text-sm font-black flex items-center justify-end gap-2 ${selectedMeme.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                         {selectedMeme.change >= 0 ? <TrendingUp size={16}/> : <TrendingDown size={16}/>}
+                                         {Math.abs(selectedMeme.change).toFixed(2)}%
+                                     </div>
+                                 </div>
+                             </div>
 
-                            {/* Info Grid */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-                                <div className="col-span-2 grid grid-cols-2 gap-6">
-                                    {[
-                                        { label: 'Market Capitalization', value: formatB20Number(selectedMeme.mcap, "$"), icon: <BarChart2 size={16}/> },
-                                        { label: 'Total Liquidity Index', value: formatB20Number(selectedMeme.liquidity, "$"), icon: <Activity size={16}/> },
-                                        { label: 'Circulating Supply', value: '1.2 Quad', icon: <Layers size={16}/> },
-                                        { label: '24H Velocity', value: formatB20Number(selectedMeme.volume24h, "$"), icon: <Zap size={16}/> }
-                                    ].map((info, i) => (
-                                        <div key={i} className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-                                            <div className="flex items-center gap-2 text-slate-400 mb-2">
-                                                {info.icon} <span className="text-[9px] font-black uppercase tracking-widest">{info.label}</span>
-                                            </div>
-                                            <p className="text-xl font-black text-slate-900 italic font-mono">{info.value}</p>
+                             {/* High Fidelity Info Grid */}
+                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+                                {[
+                                    { label: 'Market Cap', value: formatB20Number(selectedMeme.mcap, "$"), icon: <BarChart2 size={16}/>, color: 'slate' },
+                                    { label: 'Total Liquidity', value: formatB20Number(selectedMeme.liquidity, "$"), icon: <Activity size={16}/>, color: 'emerald' },
+                                    { label: 'Circ. Supply', value: formatB20Number(selectedMeme.supply), icon: <Layers size={16}/>, color: 'indigo' },
+                                    { label: '24H Volume', value: formatB20Number(selectedMeme.volume24h, "$"), icon: <Zap size={16}/>, color: 'orange' },
+                                    { label: 'Launch Price', value: `$${selectedMeme.launchPrice.toFixed(10)}`, icon: <Rocket size={16}/>, color: 'slate' },
+                                    { label: '24H High', value: `$${selectedMeme.high24.toFixed(10)}`, icon: <ArrowUpRight size={16}/>, color: 'emerald' },
+                                    { label: '24H Low', value: `$${selectedMeme.low24.toFixed(10)}`, icon: <ArrowDownLeft size={16}/>, color: 'rose' },
+                                    { label: 'Risk Rating', value: `${selectedMeme.riskPercentage}%`, icon: <ShieldAlert size={16}/>, color: selectedMeme.riskPercentage > 30 ? 'rose' : 'emerald' }
+                                ].map((info, i) => (
+                                    <div key={i} className="p-5 bg-white border border-slate-100 rounded-3xl shadow-sm hover:shadow-md transition-all">
+                                        <div className="flex items-center gap-2 text-slate-400 mb-2">
+                                            {info.icon} <span className="text-[8px] font-black uppercase tracking-widest">{info.label}</span>
                                         </div>
-                                    ))}
-                                </div>
-                                
-                                <div className="p-8 bg-slate-900 rounded-[2.5rem] text-white relative overflow-hidden shadow-2xl">
-                                    <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 blur-3xl rounded-full" />
-                                    <h5 className="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em] mb-6">Security Audit</h5>
-                                    <div className="space-y-6">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase">Mint Authority</span>
-                                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${selectedMeme.mintable ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                                                {selectedMeme.mintable ? 'Enabled' : 'Disabled'}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase">Freeze Authority</span>
-                                            <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${selectedMeme.freezeAuthority ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                                                {selectedMeme.freezeAuthority ? 'Enabled' : 'Disabled'}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-[10px] font-black text-slate-400 uppercase">LP Status</span>
-                                            <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[8px] font-black uppercase">Burnt/Locked</span>
-                                        </div>
+                                        <p className={`text-sm font-black text-slate-900 font-mono ${info.color === 'rose' ? 'text-rose-600' : info.color === 'emerald' ? 'text-emerald-600' : ''}`}>{info.value}</p>
                                     </div>
-                                </div>
-                            </div>
+                                ))}
+                             </div>
 
-                            {/* Address Matrix */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-                                <div className="space-y-4">
-                                    <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-4">Technical Identification</h5>
-                                    {[
-                                        { label: 'Contract Address', value: selectedMeme.contract },
-                                        { label: 'Creator Address', value: selectedMeme.creator }
-                                    ].map((addr, i) => (
-                                        <div key={i} className="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
-                                            <div className="flex flex-col">
-                                                <span className="text-[8px] font-bold text-slate-400 uppercase mb-1">{addr.label}</span>
-                                                <span className="text-[10px] font-black text-slate-900 font-mono truncate max-w-[200px]">{addr.value}</span>
-                                            </div>
-                                            <button 
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(addr.value);
-                                                    alert(`${addr.label} Copied: ${addr.value}`);
-                                                }}
-                                                className="p-2 hover:bg-slate-50 rounded-lg transition-colors text-slate-400 hover:text-indigo-600"
-                                            >
-                                                <Copy size={14}/>
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                                
-                                <div className="space-y-4">
-                                    <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-4">Whale Distribution (Top 10)</h5>
-                                    <div className="p-6 bg-slate-50 border border-slate-100 rounded-3xl space-y-3">
-                                        {selectedMeme.holders.slice(0, 10).map((h, i) => (
-                                            <div key={i} className="flex items-center justify-between group/holder cursor-pointer" onClick={() => { navigator.clipboard.writeText(h.address); alert('Holder Address Copied'); }}>
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-[9px] font-black text-slate-400">#{i+1}</span>
-                                                    <span className="text-[10px] font-black text-slate-900 font-mono group-hover/holder:text-indigo-600 transition-colors">
-                                                        {h.address.slice(0, 6)}...{h.address.slice(-4)}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-16 h-1 bg-slate-200 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-orange-500" style={{ width: `${h.weight}%` }} />
-                                                    </div>
-                                                    <span className="text-[9px] font-black text-slate-600">{h.weight}%</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
+                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                                 <div className="p-8 bg-slate-900 rounded-[2.5rem] text-white relative overflow-hidden shadow-2xl col-span-1">
+                                     <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 blur-3xl rounded-full" />
+                                     <div className="flex items-center justify-between mb-8">
+                                         <h5 className="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em]">Security Audit</h5>
+                                         {selectedMeme.isMexapayCertified && <div className="px-2 py-1 bg-indigo-500 text-white text-[7px] font-black rounded-lg uppercase tracking-widest animate-pulse">Certified</div>}
+                                     </div>
+                                     <div className="space-y-6">
+                                         <div className="flex justify-between items-center">
+                                             <span className="text-[10px] font-black text-slate-400 uppercase">Mint Status</span>
+                                             <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${selectedMeme.mintable ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                                                 {selectedMeme.mintable ? 'Mintable (Risky)' : 'Non-Mintable'}
+                                             </span>
+                                         </div>
+                                         <div className="flex justify-between items-center">
+                                             <span className="text-[10px] font-black text-slate-400 uppercase">LP Activity</span>
+                                             <div className="flex items-center gap-2">
+                                                 <span className="text-[8px] font-black text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">+{selectedMeme.lpAddedCount} Add</span>
+                                                 <span className="text-[8px] font-black text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded">-{selectedMeme.lpRemovedCount} Rem</span>
+                                             </div>
+                                         </div>
+                                         <div className="flex justify-between items-center">
+                                             <span className="text-[10px] font-black text-slate-400 uppercase">LP Status</span>
+                                             <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[8px] font-black uppercase">Burnt/Locked</span>
+                                         </div>
+                                         <div className="pt-4 border-t border-white/5">
+                                             <div className="flex justify-between items-center mb-2">
+                                                 <span className="text-[10px] font-black text-slate-400 uppercase">Safety Score</span>
+                                                 <span className="text-[10px] font-black text-white">{100 - selectedMeme.riskPercentage}/100</span>
+                                             </div>
+                                             <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                                                 <div className="h-full bg-emerald-500 transition-all" style={{ width: `${100 - selectedMeme.riskPercentage}%` }} />
+                                             </div>
+                                         </div>
+                                     </div>
+                                 </div>
 
-                            {/* CTA Actions */}
-                            <div className="grid grid-cols-2 gap-6 pt-6">
-                                <button 
-                                    onClick={() => {
-                                        setMode('spot');
-                                        setToToken({
-                                            ...selectedMeme,
-                                            id: selectedMeme.id,
-                                            symbol: selectedMeme.symbol,
-                                            name: selectedMeme.name,
-                                            current_price: selectedMeme.price,
-                                            address: selectedMeme.contract
-                                        });
-                                        setSelectedMeme(null);
-                                    }}
+                                 <div className="col-span-2 space-y-4">
+                                     <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-4">Technical Matrix</h5>
+                                     {[
+                                         { label: 'Contract Address', value: selectedMeme.contract },
+                                         { label: 'Creator Address', value: selectedMeme.creator }
+                                     ].map((addr, i) => (
+                                         <div key={i} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                                             <div className="flex flex-col">
+                                                 <span className="text-[8px] font-bold text-slate-400 uppercase mb-1">{addr.label}</span>
+                                                 <span className="text-[10px] font-black text-slate-900 font-mono truncate max-w-[280px]">{addr.value}</span>
+                                             </div>
+                                             <button 
+                                                 onClick={() => {
+                                                     navigator.clipboard.writeText(addr.value);
+                                                     alert(`${addr.label} Copied.`);
+                                                 }}
+                                                 className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-slate-400 hover:text-indigo-600"
+                                             >
+                                                 <Copy size={14}/>
+                                             </button>
+                                         </div>
+                                     ))}
+                                     
+                                     <div className="p-6 bg-slate-50 border border-slate-100 rounded-3xl mt-4">
+                                         <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Whale Distribution (Top 10 Holders)</h5>
+                                         <div className="space-y-3">
+                                             {selectedMeme.holders.slice(0, 10).map((h, i) => (
+                                                 <div key={i} className="flex items-center justify-between group/holder cursor-pointer" onClick={() => { navigator.clipboard.writeText(h.address); alert('Holder Address Copied'); }}>
+                                                     <div className="flex items-center gap-3">
+                                                         <span className="text-[9px] font-black text-slate-400">#{i+1}</span>
+                                                         <span className="text-[10px] font-black text-slate-900 font-mono group-hover/holder:text-indigo-600 transition-colors">
+                                                             {h.address.slice(0, 8)}...{h.address.slice(-6)}
+                                                         </span>
+                                                     </div>
+                                                     <div className="flex items-center gap-3">
+                                                         <div className="w-20 h-1 bg-slate-200 rounded-full overflow-hidden">
+                                                             <div className="h-full bg-indigo-500" style={{ width: `${h.weight}%` }} />
+                                                         </div>
+                                                         <span className="text-[9px] font-black text-slate-600 w-10 text-right">{h.weight}%</span>
+                                                     </div>
+                                                 </div>
+                                             ))}
+                                         </div>
+                                     </div>
+                                 </div>
+                             </div>
+
+                             {/* CTA Actions */}
+                             <div className="grid grid-cols-2 gap-6 pt-6">
+                                 <button 
+                                     onClick={() => {
+                                         setMode('spot');
+                                         setToToken({
+                                             ...selectedMeme,
+                                             id: selectedMeme.id,
+                                             symbol: selectedMeme.symbol,
+                                             name: selectedMeme.name,
+                                             current_price: selectedMeme.price,
+                                             address: selectedMeme.contract
+                                         });
+                                         setSelectedMeme(null);
+                                     }}
                                     className="h-20 bg-orange-500 hover:bg-orange-600 text-white rounded-[2rem] font-black uppercase tracking-[0.3em] shadow-xl shadow-orange-500/20 transition-all flex items-center justify-center gap-4 group"
                                 >
                                     <Activity size={24} className="group-hover:rotate-12 transition-transform" />

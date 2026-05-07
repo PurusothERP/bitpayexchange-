@@ -5983,10 +5983,10 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                                     { label: 'Total Liquidity', value: formatB20Number(selectedMeme.liquidity, "$"), icon: <Activity size={16}/>, color: 'emerald' },
                                     { label: 'Circ. Supply', value: formatB20Number(selectedMeme.supply), icon: <Layers size={16}/>, color: 'indigo' },
                                     { label: '24H Volume', value: formatB20Number(selectedMeme.volume24h, "$"), icon: <Zap size={16}/>, color: 'orange' },
-                                    { label: 'Launch Price', value: `$${selectedMeme.launchPrice.toFixed(10)}`, icon: <Rocket size={16}/>, color: 'slate' },
-                                    { label: '24H High', value: `$${selectedMeme.high24.toFixed(10)}`, icon: <ArrowUpRight size={16}/>, color: 'emerald' },
-                                    { label: '24H Low', value: `$${selectedMeme.low24.toFixed(10)}`, icon: <ArrowDownLeft size={16}/>, color: 'rose' },
-                                    { label: 'Risk Rating', value: `${selectedMeme.riskPercentage}%`, icon: <ShieldAlert size={16}/>, color: selectedMeme.riskPercentage > 30 ? 'rose' : 'emerald' }
+                                    { label: 'Launch Price', value: `$${(selectedMeme.launchPrice || 0).toFixed(10)}`, icon: <Rocket size={16}/>, color: 'slate' },
+                                    { label: '24H High', value: `$${(selectedMeme.high24 || 0).toFixed(10)}`, icon: <ArrowUpRight size={16}/>, color: 'emerald' },
+                                    { label: '24H Low', value: `$${(selectedMeme.low24 || 0).toFixed(10)}`, icon: <ArrowDownLeft size={16}/>, color: 'rose' },
+                                    { label: 'Risk Rating', value: `${selectedMeme.riskPercentage || 0}%`, icon: <ShieldAlert size={16}/>, color: (selectedMeme.riskPercentage || 0) > 30 ? 'rose' : 'emerald' }
                                 ].map((info, i) => (
                                     <div key={i} className="p-5 bg-white border border-slate-100 rounded-3xl shadow-sm hover:shadow-md transition-all">
                                         <div className="flex items-center gap-2 text-slate-400 mb-2">

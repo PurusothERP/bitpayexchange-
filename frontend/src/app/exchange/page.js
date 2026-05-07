@@ -601,8 +601,10 @@ export default function B20Exchange() {
         }
         
         // 4. Sorting Engine (Final Pass)
-        if (marketSort === 'rank') list.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999));
-        else if (marketSort === 'mcap') list.sort((a, b) => (b.market_cap || 0) - (a.market_cap || 0));
+        // Force Rank 1-6000 ordering when 'All Assets' is selected to ensure institutional compliance
+        if (marketCategory === 'all' || marketSort === 'rank') {
+             list.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999));
+        } else if (marketSort === 'mcap') list.sort((a, b) => (b.market_cap || 0) - (a.market_cap || 0));
         else if (marketSort === 'p_high') list.sort((a, b) => (b.current_price || 0) - (a.current_price || 0));
         else if (marketSort === 'p_low') list.sort((a, b) => (a.current_price || 0) - (b.current_price || 0));
         else if (marketSort === 'change') list.sort((a, b) => Math.abs(b.price_change_percentage_24h || 0) - Math.abs(a.price_change_percentage_24h || 0));
@@ -906,9 +908,9 @@ export default function B20Exchange() {
                     network: 'BNB'
                 }));
 
-                // Unified De-duplication (Priority: Fallback USDT > B20 > CG > BSC list)
+                // Unified De-duplication (Priority: Fallback USDT > CG Global > B20 > BSC list)
                 const usdtFallbacks = FALLBACK.filter(f => f.symbol === 'USDT');
-                const all = [...usdtFallbacks, ...b20Formatted, ...cgFormatted, ...bscFormatted];
+                const all = [...usdtFallbacks, ...cgFormatted, ...b20Formatted, ...bscFormatted];
                 const uniqueMap = new Map();
                 
                 all.forEach(t => {

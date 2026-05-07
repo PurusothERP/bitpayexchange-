@@ -549,10 +549,20 @@ export default function B20Exchange() {
         const delistedAddresses = new Set(tokens.filter(t => t.is_delisted).map(t => (t.address || t.contract_address || '').toLowerCase()));
         let list = [...tokens].filter(t => !t.is_delisted && !delistedAddresses.has((t.address || t.contract_address || '').toLowerCase()));
         
-        // Derivatives (Pro) mode defaults to Top 500 ranking assets
-        if (mode === 'pro' && !marketSearch && marketCategory === 'all') {
-            list = list.sort((a,b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999));
+        // --- STRICT PAGE SEPARATION (Markets vs Web3 vs Meme) ---
+        // Ensures tokens are reflected only on their respective institutional pages
+        if (mode === 'markets') {
+            // Markets Page: Strictly BNB Mainnet Assets + Top Global Institutional Indices
+            list = list.filter(t => t.network === 'BNB' || t.isB20 || (t.market_cap_rank && t.market_cap_rank <= 100));
+        } else if (mode === 'web3') {
+            // Web3 Portal: Strictly Cross-Chain Assets (Non-BNB Networks)
+            list = list.filter(t => t.network && t.network !== 'BNB');
+        } else if (mode === 'spot' || mode === 'pro') {
+            // Spot/Pro Execution: Access to full global liquidity for trading
+            list = list; 
         }
+        // Meme Terminal is handled by its internal realMemes state
+        // --- END SEPARATION ---
         
         // 1. Search Filter (Highest Priority)
         if (marketSearch) {

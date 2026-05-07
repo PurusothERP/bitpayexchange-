@@ -2126,7 +2126,8 @@ export default function B20Exchange() {
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: Math.min(i * 0.015, 0.3) }}
-                                            className="bg-white border border-slate-200/60 rounded-2xl p-6 hover:shadow-2xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all group relative overflow-hidden"
+                                            className="bg-white border border-slate-200/60 rounded-2xl p-6 hover:shadow-2xl hover:shadow-gray-200/50 hover:-translate-y-1 transition-all group relative overflow-hidden cursor-pointer"
+                                            onClick={() => setSelectedMarketToken(t)}
                                         >
                                             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-gray-50 to-transparent rounded-bl-[3rem] opacity-0 group-hover:opacity-100 transition-opacity" />
                                             <div className="flex items-center justify-between mb-6">
@@ -2181,7 +2182,8 @@ export default function B20Exchange() {
                                                 initial={{ opacity: 0 }}
                                                 animate={{ opacity: 1 }}
                                                 transition={{ delay: Math.min(i * 0.005, 0.1) }}
-                                                className="grid grid-cols-12 items-center px-5 py-4 hover:bg-slate-50/80 transition-colors group"
+                                                className="grid grid-cols-12 items-center px-5 py-4 hover:bg-slate-50/80 transition-colors group cursor-pointer"
+                                                onClick={() => setSelectedMarketToken(t)}
                                             >
                                                 <div className="col-span-1 text-[10px] font-black text-gray-300">
                                                     {t.market_cap_rank || i + 1}

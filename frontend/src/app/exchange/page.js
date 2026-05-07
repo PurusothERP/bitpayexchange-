@@ -923,17 +923,31 @@ export default function B20Exchange() {
 
                 let finalTokens = Array.from(uniqueMap.values());
 
-                // Strict Institutional Ordering & Cleanup
-                finalTokens = finalTokens.filter(t => !t.isSynthetic); // Remove any old mock traces
+                // Institutional Tiering: 2,000 Top Ranked + 4,000 Famous/Active Assets
+                const topRanked = finalTokens
+                    .filter(t => t.market_cap_rank && t.market_cap_rank <= 2000)
+                    .sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999));
                 
-                // Ensure we have exactly 6000 high-quality tokens if possible
-                if (finalTokens.length > 6000) {
-                    finalTokens = finalTokens.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999)).slice(0, 6000);
+                const remainingPool = finalTokens
+                    .filter(t => !topRanked.some(tr => (tr.address || tr.id).toLowerCase() === (t.address || t.id).toLowerCase()))
+                    .filter(t => !t.isSynthetic && !t.isB20)
+                    .sort((a, b) => (b.total_volume || 0) - (a.total_volume || 0)); // Prioritize "Famous" by volume
+
+                // Unified 6,000 Index
+                let unifiedList = [...topRanked];
+                const needed = 6000 - unifiedList.length;
+                if (needed > 0) {
+                    const famousSubset = remainingPool.slice(0, needed).map((t, i) => ({
+                        ...t,
+                        market_cap_rank: 2001 + i // Assign sequential rank for institutional order
+                    }));
+                    unifiedList = [...unifiedList, ...famousSubset];
                 }
 
-                finalTokens.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999));
-                if (finalTokens.length > 0) {
-                    setTokens(finalTokens);
+                unifiedList.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999));
+                
+                if (unifiedList.length > 0) {
+                    setTokens(unifiedList);
                 }
 
                 // Discovery Sentinel Logic

@@ -549,19 +549,16 @@ export default function B20Exchange() {
         const delistedAddresses = new Set(tokens.filter(t => t.is_delisted).map(t => (t.address || t.contract_address || '').toLowerCase()));
         let list = [...tokens].filter(t => !t.is_delisted && !delistedAddresses.has((t.address || t.contract_address || '').toLowerCase()));
         
-        // --- STRICT PAGE SEPARATION (Markets vs Web3 vs Meme) ---
-        // Ensures tokens are reflected only on their respective institutional pages
-        // Display exactly 6000 tokens in rank order as requested
-        if (mode === 'markets') {
-            // Markets Page: Strictly Real Assets ranked 1-6000 (Excluding Launchpad/Mock)
+        // --- STRICT PAGE SEPARATION (Institutional Ranking Engine) ---
+        // Display exactly 6000 real tokens in strict rank order (1-6000)
+        // No network restrictions applied as per institutional routing requirements
+        if (mode === 'markets' || mode === 'web3') {
+            // Filter out Launchpad/Mock tokens for primary terminal views
             list = list.filter(t => !t.isB20 && !t.isSynthetic);
-            list = list.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999)).slice(0, 6000);
-        } else if (mode === 'web3') {
-            // Web3 Portal: Strictly Cross-Chain Assets (Non-BNB Networks) ranked 1-6000
-            list = list.filter(t => t.network && t.network !== 'BNB' && !t.isB20 && !t.isSynthetic);
+            // Global Multi-Network Rank Sort (1-6000)
             list = list.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999)).slice(0, 6000);
         } else if (mode === 'spot' || mode === 'pro') {
-            // Spot/Pro Execution: Access to full global liquidity for trading
+            // Execution Modes: Full liquidity access
             list = list; 
         }
         // Meme Terminal is handled by its internal realMemes state
@@ -5665,6 +5662,7 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                     });
 
                 // Institutional Ranking: Sorting by Market Cap/Rank and slicing to 6,000
+                // No network restrictions applied to Meme Terminal as requested
                 const finalMemes = merged
                     .sort((a, b) => (a.mcap || 999999) - (b.mcap || 999999))
                     .slice(0, 6000);

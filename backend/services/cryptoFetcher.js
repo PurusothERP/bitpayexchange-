@@ -4,9 +4,13 @@ class CryptoFetcher {
     constructor() {
         // Will evaluate lazily to ensure env vars are loaded
         this.getCmcKey = () => process.env.COINMARKETCAP_API_KEY || '61a5cf295fde46a39ecb614a63cfd73b';
-        this.getCgHeaders = () => process.env.COINGECKO_API_KEY 
-            ? { 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY } 
-            : {};
+        this.getCgHeaders = () => {
+            const key = process.env.COINGECKO_API_KEY;
+            if (key && key !== 'your_coingecko_api_key_here' && key.trim() !== '') {
+                return { 'x-cg-demo-api-key': key };
+            }
+            return {};
+        };
     }
 
     /**

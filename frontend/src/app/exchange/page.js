@@ -762,16 +762,18 @@ export default function B20Exchange() {
         const fetchTokens = async () => {
             if (isInitial) setIsLoading(true);
             try {
-                // 1. Initial Fallback (Core Majors)
+                // 1. Initial Fallback (Core Majors - Ensuring Tier 1 always has data)
                 const FALLBACK = [
-                    { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', address: '0x0000000000000000000000000000000000000000', image: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png', current_price: 65000, price_change_percentage_24h: 0.5, market_cap: 1200000000000, total_supply: 21000000, market_cap_rank: 1, network: 'BITCOIN' },
-                    { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', image: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png', current_price: 3500, price_change_percentage_24h: 1.1, market_cap: 400000000000, total_supply: 120000000, market_cap_rank: 2, network: 'ETH' },
-                    { id: 'binancecoin', symbol: 'BNB', name: 'Binance Coin', address: '0x0000000000000000000000000000000000000000', image: 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png', current_price: 582.42, price_change_percentage_24h: 1.2, high_24h: 595.10, low_24h: 570.20, market_cap: 85000000000, total_supply: 147000000, market_cap_rank: 4, network: 'BNB' },
-                    { id: 'tether-bnb', symbol: 'USDT', name: 'Tether (BNB)', address: '0x55d398326f99059fF775485246999027B3197955', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', current_price: 1.0, price_change_percentage_24h: 0.01, market_cap: 110000000000, market_cap_rank: 3, network: 'BNB' },
-                    { id: 'tether-tron', symbol: 'USDT', name: 'Tether (TRON)', address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', current_price: 1.0, price_change_percentage_24h: 0.01, market_cap: 110000000000, market_cap_rank: 3, network: 'TRON' },
-                    { id: 'tether-solana', symbol: 'USDT', name: 'Tether (Solana)', address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', current_price: 1.0, price_change_percentage_24h: 0.01, market_cap: 110000000000, market_cap_rank: 3, network: 'SOL' },
-                    { id: 'tether-eth', symbol: 'USDT', name: 'Tether (Ethereum)', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', current_price: 1.0, price_change_percentage_24h: 0.01, market_cap: 110000000000, market_cap_rank: 3, network: 'ETH' },
-                    { id: 'pancakeswap-token', symbol: 'CAKE', name: 'PancakeSwap', address: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82', image: 'https://assets.coingecko.com/coins/images/12614/small/pancakeswap.png', current_price: 3.45, price_change_percentage_24h: -2.5, high_24h: 3.60, low_24h: 3.30, market_cap: 800000000, total_supply: 250000000, market_cap_rank: 100, network: 'BNB' },
+                    { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', address: '0x0000000000000000000000000000000000000000', image: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png', current_price: 65000, market_cap_rank: 1, network: 'BITCOIN' },
+                    { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', image: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png', current_price: 3500, market_cap_rank: 2, network: 'ETH' },
+                    { id: 'tether', symbol: 'USDT', name: 'Tether', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', current_price: 1.0, market_cap_rank: 3, network: 'ETH' },
+                    { id: 'binancecoin', symbol: 'BNB', name: 'Binance Coin', address: '0x0000000000000000000000000000000000000000', image: 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png', current_price: 582.42, market_cap_rank: 4, network: 'BNB' },
+                    { id: 'solana', symbol: 'SOL', name: 'Solana', address: 'So11111111111111111111111111111111111111112', image: 'https://assets.coingecko.com/coins/images/4128/small/solana.png', current_price: 145.20, market_cap_rank: 5, network: 'SOL' },
+                    { id: 'usd-coin', symbol: 'USDC', name: 'USDC', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', image: 'https://assets.coingecko.com/coins/images/6319/small/USD_Coin_icon.png', current_price: 1.0, market_cap_rank: 6, network: 'ETH' },
+                    { id: 'ripple', symbol: 'XRP', name: 'XRP', address: '0x0000000000000000000000000000000000000000', image: 'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png', current_price: 0.52, market_cap_rank: 7, network: 'XRP' },
+                    { id: 'dogecoin', symbol: 'DOGE', name: 'Dogecoin', address: '0x0000000000000000000000000000000000000000', image: 'https://assets.coingecko.com/coins/images/5/small/dogecoin.png', current_price: 0.15, market_cap_rank: 8, network: 'DOGE' },
+                    { id: 'cardano', symbol: 'ADA', name: 'Cardano', address: '0x0000000000000000000000000000000000000000', image: 'https://assets.coingecko.com/coins/images/975/small/cardano.png', current_price: 0.45, market_cap_rank: 9, network: 'ADA' },
+                    { id: 'shiba-inu', symbol: 'SHIB', name: 'Shiba Inu', address: '0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE', image: 'https://assets.coingecko.com/coins/images/11939/small/shiba.png', current_price: 0.000025, market_cap_rank: 10, network: 'ETH' },
                 ];
                 if (isInitial) setTokens(FALLBACK);
 
@@ -923,27 +925,35 @@ export default function B20Exchange() {
 
                 let finalTokens = Array.from(uniqueMap.values());
 
-                // Institutional Tiering: 2,000 Top Ranked + 4,000 Famous/Active Assets
-                // Tier 1: Strictly Rank 1-2000
-                const topRanked = finalTokens
+                // Unified 6,000 Index with Smart Fill
+                // We MUST ensure 1-2000 are present to avoid rank jumping.
+                let unifiedList = finalTokens
                     .filter(t => t.market_cap_rank && t.market_cap_rank <= 2000)
                     .sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999));
                 
-                const topRankedIds = new Set(topRanked.map(t => (t.id || t.address || '').toLowerCase()));
-
                 // Tier 2: 4,000 Following Assets (Famous/High-Volume)
+                const topRankedIds = new Set(unifiedList.map(t => (t.id || t.address || '').toLowerCase()));
                 const remainingPool = finalTokens
                     .filter(t => !topRankedIds.has((t.id || t.address || '').toLowerCase()))
                     .filter(t => !t.isSynthetic && !t.isB20)
-                    .sort((a, b) => (b.total_volume || 0) - (a.total_volume || 0)); // Prioritize "Famous" by volume
+                    .sort((a, b) => (b.total_volume || 0) - (a.total_volume || 0));
 
-                // Unified 6,000 Index
-                let unifiedList = [...topRanked];
-                const needed = 6000 - unifiedList.length;
-                if (needed > 0) {
-                    const famousSubset = remainingPool.slice(0, needed).map((t, i) => ({
+                // If Tier 1 is short (due to API limits), fill it from the famous pool first
+                const tier1Needed = 2000 - unifiedList.length;
+                if (tier1Needed > 0 && remainingPool.length > 0) {
+                    const fillForTier1 = remainingPool.splice(0, tier1Needed).map((t, i) => ({
                         ...t,
-                        market_cap_rank: 2001 + i // Assign sequential rank for institutional order
+                        market_cap_rank: (unifiedList[unifiedList.length - 1]?.market_cap_rank || 0) + 1 + i
+                    }));
+                    unifiedList = [...unifiedList, ...fillForTier1];
+                }
+
+                // Fill the rest of the 6,000 index
+                const tier2Needed = 6000 - unifiedList.length;
+                if (tier2Needed > 0 && remainingPool.length > 0) {
+                    const famousSubset = remainingPool.slice(0, tier2Needed).map((t, i) => ({
+                        ...t,
+                        market_cap_rank: 2001 + i
                     }));
                     unifiedList = [...unifiedList, ...famousSubset];
                 }

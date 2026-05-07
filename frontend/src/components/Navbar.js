@@ -14,6 +14,7 @@ export default function Navbar() {
     const [isCreateDropdownOpen, setIsCreateDropdownOpen] = useState(false);
     const TREASURY = '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
     const isAdmin = account && account.toLowerCase() === TREASURY;
+    const SHOW_SERVICE = false; // Set to true to reveal Service tab in navigation
 
     // ── Auto-Disconnect Session Safety + Live Heartbeat ────────────────────────
     useEffect(() => {
@@ -158,9 +159,11 @@ export default function Navbar() {
                                 <CreditCard className="w-4 h-4" /> Card
                             </Link>
 
-                            <Link href="/services" className="nav-link flex items-center gap-2 hover:text-blue-500 transition-colors">
-                                <FileText className="w-4 h-4" /> Service
-                            </Link>
+                            {SHOW_SERVICE && (
+                                <Link href="/services" className="nav-link flex items-center gap-2 hover:text-blue-500 transition-colors">
+                                    <FileText className="w-4 h-4" /> Service
+                                </Link>
+                            )}
 
                             {account && (
                                 <Link href="/profile" className="nav-link flex items-center gap-2 hover:text-blue-500 transition-colors">
@@ -346,19 +349,21 @@ export default function Navbar() {
                                 </Link>
 
                                 {/* Service */}
-                                <Link
-                                    href="/services"
-                                    onClick={() => setIsMobileMenuOpen(false)}
-                                    className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 transition-colors active:scale-95"
-                                >
-                                    <div className="w-8 h-8 bg-gray-100 border border-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                                        <FileText className="w-4 h-4 text-gray-500" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-bold text-gray-700 leading-tight">Service</p>
-                                        <p className="text-[10px] text-gray-400">Tools & integrations</p>
-                                    </div>
-                                </Link>
+                                {SHOW_SERVICE && (
+                                    <Link
+                                        href="/services"
+                                        onClick={() => setIsMobileMenuOpen(false)}
+                                        className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 transition-colors active:scale-95"
+                                    >
+                                        <div className="w-8 h-8 bg-gray-100 border border-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                                            <FileText className="w-4 h-4 text-gray-500" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-700 leading-tight">Service</p>
+                                            <p className="text-[10px] text-gray-400">Tools & integrations</p>
+                                        </div>
+                                    </Link>
+                                )}
 
                                 {/* Profile — only shown when connected */}
                                 {account && (

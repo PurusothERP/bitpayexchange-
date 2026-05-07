@@ -555,6 +555,14 @@ export default function B20Exchange() {
         if (mode === 'markets' || mode === 'web3') {
             // Filter out Launchpad/Mock tokens for primary terminal views
             list = list.filter(t => !t.isB20 && !t.isSynthetic);
+            
+            // ENSURE BTC (Rank 1) is present
+            const hasBTC = list.some(t => t.symbol === 'BTC');
+            if (!hasBTC && mode === 'markets') {
+                const btc = tokens.find(t => t.symbol === 'BTC');
+                if (btc) list.unshift(btc);
+            }
+
             // Global Multi-Network Rank Sort (1-6000)
             list = list.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999)).slice(0, 6000);
         } else if (mode === 'spot' || mode === 'pro') {
@@ -752,14 +760,16 @@ export default function B20Exchange() {
         const fetchTokens = async () => {
             if (isInitial) setIsLoading(true);
             try {
-                // 1. Initial Fallback
+                // 1. Initial Fallback (Core Majors)
                 const FALLBACK = [
-                    { id: 'binancecoin', symbol: 'BNB', name: 'Binance Coin', address: '0x0000000000000000000000000000000000000000', image: 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png', current_price: 582.42, price_change_percentage_24h: 1.2, high_24h: 595.10, low_24h: 570.20, market_cap: 85000000000, total_supply: 147000000, network: 'BNB' },
-                    { id: 'tether-bnb', symbol: 'USDT', name: 'Tether (BNB)', address: '0x55d398326f99059fF775485246999027B3197955', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', current_price: 1.0, price_change_percentage_24h: 0.01, market_cap: 110000000000, network: 'BNB' },
-                    { id: 'tether-tron', symbol: 'USDT', name: 'Tether (TRON)', address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', current_price: 1.0, price_change_percentage_24h: 0.01, market_cap: 110000000000, network: 'TRON' },
-                    { id: 'tether-solana', symbol: 'USDT', name: 'Tether (Solana)', address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', current_price: 1.0, price_change_percentage_24h: 0.01, market_cap: 110000000000, network: 'SOL' },
-                    { id: 'tether-eth', symbol: 'USDT', name: 'Tether (Ethereum)', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', current_price: 1.0, price_change_percentage_24h: 0.01, market_cap: 110000000000, network: 'ETH' },
-                    { id: 'pancakeswap-token', symbol: 'CAKE', name: 'PancakeSwap', address: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82', image: 'https://assets.coingecko.com/coins/images/12614/small/pancakeswap.png', current_price: 3.45, price_change_percentage_24h: -2.5, high_24h: 3.60, low_24h: 3.30, market_cap: 800000000, total_supply: 250000000, network: 'BNB' },
+                    { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', address: '0x0000000000000000000000000000000000000000', image: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png', current_price: 65000, price_change_percentage_24h: 0.5, market_cap: 1200000000000, total_supply: 21000000, market_cap_rank: 1, network: 'BITCOIN' },
+                    { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', address: '0x0000000000000000000000000000000000000000', image: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png', current_price: 3500, price_change_percentage_24h: 1.1, market_cap: 400000000000, total_supply: 120000000, market_cap_rank: 2, network: 'ETH' },
+                    { id: 'binancecoin', symbol: 'BNB', name: 'Binance Coin', address: '0x0000000000000000000000000000000000000000', image: 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png', current_price: 582.42, price_change_percentage_24h: 1.2, high_24h: 595.10, low_24h: 570.20, market_cap: 85000000000, total_supply: 147000000, market_cap_rank: 4, network: 'BNB' },
+                    { id: 'tether-bnb', symbol: 'USDT', name: 'Tether (BNB)', address: '0x55d398326f99059fF775485246999027B3197955', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', current_price: 1.0, price_change_percentage_24h: 0.01, market_cap: 110000000000, market_cap_rank: 3, network: 'BNB' },
+                    { id: 'tether-tron', symbol: 'USDT', name: 'Tether (TRON)', address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', current_price: 1.0, price_change_percentage_24h: 0.01, market_cap: 110000000000, market_cap_rank: 3, network: 'TRON' },
+                    { id: 'tether-solana', symbol: 'USDT', name: 'Tether (Solana)', address: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', current_price: 1.0, price_change_percentage_24h: 0.01, market_cap: 110000000000, market_cap_rank: 3, network: 'SOL' },
+                    { id: 'tether-eth', symbol: 'USDT', name: 'Tether (Ethereum)', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', current_price: 1.0, price_change_percentage_24h: 0.01, market_cap: 110000000000, market_cap_rank: 3, network: 'ETH' },
+                    { id: 'pancakeswap-token', symbol: 'CAKE', name: 'PancakeSwap', address: '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82', image: 'https://assets.coingecko.com/coins/images/12614/small/pancakeswap.png', current_price: 3.45, price_change_percentage_24h: -2.5, high_24h: 3.60, low_24h: 3.30, market_cap: 800000000, total_supply: 250000000, market_cap_rank: 100, network: 'BNB' },
                 ];
                 if (isInitial) setTokens(FALLBACK);
 

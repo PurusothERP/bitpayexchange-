@@ -924,12 +924,16 @@ export default function B20Exchange() {
                 let finalTokens = Array.from(uniqueMap.values());
 
                 // Institutional Tiering: 2,000 Top Ranked + 4,000 Famous/Active Assets
+                // Tier 1: Strictly Rank 1-2000
                 const topRanked = finalTokens
                     .filter(t => t.market_cap_rank && t.market_cap_rank <= 2000)
                     .sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999));
                 
+                const topRankedIds = new Set(topRanked.map(t => (t.id || t.address || '').toLowerCase()));
+
+                // Tier 2: 4,000 Following Assets (Famous/High-Volume)
                 const remainingPool = finalTokens
-                    .filter(t => !topRanked.some(tr => (tr.address || tr.id).toLowerCase() === (t.address || t.id).toLowerCase()))
+                    .filter(t => !topRankedIds.has((t.id || t.address || '').toLowerCase()))
                     .filter(t => !t.isSynthetic && !t.isB20)
                     .sort((a, b) => (b.total_volume || 0) - (a.total_volume || 0)); // Prioritize "Famous" by volume
 
@@ -944,6 +948,7 @@ export default function B20Exchange() {
                     unifiedList = [...unifiedList, ...famousSubset];
                 }
 
+                // Final Global Sort (Rank 1 to 6000)
                 unifiedList.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999));
                 
                 if (unifiedList.length > 0) {
@@ -2154,9 +2159,14 @@ export default function B20Exchange() {
                                             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-gray-50 to-transparent rounded-bl-[3rem] opacity-0 group-hover:opacity-100 transition-opacity" />
                                             <div className="flex items-center justify-between mb-6">
                                                 <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 bg-white rounded-xl p-1 shadow-sm border border-gray-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                                    {t.image ? <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" /> : null}
-                                                </div>
+                                                    <div className="relative">
+                                                        <div className="absolute -top-2 -left-2 bg-indigo-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-lg shadow-lg z-10">
+                                                            #{t.market_cap_rank || i + 1}
+                                                        </div>
+                                                        <div className="w-12 h-12 bg-white rounded-xl p-1 shadow-sm border border-gray-50 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                                            {t.image ? <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" /> : null}
+                                                        </div>
+                                                    </div>
                                                     <div>
                                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{t.symbol}</p>
                                                         <p className="text-xs font-black text-slate-900 capitalize truncate max-w-[80px]">{t.name}</p>
@@ -5851,8 +5861,9 @@ const MemeTerminal = ({ setMode, setToToken }) => {
             {/* Token List */}
             <div className="grid grid-cols-1 gap-4">
                 <div className="grid grid-cols-12 gap-6 px-10 py-5 bg-white/50 border border-slate-100 rounded-3xl text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] hidden md:grid">
+                    <div className="col-span-1">Rank</div>
                     <div className="col-span-3">Asset Identification</div>
-                    <div className="col-span-2">Network Layer</div>
+                    <div className="col-span-1">Network Layer</div>
                     <div className="col-span-2">Execution Price</div>
                     <div className="col-span-2">Dynamic (24H)</div>
                     <div className="col-span-2 text-right">Liquidity Pool</div>
@@ -5875,6 +5886,10 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                     >
                         <div className={`absolute left-0 top-0 bottom-0 w-1 ${m.change >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                         
+                        <div className="col-span-1 text-[10px] font-black text-slate-300">
+                             #{i + 1}
+                        </div>
+
                         <div className="col-span-3 flex items-center gap-5">
                             <div className="w-14 h-14 rounded-2xl bg-slate-50 p-2 border border-slate-100 group-hover:border-orange-200 transition-all shadow-sm">
                                 <img src={m.image} alt="" className="w-full h-full object-contain rounded-xl" />
@@ -5885,7 +5900,7 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                             </div>
                         </div>
 
-                        <div className="col-span-2">
+                        <div className="col-span-1">
                             <div className="flex items-center gap-2">
                                 <img 
                                     src={
@@ -5897,9 +5912,6 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                                     className="w-4 h-4 rounded-full object-contain" 
                                     alt="" 
                                 />
-                                <span className="px-3 py-1 bg-slate-100 border border-slate-200 rounded-lg text-[9px] font-black text-slate-600 uppercase tracking-widest">
-                                    {m.network}
-                                </span>
                             </div>
                         </div>
 

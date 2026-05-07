@@ -782,10 +782,16 @@ router.get('/listing-stats', requireAdminOrAssistant, async (req, res) => {
 });
 
 // ── MEME TOKEN GOVERNANCE ──────────────────────────────────────────────────
-// GET /api/admin/meme-tokens - List visibility status for meme assets
+// GET /api/admin/meme-tokens - List visibility status for real meme assets
 router.get('/meme-tokens', requireAdminOrAssistant, async (req, res) => {
     try {
-        const result = await db.query('SELECT * FROM admin_meme_controls ORDER BY symbol ASC');
+        const result = await db.query(`
+            SELECT t.name, t.symbol, t.contract_address, COALESCE(c.is_visible, 1) as is_visible
+            FROM tokens t
+            LEFT JOIN admin_meme_controls c ON UPPER(t.symbol) = UPPER(c.symbol)
+            WHERE t.launch_type = 'MEME'
+            ORDER BY t.created_at DESC
+        `);
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch meme controls' });
@@ -906,6 +912,39 @@ router.post('/tokens/toggle', requireAdminOrAssistant, async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: 'Toggle failed' });
+    }
+});
+
+// ── INSTITUTIONAL OVERSIGHT: SMART MONEY & FUTURES ───────────────────────────
+
+// GET /api/admin/smart-money - Global oversight of bucket investments
+router.get('/smart-money', requireAdminOrAssistant, async (req, res) => {
+    try {
+        const result = await db.query('SELECT * FROM smart_money_investments ORDER BY timestamp DESC');
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch smart money data' });
+    }
+});
+
+// GET /api/admin/futures/active - Monitor all currently open leverage positions
+router.get('/futures/active', requireAdminOrAssistant, async (req, res) => {
+    try {
+        // Find all futures_open that haven't been futures_close'd
+        const result = await db.query(`
+            SELECT t.*, tk.name as token_name, tk.symbol as token_symbol 
+            FROM trades t
+            LEFT JOIN tokens tk ON LOWER(t.token_address) = LOWER(tk.contract_address)
+            WHERE t.trade_type = 'futures_open'
+            AND t.position_id NOT IN (
+                SELECT position_id FROM trades 
+                WHERE trade_type = 'futures_close' AND position_id IS NOT NULL
+            )
+            ORDER BY t.timestamp DESC
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch active futures' });
     }
 });
 

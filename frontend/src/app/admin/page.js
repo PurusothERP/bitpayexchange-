@@ -8,7 +8,7 @@ import {
     Download, RefreshCw, ExternalLink, ArrowUpRight,
     TrendingUp, Users, Box, Zap, AlertCircle, Eye, EyeOff, Loader2, DollarSign, PlusCircle, ChevronDown, Trash2, Image as ImageIcon,
     Activity, Database, Globe, Lock, Unlock, Copy, TrendingDown, ArrowRightLeft, CreditCard as CardIcon, Edit3, Save, History, Clock,
-    Sparkles, Star, BarChart3, Info, ShieldCheck
+    Sparkles, Star, BarChart3, Info, ShieldCheck, Flame
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -42,6 +42,8 @@ export default function NueraAdminPortal() {
         { id: 'governance', label: 'Protocol Settings', icon: <Settings size={18} />, color: 'text-indigo-900' },
         { id: 'community', label: 'Social Mod', icon: <MessageSquare size={18} />, color: 'text-cyan-600' },
         { id: 'bulletin', label: 'Bulletin CMS', icon: <Megaphone size={18} />, color: 'text-slate-600' },
+        { id: 'smart-money-hub', label: 'Smart Money Hub', icon: <TrendingUp size={18} />, color: 'text-indigo-600' },
+        { id: 'institutional-futures', label: 'Futures Guard', icon: <Activity size={18} />, color: 'text-sky-600' },
         { id: 'api-panel', label: 'API & Architecture', icon: <Database size={18} />, color: 'text-rose-600' },
         { id: 'address-hub', label: 'Address Hub', icon: <PlusCircle size={18} />, color: 'text-gray-900' },
     ];
@@ -145,10 +147,12 @@ export default function NueraAdminPortal() {
                         {activeTab === 'fiat' && <FiatQueue key="fiat" account={account} />}
                         {activeTab === 'meme-governance' && <MemeGovernance key="meme" account={account} />}
                         {activeTab === 'governance' && <GovernanceHub key="gov" account={account} />}
-                        {activeTab === 'bulletin' && <BulletinCMS key="bull" account={account} />}
-                        {activeTab === 'community' && <CommunityMod key="comm" account={account} />}
-                        {activeTab === 'api-panel' && <ApiPanel key="api" />}
-                        {activeTab === 'address-hub' && <AddressHub key="addr" />}
+                        { activeTab === 'bulletin' && <BulletinCMS key="bull" account={account} /> }
+                        { activeTab === 'smart-money-hub' && <SmartMoneyHub key="smh" account={account} /> }
+                        { activeTab === 'institutional-futures' && <InstitutionalFutures key="if" account={account} /> }
+                        { activeTab === 'community' && <CommunityMod key="comm" account={account} /> }
+                        { activeTab === 'api-panel' && <ApiPanel key="api" /> }
+                        { activeTab === 'address-hub' && <AddressHub key="addr" /> }
                     </AnimatePresence>
                 </div>
             </main>
@@ -685,6 +689,7 @@ function ApiPanel() {
         { function: '/markets/new (Alpha Listings)', cg: 'Active (newly-listed)', cmc: 'Active (latest)', usage: '50/50 Algorithmic Split', color: 'bg-emerald-50 text-emerald-600' },
         { function: '/markets/trending (Hot Coins)', cg: 'Active (enriched)', cmc: 'Active (trending/latest)', usage: '50/50 Algorithmic Split', color: 'bg-emerald-50 text-emerald-600' },
         { function: 'Simple Price (BNB/Fiat)', cg: 'Active (Dedicated)', cmc: 'Inactive', usage: '100% CoinGecko', color: 'bg-indigo-50 text-indigo-600' },
+        { function: 'Stocks & Metals (Institutional)', cg: 'N/A', cmc: 'N/A', usage: 'Alpha Vantage (TDA3K3FRBC108P1B)', color: 'bg-rose-50 text-rose-600' },
         { function: 'Trust Wallet PR Sync', cg: 'N/A', cmc: 'N/A', usage: 'GitHub Actions / IPFS', color: 'bg-slate-50 text-slate-600' },
         { function: 'Live On-Chain Data', cg: 'N/A', cmc: 'N/A', usage: 'RPC (Pancake Router)', color: 'bg-sky-50 text-sky-600' }
     ];
@@ -1932,6 +1937,7 @@ function AddressHub() {
         { label: 'Liquidity Manager', val: '0xd275DFa2658cE631E0DF722955F11Be75D278912' },
         { label: 'Bonding Curve', val: '0xC57C602d847990138541E21972faa2476906BaE7' },
         { label: 'Anthropic AI Key', val: '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' },
+        { label: 'Alpha Vantage API Key', val: 'TDA3K3FRBC108P1B' },
         { label: 'CoinGecko API Key', val: 'CG-wAvFy24FgS5GzRa8AfLiKhPi' },
         { label: 'CoinMarketCap API Key', val: '61a5cf295fde46a39ecb614a63cfd73b' },
     ];
@@ -1983,20 +1989,11 @@ function MemeGovernance({ account }) {
                 axios.get(`${API_URL}/admin/meme-tokens`, getAuthHeader())
             ]);
             
+            // ctrlRes.data now contains {name, symbol, contract_address, is_visible}
             const ctrlMap = {};
             ctrlRes.data.forEach(c => ctrlMap[c.symbol] = c.is_visible);
             setControls(ctrlMap);
-
-            // Using the same generator logic as exchange to "mirror" them
-            const prefixes = ['Pepe', 'Doge', 'Shib', 'Elon', 'Moon', 'Safe', 'Turbo', 'Chad', 'Alpha', 'Giga'];
-            const suffixes = ['Inu', 'Coin', 'Token', 'Mars', 'Rocket', 'Wif', 'Hat', 'Frog', 'Cat', 'Bird'];
-            const mockMemes = Array.from({ length: 100 }, (_, i) => {
-                const p = prefixes[i % prefixes.length];
-                const s = suffixes[Math.floor(Math.random() * suffixes.length)];
-                const symbol = (p.slice(0, 3) + s.slice(0, 3)).toUpperCase() + (i % 1000);
-                return { symbol, name: `${p} ${s} #${i+1}` };
-            });
-            setMemes(mockMemes);
+            setMemes(ctrlRes.data);
         } catch (e) {
             console.error('Failed to fetch meme governance data');
         }
@@ -2054,12 +2051,158 @@ function MemeGovernance({ account }) {
                                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">{m.symbol}</p>
                                 
                                 <div className="mt-6 pt-4 border-t border-slate-200/60 flex items-center justify-between">
-                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Audit Status</span>
-                                    <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-full">Passed</span>
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Address Hub</span>
+                                    <button 
+                                        onClick={() => { navigator.clipboard.writeText(m.contract_address); alert('Full contract address copied.'); }}
+                                        className="p-2 bg-slate-100 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-lg transition-colors"
+                                    >
+                                        <Copy size={12} />
+                                    </button>
                                 </div>
                             </div>
                         );
                     })}
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function SmartMoneyHub({ account }) {
+    const [investments, setInvestments] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        axios.get(`${API_URL}/admin/smart-money`, { headers: { 'x-wallet-address': account } })
+            .then(res => setInvestments(res.data))
+            .catch(() => {})
+            .finally(() => setLoading(false));
+    }, [account]);
+
+    return (
+        <div className="space-y-8">
+            <div className="bg-white rounded-[3rem] border border-slate-200/60 p-10 shadow-sm">
+                <div className="flex items-center gap-4 mb-10">
+                    <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                        <TrendingUp size={24} />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-black text-slate-900 uppercase italic">Smart Money <span className="text-indigo-600">Hub</span></h3>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Institutional Bucket Allocations Oversight</p>
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-separate border-spacing-y-3">
+                        <thead>
+                            <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                <th className="px-6 py-2">Investor Wallet</th>
+                                <th className="px-6 py-2">Bucket Name</th>
+                                <th className="px-6 py-2">Allocation</th>
+                                <th className="px-6 py-2">TX Hash</th>
+                                <th className="px-6 py-2">Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {investments.map((inv, i) => (
+                                <tr key={i} className="bg-slate-50 hover:bg-white hover:shadow-xl hover:border-indigo-100 border border-transparent rounded-2xl transition-all group">
+                                    <td className="px-6 py-5 first:rounded-l-2xl">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-black text-slate-800">{inv.wallet_address.slice(0, 8)}...{inv.wallet_address.slice(-6)}</span>
+                                            <button onClick={() => { navigator.clipboard.writeText(inv.wallet_address); alert('Full wallet address copied.'); }} className="p-1 text-slate-300 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"><Copy size={12} /></button>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-5">
+                                        <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-[10px] font-black rounded-lg uppercase">{inv.bucket_name}</span>
+                                    </td>
+                                    <td className="px-6 py-5">
+                                        <span className="text-xs font-black text-slate-900">{inv.invest_amount} USDT</span>
+                                    </td>
+                                    <td className="px-6 py-5">
+                                        <a href={`https://bscscan.com/tx/${inv.tx_hash}`} target="_blank" rel="noopener noreferrer" className="text-xs font-mono font-bold text-indigo-500 hover:underline">{inv.tx_hash.slice(0, 12)}...</a>
+                                    </td>
+                                    <td className="px-6 py-5 last:rounded-r-2xl">
+                                        <span className="text-[10px] font-bold text-slate-400 uppercase">{new Date(inv.timestamp).toLocaleString()}</span>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function InstitutionalFutures({ account }) {
+    const [positions, setPositions] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        axios.get(`${API_URL}/admin/futures/active`, { headers: { 'x-wallet-address': account } })
+            .then(res => setPositions(res.data))
+            .catch(() => {})
+            .finally(() => setLoading(false));
+    }, [account]);
+
+    return (
+        <div className="space-y-8">
+            <div className="bg-white rounded-[3rem] border border-slate-200/60 p-10 shadow-sm">
+                <div className="flex items-center gap-4 mb-10">
+                    <div className="w-12 h-12 bg-sky-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-sky-500/20">
+                        <Activity size={24} />
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-black text-slate-900 uppercase italic">Futures <span className="text-sky-600">Guard</span></h3>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Active Leverage & Exposure Monitoring</p>
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-separate border-spacing-y-3">
+                        <thead>
+                            <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                <th className="px-6 py-2">Trader</th>
+                                <th className="px-6 py-2">Asset</th>
+                                <th className="px-6 py-2">Position Size</th>
+                                <th className="px-6 py-2">Entry Price</th>
+                                <th className="px-6 py-2">Risk Status</th>
+                                <th className="px-6 py-2">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {positions.map((p, i) => (
+                                <tr key={i} className="bg-slate-50 hover:bg-white hover:shadow-xl hover:border-sky-100 border border-transparent rounded-2xl transition-all group">
+                                    <td className="px-6 py-5 first:rounded-l-2xl">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs font-black text-slate-800">{p.trader_wallet.slice(0, 8)}...{p.trader_wallet.slice(-6)}</span>
+                                            <button onClick={() => { navigator.clipboard.writeText(p.trader_wallet); alert('Full trader address copied.'); }} className="p-1 text-slate-300 hover:text-sky-600 opacity-0 group-hover:opacity-100 transition-opacity"><Copy size={12} /></button>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-5">
+                                        <span className="text-xs font-black text-slate-900 uppercase tracking-tight">{p.token_symbol}</span>
+                                    </td>
+                                    <td className="px-6 py-5">
+                                        <div className="flex flex-col">
+                                            <span className="text-xs font-black text-slate-900">{p.amount_bnb} BNB</span>
+                                            <span className="text-[9px] font-black text-sky-500 uppercase">20x Leverage</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-5">
+                                        <span className="text-xs font-mono font-bold text-slate-600">{p.price_bnb} BNB</span>
+                                    </td>
+                                    <td className="px-6 py-5">
+                                        <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-[9px] font-black rounded-lg uppercase tracking-widest border border-emerald-200">Institutional Safe</span>
+                                    </td>
+                                    <td className="px-6 py-5 last:rounded-r-2xl">
+                                        <a href={`https://bscscan.com/tx/${p.tx_hash}`} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-white border border-slate-200 text-slate-400 hover:text-sky-600 rounded-xl transition-all inline-block shadow-sm">
+                                            <ArrowUpRight size={14} />
+                                        </a>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

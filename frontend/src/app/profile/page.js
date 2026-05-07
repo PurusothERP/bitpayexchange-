@@ -3,7 +3,7 @@
 import Navbar from '@/components/Navbar';
 import { useWallet } from '@/context/WalletContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wallet, Rocket, TrendingUp, Clock, ExternalLink, Copy, CheckCircle2, ArrowUpRight, Activity, Users, Zap, ShieldCheck, Search, PlusCircle, Unlock, ChevronRight, Loader2, AlertTriangle, Megaphone, Globe, FileText, Send, Lock, BarChart3, Calendar, Gift, RefreshCw, History } from 'lucide-react';
+import { Wallet, Rocket, TrendingUp, Clock, ExternalLink, Copy, CheckCircle2, ArrowUpRight, Activity, Users, Zap, ShieldCheck, Search, PlusCircle, Unlock, ChevronRight, Loader2, AlertTriangle, Megaphone, Globe, FileText, Send, Lock, BarChart3, Calendar, Gift, RefreshCw, History, CreditCard } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import Link from 'next/link';
@@ -522,6 +522,8 @@ export default function ProfilePage() {
     const [tradeHistory, setTradeHistory] = useState([]);
     const [smartMoneyInvestments, setSmartMoneyInvestments] = useState([]);
     const [loadingSmartMoney, setLoadingSmartMoney] = useState(false);
+    const [fiatHistory, setFiatHistory] = useState([]);
+    const [loadingFiat, setLoadingFiat] = useState(false);
 
     useEffect(() => {
         if (!account) return;
@@ -601,6 +603,13 @@ export default function ProfilePage() {
             .then(res => setSmartMoneyInvestments(res.data))
             .catch(err => console.error('[Smart Money Fetch Error]', err))
             .finally(() => setLoadingSmartMoney(false));
+
+        // Fetch Fiat History (Mex Money)
+        setLoadingFiat(true);
+        axios.get(`${API_URL}/fiat/my-transactions/${account}`)
+            .then(res => setFiatHistory(res.data))
+            .catch(err => console.error('[Fiat Fetch Error]', err))
+            .finally(() => setLoadingFiat(false));
     }, [account]);
 
     const closeFuturesPosition = async (id) => {
@@ -721,9 +730,21 @@ export default function ProfilePage() {
                         <span className="sm:hidden text-[9px]">History</span>
                     </button>
                     <button
+                        onClick={() => setActiveTab('mexmoney')}
+                        className={`group flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative ${
+                            activeTab === 'mexmoney' ? 'bg-teal-600 text-white shadow-xl shadow-teal-500/20' : 'text-teal-500 hover:text-teal-600 hover:bg-teal-500/5'
+                        }`}
+                    >
+                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'mexmoney' ? 'bg-white/20 text-white' : 'bg-teal-500/10 text-teal-500'}`}>
+                            <CreditCard className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="hidden sm:inline">Mex Money</span>
+                        <span className="sm:hidden text-[9px]">Fiat</span>
+                    </button>
+                    <button
                         onClick={() => setActiveTab('smartmoney')}
                         className={`group flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative ${
-                            activeTab === 'smartmoney' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20 col-span-2 md:col-span-1' : 'text-indigo-500 hover:text-indigo-600 hover:bg-indigo-500/5 col-span-2 md:col-span-1'
+                            activeTab === 'smartmoney' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20' : 'text-indigo-500 hover:text-indigo-600 hover:bg-indigo-500/5'
                         }`}
                     >
                         <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'smartmoney' ? 'bg-white/20 text-white' : 'bg-indigo-500/10 text-indigo-500'}`}>
@@ -889,8 +910,34 @@ export default function ProfilePage() {
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                        {filteredTokens.map((token, i) => <TokenCard key={token.contract_address || i} token={token} index={i} account={account} />)}
+                                    <div className="space-y-12">
+                                        {/* Standard Assets */}
+                                        {filteredTokens.filter(t => t.launch_type !== 'MEME').length > 0 && (
+                                            <div>
+                                                <div className="flex items-center gap-3 mb-6">
+                                                    <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-gray-200" />
+                                                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Institutional Standard Assets</h3>
+                                                    <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-gray-200" />
+                                                </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                                    {filteredTokens.filter(t => t.launch_type !== 'MEME').map((token, i) => <TokenCard key={token.contract_address || i} token={token} index={i} account={account} />)}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Meme Assets */}
+                                        {filteredTokens.filter(t => t.launch_type === 'MEME').length > 0 && (
+                                            <div>
+                                                <div className="flex items-center gap-3 mb-6">
+                                                    <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-orange-200" />
+                                                    <h3 className="text-[10px] font-black text-orange-400 uppercase tracking-[0.3em]">Emerging Meme Portfolio</h3>
+                                                    <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-orange-200" />
+                                                </div>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                                    {filteredTokens.filter(t => t.launch_type === 'MEME').map((token, i) => <TokenCard key={token.contract_address || i} token={token} index={i} account={account} />)}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 )}
                             </>
@@ -1386,6 +1433,90 @@ export default function ProfilePage() {
                                 </div>
                             </motion.div>
                         )}
+                        {activeTab === 'mexmoney' && (
+                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-8 pb-20">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h2 className="text-xl font-black text-gray-900 flex items-center gap-2 uppercase tracking-tighter italic">
+                                            <CreditCard className="w-6 h-6 text-teal-500" /> Mex Money <span className="text-teal-500">History</span>
+                                            <span className="ml-1 text-sm font-bold text-gray-400 bg-black/5 px-3 py-1 rounded-full">{fiatHistory.length}</span>
+                                        </h2>
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Fiat-to-Crypto institutional ledger</p>
+                                    </div>
+                                    <Link href="/fiat" className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-teal-500/20 flex items-center gap-2">
+                                        <PlusCircle className="w-4 h-4" /> New Buy/Sell
+                                    </Link>
+                                </div>
+
+                                <div className="bg-white border border-black/8 rounded-[2.5rem] shadow-sm overflow-hidden">
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left border-separate border-spacing-y-2 px-6 pb-6">
+                                            <thead>
+                                                <tr className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                                                    <th className="py-6 px-4">Transaction ID</th>
+                                                    <th className="py-6 px-4">Type</th>
+                                                    <th className="py-6 px-4">Asset / Amount</th>
+                                                    <th className="py-6 px-4">Value (INR)</th>
+                                                    <th className="py-6 px-4">Status</th>
+                                                    <th className="py-6 px-4 text-right">Date</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {fiatHistory.map((tx, idx) => (
+                                                    <tr key={tx.id} className="bg-black/[0.02] hover:bg-white hover:shadow-lg hover:border-teal-100 border border-transparent transition-all rounded-2xl group">
+                                                        <td className="py-5 px-4 first:rounded-l-2xl">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="text-[10px] font-black text-gray-400">#{(idx + 1).toString().padStart(3, '0')}</span>
+                                                                <span className="text-xs font-mono font-bold text-gray-700">{tx.id.toString().slice(-6)}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-5 px-4">
+                                                            <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
+                                                                tx.type === 'BUY' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'
+                                                            }`}>
+                                                                {tx.type}
+                                                            </span>
+                                                        </td>
+                                                        <td className="py-5 px-4">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-6 h-6 rounded-full bg-white border border-black/5 flex items-center justify-center text-[10px]">
+                                                                    {tx.asset === 'USDT' ? '💵' : '🪙'}
+                                                                </div>
+                                                                <span className="text-xs font-black text-gray-900">{tx.amount} {tx.asset}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-5 px-4">
+                                                            <span className="text-xs font-black text-gray-900">₹{tx.inr_amount?.toLocaleString()}</span>
+                                                        </td>
+                                                        <td className="py-5 px-4">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className={`w-2 h-2 rounded-full ${
+                                                                    tx.status === 'COMPLETED' ? 'bg-emerald-500' : 
+                                                                    tx.status === 'REJECTED' ? 'bg-rose-500' : 'bg-amber-500'
+                                                                }`} />
+                                                                <span className="text-[10px] font-black text-gray-700 uppercase tracking-tight">{tx.status}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-5 px-4 last:rounded-r-2xl text-right">
+                                                            <span className="text-[10px] font-bold text-gray-400 uppercase">{new Date(tx.timestamp).toLocaleDateString()}</span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                        {fiatHistory.length === 0 && (
+                                            <div className="py-20 text-center">
+                                                <div className="w-16 h-16 bg-teal-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                                                    <CreditCard className="w-8 h-8 text-teal-400" />
+                                                </div>
+                                                <p className="text-sm font-black text-gray-400 uppercase tracking-widest">No Fiat Transactions Yet</p>
+                                                <p className="text-[10px] text-gray-400 mt-2">Your Buy/Sell history for Mex Money will appear here.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
                         {activeTab === 'smartmoney' && (
                             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
                                 <div className="flex items-center justify-between mb-8">
@@ -1449,7 +1580,14 @@ export default function ProfilePage() {
                                                 <div className="space-y-2 mb-8 bg-gray-50/30 p-4 rounded-3xl border border-black/3">
                                                     <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-2">Bucket Composition</p>
                                                     <div className="flex flex-wrap gap-4">
-                                                        {(inv.bucket_json ? JSON.parse(inv.bucket_json) : []).map(token => (
+                                                        {(() => {
+                                                            try {
+                                                                const parsed = typeof inv.bucket_json === 'string' ? JSON.parse(inv.bucket_json) : inv.bucket_json;
+                                                                return Array.isArray(parsed) ? parsed : [parsed];
+                                                            } catch (e) {
+                                                                return [];
+                                                            }
+                                                        })().map((token, idx) => (
                                                             <div key={token.symbol} className="flex items-center gap-3 px-5 py-2.5 bg-white border border-black/5 rounded-[1.5rem] shadow-sm group/token hover:border-indigo-200 transition-all">
                                                                 <div className="w-8 h-8 rounded-xl bg-gray-50 p-1.5 border border-black/5 shrink-0">
                                                                      <img src={token.image} className="w-full h-full object-contain" alt="" />

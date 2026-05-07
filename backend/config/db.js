@@ -348,6 +348,22 @@ db.init = () => {
             if (err) console.error('Error creating admin_meme_controls table:', err);
             else console.log('Admin meme controls table ready.');
         });
+        // Smart Money Strategic Investments
+        db.run(`
+            CREATE TABLE IF NOT EXISTS smart_money_investments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                wallet_address TEXT NOT NULL,
+                bucket_id TEXT NOT NULL,
+                bucket_name TEXT NOT NULL,
+                invest_amount REAL NOT NULL,
+                tx_hash TEXT UNIQUE NOT NULL,
+                bucket_json TEXT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `, (err) => {
+            if (err) console.error('Error creating smart_money_investments table:', err);
+            else console.log('Smart money investments table ready.');
+        });
     } catch (e) {
         console.error('[DB] Critical Initialization Error:', e.message);
     }

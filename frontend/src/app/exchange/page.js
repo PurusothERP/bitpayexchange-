@@ -551,12 +551,15 @@ export default function B20Exchange() {
         
         // --- STRICT PAGE SEPARATION (Markets vs Web3 vs Meme) ---
         // Ensures tokens are reflected only on their respective institutional pages
+        // Display exactly 6000 tokens in rank order as requested
         if (mode === 'markets') {
-            // Markets Page: Strictly BNB Mainnet Assets + Top Global Institutional Indices
-            list = list.filter(t => t.network === 'BNB' || t.isB20 || (t.market_cap_rank && t.market_cap_rank <= 100));
+            // Markets Page: Strictly Real Assets ranked 1-6000 (Excluding Launchpad/Mock)
+            list = list.filter(t => !t.isB20 && !t.isSynthetic);
+            list = list.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999)).slice(0, 6000);
         } else if (mode === 'web3') {
-            // Web3 Portal: Strictly Cross-Chain Assets (Non-BNB Networks)
-            list = list.filter(t => t.network && t.network !== 'BNB');
+            // Web3 Portal: Strictly Cross-Chain Assets (Non-BNB Networks) ranked 1-6000
+            list = list.filter(t => t.network && t.network !== 'BNB' && !t.isB20 && !t.isSynthetic);
+            list = list.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999)).slice(0, 6000);
         } else if (mode === 'spot' || mode === 'pro') {
             // Spot/Pro Execution: Access to full global liquidity for trading
             list = list; 
@@ -782,9 +785,10 @@ export default function B20Exchange() {
                     } catch(e) { console.warn('PancakeSwap: Offline.'); }
                 }
 
-                // 2b. Multi-Page Global Index (Top 1000 CoinGecko assets with live prices)
+                // 2b. Multi-Page Global Index (Top 6000 CoinGecko assets with live prices)
                 try {
-                    const pages = [1, 2, 3, 4];
+                    // Fetching 12 pages of 250 = 3000 tokens. Remaining filled by enriched BSC/Registry lists.
+                    const pages = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
                     const results = await Promise.all(pages.map(p =>
                         axios.get(`${API_URL}/tokens/markets/cg`, {
                             params: { per_page: 250, page: p },
@@ -910,27 +914,12 @@ export default function B20Exchange() {
 
                 let finalTokens = Array.from(uniqueMap.values());
 
-                // 3. Fill up to 6000 with synthetic tokens only if still short
-                if (finalTokens.length < 6000) {
-                    const needed = 6000 - finalTokens.length;
-                    const symbols = ['ALT', 'X', 'B20', 'NODE', 'ALPHA', 'STRIKE', 'VERGE', 'NEXUS', 'GALAXY', 'COSMO', 'CORE', 'PRIME', 'QUANT', 'META', 'Z'];
-                    for (let i = 0; i < needed; i++) {
-                        const sym = symbols[i % symbols.length] + (i + 100);
-                        finalTokens.push({
-                            id: `gen-${i}`,
-                            symbol: sym,
-                            name: `${sym} Protocol Node`,
-                            address: '0x' + (i + 1).toString(16).padStart(40, '0'),
-                            image: `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/assets/0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2/logo.png`, // Use WETH logo as high-quality fallback for synthetic
-                            current_price: Math.random() * 0.05,
-                            price_change_percentage_24h: Math.random() * 50 - 25,
-                            market_cap_rank: 5001 + i,
-                            market_cap: Math.random() * 2000000,
-                            total_supply: 21000000000,
-                            network: NETWORKS_LIST[i % NETWORKS_LIST.length],
-                            isSynthetic: true
-                        });
-                    }
+                // Strict Institutional Ordering & Cleanup
+                finalTokens = finalTokens.filter(t => !t.isSynthetic); // Remove any old mock traces
+                
+                // Ensure we have exactly 6000 high-quality tokens if possible
+                if (finalTokens.length > 6000) {
+                    finalTokens = finalTokens.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999)).slice(0, 6000);
                 }
 
                 finalTokens.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999));
@@ -5621,53 +5610,59 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                 const trendRes = await axios.get(`${API_URL}/tokens/markets/trending`);
                 const trendTokens = (trendRes.data.coins || []).map(c => ({
                     address: c.item.contract_address || c.item.id,
-                    symbol: c.item.symbol,
+                    symbol: (c.item.symbol || '').toUpperCase(),
                     name: c.item.name,
-                    image: c.item.large,
-                    current_price: c.item.current_price,
-                    market_cap: c.item.market_cap_rank, // rank as proxy
-                    price_change_percentage_24h: c.item.price_change_percentage_24h,
-                    network: 'BNB' // Defaulting for simplicity
+                    image: c.item.large || c.item.thumb,
+                    current_price: c.item.current_price || 0,
+                    market_cap: c.item.market_cap_rank,
+                    price_change_percentage_24h: c.item.price_change_percentage_24h || 0,
+                    network: 'BNB'
                 }));
 
-                const merged = [...tokens, ...trendTokens].map((t, i) => {
-                    const seed = t.address || t.contract_address || `token-${i}`;
-                    // Deterministic variation for missing data to ensure non-uniformity
-                    const salt = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                    
-                    return {
-                        id: t.id || `token-${i}`,
-                        name: t.name,
-                        symbol: t.symbol,
-                        network: t.network || 'BNB',
-                        price: t.current_price || t.price || (0.000001 * (1 + (salt % 100) / 100)),
-                        launchPrice: (t.current_price || 0.000001) * (0.8 + (salt % 40) / 100),
-                        liquidity: t.total_volume ? t.total_volume / 2 : (t.market_cap ? t.market_cap / 50 : (1000 + (salt % 9000))),
-                        change: t.price_change_percentage_24h || ((salt % 40) - 20),
-                        mcap: t.market_cap || (50000 + (salt % 950000)),
-                        volume24h: t.total_volume || ((t.market_cap || 1000000) * 0.1),
-                        image: t.logoURI || t.image || `https://api.dicebear.com/7.x/identicon/svg?seed=${t.symbol}`,
-                        contract: t.address || t.contract_address || '0x0000000000000000000000000000000000000000',
-                        creator: '0x' + Array(40).fill(0).map((_, idx) => ((salt + idx) % 16).toString(16)).join(''),
-                        launchDate: new Date(Date.now() - (salt % 30) * 86400000).toLocaleDateString(),
-                        high24: (t.current_price || 0.000001) * 1.15,
-                        low24: (t.current_price || 0.000001) * 0.85,
-                        mintable: salt % 7 === 0,
-                        freezeAuthority: salt % 11 === 0,
-                        lpAddedCount: 1 + (salt % 5),
-                        lpRemovedCount: salt % 3,
-                        riskPercentage: 5 + (salt % 45),
-                        isMexapayCertified: (t.market_cap || 0) > 500000 || salt % 10 === 0,
-                        holders: Array.from({ length: 10 }, (_, j) => ({
-                            address: '0x' + Array(40).fill(0).map((_, idx) => ((salt + idx + j) % 16).toString(16)).join(''),
-                            weight: (25 / (j + 1)).toFixed(2)
-                        })),
-                        supply: (1000000000 * (1 + (salt % 100) / 10)),
-                        isRisky: salt % 15 === 0
-                    };
-                });
+                const merged = [...tokens, ...trendTokens]
+                    .filter(t => t.symbol !== 'B20' && t.launch_type !== 'MEME') // Remove Launchpad
+                    .map((t, i) => {
+                        const seed = t.address || t.contract_address || `token-${i}`;
+                        const salt = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                        
+                        return {
+                            id: t.id || `token-${i}`,
+                            name: t.name,
+                            symbol: t.symbol,
+                            network: t.network || 'BNB',
+                            price: t.current_price || t.price || (0.000001 * (1 + (salt % 100) / 100)),
+                            launchPrice: (t.current_price || 0.000001) * (0.8 + (salt % 40) / 100),
+                            liquidity: t.total_volume ? t.total_volume / 2 : (t.market_cap ? t.market_cap / 50 : (1000 + (salt % 9000))),
+                            change: t.price_change_percentage_24h || ((salt % 40) - 20),
+                            mcap: t.market_cap || (50000 + (salt % 950000)),
+                            volume24h: t.total_volume || ((t.market_cap || 1000000) * 0.1),
+                            image: t.logoURI || t.image || `https://api.dicebear.com/7.x/identicon/svg?seed=${t.symbol}`,
+                            contract: t.address || t.contract_address || '0x0000000000000000000000000000000000000000',
+                            creator: '0x' + Array(40).fill(0).map((_, idx) => ((salt + idx) % 16).toString(16)).join(''),
+                            launchDate: new Date(Date.now() - (salt % 30) * 86400000).toLocaleDateString(),
+                            high24: (t.current_price || 0.000001) * 1.15,
+                            low24: (t.current_price || 0.000001) * 0.85,
+                            mintable: salt % 7 === 0,
+                            freezeAuthority: salt % 11 === 0,
+                            lpAddedCount: 1 + (salt % 5),
+                            lpRemovedCount: salt % 3,
+                            riskPercentage: 5 + (salt % 45),
+                            isMexapayCertified: (t.market_cap || 0) > 500000 || salt % 10 === 0,
+                            holders: Array.from({ length: 10 }, (_, j) => ({
+                                address: '0x' + Array(40).fill(0).map((_, idx) => ((salt + idx + j) % 16).toString(16)).join(''),
+                                weight: (25 / (j + 1)).toFixed(2)
+                            })),
+                            supply: (1000000000 * (1 + (salt % 100) / 10)),
+                            isRisky: salt % 15 === 0
+                        };
+                    });
 
-                setRealMemes(merged);
+                // Institutional Ranking: Sorting by Market Cap/Rank and slicing to 6,000
+                const finalMemes = merged
+                    .sort((a, b) => (a.mcap || 999999) - (b.mcap || 999999))
+                    .slice(0, 6000);
+
+                setRealMemes(finalMemes);
             } catch (err) {
                 console.error('Failed to fetch real memes:', err);
             } finally {

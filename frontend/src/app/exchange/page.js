@@ -850,12 +850,12 @@ export default function B20Exchange() {
 
                 // 2b. Multi-Page Global Index (Top 6000 CoinGecko assets with live prices)
                 try {
-                    // Fetching 12 pages of 250 = 3000 tokens. Remaining filled by enriched BSC/Registry lists.
-                    const pages = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+                    // Fetching 16 pages of 250 = 4000 tokens. Remaining filled by enriched BSC/Registry lists.
+                    const pages = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
                     const results = await Promise.all(pages.map(p =>
                         axios.get(`${API_URL}/tokens/markets/cg`, {
                             params: { per_page: 250, page: p },
-                            timeout: 15000
+                            timeout: 20000
                         }).catch(() => ({ data: [] }))
                     ));
                     cgTokens = results.flatMap(r => r.data || []);
@@ -977,44 +977,33 @@ export default function B20Exchange() {
 
                 let finalTokens = Array.from(uniqueMap.values());
 
-                // Unified 6,000 Index with Smart Fill
-                // We MUST ensure 1-2000 are present to avoid rank jumping.
-                let unifiedList = finalTokens
-                    .filter(t => t.market_cap_rank && t.market_cap_rank <= 2000)
-                    .sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999));
+                // 3. Assemble the absolute 1-6000 sequence
+                let mergedPool = [...rankedAssets, ...unrankedAssets];
                 
-                // Tier 2: 4,000 Following Assets (Famous/High-Volume)
-                const topRankedIds = new Set(unifiedList.map(t => (t.id || t.address || '').toLowerCase()));
-                const remainingPool = finalTokens
-                    .filter(t => !topRankedIds.has((t.id || t.address || '').toLowerCase()))
-                    .filter(t => !t.isSynthetic && !t.isB20)
-                    .sort((a, b) => (b.total_volume || 0) - (a.total_volume || 0));
-
-                // If Tier 1 is short (due to API limits), fill it from the famous pool first
-                const tier1Needed = 2000 - unifiedList.length;
-                if (tier1Needed > 0 && remainingPool.length > 0) {
-                    const fillForTier1 = remainingPool.splice(0, tier1Needed).map((t, i) => ({
-                        ...t,
-                        market_cap_rank: (unifiedList[unifiedList.length - 1]?.market_cap_rank || 0) + 1 + i
-                    }));
-                    unifiedList = [...unifiedList, ...fillForTier1];
-                }
-
-                // Fill the rest of the 6,000 index
-                const tier2Needed = 6000 - unifiedList.length;
-                if (tier2Needed > 0 && remainingPool.length > 0) {
-                    const famousSubset = remainingPool.slice(0, tier2Needed).map((t, i) => ({
-                        ...t,
-                        market_cap_rank: 2001 + i
-                    }));
-                    unifiedList = [...unifiedList, ...famousSubset];
-                }
-
-                // Final Global Sort (Rank 1 to 6000)
-                unifiedList.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999));
+                // 3a. Ensure Network Diversity (Min 200 per network if available)
+                const networkCounts = {};
+                const prioritizedPool = [];
+                const extraPool = [];
                 
-                if (unifiedList.length > 0) {
-                    setTokens(unifiedList);
+                mergedPool.forEach(t => {
+                    const net = t.network || 'BNB';
+                    networkCounts[net] = (networkCounts[net] || 0) + 1;
+                    if (networkCounts[net] <= 200) {
+                        prioritizedPool.push(t);
+                    } else {
+                        extraPool.push(t);
+                    }
+                });
+                
+                // Final merged list prioritizes network diversity in the top 2000
+                const diversePool = [...prioritizedPool, ...extraPool];
+                const finalSequence = diversePool.slice(0, 6000).map((t, i) => ({
+                    ...t,
+                    market_cap_rank: i + 1
+                }));
+
+                if (finalSequence.length > 0) {
+                    setTokens(finalSequence);
                 }
 
                 // Discovery Sentinel Logic
@@ -1045,13 +1034,52 @@ export default function B20Exchange() {
                 console.error('Terminal Index Error:', error);
             } finally {
                 setIsLoading(false);
-                isInitial = false;
             }
         };
         fetchTokens();
-        const interval = setInterval(fetchTokens, 30000); // 30s full-list refresh
+        const interval = setInterval(fetchTokens, 600000); // 10m refresh
         return () => clearInterval(interval);
     }, []);
+
+    // ─── INSTANT ASSET DISCOVERY (Search by Address/Symbol Fallback) ──
+    useEffect(() => {
+        const query = marketSearch.trim();
+        if (!query || query.length < 3) return;
+
+        const handler = setTimeout(async () => {
+            const isAddress = query.startsWith('0x') && query.length === 42;
+            const isSolana = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(query);
+            const alreadyExists = tokens.some(t => 
+                t.symbol.toLowerCase() === query.toLowerCase() || 
+                (t.address || '').toLowerCase() === query.toLowerCase()
+            );
+
+            if ((isAddress || isSolana || query.length >= 3) && !alreadyExists) {
+                try {
+                    const res = await axios.get(`${API_URL}/tokens/markets/cg`, {
+                        params: { ids: query.toLowerCase(), per_page: 1, page: 1 }
+                    });
+                    if (res.data && res.data.length > 0) {
+                        const t = res.data[0];
+                        const discovered = {
+                            id: t.id,
+                            symbol: (t.symbol || '').toUpperCase(),
+                            name: t.name,
+                            address: t.address || t.contract_address || t.id,
+                            image: t.image,
+                            current_price: t.current_price,
+                            price_change_percentage_24h: t.price_change_percentage_24h,
+                            market_cap_rank: 0, // Special priority for discovered
+                            isDiscovered: true,
+                            network: isSolana ? 'SOL' : (isAddress ? 'BNB' : 'ETH')
+                        };
+                        setTokens(prev => [discovered, ...prev]);
+                    }
+                } catch (e) { console.warn('Instant Discovery: Not found.'); }
+            }
+        }, 800);
+        return () => clearTimeout(handler);
+    }, [marketSearch, tokens, API_URL]);
 
 
     // Balance Fetching Logic    // Fetch Real-time Balances

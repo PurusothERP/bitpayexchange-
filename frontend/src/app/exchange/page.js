@@ -5602,12 +5602,19 @@ const MemeTerminal = ({ setMode, setToToken }) => {
         const fetchMemes = async () => {
             setIsLoading(true);
             try {
-                // Fetch high-quality tokens from BSC registry
-                const res = await axios.get(`${API_URL}/tokens/markets/bsclist`);
-                const tokens = res.data.tokens || [];
+                // Fetch high-quality tokens from BSC registry + Global Index (Top 6000)
+                const [bscRes, cgRes] = await Promise.all([
+                    axios.get(`${API_URL}/tokens/markets/bsclist`).catch(() => ({ data: { tokens: [] } })),
+                    Promise.all([1,2,3,4,5,6,7,8,9,10,11,12].map(p => 
+                        axios.get(`${API_URL}/tokens/markets/cg`, { params: { per_page: 250, page: p } }).catch(() => ({ data: [] }))
+                    ))
+                ]);
+
+                const bscTokens = bscRes.data.tokens || [];
+                const cgTokens = cgRes.flatMap(r => r.data || []);
                 
-                // Fetch trending tokens for more 'meme' variety
-                const trendRes = await axios.get(`${API_URL}/tokens/markets/trending`);
+                // Fetch trending tokens for extra alpha
+                const trendRes = await axios.get(`${API_URL}/tokens/markets/trending`).catch(() => ({ data: { coins: [] } }));
                 const trendTokens = (trendRes.data.coins || []).map(c => ({
                     address: c.item.contract_address || c.item.id,
                     symbol: (c.item.symbol || '').toUpperCase(),
@@ -5619,7 +5626,7 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                     network: 'BNB'
                 }));
 
-                const merged = [...tokens, ...trendTokens]
+                const merged = [...bscTokens, ...cgTokens, ...trendTokens]
                     .filter(t => t.symbol !== 'B20' && t.launch_type !== 'MEME') // Remove Launchpad
                     .map((t, i) => {
                         const seed = t.address || t.contract_address || `token-${i}`;

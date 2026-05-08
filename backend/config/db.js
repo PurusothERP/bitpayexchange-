@@ -16,8 +16,14 @@ if (isProd) {
         ssl: { rejectUnauthorized: false }
     });
 } else {
-    const dbPath = path.resolve(__dirname, '../../database.sqlite');
-    console.log('[DB] 💾 Initializing SQLite (Local Mode):', dbPath);
+    // Priority: SQLITE_PATH (for Render Disks) -> local database.sqlite
+    const dbPath = process.env.SQLITE_PATH || path.resolve(__dirname, '../../database.sqlite');
+    console.log('[DB] 💾 Initializing SQLite Mode:', dbPath);
+    
+    // Ensure directory exists for custom paths
+    const dbDir = path.dirname(dbPath);
+    if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
+
     sqliteDb = new sqlite3.Database(dbPath);
 }
 

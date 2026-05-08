@@ -1,31 +1,33 @@
-# 🚀 Deployment Guide: Render (Free Tier)
+# 🚀 Deployment Guide: Render (SQLite Mode)
 
-This project is now fully compatible with Render's free tier. Follow these steps to launch your institutional exchange and yield tracking platform.
+You have chosen to use **SQLite** as your primary database. To ensure your investment data is not lost on every restart, you **must** use a Render Persistent Disk.
 
-## 1. Database Setup (Supabase)
-Since Render's free tier does not have persistent storage for SQLite, you must use a remote PostgreSQL database.
-1.  Go to [Supabase](https://supabase.com/) and create a free project.
-2.  In your Supabase project, go to **Project Settings** > **Database**.
-3.  Copy the **Connection String** (URI format). It looks like: `postgresql://postgres:[password]@db.[id].supabase.co:5432/postgres`
+## ⚠️ IMPORTANT: Cost Note
+Render's **Free Tier** does not support persistent disks. To use SQLite safely on Render:
+1.  The Backend must be on the **Starter Plan** ($7/month).
+2.  The Disk costs approximately **$0.25/GB per month**.
 
-## 2. Deploying to Render
-We have included a `render.yaml` blueprint to automate the setup.
+If you want a **100% FREE** option, you must use **PostgreSQL** (see the previous version of this project or use Supabase).
+
+## Deployment Steps
+
+### 1. Deploying to Render
+We have included a `render.yaml` blueprint configured for SQLite with persistent storage.
 1.  Push the latest code to your GitHub repository.
 2.  Log in to [Render](https://render.com/).
 3.  Click **New +** > **Blueprint**.
-4.  Connect your GitHub repository: `NilanRitvik/CRYPTO-MEXAPAY`.
-5.  Render will automatically detect the services.
-6.  **Environment Variables**:
-    *   For the `b20-backend` service, paste your Supabase connection string into the `DATABASE_URL` field.
-    *   The frontend will automatically link to the backend URL.
-7.  Click **Apply**.
+4.  Connect your GitHub repository.
+5.  Render will detect the `b20-backend` (Starter) and `b20-frontend` (Free) services.
+6.  **Disk Setup**: Render will automatically create a 1GB disk and mount it at `/var/lib/b20-data`.
+7.  **Environment Variables**:
+    *   `SQLITE_PATH` is automatically set to `/var/lib/b20-data/database.sqlite`.
+    *   `BSC_RPC_URL` and `FACTORY_ADDRESS` are pre-configured.
 
-## 3. Post-Deployment
-*   Once deployed, the backend will automatically synchronize the database schema on Supabase.
-*   Your Yield tracking, Admin ledger, and User profiles will now persist forever, even when the free server restarts.
+### 2. Verify Persistence
+*   Once deployed, perform a test investment.
+*   Restart the service in the Render dashboard.
+*   If the investment details are still there after the restart, your **Persistent Disk** is working correctly.
 
-## 🔧 Technical Details (Render Compatibility)
-*   **Database**: Dual-mode (SQLite local / PostgreSQL production).
-*   **Process Management**: Node.js `PORT` injection for Render compatibility.
-*   **Sync Stability**: Configured `nodemon` to ignore background data writes, preventing server restart loops.
-*   **Frontend Routing**: Automated `API_URL` discovery using Render internal networking.
+## 🔧 Technical Details
+*   **Database Path**: The app is configured to prioritize `process.env.SQLITE_PATH`.
+*   **Auto-Initialization**: The backend will automatically create the database file and all required tables in the persistent folder upon first launch.

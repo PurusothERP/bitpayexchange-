@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, Suspense } from 'react';
 import { useWeb3Modal } from '@web3modal/ethers/react';
 import { 
     Search, ArrowUpRight, ArrowDownRight, Activity, Wallet, 
@@ -151,7 +151,7 @@ const NetPill = ({ net }) => (
     </div>
 );
 
-export default function B20Exchange() {
+function ExchangeContent() {
     const router = useRouter();
     const { account, signer, connectWallet, walletProvider } = useWallet();
     const [mode, setMode] = useState('markets'); // 'markets', 'spot', 'pro', 'bonding', 'fiat', 'list'
@@ -7894,3 +7894,15 @@ const StocksTerminal = ({ setMode, setToToken }) => {
         </div>
     );
 };
+
+export default function B20Exchange() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+            </div>
+        }>
+            <ExchangeContent />
+        </Suspense>
+    );
+}

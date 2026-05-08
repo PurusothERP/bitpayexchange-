@@ -1,0 +1,37 @@
+services:
+  # Backend Service
+  - type: web
+    name: b20-backend
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    rootDirectory: backend
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        placeholder: "Paste your Supabase PostgreSQL connection string here"
+      - key: BSC_RPC_URL
+        value: "https://bsc-dataseed.binance.org"
+      - key: FACTORY_ADDRESS
+        value: "0x4598AD4E828cb64A53246765f60D9912AEA1b11A"
+
+  # Frontend Service (Next.js)
+  - type: web
+    name: b20-frontend
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    rootDirectory: frontend
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: b20-backend
+          type: web
+          property: url
+      - key: NEXT_PUBLIC_FACTORY_ADDRESS
+        value: "0x4598AD4E828cb64A53246765f60D9912AEA1b11A"

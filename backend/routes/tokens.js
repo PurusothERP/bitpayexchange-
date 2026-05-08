@@ -147,18 +147,22 @@ async function cachedFetch(key, url, ttlMs = 10 * 60 * 1000) {
 }
 
 // ─── GET /api/tokens/markets/bsclist ────────────────────────────────────────
-// Returns the full CoinGecko BSC token list (~3300 tokens) + PancakeSwap extended
+// Returns a high-capacity token list (~6000+ tokens)
 // Cached for 10 minutes to avoid rate limits. Used by the exchange Markets tab.
 router.get('/markets/bsclist', async (req, res) => {
     try {
         const PANCAKE_URL    = 'https://tokens.pancakeswap.finance/pancakeswap-extended.json';
         const CG_BSC_URL     = 'https://tokens.coingecko.com/binance-smart-chain/all.json';
-        const ONE_INCH_URL   = 'https://tokens.1inch.io/v1.2/56'; // 1inch BSC list
+        const ONE_INCH_URL   = 'https://tokens.1inch.io/v1.2/56'; 
+        const UNISWAP_URL    = 'https://tokens.uniswap.org'; // ETH list
+        const SOLANA_URL     = 'https://raw.githubusercontent.com/solana-labs/token-list/main/src/tokens/solana.tokenlist.json';
 
-        const [cgBsc, pancake, oneInch] = await Promise.allSettled([
+        const [cgBsc, pancake, oneInch, ethList, solList] = await Promise.allSettled([
             cachedFetch('cg_bsc',   CG_BSC_URL,   10 * 60 * 1000),
             cachedFetch('pancake',  PANCAKE_URL,  10 * 60 * 1000),
             cachedFetch('1inch56',  ONE_INCH_URL, 10 * 60 * 1000),
+            cachedFetch('uniswap',  UNISWAP_URL,  10 * 60 * 1000),
+            cachedFetch('solana',   SOLANA_URL,   10 * 60 * 1000)
         ]);
 
         const safe = (r) => r.status === 'fulfilled' ? r.value : null;
@@ -167,65 +171,37 @@ router.get('/markets/bsclist', async (req, res) => {
         const seenAddresses = new Set();
         const merged = [];
 
-        // CoinGecko BSC list (highest quality — has prices)
-        const cgTokens = safe(cgBsc)?.tokens || [];
-        for (const t of cgTokens) {
-            const addr = (t.address || '').toLowerCase();
-            if (!addr || seenAddresses.has(addr)) continue;
-            seenAddresses.add(addr);
-            merged.push({
-                address: t.address,
-                symbol:  (t.symbol || '').toUpperCase(),
-                name:    t.name,
-                decimals: t.decimals || 18,
-                logoURI: t.logoURI || t.image || '',
-                chainId: 56,
-                source: 'coingecko_bsc'
-            });
-        }
-
-        // PancakeSwap extended list
-        const pancakeTokens = safe(pancake)?.tokens || [];
-        for (const t of pancakeTokens) {
-            const addr = (t.address || '').toLowerCase();
-            if (!addr || seenAddresses.has(addr)) continue;
-            seenAddresses.add(addr);
-            merged.push({
-                address: t.address,
-                symbol:  (t.symbol || '').toUpperCase(),
-                name:    t.name,
-                decimals: t.decimals || 18,
-                logoURI: t.logoURI || '',
-                chainId: 56,
-                source: 'pancakeswap'
-            });
-        }
-
-        // 1inch BSC list (object keyed by address)
-        const oneInchTokens = safe(oneInch);
-        if (oneInchTokens && typeof oneInchTokens === 'object') {
-            for (const [addr, t] of Object.entries(oneInchTokens)) {
-                const lAddr = addr.toLowerCase();
-                if (seenAddresses.has(lAddr)) continue;
-                seenAddresses.add(lAddr);
+        const processList = (tokens, source, chainId) => {
+            if (!Array.isArray(tokens)) return;
+            for (const t of tokens) {
+                const addr = (t.address || t.mint || '').toLowerCase();
+                if (!addr || seenAddresses.has(addr)) continue;
+                seenAddresses.add(addr);
                 merged.push({
-                    address: addr,
+                    address: t.address || t.mint,
                     symbol:  (t.symbol || '').toUpperCase(),
                     name:    t.name,
                     decimals: t.decimals || 18,
-                    logoURI: t.logoURI || t.logoUrl || '',
-                    chainId: 56,
-                    source: '1inch'
+                    logoURI: t.logoURI || t.image || '',
+                    chainId: chainId,
+                    source: source
                 });
             }
-        }
+        };
+
+        processList(safe(cgBsc)?.tokens, 'coingecko_bsc', 56);
+        processList(safe(pancake)?.tokens, 'pancakeswap', 56);
+        processList(safe(oneInch), '1inch', 56);
+        processList(safe(ethList)?.tokens, 'uniswap_eth', 1);
+        processList(safe(solList)?.tokens, 'solana_mainnet', 101);
 
         res.json({ tokens: merged, count: merged.length });
     } catch (err) {
-        console.error('[BSC List] Failed:', err.message);
-        res.status(500).json({ error: 'Failed to fetch BSC token list', details: err.message });
+        console.error('[Token List] Failed:', err.message);
+        res.status(500).json({ error: 'Failed to fetch global token list', details: err.message });
     }
 });
+
 
 // ─── API Adapters ─────────────────────────────────────────────────────────────
 // Now uses the robust cryptoFetcher module.

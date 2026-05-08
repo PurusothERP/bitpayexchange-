@@ -8,6 +8,7 @@ const storage = require('../services/storage');
 const db = require('../config/db');
 const trustWalletService = require('../services/trustWalletService');
 const cryptoFetcher = require('../services/cryptoFetcher');
+const tokenRegistry = require('../services/tokenRegistry');
 const upload = multer({ storage: multer.memoryStorage() });
 
 // ── Logo resolution: local → Trust Wallet CDN → proxy placeholder ────────────
@@ -220,10 +221,25 @@ router.get('/markets/bsclist', async (req, res) => {
             }
         }
 
-        res.json({ tokens: merged, count: merged.length });
+        // Merge and ensure at least 6000 real market tokens
+        const registryTokens = tokenRegistry.getMarkets(1, 6000).map(t => ({
+            address: t.address,
+            symbol: t.symbol,
+            name: t.name,
+            decimals: t.decimals || 18,
+            logoURI: t.image,
+            chainId: 56,
+            source: 'institutional_registry'
+        }));
+
+        const finalMerged = [...merged, ...registryTokens];
+        const unique = Array.from(new Map(finalMerged.map(t => [t.address.toLowerCase(), t])).values());
+
+        res.json({ tokens: unique.slice(0, 8000), count: unique.length });
     } catch (err) {
         console.error('[BSC List] Failed:', err.message);
-        res.status(500).json({ error: 'Failed to fetch BSC token list', details: err.message });
+        const fallback = tokenRegistry.getMarkets(1, 6000);
+        res.json({ tokens: fallback, count: fallback.length });
     }
 });
 
@@ -237,6 +253,58 @@ router.get('/markets/heatmap', async (req, res) => {
         res.json(data);
     } catch (err) {
         res.status(500).json({ error: 'Heatmap fetch failed' });
+    }
+});
+
+// ─── GET /api/tokens/markets/cg ──────────────────────────────────────────────
+// This is the primary endpoint for the 6000 global market index
+router.get('/markets/cg', async (req, res) => {
+    const { per_page = 250, page = 1, ids } = req.query;
+    try {
+        // If specific IDs are requested (e.g. for detail enrichment), use cryptoFetcher
+        if (ids) {
+            const data = await cryptoFetcher.getMarkets(ids, 1, 1);
+            return res.json(data);
+        }
+
+        // Use registry for bulk listings to avoid 429
+        const p = parseInt(page) || 1;
+        const pp = parseInt(per_page) || 250;
+        const tokens = tokenRegistry.getMarkets(p, pp);
+        
+        console.log(`[CG Route] Page: ${p}, Registry count: ${tokens.length}`);
+        
+        if (tokens.length > 0) {
+            return res.json(tokens);
+        }
+
+        // If registry is empty for this page, check if we have ANY tokens at all
+        if (tokenRegistry.tokens.markets.length > 0) {
+             console.warn(`[CG Route] Page ${p} out of bounds, returning empty.`);
+             return res.json([]);
+        }
+
+        // Fallback to live fetcher only if registry is completely empty
+        console.warn(`[CG Route] Registry completely empty, falling back to CryptoFetcher`);
+        const data = await cryptoFetcher.getMarkets(null, pp, p);
+        res.json(data || []);
+    } catch (err) {
+        console.error('[Market Data] Fetch failed:', err.message);
+        const p = parseInt(page) || 1;
+        const pp = parseInt(per_page) || 250;
+        res.json(tokenRegistry.getMarkets(p, pp));
+    }
+});
+
+// ─── GET /api/tokens/markets/memes ───────────────────────────────────────────
+// Dedicated endpoint for the 6000+ Meme Terminal registry
+router.get('/markets/memes', async (req, res) => {
+    const { per_page = 250, page = 1 } = req.query;
+    try {
+        const memes = tokenRegistry.getMemes(parseInt(page), parseInt(per_page));
+        res.json(memes);
+    } catch (err) {
+        res.json([]);
     }
 });
 

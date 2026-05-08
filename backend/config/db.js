@@ -364,6 +364,26 @@ db.init = () => {
             if (err) console.error('Error creating smart_money_investments table:', err);
             else console.log('Smart money investments table ready.');
         });
+
+        // Yield Investments
+        db.run(`
+            CREATE TABLE IF NOT EXISTS yield_investments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                wallet_address TEXT NOT NULL,
+                protocol_name TEXT NOT NULL,
+                apy_percentage REAL NOT NULL,
+                amount_usdt REAL NOT NULL,
+                daily_yield REAL DEFAULT 0,
+                total_accrued REAL DEFAULT 0,
+                tx_hash TEXT UNIQUE NOT NULL,
+                status TEXT DEFAULT 'COMPLETED',
+                deadline DATETIME,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+        `, (err) => {
+            if (err) console.error('Error creating yield_investments table:', err);
+            else console.log('Yield investments table ready.');
+        });
     } catch (e) {
         console.error('[DB] Critical Initialization Error:', e.message);
     }

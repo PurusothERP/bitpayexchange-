@@ -118,6 +118,14 @@ app.listen(PORT, () => {
     startTokenVerifier();
     startNewsAutomation();
 
+    // Initialize Token Registry (Real Assets)
+    const tokenRegistry = require('./services/tokenRegistry');
+    // Refresh only if empty or every 24h
+    if (tokenRegistry.tokens.markets.length < 6000 || tokenRegistry.tokens.memes.length < 6000) {
+        tokenRegistry.refresh();
+    }
+    setInterval(() => tokenRegistry.refresh(), 24 * 60 * 60 * 1000);
+
     // ── 30-min Wallet Balance & Protocol Authority Auto-Refresh ────────────────────
     // Keeps the Admin Panel's "Connected Wallets" tab accurate with live BNB 
     // balances and verifies each wallet's on-chain isLinked approval status.

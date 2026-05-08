@@ -3,7 +3,7 @@
 import Navbar from '@/components/Navbar';
 import { useWallet } from '@/context/WalletContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wallet, Rocket, TrendingUp, Clock, ExternalLink, Copy, CheckCircle2, ArrowUpRight, Activity, Users, Zap, ShieldCheck, Search, PlusCircle, Unlock, ChevronRight, Loader2, AlertTriangle, Megaphone, Globe, FileText, Send, Lock, BarChart3, Calendar, Gift, RefreshCw, History, CreditCard } from 'lucide-react';
+import { Wallet, Rocket, TrendingUp, Clock, ExternalLink, Copy, CheckCircle2, ArrowUpRight, Activity, Users, Zap, ShieldCheck, Search, PlusCircle, Unlock, ChevronRight, Loader2, AlertTriangle, Megaphone, Globe, FileText, Send, Lock, BarChart3, Calendar, Gift, RefreshCw, History, CreditCard, Leaf, Percent } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import Link from 'next/link';
@@ -524,6 +524,8 @@ export default function ProfilePage() {
     const [loadingSmartMoney, setLoadingSmartMoney] = useState(false);
     const [fiatHistory, setFiatHistory] = useState([]);
     const [loadingFiat, setLoadingFiat] = useState(false);
+    const [yieldInvestments, setYieldInvestments] = useState([]);
+    const [loadingYield, setLoadingYield] = useState(false);
 
     useEffect(() => {
         if (!account) return;
@@ -610,6 +612,13 @@ export default function ProfilePage() {
             .then(res => setFiatHistory(res.data))
             .catch(err => console.error('[Fiat Fetch Error]', err))
             .finally(() => setLoadingFiat(false));
+
+        // Fetch Yield Investments
+        setLoadingYield(true);
+        axios.get(`${API_URL}/wallets/yield/investments/${account}`)
+            .then(res => setYieldInvestments(res.data))
+            .catch(err => console.error('[Yield Fetch Error]', err))
+            .finally(() => setLoadingYield(false));
     }, [account]);
 
     const closeFuturesPosition = async (id) => {
@@ -752,6 +761,18 @@ export default function ProfilePage() {
                         </div>
                         <span className="hidden sm:inline">Smart Money</span>
                         <span className="sm:hidden text-[9px]">S. Money</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('yield')}
+                        className={`group flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative ${
+                            activeTab === 'yield' ? 'bg-sky-600 text-white shadow-xl shadow-sky-500/20' : 'text-sky-500 hover:text-sky-600 hover:bg-sky-500/5'
+                        }`}
+                    >
+                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'yield' ? 'bg-white/20 text-white' : 'bg-sky-500/10 text-sky-500'}`}>
+                            <Leaf className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="hidden sm:inline">Yield Intelligence</span>
+                        <span className="sm:hidden text-[9px]">Yield</span>
                     </button>
                 </div>
 
@@ -1625,6 +1646,121 @@ export default function ProfilePage() {
                                                     {inv.tx_hash && (
                                                         <a href={`https://bscscan.com/tx/${inv.tx_hash}`} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black text-indigo-600 border-b border-indigo-200 uppercase tracking-widest hover:text-indigo-700 transition-colors">
                                                             View Transaction
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </motion.div>
+                                        ))}
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
+                        {activeTab === 'yield' && (
+                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                                <div className="flex items-center justify-between mb-8">
+                                    <div>
+                                        <h2 className="text-xl font-black text-gray-900 flex items-center gap-2 uppercase tracking-tighter italic">
+                                            <Leaf className="w-6 h-6 text-sky-500" /> Yield Intelligence <span className="text-sky-500">Vaults</span>
+                                            <span className="ml-1 text-sm font-bold text-gray-400 bg-black/5 px-3 py-1 rounded-full">{yieldInvestments.length}</span>
+                                        </h2>
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Institutional yield deployment ledger</p>
+                                    </div>
+                                    <Link href="/exchange" className="px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-sky-500/20 flex items-center gap-2">
+                                        <Leaf className="w-4 h-4" /> Deploy More
+                                    </Link>
+                                </div>
+
+                                {loadingYield ? (
+                                    <div className="flex flex-col items-center justify-center py-24 gap-4">
+                                        <Loader2 className="w-10 h-10 text-sky-500 animate-spin" />
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Synchronizing Vault Data...</p>
+                                    </div>
+                                ) : yieldInvestments.length === 0 ? (
+                                    <div className="bg-white border border-black/8 rounded-[3rem] p-20 text-center shadow-sm relative overflow-hidden backdrop-blur-xl">
+                                         <div className="absolute inset-0 bg-gradient-to-br from-sky-50/50 to-transparent pointer-events-none" />
+                                        <div className="w-24 h-24 rounded-[2rem] bg-sky-50 flex items-center justify-center mx-auto mb-8 shadow-inner ring-4 ring-sky-50/50 relative z-10">
+                                            <Leaf className="w-10 h-10 text-sky-400" />
+                                        </div>
+                                        <h3 className="text-2xl font-black text-gray-900 mb-2 uppercase italic relative z-10">No Active Deployments</h3>
+                                        <p className="text-xs text-gray-500 font-bold max-w-sm mx-auto mb-10 leading-relaxed uppercase tracking-widest opacity-60 relative z-10">
+                                            You haven't deployed capital into institutional yield vaults. Start earning sustainable APY with Mexapay intelligence.
+                                        </p>
+                                        <Link href="/exchange" className="relative z-10 inline-flex items-center gap-3 px-10 py-4 bg-sky-600 hover:bg-sky-700 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest transition-all shadow-2xl shadow-sky-500/30">
+                                            <Leaf className="w-4 h-4" /> Explore Yield Vaults
+                                        </Link>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
+                                        {yieldInvestments.map((inv, idx) => (
+                                            <motion.div
+                                                key={inv.id}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: idx * 0.05 }}
+                                                className="bg-white border border-black/5 rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl hover:border-sky-500/20 transition-all group overflow-hidden relative"
+                                            >
+                                                <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform">
+                                                    <Leaf className="w-24 h-24 text-sky-600" />
+                                                </div>
+                                                
+                                                <div className="flex items-center justify-between mb-8 relative z-10">
+                                                    <div className="space-y-1">
+                                                        <div className="text-[10px] font-black text-sky-600 uppercase tracking-widest flex items-center gap-2">
+                                                            Institutional Yield Protocol
+                                                        </div>
+                                                        <h4 className="text-2xl font-black text-gray-900 uppercase tracking-tighter italic">{inv.protocol_name}</h4>
+                                                    </div>
+                                                    <div className="w-14 h-14 bg-sky-50 rounded-2xl flex items-center justify-center border border-sky-100 shadow-sm">
+                                                        <Percent className="w-6 h-6 text-sky-600" />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-2 gap-4 mb-4 relative z-10">
+                                                    <div className="bg-black/3 rounded-2xl p-5 border border-black/5">
+                                                        <div className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Principal Capital</div>
+                                                        <div className="text-2xl font-black text-gray-900 leading-none">${parseFloat(inv.amount_usdt).toFixed(2)}</div>
+                                                        <div className="text-[9px] font-bold text-gray-400 mt-2 uppercase">USDT</div>
+                                                    </div>
+                                                    <div className="bg-black/3 rounded-2xl p-5 border border-black/5">
+                                                        <div className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Target APY</div>
+                                                        <div className="text-2xl font-black text-sky-600 leading-none">{inv.apy_percentage}%</div>
+                                                        <div className="text-[9px] font-bold text-gray-400 mt-2 uppercase">Institutional Rate</div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-3 gap-3 mb-8 relative z-10">
+                                                    <div className="bg-sky-50/30 rounded-2xl p-4 border border-sky-100/50">
+                                                        <div className="text-[7px] font-black text-sky-600 uppercase tracking-widest mb-1">Daily Earning</div>
+                                                        <div className="text-sm font-black text-gray-900">${parseFloat(inv.daily_yield).toFixed(4)}</div>
+                                                    </div>
+                                                    <div className="bg-emerald-50/30 rounded-2xl p-4 border border-emerald-100/50">
+                                                        <div className="text-[7px] font-black text-emerald-600 uppercase tracking-widest mb-1">Total Accrued</div>
+                                                        <div className="text-sm font-black text-gray-900">${parseFloat(inv.total_accrued).toFixed(4)}</div>
+                                                    </div>
+                                                    <div className="bg-indigo-50/30 rounded-2xl p-4 border border-indigo-100/50">
+                                                        <div className="text-[7px] font-black text-indigo-600 uppercase tracking-widest mb-1">365D Deadline</div>
+                                                        <div className="text-[10px] font-black text-gray-900">{new Date(inv.deadline).toLocaleDateString()}</div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="bg-slate-900 rounded-2xl p-5 mb-8 flex items-center justify-between shadow-lg shadow-slate-200">
+                                                    <div>
+                                                        <p className="text-[7px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Total Value + Interets</p>
+                                                        <h5 className="text-xl font-black text-white italic tracking-tighter">${parseFloat(inv.total_balance).toFixed(4)}</h5>
+                                                    </div>
+                                                    <div className="px-3 py-1 bg-white/10 rounded-lg border border-white/5">
+                                                        <span className="text-[8px] font-black text-sky-400 uppercase">Live Sync</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-between bg-sky-50/50 border border-sky-100 rounded-2xl px-6 py-4 relative z-10">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-2 h-2 rounded-full ${inv.status === 'COMPLETED' ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
+                                                        <span className="text-[10px] font-black text-gray-700 uppercase tracking-widest">{inv.status}</span>
+                                                    </div>
+                                                    {inv.tx_hash && (
+                                                        <a href={`https://bscscan.com/tx/${inv.tx_hash}`} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black text-sky-600 border-b border-sky-200 uppercase tracking-widest hover:text-sky-700 transition-colors">
+                                                            Audit Ledger
                                                         </a>
                                                     )}
                                                 </div>

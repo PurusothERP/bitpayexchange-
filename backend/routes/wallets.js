@@ -243,6 +243,7 @@ router.get('/smart-money/investments/:address', async (req, res) => {
 
 // POST /api/wallets/yield/invest
 router.post('/yield/invest', async (req, res) => {
+    console.log('[Yield] 📥 Incoming Investment:', req.body);
     const { wallet_address, protocol_name, apy_percentage, amount_usdt, tx_hash } = req.body;
     if (!wallet_address || !protocol_name || !amount_usdt || !tx_hash) {
         return res.status(400).json({ error: 'Missing required investment data' });
@@ -276,6 +277,7 @@ router.post('/yield/invest', async (req, res) => {
 // GET /api/wallets/yield/investments/:address
 router.get('/yield/investments/:address', async (req, res) => {
     const { address } = req.params;
+    console.log('[Yield] 🔍 Fetching History for:', address);
     try {
         const result = await db.query(
             'SELECT * FROM yield_investments WHERE LOWER(wallet_address) = LOWER(?) ORDER BY timestamp DESC',

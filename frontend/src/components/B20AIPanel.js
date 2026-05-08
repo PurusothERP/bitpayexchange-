@@ -1621,6 +1621,7 @@ function InvestModal({ token, onClose }) {
         }
         
         setError('');
+        console.log('[Yield] 🚀 Starting Investment Flow...', { protocol: token.protocol, amount, url: `${API_URL}/wallets/yield/invest` });
         try {
             const val = ethers.parseUnits(amount, 18);
             const contract = new ethers.Contract(USDT_ADDRESS, ERC20_ABI, signer);

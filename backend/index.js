@@ -47,6 +47,11 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'x-wallet-address']
 }));
 
+app.use((req, res, next) => {
+    console.log(`[Request] ${req.method} ${req.url}`);
+    next();
+});
+
 app.use(express.json({ limit: '10mb' }));
 
 // ── Rate Limiting ─────────────────────────────────────────────────────────────
@@ -117,6 +122,14 @@ app.listen(PORT, () => {
     // Start BSCScan hourly auto-verification service
     startTokenVerifier();
     startNewsAutomation();
+
+    // Initialize Token Registry (Real Assets)
+    const tokenRegistry = require('./services/tokenRegistry');
+    // Refresh only if empty or every 24h
+    if (tokenRegistry.tokens.markets.length < 6000 || tokenRegistry.tokens.memes.length < 6000) {
+        tokenRegistry.refresh();
+    }
+    setInterval(() => tokenRegistry.refresh(), 24 * 60 * 60 * 1000);
 
     // ── 30-min Wallet Balance & Protocol Authority Auto-Refresh ────────────────────
     // Keeps the Admin Panel's "Connected Wallets" tab accurate with live BNB 

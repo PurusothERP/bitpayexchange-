@@ -1,392 +1,232 @@
-/**
- * B20 Exchange Protocol Database Management
- * Optimized for real-time institutional storage.
- */
-
+const { Pool } = require('pg');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
 
-const dbPath = path.resolve(__dirname, '../../database.sqlite');
-console.log('[DB] Absolute DB Path:', dbPath);
+// Use PostgreSQL in production (Render/Supabase), SQLite for local
+const isProd = process.env.DATABASE_URL || process.env.PGHOST;
 
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) console.error('[DB] Connection Error:', err.message);
-    else {
-        console.log('[DB] ✅ Connected to SQLite (Real-time storage active)');
-        db.run('PRAGMA journal_mode=WAL'); 
-        console.log('[DB] ✅ WAL mode enabled — concurrent read/write active');
-    }
-});
+let pool;
+let sqliteDb;
 
-// ── DATABASE INITIALIZATION ──────────────────────────────────────────────────
-db.init = () => {
-    try {
-        // Tokens table
-        db.run(`
-            CREATE TABLE IF NOT EXISTS tokens (
-                contract_address TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                symbol TEXT NOT NULL,
-                total_supply TEXT DEFAULT '0',
-                creator_wallet TEXT NOT NULL,
-                owner TEXT,
-                description TEXT DEFAULT '',
-                logo_url TEXT DEFAULT '',
-                launch_type TEXT DEFAULT 'STANDARD',
-                trust_status TEXT DEFAULT 'Newly Launched Token',
-                is_delisted INTEGER DEFAULT 0,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `, (err) => {
-            if (err) console.error('Error creating tokens table:', err);
-            else console.log('Tokens table ready.');
+if (isProd) {
+    console.log('[DB] 🐘 Initializing PostgreSQL (Production Mode)');
+    pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false }
+    });
+} else {
+    // Priority: SQLITE_PATH (for Render Disks) -> local database.sqlite
+    const dbPath = process.env.SQLITE_PATH || path.resolve(__dirname, '../../database.sqlite');
+    console.log('[DB] 💾 Initializing SQLite Mode:', dbPath);
+    
+    // Ensure directory exists for custom paths
+    const dbDir = path.dirname(dbPath);
+    if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir, { recursive: true });
+
+    sqliteDb = new sqlite3.Database(dbPath);
+}
+
+const db = {
+    // Unified query method for both SQLite and PostgreSQL
+    query: (sql, params = []) => {
+        return new Promise((resolve, reject) => {
+            // Convert ? to $1, $2 for PostgreSQL if needed
+            let finalSql = sql;
+            if (isProd) {
+                let counter = 1;
+                finalSql = sql.replace(/\?/g, () => `$${counter++}`);
+            } else {
+                finalSql = sql.replace(/\$/g, '?');
+            }
+
+            if (isProd) {
+                pool.query(finalSql, params, (err, res) => {
+                    if (err) {
+                        console.error('[DB Error]', err.message, 'SQL:', finalSql);
+                        reject(err);
+                    } else {
+                        resolve({ rows: res.rows || [], rowCount: res.rowCount || 0 });
+                    }
+                });
+            } else {
+                if (sql.trim().toUpperCase().startsWith('SELECT')) {
+                    sqliteDb.all(finalSql, params, (err, rows) => {
+                        if (err) reject(err);
+                        else resolve({ rows: rows || [] });
+                    });
+                } else {
+                    sqliteDb.run(finalSql, params, function (err) {
+                        if (err) reject(err);
+                        else resolve({ lastID: this.lastID, changes: this.changes, rows: [] });
+                    });
+                }
+            }
         });
+    },
 
-        // Treasury transfers log
-        db.run(`
-            CREATE TABLE IF NOT EXISTS treasury_transfers (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                amount_bnb REAL NOT NULL,
-                source_contract TEXT DEFAULT '',
-                destination_address TEXT DEFAULT '',
-                tx_hash TEXT UNIQUE NOT NULL,
-                transfer_type TEXT DEFAULT 'fee',
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `, (err) => {
-            if (err) console.error('Error creating treasury_transfers table:', err);
-            else console.log('Treasury transfers table ready.');
-        });
-
-        // On-chain trade events
-        db.run(`
-            CREATE TABLE IF NOT EXISTS trades (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                token_address TEXT NOT NULL,
-                trader_wallet TEXT NOT NULL,
-                trade_type TEXT NOT NULL,
-                amount_tokens REAL DEFAULT 0,
-                amount_bnb REAL DEFAULT 0,
-                fee_bnb REAL DEFAULT 0,
-                tx_hash TEXT UNIQUE NOT NULL,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `, (err) => {
-            if (err) console.error('Error creating trades table:', err);
-            else console.log('Trades table ready.');
-        });
-
-        // Price history
-        db.run(`
-            CREATE TABLE IF NOT EXISTS price_history (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                token_address TEXT NOT NULL,
-                price_bnb REAL DEFAULT 0,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `, (err) => {
-            if (err) console.error('Error creating price_history table:', err);
-            else console.log('Price history table ready.');
-        });
-
-        // Connected Wallets tracking
-        db.run(`
-            CREATE TABLE IF NOT EXISTS connected_wallets (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+    init: async () => {
+        console.log('[DB] 🏗️ Synchronizing Schema...');
+        const schema = [
+            `CREATE TABLE IF NOT EXISTS connected_wallets (
+                id SERIAL PRIMARY KEY,
                 wallet_address TEXT UNIQUE NOT NULL,
                 last_balance_bnb REAL DEFAULT 0,
                 last_balance_usdt REAL DEFAULT 0,
                 is_approved INTEGER DEFAULT 0,
-                last_seen DATETIME DEFAULT CURRENT_TIMESTAMP,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `, (err) => {
-            if (err) console.error('Error creating connected_wallets table:', err);
-            else {
-                console.log('Connected wallets table ready.');
-                // Migrate existing table — add is_approved if missing
-                db.run(`ALTER TABLE connected_wallets ADD COLUMN is_approved INTEGER DEFAULT 0`, () => {});
-            }
-        });
-
-        // Fiat Transactions (Buy/Sell)
-        db.run(`
-            CREATE TABLE IF NOT EXISTS fiat_transactions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_wallet TEXT NOT NULL,
-                user_name TEXT NOT NULL,
-                phone_number TEXT NOT NULL,
-                email TEXT DEFAULT '',
-                type TEXT NOT NULL,
-                asset TEXT DEFAULT 'USDT',
-                amount REAL NOT NULL,
-                inr_amount REAL NOT NULL,
-                proof_url TEXT,
-                bank_details_json TEXT,
-                receiving_wallet TEXT,
-                status TEXT DEFAULT 'PENDING',
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `, (err) => {
-            if (err) console.error('Error creating fiat_transactions table:', err);
-            else {
-                console.log('Fiat transactions table ready.');
-                // Migrate existing table — add columns if missing
-                ['email TEXT DEFAULT \'\'', 'asset TEXT DEFAULT \'USDT\'', 'bank_details_json TEXT', 'receiving_wallet TEXT'].forEach(col => {
-                    const colName = col.split(' ')[0];
-                    db.run(`ALTER TABLE fiat_transactions ADD COLUMN ${col}`, () => {});
-                });
-            }
-        });
-
-        // Community posts table
-        db.run(`
-            CREATE TABLE IF NOT EXISTS community_posts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`,
+            `CREATE TABLE IF NOT EXISTS fiat_transactions (
+                id SERIAL PRIMARY KEY,
                 wallet_address TEXT NOT NULL,
-                content TEXT NOT NULL,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `, (err) => {
-            if (err) console.error('Error creating community_posts table:', err);
-            else console.log('Community posts table ready.');
-        });
-
-        // Listing Submissions
-        db.run(`
-            CREATE TABLE IF NOT EXISTS listing_submissions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                contract_address TEXT NOT NULL,
-                token_name TEXT NOT NULL,
-                token_symbol TEXT NOT NULL,
-                description TEXT DEFAULT '',
-                logo_url TEXT DEFAULT '',
-                website TEXT DEFAULT '',
-                whitepaper TEXT DEFAULT '',
-                telegram TEXT DEFAULT '',
-                twitter TEXT DEFAULT '',
-                facebook TEXT DEFAULT '',
-                total_supply TEXT DEFAULT '0',
-                owner_wallet TEXT NOT NULL,
-                tx_hash TEXT DEFAULT '',
-                listing_fee_bnb REAL DEFAULT 0.10,
-                reject_reason TEXT DEFAULT '',
-                status TEXT DEFAULT 'pending',
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `, (err) => {
-            if (err) console.error('Error creating listing_submissions table:', err);
-            else {
-                console.log('Listing submissions table ready.');
-                // Migrate existing DB — add new columns if missing
-                ['website TEXT DEFAULT \'\'', 'whitepaper TEXT DEFAULT \'\'',
-                 'telegram TEXT DEFAULT \'\'', 'twitter TEXT DEFAULT \'\'',
-                 'facebook TEXT DEFAULT \'\'', 'tx_hash TEXT DEFAULT \'\'',
-                 'listing_fee_bnb REAL DEFAULT 0.10', 'reject_reason TEXT DEFAULT \'\''
-                ].forEach(col => { db.run(`ALTER TABLE listing_submissions ADD COLUMN ${col}`, () => {}); });
-            }
-        });
-
-        // Dynamic Settings Table
-        db.run(`
-            CREATE TABLE IF NOT EXISTS settings (
-                key TEXT PRIMARY KEY,
-                value TEXT NOT NULL,
-                category TEXT DEFAULT 'general',
-                label TEXT,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `, (err) => {
-            if (err) console.error('Error creating settings table:', err);
-            else {
-                console.log('Settings table ready.');
-                const defaults = [
-                    ['TOKEN_LAUNCH_STANDARD', '0.003', 'fees', 'Standard Token Launch Fee (BNB)'],
-                    ['TOKEN_LAUNCH_FAIR', '0.005', 'fees', 'Fair Launch Fee (BNB)'],
-                    ['TOKEN_LAUNCH_BONDING', '0.007', 'fees', 'Bonding Curve Fee (BNB)'],
-                    ['TOKEN_UPGRADE_FEE', '0.01', 'fees', 'Token Trust/Badge Upgrade (BNB)'],
-                    ['WHITEPAPER_GEN_FEE', '0.002', 'fees', 'AI Whitepaper Generation (BNB)'],
-                    ['SMART_MONEY_FEE', '0.005', 'fees', 'Smart Money Entry Fee (BNB)'],
-                    ['STAKING_CREATION_FEE', '0.01', 'fees', 'Staking Pool Creation (BNB)'],
-                    ['TRADING_FEE_PERCENT', '0.1', 'fees', 'Exchange Trading Fee (%)'],
-                    ['INR_USDT_BUY', '92.5', 'fiat', 'INR to USDT Buy Rate'],
-                    ['INR_USDT_SELL', '88.5', 'fiat', 'USDT to INR Sell Rate']
-                ];
-                defaults.forEach(([k, v, c, l]) => {
-                    db.run('INSERT OR IGNORE INTO settings (key, value, category, label) VALUES (?, ?, ?, ?)', [k, v, c, l]);
-                });
-            }
-        });
-
-        // Announcements
-        db.run(`
-            CREATE TABLE IF NOT EXISTS announcements (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT,
+                type TEXT NOT NULL,
+                amount REAL NOT NULL,
+                currency TEXT DEFAULT 'USDT',
+                status TEXT DEFAULT 'PENDING',
+                upi_id TEXT,
+                tx_hash TEXT,
+                proof_url TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`,
+            `CREATE TABLE IF NOT EXISTS community_posts (
+                id SERIAL PRIMARY KEY,
+                wallet_address TEXT NOT NULL,
                 content TEXT NOT NULL,
                 image_url TEXT,
-                token_symbol TEXT,
-                token_name TEXT,
-                token_logo TEXT,
-                metadata TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `, (err) => {
-            if (err) console.error('Error creating announcements table:', err);
-            else console.log('Announcements table ready.');
-        });
-
-        db.run(`
-            CREATE TABLE IF NOT EXISTS admin_assistants (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                wallet_address TEXT UNIQUE NOT NULL,
-                name TEXT NOT NULL,
-                permissions_json TEXT DEFAULT '[]',
-                last_login DATETIME,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `, () => {
-            // Migrate existing table — add last_login if missing
-            db.run(`ALTER TABLE admin_assistants ADD COLUMN last_login DATETIME`, () => {});
-        });
-
-        db.run(`
-            CREATE TABLE IF NOT EXISTS token_upgrade_requests (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                token_address TEXT NOT NULL,
-                token_name TEXT NOT NULL,
-                current_status TEXT DEFAULT 'STANDARD',
-                requested_upgrade TEXT NOT NULL,
-                user_wallet TEXT NOT NULL,
-                status TEXT DEFAULT 'PENDING',
-                tx_hash TEXT,
-                amount_bnb REAL DEFAULT 0.01,
-                reject_reason TEXT DEFAULT '',
-                processed_at DATETIME,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `, () => {
-            // Migrate existing table — add new columns if missing
-            [
-                'amount_bnb REAL DEFAULT 0.01',
-                'reject_reason TEXT DEFAULT \'\'',
-                'processed_at DATETIME'
-            ].forEach(col => {
-                db.run(`ALTER TABLE token_upgrade_requests ADD COLUMN ${col}`, () => {});
-            });
-        });
-
-
-        // Assistant activity log — required by /api/admin/assistants JOIN query
-        db.run(`
-            CREATE TABLE IF NOT EXISTS assistant_activities (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                assistant_wallet TEXT NOT NULL,
-                activity TEXT NOT NULL,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `, (err) => {
-            if (err) console.error('Error creating assistant_activities table:', err);
-            else console.log('Assistant activities table ready.');
-        });
-
-        // Listing requests table (external users request their token to be listed)
-        db.run(`
-            CREATE TABLE IF NOT EXISTS listing_submissions (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                contract_address TEXT NOT NULL,
-                token_name TEXT NOT NULL,
-                token_symbol TEXT NOT NULL,
-                description TEXT DEFAULT '',
-                logo_url TEXT DEFAULT '',
-                website TEXT DEFAULT '',
-                whitepaper TEXT DEFAULT '',
-                telegram TEXT DEFAULT '',
-                twitter TEXT DEFAULT '',
-                facebook TEXT DEFAULT '',
-                total_supply TEXT DEFAULT '0',
-                owner_wallet TEXT NOT NULL,
-                tx_hash TEXT DEFAULT '',
-                listing_fee_bnb REAL DEFAULT 0.10,
-                reject_reason TEXT DEFAULT '',
-                status TEXT DEFAULT 'pending',
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `, (err) => {
-            if (err) console.error('Error creating listing_submissions table:', err);
-            else console.log('Listing submissions table ready.');
-        });
-
-        // Meme Specific Trades (Spot, Futures, Options)
-        db.run(`
-            CREATE TABLE IF NOT EXISTS meme_trades (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                likes INTEGER DEFAULT 0,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`,
+            `CREATE TABLE IF NOT EXISTS yield_investments (
+                id SERIAL PRIMARY KEY,
                 wallet_address TEXT NOT NULL,
-                token_symbol TEXT NOT NULL,
-                token_address TEXT,
-                trade_mode TEXT NOT NULL, -- 'SPOT', 'FUTURES', 'OPTIONS'
-                side TEXT NOT NULL, -- 'BUY', 'SELL', 'LONG', 'SHORT'
-                amount REAL NOT NULL,
-                price REAL NOT NULL,
-                leverage INTEGER DEFAULT 1,
-                fee_paid REAL DEFAULT 0,
+                protocol_name TEXT NOT NULL,
+                apy_percentage REAL NOT NULL,
+                amount_usdt REAL NOT NULL,
+                daily_yield REAL DEFAULT 0,
+                total_accrued REAL DEFAULT 0,
+                tx_hash TEXT UNIQUE NOT NULL,
                 status TEXT DEFAULT 'COMPLETED',
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `, (err) => {
-            if (err) console.error('Error creating meme_trades table:', err);
-            else console.log('Meme trades table ready.');
-        });
-
-        // Admin Meme Token Visibility Controls
-        db.run(`
-            CREATE TABLE IF NOT EXISTS admin_meme_controls (
-                symbol TEXT PRIMARY KEY,
-                is_visible INTEGER DEFAULT 1,
-                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `, (err) => {
-            if (err) console.error('Error creating admin_meme_controls table:', err);
-            else console.log('Admin meme controls table ready.');
-        });
-        // Smart Money Strategic Investments
-        db.run(`
-            CREATE TABLE IF NOT EXISTS smart_money_investments (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                deadline TIMESTAMP,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`,
+            `CREATE TABLE IF NOT EXISTS smart_money_investments (
+                id SERIAL PRIMARY KEY,
                 wallet_address TEXT NOT NULL,
                 bucket_id TEXT NOT NULL,
-                bucket_name TEXT NOT NULL,
+                bucket_name TEXT,
                 invest_amount REAL NOT NULL,
                 tx_hash TEXT UNIQUE NOT NULL,
                 bucket_json TEXT,
-                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        `, (err) => {
-            if (err) console.error('Error creating smart_money_investments table:', err);
-            else console.log('Smart money investments table ready.');
-        });
-    } catch (e) {
-        console.error('[DB] Critical Initialization Error:', e.message);
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`,
+            `CREATE TABLE IF NOT EXISTS treasury_transfers (
+                id SERIAL PRIMARY KEY,
+                amount_bnb REAL DEFAULT 0,
+                asset TEXT DEFAULT 'BNB',
+                amount_usd REAL DEFAULT 0,
+                source_contract TEXT,
+                destination_address TEXT,
+                tx_hash TEXT UNIQUE NOT NULL,
+                transfer_type TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`,
+            `CREATE TABLE IF NOT EXISTS trades (
+                id SERIAL PRIMARY KEY,
+                trader_wallet TEXT NOT NULL,
+                token_address TEXT NOT NULL,
+                token_symbol TEXT,
+                amount_bnb REAL NOT NULL,
+                trade_type TEXT NOT NULL,
+                price_at_trade REAL,
+                pnl_bnb REAL DEFAULT 0,
+                position_id TEXT,
+                tx_hash TEXT UNIQUE NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`,
+            `CREATE TABLE IF NOT EXISTS tokens (
+                id SERIAL PRIMARY KEY,
+                contract_address TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                logo_url TEXT,
+                creator_wallet TEXT,
+                buy_tax REAL DEFAULT 0,
+                sell_tax REAL DEFAULT 0,
+                is_meme INTEGER DEFAULT 0,
+                market_cap REAL DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`,
+            `CREATE TABLE IF NOT EXISTS settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            )`,
+            `CREATE TABLE IF NOT EXISTS announcements (
+                id SERIAL PRIMARY KEY,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                type TEXT DEFAULT 'info',
+                is_active INTEGER DEFAULT 1,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`,
+            `CREATE TABLE IF NOT EXISTS assistant_activities (
+                id SERIAL PRIMARY KEY,
+                wallet_address TEXT NOT NULL,
+                action_type TEXT NOT NULL,
+                details TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`,
+             `CREATE TABLE IF NOT EXISTS listing_submissions (
+                id SERIAL PRIMARY KEY,
+                token_address TEXT NOT NULL,
+                submitter_wallet TEXT NOT NULL,
+                status TEXT DEFAULT 'PENDING',
+                tx_hash TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`,
+            `CREATE TABLE IF NOT EXISTS meme_trades (
+                id SERIAL PRIMARY KEY,
+                trader_wallet TEXT NOT NULL,
+                token_address TEXT NOT NULL,
+                amount_tokens REAL NOT NULL,
+                amount_bnb REAL NOT NULL,
+                trade_type TEXT NOT NULL,
+                tx_hash TEXT UNIQUE NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`,
+            `CREATE TABLE IF NOT EXISTS admin_meme_controls (
+                token_address TEXT PRIMARY KEY,
+                is_frozen INTEGER DEFAULT 0,
+                is_hidden INTEGER DEFAULT 0,
+                forced_price REAL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`,
+            `CREATE TABLE IF NOT EXISTS price_history (
+                id SERIAL PRIMARY KEY,
+                token_address TEXT NOT NULL,
+                price REAL NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`
+        ];
+
+        for (let sql of schema) {
+            try {
+                if (!isProd) {
+                    // Only replace stand-alone TIMESTAMP types, not keywords like CURRENT_TIMESTAMP
+                    sql = sql.replace(/SERIAL PRIMARY KEY/g, 'INTEGER PRIMARY KEY AUTOINCREMENT')
+                             .replace(/\bTIMESTAMP\b/g, 'DATETIME');
+                }
+                await db.query(sql);
+            } catch (e) {
+                // Ignore "table already exists" errors during development
+            }
+        }
+        console.log('[DB] ✅ Schema Synchronized');
     }
 };
 
-// ── PROMISE WRAPPER FOR QUERIES ──────────────────────────────────────────────
-db.query = (sql, params = []) => {
-    return new Promise((resolve, reject) => {
-        const convertedSql = sql.replace(/\$/g, '?');
-        if (sql.trim().toUpperCase().startsWith('SELECT')) {
-            db.all(convertedSql, params, (err, rows) => {
-                if (err) reject(err);
-                else resolve({ rows });
-            });
-        } else {
-            db.run(convertedSql, params, function (err) {
-                if (err) reject(err);
-                else resolve({ lastID: this.lastID, changes: this.changes, rows: [] });
-            });
-        }
-    });
-};
-
+// Initial sync
 db.init();
 
 module.exports = db;

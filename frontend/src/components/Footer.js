@@ -33,18 +33,18 @@ export default function Footer() {
 
                     {/* Powered By */}
                     <div className="space-y-4 text-sm text-gray-600 flex flex-col items-center md:items-end">
-                        <h4 className="text-gray-900 font-bold mb-4">Powered by Aichainz</h4>
-                        <a href="https://www.aichainz.com" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-blue-500 transition-colors">
-                            <Globe className="w-4 h-4" /> www.aichainz.com
+                        <h4 className="text-gray-900 font-bold mb-4">Powered by Mexapay</h4>
+                        <a href="https://www.mexapay.io" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-blue-500 transition-colors">
+                            <Globe className="w-4 h-4" /> www.mexapay.io
                         </a>
-                        <a href="mailto:support@aichainz.com" className="flex items-center gap-2 hover:text-blue-500 transition-colors">
-                            <Mail className="w-4 h-4" /> support@aichainz.com
+                        <a href="mailto:support@mexapay.io" className="flex items-center gap-2 hover:text-blue-500 transition-colors">
+                            <Mail className="w-4 h-4" /> support@mexapay.io
                         </a>
                     </div>
                 </div>
 
                 <div className="mt-12 pt-8 border-t border-black/5 text-center text-xs text-gray-500">
-                    <p>&copy; {new Date().getFullYear()} Mexapay. Powered by Aichainz. All rights reserved.</p>
+                    <p>&copy; {new Date().getFullYear()} Mexapay. All rights reserved.</p>
                 </div>
             </div>
         </footer>

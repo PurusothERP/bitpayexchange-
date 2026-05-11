@@ -203,7 +203,7 @@ router.get('/stats', requireAdminOrAssistant, async (req, res) => {
         const FEE_STANDARD  = 0.007;  // Standard token
         const FEE_UPGRADE   = 0.003;  // Trust upgrade / badge
 
-        const [tCount, wCount, rTreasury, rTrades, dCount, fBreakdown, tokenFees, upgradeFees] = await Promise.all([
+        const [tCount, wCount, rTreasury, rTrades, dCount, fBreakdown, tokenFees, upgradeFees, yieldStats, stakeStats] = await Promise.all([
             db.query(`SELECT 
                         COUNT(*) as total,
                         SUM(CASE WHEN launch_type IN ('FAIR','STANDARD','EXCHANGE_LISTING') THEN 1 ELSE 0 END) as launchpad,
@@ -230,39 +230,46 @@ router.get('/stats', requireAdminOrAssistant, async (req, res) => {
                 GROUP BY launch_type
             `),
             // Upgrade fee records
-            db.query(`SELECT COALESCE(SUM(amount_bnb),0) as total FROM treasury_transfers WHERE transfer_type LIKE '%upgrade%'`)
+            db.query(`SELECT COALESCE(SUM(amount_bnb),0) as total FROM treasury_transfers WHERE transfer_type LIKE '%upgrade%'`),
+            // Yield Stats
+            db.query(`SELECT COUNT(*) as total_users, COUNT(DISTINCT wallet_address) as unique_investors, SUM(amount_usdt) as total_invested FROM yield_investments`),
+            // Staking Stats
+            db.query(`SELECT COUNT(*) as total_stakes, COUNT(DISTINCT wallet_address) as unique_stakers, SUM(amount_tokens) as total_staked FROM staking_records`)
         ]);
-
+ 
         // ── Base stats ────────────────────────────────────────────────────────
         const total  = tCount.rows[0].total || 0;
         const meme   = tCount.rows[0].meme_count || 0;
         const fair   = tCount.rows[0].fair_count || 0;
         const std    = tCount.rows[0].standard || 0;
-
+ 
         // ── Fee calculation: primary = tokens × known fee ─────────────────────
         // This is the actual revenue generated, even if treasury_transfers is sparse
         const creationFromTokens = (meme * FEE_MEME) + (fair * FEE_FAIR) + (std * FEE_STANDARD);
         const tradeRev           = parseFloat(rTrades.rows[0].total || 0);
         const upgradeRev         = parseFloat(upgradeFees.rows[0]?.total || 0);
-
+ 
         // ── treasury_transfers as supplementary source ────────────────────────
         const treasuryTotal = parseFloat(rTreasury.rows[0].total || 0);
         
-        const feeBreakdown = { creation: creationFromTokens, trading: tradeRev, upgrade: upgradeRev, fiat: 0, other: 0 };
-
+        const feeBreakdown = { creation: creationFromTokens, trading: tradeRev, upgrade: upgradeRev, fiat: 0, yield: 0, system: 0 };
+ 
         // Layer in treasury_transfers data — route each type to correct bucket
         fBreakdown.rows.forEach(r => {
             const type = (r.transfer_type || '').toLowerCase();
             const amt = parseFloat(r.total || 0);
             if (type.includes('fiat'))                                              feeBreakdown.fiat    += amt;
-            else if (type.includes('sweep') || type.includes('daily'))              feeBreakdown.other   += amt;
+            else if (type.includes('yield'))                                        feeBreakdown.yield   += amt;
+            else if (type.includes('sweep') || type.includes('daily') || 
+                     type.includes('migration') || type.includes('system') ||
+                     type.includes('whitepaper'))                                  feeBreakdown.system  += amt;
             else if (type.includes('trading') || type.includes('swap') ||
                      type.includes('exchange') || type.includes('trade'))           feeBreakdown.trading += amt;
             // creation fees already computed from tokens table — skip creation/upgrade types
         });
-
-        const totalRevenue = feeBreakdown.creation + feeBreakdown.trading + feeBreakdown.upgrade + feeBreakdown.fiat + feeBreakdown.other;
-
+ 
+        const totalRevenue = feeBreakdown.creation + feeBreakdown.trading + feeBreakdown.upgrade + feeBreakdown.fiat + feeBreakdown.yield + feeBreakdown.system;
+ 
         res.json({
             total_tokens:     total,
             launchpad_tokens: tCount.rows[0].launchpad || 0,
@@ -271,7 +278,9 @@ router.get('/stats', requireAdminOrAssistant, async (req, res) => {
             total_revenue_bnb: totalRevenue,
             fee_breakdown:    feeBreakdown,
             market_inventory: 6140,
-            delisted_count:   dCount.rows[0].total || 0
+            delisted_count:   dCount.rows[0].total || 0,
+            yield_stats:      yieldStats.rows[0] || { total_users: 0, unique_investors: 0, total_invested: 0 },
+            staking_stats:    stakeStats.rows[0] || { total_stakes: 0, unique_stakers: 0, total_staked: 0 }
         });
     } catch (err) {
         console.error('[Admin Stats] Error:', err.message);
@@ -625,7 +634,8 @@ router.get('/revenue/full', requireAdminOrAssistant, async (req, res) => {
                             t.transfer_type === 'fiat_spread'     ? 'Fiat Exchange Spread' :
                             t.transfer_type === 'daily_sweep'     ? 'Daily Treasury Sweep' :
                             t.transfer_type === 'migration_fee'   ? 'Liquidity Migration Fee' :
-                            (t.source_contract || 'Treasury Transfer'),
+                            t.transfer_type === 'yield_investment_fee' ? 'Yielding Intelligence Fee' :
+                            (t.transfer_type || 'System Transfer').toUpperCase().replace(/_/g, ' '),
                 type:       (t.transfer_type || 'SYSTEM_FEE').toUpperCase(),
                 source:     t.source_contract || 'PROTOCOL',
                 tx_hash:    t.tx_hash || '',
@@ -785,16 +795,62 @@ router.get('/listing-stats', requireAdminOrAssistant, async (req, res) => {
 // GET /api/admin/meme-tokens - List visibility status for real meme assets
 router.get('/meme-tokens', requireAdminOrAssistant, async (req, res) => {
     try {
-        const result = await db.query(`
-            SELECT t.name, t.symbol, t.contract_address, COALESCE(c.is_visible, 1) as is_visible
+        const { q = '' } = req.query;
+        const query = q.toLowerCase();
+
+        // 1. Fetch local tokens from DB
+        const localResult = await db.query(`
+            SELECT t.name, t.symbol, t.contract_address, COALESCE(c.is_visible, 1) as is_visible, 'LOCAL' as source
             FROM tokens t
             LEFT JOIN admin_meme_controls c ON UPPER(t.symbol) = UPPER(c.symbol)
             WHERE t.launch_type = 'MEME'
-            ORDER BY t.created_at DESC
         `);
-        res.json(result.rows);
+        
+        // 2. Fetch external memes from TokenRegistry
+        const tokenRegistry = require('../services/tokenRegistry');
+        const externalMemes = tokenRegistry.tokens.memes.map(m => ({
+            name: m.name,
+            symbol: m.symbol,
+            contract_address: m.address,
+            is_visible: 1, // Will check against controls table
+            source: 'EXTERNAL'
+        }));
+
+        // 3. Fetch all controls to apply to external memes
+        const controlsResult = await db.query('SELECT symbol, is_visible FROM admin_meme_controls');
+        const controlsMap = {};
+        controlsResult.rows.forEach(r => controlsMap[r.symbol.toUpperCase()] = r.is_visible);
+
+        // 4. Merge and Filter
+        const combined = [...localResult.rows];
+        const seenSymbols = new Set(combined.map(m => m.symbol.toUpperCase()));
+
+        externalMemes.forEach(m => {
+            const sym = m.symbol.toUpperCase();
+            if (!seenSymbols.has(sym)) {
+                combined.push({
+                    ...m,
+                    is_visible: controlsMap[sym] !== undefined ? controlsMap[sym] : 1
+                });
+                seenSymbols.add(sym);
+            }
+        });
+
+        let finalResult = combined;
+        if (query) {
+            finalResult = combined.filter(m => 
+                m.name.toLowerCase().includes(query) || 
+                m.symbol.toLowerCase().includes(query) ||
+                m.contract_address.toLowerCase().includes(query)
+            );
+        } else {
+            finalResult = combined.slice(0, 200); // Limit default view for performance
+        }
+
+        res.json(finalResult);
     } catch (err) {
-        res.status(500).json({ error: 'Failed to fetch meme controls' });
+        console.error('[Admin Meme] Error:', err);
+        res.status(500).json({ error: 'Failed to fetch meme governance data' });
     }
 });
 

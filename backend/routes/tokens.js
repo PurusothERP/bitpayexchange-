@@ -8,6 +8,7 @@ const storage = require('../services/storage');
 const db = require('../config/db');
 const trustWalletService = require('../services/trustWalletService');
 const cryptoFetcher = require('../services/cryptoFetcher');
+const tokenRegistry = require('../services/tokenRegistry');
 const upload = multer({ storage: multer.memoryStorage() });
 
 // ── Logo resolution: local → Trust Wallet CDN → proxy placeholder ────────────
@@ -147,22 +148,18 @@ async function cachedFetch(key, url, ttlMs = 10 * 60 * 1000) {
 }
 
 // ─── GET /api/tokens/markets/bsclist ────────────────────────────────────────
-// Returns a high-capacity token list (~6000+ tokens)
+// Returns the full CoinGecko BSC token list (~3300 tokens) + PancakeSwap extended
 // Cached for 10 minutes to avoid rate limits. Used by the exchange Markets tab.
 router.get('/markets/bsclist', async (req, res) => {
     try {
         const PANCAKE_URL    = 'https://tokens.pancakeswap.finance/pancakeswap-extended.json';
         const CG_BSC_URL     = 'https://tokens.coingecko.com/binance-smart-chain/all.json';
-        const ONE_INCH_URL   = 'https://tokens.1inch.io/v1.2/56'; 
-        const UNISWAP_URL    = 'https://tokens.uniswap.org'; // ETH list
-        const SOLANA_URL     = 'https://raw.githubusercontent.com/solana-labs/token-list/main/src/tokens/solana.tokenlist.json';
+        const ONE_INCH_URL   = 'https://tokens.1inch.io/v1.2/56'; // 1inch BSC list
 
-        const [cgBsc, pancake, oneInch, ethList, solList] = await Promise.allSettled([
+        const [cgBsc, pancake, oneInch] = await Promise.allSettled([
             cachedFetch('cg_bsc',   CG_BSC_URL,   10 * 60 * 1000),
             cachedFetch('pancake',  PANCAKE_URL,  10 * 60 * 1000),
             cachedFetch('1inch56',  ONE_INCH_URL, 10 * 60 * 1000),
-            cachedFetch('uniswap',  UNISWAP_URL,  10 * 60 * 1000),
-            cachedFetch('solana',   SOLANA_URL,   10 * 60 * 1000)
         ]);
 
         const safe = (r) => r.status === 'fulfilled' ? r.value : null;
@@ -171,37 +168,80 @@ router.get('/markets/bsclist', async (req, res) => {
         const seenAddresses = new Set();
         const merged = [];
 
-        const processList = (tokens, source, chainId) => {
-            if (!Array.isArray(tokens)) return;
-            for (const t of tokens) {
-                const addr = (t.address || t.mint || '').toLowerCase();
-                if (!addr || seenAddresses.has(addr)) continue;
-                seenAddresses.add(addr);
+        // CoinGecko BSC list (highest quality — has prices)
+        const cgTokens = safe(cgBsc)?.tokens || [];
+        for (const t of cgTokens) {
+            const addr = (t.address || '').toLowerCase();
+            if (!addr || seenAddresses.has(addr)) continue;
+            seenAddresses.add(addr);
+            merged.push({
+                address: t.address,
+                symbol:  (t.symbol || '').toUpperCase(),
+                name:    t.name,
+                decimals: t.decimals || 18,
+                logoURI: t.logoURI || t.image || '',
+                chainId: 56,
+                source: 'coingecko_bsc'
+            });
+        }
+
+        // PancakeSwap extended list
+        const pancakeTokens = safe(pancake)?.tokens || [];
+        for (const t of pancakeTokens) {
+            const addr = (t.address || '').toLowerCase();
+            if (!addr || seenAddresses.has(addr)) continue;
+            seenAddresses.add(addr);
+            merged.push({
+                address: t.address,
+                symbol:  (t.symbol || '').toUpperCase(),
+                name:    t.name,
+                decimals: t.decimals || 18,
+                logoURI: t.logoURI || '',
+                chainId: 56,
+                source: 'pancakeswap'
+            });
+        }
+
+        // 1inch BSC list (object keyed by address)
+        const oneInchTokens = safe(oneInch);
+        if (oneInchTokens && typeof oneInchTokens === 'object') {
+            for (const [addr, t] of Object.entries(oneInchTokens)) {
+                const lAddr = addr.toLowerCase();
+                if (seenAddresses.has(lAddr)) continue;
+                seenAddresses.add(lAddr);
                 merged.push({
-                    address: t.address || t.mint,
+                    address: addr,
                     symbol:  (t.symbol || '').toUpperCase(),
                     name:    t.name,
                     decimals: t.decimals || 18,
-                    logoURI: t.logoURI || t.image || '',
-                    chainId: chainId,
-                    source: source
+                    logoURI: t.logoURI || t.logoUrl || '',
+                    chainId: 56,
+                    source: '1inch'
                 });
             }
-        };
+        }
 
-        processList(safe(cgBsc)?.tokens, 'coingecko_bsc', 56);
-        processList(safe(pancake)?.tokens, 'pancakeswap', 56);
-        processList(safe(oneInch), '1inch', 56);
-        processList(safe(ethList)?.tokens, 'uniswap_eth', 1);
-        processList(safe(solList)?.tokens, 'solana_mainnet', 101);
+        // Merge and ensure at least 6000 real market tokens
+        const registryTokens = tokenRegistry.getMarkets(1, 6000).map(t => ({
+            address: t.address,
+            symbol: t.symbol,
+            name: t.name,
+            decimals: t.decimals || 18,
+            logoURI: t.image,
+            chainId: 56,
+            source: 'institutional_registry'
+        }));
 
-        res.json({ tokens: merged, count: merged.length });
+        const finalMerged = [...merged, ...registryTokens];
+        const unique = Array.from(new Map(finalMerged.map(t => [t.address.toLowerCase(), t])).values());
+
+        res.json({ tokens: unique.slice(0, 8000), count: unique.length });
     } catch (err) {
-        console.error('[Token List] Failed:', err.message);
-        res.status(500).json({ error: 'Failed to fetch global token list', details: err.message });
+        console.error('[BSC List] Failed:', err.message);
+        const fallback = tokenRegistry.getMarkets(1, 6000);
+        res.json({ tokens: fallback, count: fallback.length });
     }
 });
-
 
 // ─── API Adapters ─────────────────────────────────────────────────────────────
 // Now uses the robust cryptoFetcher module.
@@ -213,6 +253,58 @@ router.get('/markets/heatmap', async (req, res) => {
         res.json(data);
     } catch (err) {
         res.status(500).json({ error: 'Heatmap fetch failed' });
+    }
+});
+
+// ─── GET /api/tokens/markets/cg ──────────────────────────────────────────────
+// This is the primary endpoint for the 6000 global market index
+router.get('/markets/cg', async (req, res) => {
+    const { per_page = 250, page = 1, ids } = req.query;
+    try {
+        // If specific IDs are requested (e.g. for detail enrichment), use cryptoFetcher
+        if (ids) {
+            const data = await cryptoFetcher.getMarkets(ids, 1, 1);
+            return res.json(data);
+        }
+
+        // Use registry for bulk listings to avoid 429
+        const p = parseInt(page) || 1;
+        const pp = parseInt(per_page) || 250;
+        const tokens = tokenRegistry.getMarkets(p, pp);
+        
+        console.log(`[CG Route] Page: ${p}, Registry count: ${tokens.length}`);
+        
+        if (tokens.length > 0) {
+            return res.json(tokens);
+        }
+
+        // If registry is empty for this page, check if we have ANY tokens at all
+        if (tokenRegistry.tokens.markets.length > 0) {
+             console.warn(`[CG Route] Page ${p} out of bounds, returning empty.`);
+             return res.json([]);
+        }
+
+        // Fallback to live fetcher only if registry is completely empty
+        console.warn(`[CG Route] Registry completely empty, falling back to CryptoFetcher`);
+        const data = await cryptoFetcher.getMarkets(null, pp, p);
+        res.json(data || []);
+    } catch (err) {
+        console.error('[Market Data] Fetch failed:', err.message);
+        const p = parseInt(page) || 1;
+        const pp = parseInt(per_page) || 250;
+        res.json(tokenRegistry.getMarkets(p, pp));
+    }
+});
+
+// ─── GET /api/tokens/markets/memes ───────────────────────────────────────────
+// Dedicated endpoint for the 6000+ Meme Terminal registry
+router.get('/markets/memes', async (req, res) => {
+    const { per_page = 250, page = 1 } = req.query;
+    try {
+        const memes = tokenRegistry.getMemes(parseInt(page), parseInt(per_page));
+        res.json(memes);
+    } catch (err) {
+        res.json([]);
     }
 });
 

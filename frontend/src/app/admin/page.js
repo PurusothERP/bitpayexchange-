@@ -8,7 +8,7 @@ import {
     Download, RefreshCw, ExternalLink, ArrowUpRight,
     TrendingUp, Users, Box, Zap, AlertCircle, Eye, EyeOff, Loader2, DollarSign, PlusCircle, ChevronDown, Trash2, Image as ImageIcon,
     Activity, Database, Globe, Lock, Unlock, Copy, TrendingDown, ArrowRightLeft, CreditCard as CardIcon, Edit3, Save, History, Clock,
-    Sparkles, Star, BarChart3, Info, ShieldCheck, Flame
+    Sparkles, Star, BarChart3, Info, ShieldCheck, Flame, Leaf, Percent, ShieldAlert
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -43,6 +43,7 @@ export default function NueraAdminPortal() {
         { id: 'community', label: 'Social Mod', icon: <MessageSquare size={18} />, color: 'text-cyan-600' },
         { id: 'bulletin', label: 'Bulletin CMS', icon: <Megaphone size={18} />, color: 'text-slate-600' },
         { id: 'smart-money-hub', label: 'Smart Money Hub', icon: <TrendingUp size={18} />, color: 'text-indigo-600' },
+        { id: 'yield-ledger', label: 'Yield Intelligence', icon: <Leaf size={18} />, color: 'text-sky-600' },
         { id: 'institutional-futures', label: 'Futures Guard', icon: <Activity size={18} />, color: 'text-sky-600' },
         { id: 'api-panel', label: 'API & Architecture', icon: <Database size={18} />, color: 'text-rose-600' },
         { id: 'address-hub', label: 'Address Hub', icon: <PlusCircle size={18} />, color: 'text-gray-900' },
@@ -98,7 +99,7 @@ export default function NueraAdminPortal() {
                         </div>
                     </div>
                 </div>
-                <nav className="flex-1 px-4 space-y-1">
+                <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar pb-10">
                     {menuItems.map((item) => (
                         <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-sm font-black transition-all duration-300 group ${activeTab === item.id ? 'bg-indigo-50/80 text-indigo-700 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}>
                             <span className={`${activeTab === item.id ? item.color : 'text-slate-400 group-hover:text-slate-600'} transition-colors`}>{item.icon}</span>
@@ -138,7 +139,7 @@ export default function NueraAdminPortal() {
 
                 <div className="flex-1 p-10 overflow-y-auto">
                     <AnimatePresence mode="wait">
-                        {activeTab === 'dashboard' && <AdminDashboard key="dash" stats={stats} loading={loading} account={account} />}
+                        {activeTab === 'dashboard' && <AdminDashboard key="dash" stats={stats} loading={loading} account={account} setActiveTab={setActiveTab} />}
                         {activeTab === 'revenue' && <RevenueLedger key="rev" stats={stats} account={account} />}
                         {activeTab === 'exchange' && <ExchangeMirror key="ex" account={account} />}
                         {activeTab === 'wallets' && <ConnectedWallets key="wal" account={account} />}
@@ -148,11 +149,12 @@ export default function NueraAdminPortal() {
                         {activeTab === 'meme-governance' && <MemeGovernance key="meme" account={account} />}
                         {activeTab === 'governance' && <GovernanceHub key="gov" account={account} />}
                         { activeTab === 'bulletin' && <BulletinCMS key="bull" account={account} /> }
-                        { activeTab === 'smart-money-hub' && <SmartMoneyHub key="smh" account={account} /> }
-                        { activeTab === 'institutional-futures' && <InstitutionalFutures key="if" account={account} /> }
-                        { activeTab === 'community' && <CommunityMod key="comm" account={account} /> }
-                        { activeTab === 'api-panel' && <ApiPanel key="api" /> }
-                        { activeTab === 'address-hub' && <AddressHub key="addr" /> }
+                        {activeTab === 'smart-money-hub' && <SmartMoneyHub account={account} />}
+                        {activeTab === 'yield-ledger' && <YieldLedger account={account} />}
+                        {activeTab === 'institutional-futures' && <InstitutionalFutures account={account} />}
+                        {activeTab === 'api-panel' && <APIPanel account={account} />}
+                        {activeTab === 'address-hub' && <AddressHub account={account} />}
+                        {activeTab === 'community' && <div className="p-20 text-center"><MessageSquare className="w-20 h-20 text-slate-200 mx-auto mb-6" /><h3 className="text-2xl font-black text-slate-900 uppercase italic">Social Mod</h3><p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Community management tools offline for maintenance.</p></div>}
                     </AnimatePresence>
                 </div>
             </main>
@@ -160,16 +162,18 @@ export default function NueraAdminPortal() {
     );
 }
 
-function AdminDashboard({ stats, loading, account }) {
+function AdminDashboard({ stats, loading, account, setActiveTab }) {
     if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-indigo-500" /></div>;
-
+ 
     const cards = [
-        { label: 'Launched Coins', value: stats?.total_tokens || 0, sub: `${stats?.launchpad_tokens} LP / ${stats?.standard_tokens} Std`, icon: <Rocket />, color: 'bg-indigo-50 text-indigo-600' },
-        { label: 'Asset Inventory', value: stats?.market_inventory?.toLocaleString() || '6,140', sub: 'Verified External Proxies', icon: <Box />, color: 'bg-sky-50 text-sky-600' },
-        { label: 'Realized Revenue', value: `${Number(stats?.total_revenue_bnb || 0).toFixed(4)} BNB`, sub: 'Combined Protocol Fees', icon: <DollarSign />, color: 'bg-indigo-50 text-indigo-600' },
-        { label: 'Delisted Items', value: stats?.delisted_count || 0, sub: 'Inactive Registry Overrides', icon: <AlertCircle />, color: 'bg-blue-50 text-blue-600' },
+        { id: 'listings', label: 'Launched Coins', value: stats?.total_tokens || 0, sub: `${stats?.launchpad_tokens} LP / ${stats?.standard_tokens} Std`, icon: <Rocket />, color: 'bg-indigo-50 text-indigo-600' },
+        { id: 'exchange', label: 'Asset Inventory', value: stats?.market_inventory?.toLocaleString() || '6,140', sub: 'Verified External Proxies', icon: <Box />, color: 'bg-sky-50 text-sky-600' },
+        { id: 'yield-ledger', label: 'Yield Investments', value: `$${(stats?.yield_stats?.total_invested || 0).toLocaleString()}`, sub: `${stats?.yield_stats?.total_users || 0} Total / ${stats?.yield_stats?.unique_investors || 0} Investors`, icon: <Leaf />, color: 'bg-emerald-50 text-emerald-600' },
+        { id: 'institutional-futures', label: 'Staking Protocol', value: (stats?.staking_stats?.total_staked || 0).toLocaleString(), sub: `${stats?.staking_stats?.total_stakes || 0} Stakes / ${stats?.staking_stats?.unique_stakers || 0} Stakers`, icon: <Activity />, color: 'bg-violet-50 text-violet-600' },
+        { id: 'revenue', label: 'Realized Revenue', value: `${Number(stats?.total_revenue_bnb || 0).toFixed(4)} BNB`, sub: 'Combined Protocol Fees', icon: <DollarSign />, color: 'bg-indigo-50 text-indigo-600' },
+        { id: 'governance', label: 'Delisted Items', value: stats?.delisted_count || 0, sub: 'Inactive Registry Overrides', icon: <AlertCircle />, color: 'bg-blue-50 text-blue-600' },
     ];
-
+ 
     const chartData = [
         { name: 'Mon', revenue: 0.12, launches: 4 },
         { name: 'Tue', revenue: 0.19, launches: 7 },
@@ -191,9 +195,13 @@ function AdminDashboard({ stats, loading, account }) {
 
     return (
         <div className="space-y-10 pb-20">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {cards.map((c, i) => (
-                    <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-slate-200/60 shadow-sm hover:shadow-xl transition-all group">
+                    <div 
+                        key={i} 
+                        onClick={() => c.id && setActiveTab(c.id)}
+                        className="bg-white p-8 rounded-[2.5rem] border border-slate-200/60 shadow-sm hover:shadow-xl hover:border-indigo-500/20 transition-all group cursor-pointer"
+                    >
                         <div className={`w-14 h-14 ${c.color} rounded-2xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform`}>{React.cloneElement(c.icon, { size: 24 })}</div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{c.label}</p>
                         <h3 className="text-3xl font-black text-slate-900 tracking-tight mb-1">{c.value}</h3>
@@ -338,27 +346,37 @@ function RevenueLedger({ stats, account }) {
 
     return (
         <div className="space-y-10">
-            {/* ── Fee summary cards (unchanged) ── */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200/60 shadow-sm">
-                    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4"><Rocket size={20} /></div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Launchpad Fees</p>
-                    <h4 className="text-xl font-black text-slate-900">{Number(stats?.fee_breakdown?.creation || 0).toFixed(4)} BNB</h4>
+            {/* ── Fee summary cards ── */}
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-3"><Rocket size={18} /></div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Launchpad</p>
+                    <h4 className="text-sm font-black text-slate-900">{Number(stats?.fee_breakdown?.creation || 0).toFixed(4)} <span className="text-[10px] text-slate-400">BNB</span></h4>
                 </div>
-                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200/60 shadow-sm">
-                    <div className="w-12 h-12 bg-sky-50 text-sky-600 rounded-2xl flex items-center justify-center mb-4"><ArrowRightLeft size={20} /></div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Exchange Fees</p>
-                    <h4 className="text-xl font-black text-slate-900">{Number(stats?.fee_breakdown?.trading || 0).toFixed(4)} BNB</h4>
+                <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="w-10 h-10 bg-sky-50 text-sky-600 rounded-xl flex items-center justify-center mb-3"><ArrowRightLeft size={18} /></div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Exchange</p>
+                    <h4 className="text-sm font-black text-slate-900">{Number(stats?.fee_breakdown?.trading || 0).toFixed(4)} <span className="text-[10px] text-slate-400">BNB</span></h4>
                 </div>
-                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200/60 shadow-sm">
-                    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-4"><Star size={20} /></div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Trust Upgrades</p>
-                    <h4 className="text-xl font-black text-slate-900">{Number(stats?.fee_breakdown?.upgrade || 0).toFixed(4)} BNB</h4>
+                <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-3"><Star size={18} /></div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Upgrades</p>
+                    <h4 className="text-sm font-black text-slate-900">{Number(stats?.fee_breakdown?.upgrade || 0).toFixed(4)} <span className="text-[10px] text-slate-400">BNB</span></h4>
                 </div>
-                <div className="bg-white p-8 rounded-[2.5rem] border border-slate-200/60 shadow-sm">
-                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-4"><CreditCard size={20} /></div>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Fiat Spreads</p>
-                    <h4 className="text-xl font-black text-slate-900">{Number(stats?.fee_breakdown?.fiat || 0).toFixed(4)} BNB</h4>
+                <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-3"><CreditCard size={18} /></div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Fiat Spread</p>
+                    <h4 className="text-sm font-black text-slate-900">{Number(stats?.fee_breakdown?.fiat || 0).toFixed(4)} <span className="text-[10px] text-slate-400">BNB</span></h4>
+                </div>
+                <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-3"><Leaf size={18} /></div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Yielding</p>
+                    <h4 className="text-sm font-black text-slate-900">{Number(stats?.fee_breakdown?.yield || 0).toFixed(4)} <span className="text-[10px] text-slate-400">BNB</span></h4>
+                </div>
+                <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="w-10 h-10 bg-slate-50 text-slate-600 rounded-xl flex items-center justify-center mb-3"><Settings size={18} /></div>
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">System</p>
+                    <h4 className="text-sm font-black text-slate-900">{Number(stats?.fee_breakdown?.system || 0).toFixed(4)} <span className="text-[10px] text-slate-400">BNB</span></h4>
                 </div>
             </div>
 
@@ -1979,21 +1997,21 @@ function MemeGovernance({ account }) {
     const getAuthHeader = () => ({ headers: { 'x-wallet-address': account } });
 
     useEffect(() => {
-        fetchData();
-    }, [account]);
+        const timer = setTimeout(() => {
+            fetchData(search);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [search, account]);
 
-    const fetchData = async () => {
+    const fetchData = async (term = '') => {
         setLoading(true);
         try {
-            const [ctrlRes] = await Promise.all([
-                axios.get(`${API_URL}/admin/meme-tokens`, getAuthHeader())
-            ]);
+            const res = await axios.get(`${API_URL}/admin/meme-tokens?q=${term}`, getAuthHeader());
             
-            // ctrlRes.data now contains {name, symbol, contract_address, is_visible}
             const ctrlMap = {};
-            ctrlRes.data.forEach(c => ctrlMap[c.symbol] = c.is_visible);
+            res.data.forEach(c => ctrlMap[c.symbol] = c.is_visible);
             setControls(ctrlMap);
-            setMemes(ctrlRes.data);
+            setMemes(res.data);
         } catch (e) {
             console.error('Failed to fetch meme governance data');
         }
@@ -2003,13 +2021,11 @@ function MemeGovernance({ account }) {
     const toggleVisibility = async (symbol, current) => {
         try {
             await axios.post(`${API_URL}/admin/meme-tokens/toggle`, { symbol, is_visible: !current }, getAuthHeader());
-            setControls({ ...controls, [symbol]: !current });
+            setControls({ ...controls, [symbol]: !current ? 1 : 0 });
         } catch (e) {
             alert('Toggle failed');
         }
     };
-
-    const filtered = memes.filter(m => m.symbol.includes(search.toUpperCase()) || m.name.toUpperCase().includes(search.toUpperCase()));
 
     return (
         <div className="space-y-8">
@@ -2019,7 +2035,7 @@ function MemeGovernance({ account }) {
                         <h3 className="text-xl font-black text-slate-900 uppercase italic">Meme Terminal <span className="text-orange-500">Governance</span></h3>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Visibility & Audit Control for 22,000+ Assets</p>
                     </div>
-                    <div className="relative w-full md:w-96">
+                    <div className="flex items-center gap-4 relative w-full md:w-96">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                         <input 
                             type="text" 
@@ -2028,11 +2044,12 @@ function MemeGovernance({ account }) {
                             placeholder="SEARCH SYMBOL OR NAME..." 
                             className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 pl-12 pr-4 text-xs font-black uppercase tracking-widest outline-none focus:border-orange-500 transition-colors"
                         />
+                        {loading && <Loader2 className="animate-spin text-orange-500 absolute right-4 top-1/2 -translate-y-1/2" size={16} />}
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-                    {filtered.map((m) => {
+                    {memes.map((m) => {
                         const isVisible = controls[m.symbol] !== 0; // Default to 1 (visible)
                         return (
                             <div key={m.symbol} className="bg-slate-50 border border-slate-100 rounded-[2rem] p-6 hover:shadow-xl transition-all group">
@@ -2201,6 +2218,121 @@ function InstitutionalFutures({ account }) {
                                     </td>
                                 </tr>
                             ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function YieldLedger({ account }) {
+    const [yields, setYields] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchYields();
+    }, []);
+
+    const fetchYields = async () => {
+        setLoading(true);
+        try {
+            const res = await axios.get(`${API_URL}/wallets/yield/all`, { headers: { 'x-wallet-address': account } });
+            setYields(res.data);
+        } catch (e) {
+            console.error('Failed to fetch yield ledger:', e);
+        }
+        setLoading(false);
+    };
+
+    const totalVolume = yields.reduce((s, y) => s + parseFloat(y.amount_usdt || 0), 0);
+
+    return (
+        <div className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white border border-slate-200/60 p-8 rounded-[2.5rem] shadow-sm">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Global Yield Volume</p>
+                    <h3 className="text-3xl font-black text-slate-900 italic tracking-tighter">${totalVolume.toLocaleString()} <span className="text-sm font-bold text-sky-500 not-italic tracking-normal">USDT</span></h3>
+                </div>
+                <div className="bg-white border border-slate-200/60 p-8 rounded-[2.5rem] shadow-sm">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Deployments</p>
+                    <h3 className="text-3xl font-black text-slate-900 italic tracking-tighter">{yields.length} <span className="text-sm font-bold text-indigo-500 not-italic tracking-normal">Vaults</span></h3>
+                </div>
+                <div className="bg-white border border-slate-200/60 p-8 rounded-[2.5rem] shadow-sm">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Active Protocols</p>
+                    <h3 className="text-3xl font-black text-slate-900 italic tracking-tighter">{new Set(yields.map(y => y.protocol_name)).size} <span className="text-sm font-bold text-teal-500 not-italic tracking-normal">Sources</span></h3>
+                </div>
+            </div>
+
+            <div className="bg-white border border-slate-200/60 rounded-[2.5rem] overflow-hidden shadow-sm">
+                <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 className="text-lg font-black text-slate-900 uppercase italic tracking-tighter">Global Yield <span className="text-sky-600">Audit Ledger</span></h3>
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Real-time institutional deployment monitor</p>
+                    </div>
+                    <button onClick={fetchYields} className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl transition-all">
+                        <RefreshCw className={`w-5 h-5 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
+                    </button>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-slate-50/50">
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Investor &amp; Deadline</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Protocol Program</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">USDT Quantity</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Yield %</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Daily Earning</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Audit</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {yields.map((y, idx) => (
+                                <tr key={y.id} className="hover:bg-slate-50/30 transition-colors">
+                                    <td className="px-8 py-5">
+                                        <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1">Deposit Address</p>
+                                        <p className="font-mono text-[11px] font-bold text-slate-900">{y.wallet_address}</p>
+                                        <p className="text-[9px] font-black text-indigo-500 uppercase mt-1">Deadline: {new Date(y.deadline).toLocaleDateString()}</p>
+                                    </td>
+                                    <td className="px-8 py-5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 bg-sky-50 rounded-xl flex items-center justify-center border border-sky-100">
+                                                <Leaf className="w-4 h-4 text-sky-500" />
+                                            </div>
+                                            <div>
+                                                <span className="text-xs font-black text-slate-900 uppercase tracking-tight block">{y.protocol_name}</span>
+                                                <span className="text-[9px] text-slate-400 font-bold uppercase">{new Date(y.timestamp).toLocaleString()}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-5 text-center">
+                                        <div className="text-xs font-black text-slate-900">${parseFloat(y.amount_usdt).toLocaleString()}</div>
+                                        <div className="text-[9px] font-bold text-emerald-600 uppercase">Current: ${parseFloat(y.total_balance).toFixed(4)}</div>
+                                    </td>
+                                    <td className="px-8 py-5 text-center">
+                                        <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-black">{y.apy_percentage}%</span>
+                                    </td>
+                                    <td className="px-8 py-5 text-center">
+                                        <div className="text-xs font-black text-slate-900">${parseFloat(y.daily_yield).toFixed(4)}/day</div>
+                                        <div className="text-[9px] font-bold text-sky-600 uppercase">Accrued: ${parseFloat(y.total_accrued).toFixed(4)}</div>
+                                    </td>
+                                    <td className="px-8 py-5 text-right">
+                                        <a href={`https://bscscan.com/tx/${y.tx_hash}`} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-white border border-slate-200 text-slate-400 hover:text-sky-600 rounded-xl transition-all inline-block shadow-sm">
+                                            <ArrowUpRight size={14} />
+                                        </a>
+                                    </td>
+                                </tr>
+                            ))}
+                            {yields.length === 0 && !loading && (
+                                <tr>
+                                    <td colSpan="6" className="py-20 text-center">
+                                        <div className="max-w-xs mx-auto opacity-30">
+                                            <ShieldAlert className="w-12 h-12 mx-auto mb-4 text-slate-300" />
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No institutional deployments recorded</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

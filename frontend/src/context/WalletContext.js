@@ -21,10 +21,10 @@ const bscMainnet = {
 
 // 3. Create a metadata object
 const metadata = {
-    name: 'B20- Exchange',
-    description: 'B20- Exchange Intelligence Hub',
-    url: 'https://b20-exchange.com', // Updated for branding consistency
-    icons: ['https://avatars.githubusercontent.com/u/37784886']
+    name: 'B20 Mexapay Intelligence',
+    description: 'B20-Mex Institutional Trading & Yield Hub',
+    url: typeof window !== 'undefined' ? window.location.origin : 'https://mexapay.com',
+    icons: ['https://b20-frontend.onrender.com/logo.png']
 };
 
 // 4. Create Ethers config
@@ -34,7 +34,10 @@ const ethersConfig = defaultConfig({
     enableInjected: true,
     enableCoinbase: true,
     rpcUrl: bscMainnet.rpcUrl,
-    defaultChainId: 56
+    defaultChainId: 56,
+    // Fix for Binance Wallet specific injected detection
+    enableEmail: false,
+    enableSmartAccounts: false
 });
 
 // 5. Create a Web3Modal instance
@@ -44,9 +47,16 @@ createWeb3Modal({
     projectId,
     enableAnalytics: true,
     themeMode: 'dark',
+    allWallets: 'SHOW', // Ensure all injected wallets are visible
+    featuredWalletIds: [
+        '971e689d049048a4e13c9a056bb6d0c4', // MetaMask
+        '4622a2b2d6ad141014e58901b8e0d402', // Binance Wallet
+        'c5332d3020e2c89e4127138980753f8a'  // Trust Wallet
+    ],
     themeVariables: {
-        '--w3m-accent': '#fbbf24',
-        '--w3m-border-radius-master': '1px'
+        '--w3m-accent': '#0066FF', // Standard institutional blue
+        '--w3m-border-radius-master': '12px',
+        '--w3m-font-family': 'Inter, sans-serif'
     }
 });
 

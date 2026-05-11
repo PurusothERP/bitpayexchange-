@@ -3,7 +3,7 @@
 import Navbar from '@/components/Navbar';
 import { useWallet } from '@/context/WalletContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wallet, Rocket, TrendingUp, Clock, ExternalLink, Copy, CheckCircle2, ArrowUpRight, Activity, Users, Zap, ShieldCheck, Search, PlusCircle, Unlock, ChevronRight, Loader2, AlertTriangle, Megaphone, Globe, FileText, Send, Lock, BarChart3, Calendar, Gift, RefreshCw, History, CreditCard } from 'lucide-react';
+import { Wallet, Rocket, TrendingUp, Clock, ExternalLink, Copy, CheckCircle2, ArrowUpRight, Activity, Users, Zap, ShieldCheck, Search, PlusCircle, Unlock, ChevronRight, Loader2, AlertTriangle, Megaphone, Globe, FileText, Send, Lock, BarChart3, Calendar, Gift, RefreshCw, History, CreditCard, Leaf, Percent } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import Link from 'next/link';
@@ -524,6 +524,8 @@ export default function ProfilePage() {
     const [loadingSmartMoney, setLoadingSmartMoney] = useState(false);
     const [fiatHistory, setFiatHistory] = useState([]);
     const [loadingFiat, setLoadingFiat] = useState(false);
+    const [yieldInvestments, setYieldInvestments] = useState([]);
+    const [loadingYield, setLoadingYield] = useState(false);
 
     useEffect(() => {
         if (!account) return;
@@ -610,6 +612,13 @@ export default function ProfilePage() {
             .then(res => setFiatHistory(res.data))
             .catch(err => console.error('[Fiat Fetch Error]', err))
             .finally(() => setLoadingFiat(false));
+
+        // Fetch Yield Investments
+        setLoadingYield(true);
+        axios.get(`${API_URL}/wallets/yield/investments/${account}`)
+            .then(res => setYieldInvestments(res.data))
+            .catch(err => console.error('[Yield Fetch Error]', err))
+            .finally(() => setLoadingYield(false));
     }, [account]);
 
     const closeFuturesPosition = async (id) => {
@@ -752,6 +761,18 @@ export default function ProfilePage() {
                         </div>
                         <span className="hidden sm:inline">Smart Money</span>
                         <span className="sm:hidden text-[9px]">S. Money</span>
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('yield')}
+                        className={`group flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative ${
+                            activeTab === 'yield' ? 'bg-sky-600 text-white shadow-xl shadow-sky-500/20' : 'text-sky-500 hover:text-sky-600 hover:bg-sky-500/5'
+                        }`}
+                    >
+                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'yield' ? 'bg-white/20 text-white' : 'bg-sky-500/10 text-sky-500'}`}>
+                            <Leaf className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="hidden sm:inline">Yield Intelligence</span>
+                        <span className="sm:hidden text-[9px]">Yield</span>
                     </button>
                 </div>
 
@@ -1630,6 +1651,178 @@ export default function ProfilePage() {
                                                 </div>
                                             </motion.div>
                                         ))}
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
+                        {activeTab === 'yield' && (
+                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
+                                <div className="flex items-center justify-between mb-8">
+                                    <div>
+                                        <h2 className="text-xl font-black text-gray-900 flex items-center gap-2 uppercase tracking-tighter italic">
+                                            <Leaf className="w-6 h-6 text-sky-500" /> Yield Intelligence <span className="text-sky-500">Vaults</span>
+                                            <span className="ml-1 text-sm font-bold text-gray-400 bg-black/5 px-3 py-1 rounded-full">{yieldInvestments.length}</span>
+                                        </h2>
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Institutional yield deployment ledger</p>
+                                    </div>
+                                    <Link href="/exchange" className="px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-sky-500/20 flex items-center gap-2">
+                                        <Leaf className="w-4 h-4" /> Deploy More
+                                    </Link>
+                                </div>
+
+                                {loadingYield ? (
+                                    <div className="flex flex-col items-center justify-center py-24 gap-4">
+                                        <Loader2 className="w-10 h-10 text-sky-500 animate-spin" />
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Synchronizing Vault Data...</p>
+                                    </div>
+                                ) : yieldInvestments.length === 0 ? (
+                                    <div className="bg-white border border-black/8 rounded-[3rem] p-20 text-center shadow-sm relative overflow-hidden backdrop-blur-xl">
+                                         <div className="absolute inset-0 bg-gradient-to-br from-sky-50/50 to-transparent pointer-events-none" />
+                                        <div className="w-24 h-24 rounded-[2rem] bg-sky-50 flex items-center justify-center mx-auto mb-8 shadow-inner ring-4 ring-sky-50/50 relative z-10">
+                                            <Leaf className="w-10 h-10 text-sky-400" />
+                                        </div>
+                                        <h3 className="text-2xl font-black text-gray-900 mb-2 uppercase italic relative z-10">No Active Deployments</h3>
+                                        <p className="text-xs text-gray-500 font-bold max-w-sm mx-auto mb-10 leading-relaxed uppercase tracking-widest opacity-60 relative z-10">
+                                            You haven't deployed capital into institutional yield vaults. Start earning sustainable APY with Mexapay intelligence.
+                                        </p>
+                                        <Link href="/exchange" className="relative z-10 inline-flex items-center gap-3 px-10 py-4 bg-sky-600 hover:bg-sky-700 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest transition-all shadow-2xl shadow-sky-500/30">
+                                            <Leaf className="w-4 h-4" /> Explore Yield Vaults
+                                        </Link>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
+                                        {yieldInvestments.map((inv, idx) => {
+                                             const start = new Date(inv.timestamp);
+                                             const now = new Date();
+                                             // Ensure start is valid, fallback to now if not
+                                             const validStart = isNaN(start.getTime()) ? now : start;
+                                             const diffTime = Math.abs(now - validStart);
+                                             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                                             const progressPercent = Math.min(100, (diffDays / 365) * 100);
+                                             const expectedYield = (parseFloat(inv.amount_usdt) * parseFloat(inv.apy_percentage) / 100);
+                                             const expectedTotal = parseFloat(inv.amount_usdt) + expectedYield;
+                                             const accrued = parseFloat(inv.total_accrued || 0);
+
+                                             return (
+                                                 <motion.div
+                                                     key={inv.id}
+                                                     initial={{ opacity: 0, y: 10 }}
+                                                     animate={{ opacity: 1, y: 0 }}
+                                                     transition={{ delay: idx * 0.05 }}
+                                                     className="bg-white border border-black/5 rounded-[3rem] p-10 shadow-sm hover:shadow-2xl hover:border-sky-500/20 transition-all group overflow-hidden relative"
+                                                 >
+                                                     <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:scale-110 transition-transform">
+                                                         <div className="flex gap-2">
+                                                             <Leaf className="w-24 h-24 text-sky-600 rotate-[-15deg]" />
+                                                             <Leaf className="w-24 h-24 text-sky-600 rotate-[15deg] mt-8" />
+                                                         </div>
+                                                     </div>
+                                                     
+                                                     <div className="flex items-start justify-between mb-10 relative z-10">
+                                                         <div className="space-y-1">
+                                                             <div className="text-[10px] font-black text-sky-600 uppercase tracking-[0.2em] flex items-center gap-2 mb-2">
+                                                                 <Leaf className="w-3 h-3" /> Yielding Institutional Protocol
+                                                             </div>
+                                                             <h4 className="text-3xl font-black text-gray-900 uppercase tracking-tighter italic leading-none">{inv.protocol_name}</h4>
+                                                             <div className="flex items-center gap-4 mt-4">
+                                                                 <div>
+                                                                     <p className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Deposit Wallet</p>
+                                                                     <p className="text-[9px] font-mono font-bold text-gray-600">{inv.wallet_address?.slice(0,6)}...{inv.wallet_address?.slice(-4)}</p>
+                                                                 </div>
+                                                                 <div className="w-px h-6 bg-gray-100" />
+                                                                 <div>
+                                                                     <p className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Investment Date</p>
+                                                                     <p className="text-[9px] font-bold text-gray-600">{new Date(inv.timestamp).toLocaleDateString()} {new Date(inv.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                                                 </div>
+                                                             </div>
+                                                         </div>
+                                                         <div className="w-16 h-16 bg-sky-50 rounded-[1.5rem] flex items-center justify-center border border-sky-100 shadow-inner">
+                                                             <Percent className="w-7 h-7 text-sky-600" />
+                                                         </div>
+                                                     </div>
+ 
+                                                     <div className="grid grid-cols-2 gap-4 mb-6 relative z-10">
+                                                         <div className="bg-black/[0.02] rounded-3xl p-6 border border-black/5">
+                                                             <div className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Principal Capital</div>
+                                                             <div className="text-3xl font-black text-gray-900 leading-none">${parseFloat(inv.amount_usdt).toFixed(2)}</div>
+                                                             <div className="text-[10px] font-bold text-gray-400 mt-2 uppercase">USDT Institutional Pool</div>
+                                                         </div>
+                                                         <div className="bg-black/[0.02] rounded-3xl p-6 border border-black/5">
+                                                             <div className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Target APY</div>
+                                                             <div className="text-3xl font-black text-sky-600 leading-none">{inv.apy_percentage}%</div>
+                                                             <div className="text-[10px] font-bold text-gray-400 mt-2 uppercase">Guaranteed Annual Rate</div>
+                                                         </div>
+                                                     </div>
+ 
+                                                     <div className="grid grid-cols-3 gap-3 mb-8 relative z-10">
+                                                         <div className="bg-sky-50/40 rounded-2xl p-5 border border-sky-100/50">
+                                                             <div className="text-[7px] font-black text-sky-600 uppercase tracking-widest mb-1">Daily Accrual</div>
+                                                             <div className="text-sm font-black text-gray-900">${parseFloat(inv.daily_yield).toFixed(4)}</div>
+                                                         </div>
+                                                         <div className="bg-emerald-50/40 rounded-2xl p-5 border border-emerald-100/50">
+                                                             <div className="text-[7px] font-black text-emerald-600 uppercase tracking-widest mb-1">Actual Interest</div>
+                                                             <div className="text-sm font-black text-emerald-600">${accrued.toFixed(4)}</div>
+                                                         </div>
+                                                         <div className="bg-indigo-50/40 rounded-2xl p-5 border border-indigo-100/50">
+                                                             <div className="text-[7px] font-black text-indigo-600 uppercase tracking-widest mb-1">365D Deadline</div>
+                                                             <div className="text-sm font-black text-gray-900">{new Date(inv.deadline).toLocaleDateString()}</div>
+                                                         </div>
+                                                     </div>
+
+                                                     {/* Lock-in Progress Bar */}
+                                                     <div className="mb-10 relative z-10">
+                                                         <div className="flex items-center justify-between mb-2">
+                                                             <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">365-Day Institutional Lock-in Progress</span>
+                                                             <span className="text-[9px] font-black text-sky-600 uppercase tracking-widest">{progressPercent.toFixed(2)}% Completed</span>
+                                                         </div>
+                                                         <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden p-0.5">
+                                                             <motion.div 
+                                                                 initial={{ width: 0 }}
+                                                                 animate={{ width: `${progressPercent}%` }}
+                                                                 className="h-full bg-gradient-to-r from-sky-400 to-sky-600 rounded-full shadow-sm"
+                                                             />
+                                                         </div>
+                                                     </div>
+ 
+                                                     <div className="grid grid-cols-2 gap-4 mb-8">
+                                                         <div className="bg-slate-900 rounded-[2rem] p-6 shadow-xl shadow-slate-200">
+                                                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Current Value (Cap+Int)</p>
+                                                             <h5 className="text-2xl font-black text-white italic tracking-tighter">${(parseFloat(inv.amount_usdt) + accrued).toFixed(4)}</h5>
+                                                         </div>
+                                                         <div className="bg-indigo-600 rounded-[2rem] p-6 shadow-xl shadow-indigo-100">
+                                                             <p className="text-[8px] font-black text-indigo-200 uppercase tracking-[0.2em] mb-1">Expected 365D Return</p>
+                                                             <h5 className="text-2xl font-black text-white italic tracking-tighter">${expectedTotal.toFixed(2)}</h5>
+                                                         </div>
+                                                     </div>
+
+                                                     {/* Professional Note */}
+                                                     <div className="mb-8 p-5 bg-amber-50/50 border border-amber-100/50 rounded-2xl flex gap-4 items-start">
+                                                         <Info className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                                                         <p className="text-[10px] font-bold text-amber-800 leading-relaxed uppercase tracking-tight">
+                                                             Note: Upon completion of the 365-day lock-in period, your principal capital and all accrued yield will be automatically safely returned to your deposited address ({inv.wallet_address?.slice(0,6)}...{inv.wallet_address?.slice(-4)}). This is an automated smart contract process.
+                                                         </p>
+                                                     </div>
+ 
+                                                     <div className="flex items-center justify-between relative z-10">
+                                                         <div className="flex items-center gap-6">
+                                                            <div className="flex items-center gap-3 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100">
+                                                                <div className={`w-2 h-2 rounded-full bg-emerald-500 animate-pulse`} />
+                                                                <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">{inv.status || 'ACTIVE'}</span>
+                                                            </div>
+                                                            {inv.tx_hash && (
+                                                                <a href={`https://bscscan.com/tx/${inv.tx_hash}`} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black text-sky-600 border-b-2 border-sky-200/50 uppercase tracking-widest hover:text-sky-700 hover:border-sky-500 transition-all">
+                                                                    Audit Ledger
+                                                                </a>
+                                                            )}
+                                                         </div>
+
+                                                         <Link href="/exchange" className="px-8 py-3 bg-gray-900 hover:bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-gray-900/10 flex items-center gap-2">
+                                                             <Zap className="w-4 h-4 text-amber-400" /> Invest More
+                                                         </Link>
+                                                     </div>
+                                                 </motion.div>
+                                             );
+                                         })}
                                     </div>
                                 )}
                             </motion.div>

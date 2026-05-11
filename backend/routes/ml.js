@@ -26,20 +26,13 @@ router.post('/analyze', async (req, res) => {
  * @desc    Check if a token name/symbol is a mimic or typosquat of a top token
  */
 router.post('/mimic-check', async (req, res) => {
-    let { name, symbol } = req.body;
-    
-    // Safety: prevent 400s by providing defaults if user is still typing
-    name = (name || '').toString().trim();
-    symbol = (symbol || '').toString().trim();
-    
-    if (name.length < 2 && symbol.length < 1) {
-        return res.json({ riskLevel: 'SAFE', alertMessage: 'Enter more details for audit.', similarTokens: [] });
+    const { name, symbol } = req.body;
+    if (!name || !symbol) {
+        return res.status(400).json({ error: 'Name and symbol are required' });
     }
-
     try {
         const result = await mlEngine.detectMimicToken(name, symbol);
         res.json(result);
-
     } catch (error) {
         console.error('[ML Route] Mimic check error:', error.message);
         res.status(500).json({ error: 'Mimic check failed', details: error.message });

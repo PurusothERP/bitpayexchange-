@@ -1,0 +1,41 @@
+services:
+  # Backend Service (Using SQLite with Persistent Disk)
+  - type: web
+    name: b20-backend
+    env: node
+    plan: starter # DISKS REQUIRE STARTER PLAN OR HIGHER
+    buildCommand: npm install
+    startCommand: npm start
+    rootDirectory: backend
+    disk:
+      name: b20-data
+      mountPath: /var/lib/b20-data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: SQLITE_PATH
+        value: /var/lib/b20-data/database.sqlite
+      - key: BSC_RPC_URL
+        value: "https://bsc-dataseed.binance.org"
+      - key: FACTORY_ADDRESS
+        value: "0x4598AD4E828cb64A53246765f60D9912AEA1b11A"
+
+  # Frontend Service (Next.js)
+  - type: web
+    name: b20-frontend
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    rootDirectory: frontend
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          name: b20-backend
+          type: web
+          property: url
+      - key: NEXT_PUBLIC_FACTORY_ADDRESS
+        value: "0x4598AD4E828cb64A53246765f60D9912AEA1b11A"

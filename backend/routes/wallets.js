@@ -239,5 +239,134 @@ router.get('/smart-money/investments/:address', async (req, res) => {
     }
 });
 
-module.exports = router;
+// ── YIELD INTELLIGENCE ENDPOINTS ─────────────────────────────────────────────
 
+// POST /api/wallets/yield/invest
+router.post('/yield/invest', async (req, res) => {
+    console.log('[Yield] 📥 Incoming Institutional Investment:', req.body);
+    const { wallet_address, protocol_name, apy_percentage, amount_usdt, tx_hash } = req.body;
+    
+    if (!wallet_address || !protocol_name || !amount_usdt || !tx_hash) {
+        console.error('[Yield] ❌ Missing required data:', { wallet_address, protocol_name, amount_usdt, tx_hash });
+        return res.status(400).json({ error: 'Missing required investment data' });
+    }
+
+    try {
+        const capital = parseFloat(amount_usdt);
+        const apy = parseFloat(apy_percentage);
+        
+        // Institutional Calculations
+        const daily_yield = (capital * apy / 100) / 365;
+        const expected_total_yield = (capital * apy / 100);
+        const expected_balance_365d = capital + expected_total_yield;
+        
+        const deadline = new Date();
+        deadline.setDate(deadline.getDate() + 365);
+        const deadlineStr = deadline.toISOString().slice(0, 19).replace('T', ' ');
+
+        console.log(`[Yield] 📊 Processing: Capital=$${capital}, APY=${apy}%, Daily=$${daily_yield.toFixed(4)}`);
+
+        await db.query(
+            `INSERT INTO yield_investments (
+                wallet_address, protocol_name, apy_percentage, 
+                amount_usdt, daily_yield, deadline, tx_hash, status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                wallet_address.toLowerCase(), 
+                protocol_name, 
+                apy, 
+                capital, 
+                daily_yield, 
+                deadlineStr, 
+                tx_hash, 
+                'ACTIVE'
+            ]
+        );
+
+        // Log to treasury ledger for institutional audit
+        await db.query(
+            `INSERT INTO treasury_transfers (amount_bnb, asset, amount_usd, source_contract, destination_address, tx_hash, transfer_type)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            [0, 'USDT', capital, protocol_name, 'TOKEN_FACTORY_VAULT', tx_hash, 'yield_deployment']
+        );
+
+        console.log(`[Yield] ✅ Investment Logged Successfully: ${tx_hash}`);
+        res.json({ 
+            success: true, 
+            message: 'Institutional yield deployment logged.',
+            data: { daily_yield, expected_balance_365d, deadline: deadlineStr }
+        });
+    } catch (err) {
+        console.error('[Yield] ❌ Database Error:', err.message);
+        if (err.message.includes('UNIQUE constraint failed')) {
+            return res.status(409).json({ error: 'Transaction already registered' });
+        }
+        res.status(500).json({ error: 'Failed to record institutional yield' });
+    }
+});
+
+// GET /api/wallets/yield/investments/:address
+router.get('/yield/investments/:address', async (req, res) => {
+    const { address } = req.params;
+    console.log('[Yield] 🔍 Fetching History for:', address);
+    try {
+        const result = await db.query(
+            'SELECT * FROM yield_investments WHERE LOWER(wallet_address) = LOWER(?) ORDER BY timestamp DESC',
+            [address]
+        );
+
+        const processed = result.rows.map(inv => {
+            const start = new Date(inv.timestamp);
+            const now = new Date();
+            // Fallback if timestamp is invalid
+            const validStart = isNaN(start.getTime()) ? now : start;
+            const diffTime = Math.abs(now - validStart);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            // Interest + Principal accumulation
+            const dailyYield = parseFloat(inv.daily_yield || 0);
+            const accrued = dailyYield * diffDays;
+            const amountUsdt = parseFloat(inv.amount_usdt || 0);
+            
+            return {
+                ...inv,
+                total_accrued: accrued,
+                total_balance: amountUsdt + accrued
+            };
+        });
+
+        res.json(processed);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch yield history' });
+    }
+});
+
+// GET /api/wallets/yield/all (Admin)
+router.get('/yield/all', async (req, res) => {
+    try {
+        const result = await db.query('SELECT * FROM yield_investments ORDER BY timestamp DESC');
+        
+        const processed = result.rows.map(inv => {
+            const start = new Date(inv.timestamp);
+            const now = new Date();
+            const validStart = isNaN(start.getTime()) ? now : start;
+            const diffTime = Math.abs(now - validStart);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            const dailyYield = parseFloat(inv.daily_yield || 0);
+            const accrued = dailyYield * diffDays;
+            const amountUsdt = parseFloat(inv.amount_usdt || 0);
+
+            return {
+                ...inv,
+                total_accrued: accrued,
+                total_balance: amountUsdt + accrued
+            };
+        });
+
+        res.json(processed);
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to fetch global yield ledger' });
+    }
+});
+module.exports = router;

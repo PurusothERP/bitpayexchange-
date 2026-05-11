@@ -259,7 +259,6 @@ router.post('/yield/invest', async (req, res) => {
         const daily_yield = (capital * apy / 100) / 365;
         const expected_total_yield = (capital * apy / 100);
         const expected_balance_365d = capital + expected_total_yield;
-        
         const deadline = new Date();
         deadline.setDate(deadline.getDate() + 365);
         const deadlineStr = deadline.toISOString().slice(0, 19).replace('T', ' ');

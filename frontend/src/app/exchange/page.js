@@ -612,6 +612,7 @@ function ExchangeContent() {
         
         // 6. Rate-Fallback Sorting (Institutional UI Integrity)
         // Ensure assets with missing or zero rates are pushed to the bottom of the list
+        const seen = new Set();
         return (list || []).filter(t => {
             if (!t.symbol) return true;
             const key = `${t.symbol.toUpperCase()}-${(t.network || 'GLOBAL').toUpperCase()}`;

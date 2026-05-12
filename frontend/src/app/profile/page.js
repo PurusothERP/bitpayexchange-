@@ -1644,8 +1644,16 @@ export default function ProfilePage() {
                                                     </div>
                                                     <div className="bg-black/3 rounded-2xl p-5 border border-black/5">
                                                         <div className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Deployed At</div>
-                                                        <div className="text-lg font-black text-gray-900 leading-none">{new Date(inv.timestamp).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</div>
-                                                        <div className="text-[9px] font-bold text-gray-400 mt-2 uppercase">{new Date(inv.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
+                                                        {(() => {
+                                                            const d = inv.timestamp ? new Date(inv.timestamp) : new Date();
+                                                            const vd = isNaN(d.getTime()) ? new Date() : d;
+                                                            return (
+                                                                <>
+                                                                    <div className="text-lg font-black text-gray-900 leading-none">{vd.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</div>
+                                                                    <div className="text-[9px] font-bold text-gray-400 mt-2 uppercase">{vd.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
+                                                                </>
+                                                            );
+                                                        })()}
                                                     </div>
                                                 </div>
 

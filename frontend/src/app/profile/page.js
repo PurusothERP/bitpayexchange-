@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useWallet } from '@/context/WalletContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -190,6 +190,9 @@ export default function ProfilePage() {
     // Yield State
     const [yieldInvestments, setYieldInvestments] = useState([]);
     const [loadingYield, setLoadingYield] = useState(true);
+    // Live yield ticker: map of investment id -> live accrued value
+    const [liveAccrued, setLiveAccrued] = useState({});
+    const liveIntervalRef = useRef(null);
 
     const now = new Date();
 
@@ -265,11 +268,40 @@ export default function ProfilePage() {
         // Fetch Yield
         setLoadingYield(true);
         axios.get(`${API_URL}/wallets/yield/investments/${account.toLowerCase()}`)
-            .then(res => setYieldInvestments(Array.isArray(res.data) ? res.data : []))
+            .then(res => {
+                const data = Array.isArray(res.data) ? res.data : [];
+                setYieldInvestments(data);
+                // Initialize live accrued from backend values
+                const initial = {};
+                data.forEach(inv => {
+                    initial[inv.id] = parseFloat(inv.total_accrued) || 0;
+                });
+                setLiveAccrued(initial);
+            })
             .catch(() => {})
             .finally(() => setLoadingYield(false));
 
     }, [account]);
+
+    // Live yield ticker — updates every 100ms based on per-second APY accrual
+    useEffect(() => {
+        if (yieldInvestments.length === 0) return;
+        if (liveIntervalRef.current) clearInterval(liveIntervalRef.current);
+        liveIntervalRef.current = setInterval(() => {
+            setLiveAccrued(prev => {
+                const next = { ...prev };
+                yieldInvestments.forEach(inv => {
+                    const principal = parseFloat(inv.amount_usdt) || 0;
+                    const apy = parseFloat(inv.apy_percentage) || 0;
+                    // interest per second = principal * (apy/100) / 365 / 86400
+                    const perMs = (principal * (apy / 100)) / 365 / 86400 / 1000;
+                    next[inv.id] = (prev[inv.id] || 0) + perMs * 100; // 100ms tick
+                });
+                return next;
+            });
+        }, 100);
+        return () => { if (liveIntervalRef.current) clearInterval(liveIntervalRef.current); };
+    }, [yieldInvestments]);
 
     const closeFuturesPosition = async (id) => {
         const target = futuresPositions.find(p => p.id === id);
@@ -425,64 +457,191 @@ export default function ProfilePage() {
                                         <Link href="/exchange" className="inline-flex items-center gap-2 px-8 py-3 bg-sky-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest shadow-xl shadow-sky-600/20">Explore Yield Vaults</Link>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 gap-8">
                                         {yieldInvestments.map((inv, idx) => {
                                             if (!inv) return null;
                                             const start = inv.timestamp ? new Date(inv.timestamp) : new Date();
+                                            const releaseDate = new Date(start.getTime() + 365 * 24 * 60 * 60 * 1000);
                                             const daysDiff = Math.floor((now - start) / (1000 * 60 * 60 * 24));
                                             const progress = Math.min(100, (daysDiff / 365) * 100);
                                             const principal = parseFloat(inv.amount_usdt) || 0;
                                             const apy = parseFloat(inv.apy_percentage) || 0;
-                                            const accrued = parseFloat(inv.total_accrued) || 0;
+                                            // Expected maturity = Principal * (APY%/100) * 365 (simple interest for 365 days)
+                                            const expectedMaturityInterest = principal * (apy / 100) * 365;
+                                            // Live accrued from ticker
+                                            const liveInterest = liveAccrued[inv.id] ?? (parseFloat(inv.total_accrued) || 0);
+                                            const liveTotal = principal + liveInterest;
+
+                                            const formatDate = (d) => d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
                                             return (
-                                                <div key={inv.id || idx} className="bg-white border border-black/5 rounded-[2.5rem] p-8 shadow-sm group relative overflow-hidden">
-                                                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
-                                                        <Leaf className="w-20 h-20 text-sky-600" />
-                                                    </div>
-                                                    <div className="flex items-start justify-between mb-8">
-                                                        <div>
-                                                            <div className="text-[8px] font-black text-sky-600 uppercase tracking-[0.2em] mb-2 flex items-center gap-1.5"><Leaf className="w-3 h-3" /> Institutional Yield</div>
-                                                            <h4 className="text-2xl font-black text-gray-900 uppercase tracking-tighter">{inv.protocol_name || 'Yield Vault'}</h4>
-                                                            <p className="text-[9px] font-mono text-gray-400 font-bold mt-1">{truncate(inv.wallet_address, 8)}</p>
+                                                <motion.div
+                                                    key={inv.id || idx}
+                                                    initial={{ opacity: 0, y: 24 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    transition={{ delay: idx * 0.08 }}
+                                                    className="bg-white border border-black/5 rounded-[2.5rem] shadow-xl overflow-hidden group relative"
+                                                >
+                                                    {/* Header Gradient Banner */}
+                                                    <div className="bg-gradient-to-r from-sky-600 via-cyan-500 to-teal-500 px-8 pt-8 pb-10 relative overflow-hidden">
+                                                        <div className="absolute inset-0 opacity-10">
+                                                            <div className="absolute -top-8 -right-8 w-48 h-48 rounded-full bg-white" />
+                                                            <div className="absolute -bottom-12 -left-6 w-36 h-36 rounded-full bg-white" />
                                                         </div>
-                                                        <div className="w-14 h-14 bg-sky-50 rounded-2xl flex flex-col items-center justify-center border border-sky-100">
-                                                            <span className="text-[7px] font-black text-sky-600 uppercase">APY</span>
-                                                            <span className="text-sm font-black text-gray-900">{apy}%</span>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="grid grid-cols-2 gap-4 mb-8">
-                                                        <div className="bg-gray-50 rounded-2xl p-5 border border-black/5">
-                                                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Principal</p>
-                                                            <p className="text-2xl font-black text-gray-900">${principal.toFixed(2)}</p>
-                                                        </div>
-                                                        <div className="bg-gray-50 rounded-2xl p-5 border border-black/5">
-                                                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Accrued Yield</p>
-                                                            <p className="text-2xl font-black text-sky-600">${accrued.toFixed(4)}</p>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="mb-8">
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">365-Day Institutional Lock</span>
-                                                            <span className="text-[9px] font-black text-sky-600 uppercase tracking-widest">{progress.toFixed(1)}%</span>
-                                                        </div>
-                                                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                                            <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} className="h-full bg-sky-500 rounded-full" />
+                                                        <div className="relative flex items-start justify-between">
+                                                            <div>
+                                                                <div className="text-[9px] font-black text-white/70 uppercase tracking-[0.25em] mb-2 flex items-center gap-1.5">
+                                                                    <Leaf className="w-3 h-3" /> Institutional Yield Intelligence
+                                                                </div>
+                                                                <h4 className="text-3xl font-black text-white uppercase tracking-tighter leading-none">{inv.protocol_name || 'Yield Vault'}</h4>
+                                                                <div className="mt-3 flex items-center gap-2">
+                                                                    <div className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" />
+                                                                    <span className="text-[9px] font-black text-white/80 uppercase tracking-widest">Active Deployment</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="bg-white/20 backdrop-blur border border-white/30 rounded-2xl px-5 py-3 text-center">
+                                                                <span className="text-[8px] font-black text-white/80 uppercase block">APY</span>
+                                                                <span className="text-3xl font-black text-white leading-none">{apy}%</span>
+                                                                <span className="text-[8px] font-black text-white/60 uppercase block">Per Annum</span>
+                                                            </div>
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                                            <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">ACTIVE DEPLOYMENT</span>
+                                                    {/* Live Ticker — 3 Boxes */}
+                                                    <div className="px-8 -mt-6 relative z-10">
+                                                        <div className="grid grid-cols-3 gap-3">
+                                                            <div className="bg-white border border-black/5 rounded-2xl p-4 shadow-lg shadow-sky-100 text-center">
+                                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-2">Principal</p>
+                                                                <p className="text-xl font-black text-gray-900 tabular-nums">${principal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                                                <p className="text-[8px] font-bold text-gray-300 uppercase mt-1">Deposited</p>
+                                                            </div>
+                                                            <div className="bg-white border border-sky-200 rounded-2xl p-4 shadow-lg shadow-sky-100 text-center ring-1 ring-sky-100">
+                                                                <p className="text-[8px] font-black text-sky-500 uppercase tracking-widest mb-2">Interest Accrued</p>
+                                                                <p className="text-xl font-black text-sky-600 tabular-nums">${liveInterest.toFixed(8)}</p>
+                                                                <div className="flex items-center justify-center gap-1 mt-1">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
+                                                                    <p className="text-[8px] font-bold text-sky-400 uppercase">Live</p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="bg-gradient-to-br from-sky-50 to-teal-50 border border-teal-200 rounded-2xl p-4 shadow-lg shadow-teal-100 text-center">
+                                                                <p className="text-[8px] font-black text-teal-600 uppercase tracking-widest mb-2">Total Value</p>
+                                                                <p className="text-xl font-black text-teal-700 tabular-nums">${liveTotal.toFixed(6)}</p>
+                                                                <div className="flex items-center justify-center gap-1 mt-1">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />
+                                                                    <p className="text-[8px] font-bold text-teal-500 uppercase">Growing</p>
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        {inv.tx_hash && (
-                                                            <a href={`https://bscscan.com/tx/${inv.tx_hash}`} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black text-sky-600 uppercase tracking-widest border-b border-sky-200">Audit Ledger</a>
-                                                        )}
                                                     </div>
-                                                </div>
+
+                                                    {/* Details Grid */}
+                                                    <div className="px-8 pt-6 pb-8">
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                                                            {/* Investor Wallet Address */}
+                                                            <div className="bg-gray-50 rounded-2xl p-5 border border-black/5 md:col-span-2">
+                                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                                                    <Wallet className="w-3 h-3" /> Investor Wallet Address
+                                                                </p>
+                                                                <p className="text-[11px] font-mono font-black text-gray-800 break-all leading-relaxed">
+                                                                    {inv.wallet_address || account || '—'}
+                                                                </p>
+                                                            </div>
+
+                                                            {/* Invested Date */}
+                                                            <div className="bg-gray-50 rounded-2xl p-5 border border-black/5">
+                                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                                                    <Clock className="w-3 h-3" /> Invested Date
+                                                                </p>
+                                                                <p className="text-sm font-black text-gray-900">{formatDate(start)}</p>
+                                                                <p className="text-[9px] text-gray-400 font-bold mt-0.5">{start.toLocaleTimeString('en-IN')}</p>
+                                                            </div>
+
+                                                            {/* Release Date */}
+                                                            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-5 border border-emerald-200">
+                                                                <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                                                    <CheckCircle2 className="w-3 h-3" /> Release Date
+                                                                </p>
+                                                                <p className="text-sm font-black text-emerald-800">{formatDate(releaseDate)}</p>
+                                                                <p className="text-[9px] text-emerald-500 font-bold mt-0.5">Invested Date + 365 Days</p>
+                                                            </div>
+
+                                                            {/* Lock Period */}
+                                                            <div className="bg-violet-50 rounded-2xl p-5 border border-violet-200">
+                                                                <p className="text-[8px] font-black text-violet-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                                                    <Lock className="w-3 h-3" /> Lock Period
+                                                                </p>
+                                                                <p className="text-2xl font-black text-violet-800">365 <span className="text-sm">Days</span></p>
+                                                                <p className="text-[9px] text-violet-400 font-bold mt-0.5">{Math.max(0, 365 - daysDiff)} days remaining</p>
+                                                            </div>
+
+                                                            {/* APY at time of invest */}
+                                                            <div className="bg-sky-50 rounded-2xl p-5 border border-sky-200">
+                                                                <p className="text-[8px] font-black text-sky-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                                                    <TrendingUp className="w-3 h-3" /> APY at Time of Invest
+                                                                </p>
+                                                                <p className="text-2xl font-black text-sky-800">{apy}<span className="text-sm">%</span></p>
+                                                                <p className="text-[9px] text-sky-400 font-bold mt-0.5">Annual Percentage Yield</p>
+                                                            </div>
+
+                                                            {/* Expected Maturity Amount */}
+                                                            <div className="bg-amber-50 rounded-2xl p-5 border border-amber-200 md:col-span-2">
+                                                                <p className="text-[8px] font-black text-amber-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                                                    <Gift className="w-3 h-3" /> Expected At Maturity (365 Days)
+                                                                </p>
+                                                                <div className="flex items-end gap-3">
+                                                                    <p className="text-3xl font-black text-amber-800">${(principal + expectedMaturityInterest).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</p>
+                                                                    <div className="mb-1">
+                                                                        <p className="text-[9px] font-bold text-amber-500">Principal ${principal.toFixed(2)}</p>
+                                                                        <p className="text-[9px] font-bold text-amber-600">+ Yield ${expectedMaturityInterest.toFixed(4)}</p>
+                                                                    </div>
+                                                                </div>
+                                                                <p className="text-[9px] font-mono text-amber-400 mt-2">
+                                                                    Formula: ${principal.toFixed(2)} × {apy}% × 365 days = ${expectedMaturityInterest.toFixed(4)} interest
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Progress Bar */}
+                                                        <div className="mb-6">
+                                                            <div className="flex items-center justify-between mb-2">
+                                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Lock Period Progress</span>
+                                                                <span className="text-[9px] font-black text-sky-600 uppercase tracking-widest">{progress.toFixed(2)}% of 365 days</span>
+                                                            </div>
+                                                            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                                                                <motion.div
+                                                                    initial={{ width: 0 }}
+                                                                    animate={{ width: `${progress}%` }}
+                                                                    transition={{ duration: 1.2, ease: 'easeOut' }}
+                                                                    className="h-full rounded-full bg-gradient-to-r from-sky-400 via-cyan-400 to-teal-400 relative"
+                                                                >
+                                                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full border-2 border-sky-400 shadow" />
+                                                                </motion.div>
+                                                            </div>
+                                                            <div className="flex justify-between mt-1">
+                                                                <span className="text-[8px] font-bold text-gray-300 uppercase">Day 0</span>
+                                                                <span className="text-[8px] font-bold text-gray-300 uppercase">Day 365</span>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Footer */}
+                                                        <div className="flex items-center justify-between pt-4 border-t border-black/5">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                                                <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Active Deployment</span>
+                                                            </div>
+                                                            {inv.tx_hash && (
+                                                                <a
+                                                                    href={`https://bscscan.com/tx/${inv.tx_hash}`}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="flex items-center gap-1 text-[9px] font-black text-sky-600 uppercase tracking-widest border-b border-sky-200 hover:text-sky-800 transition-colors"
+                                                                >
+                                                                    <ExternalLink className="w-3 h-3" /> Audit Ledger
+                                                                </a>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
                                             );
                                         })}
                                     </div>

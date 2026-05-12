@@ -526,6 +526,7 @@ export default function ProfilePage() {
     const [loadingFiat, setLoadingFiat] = useState(false);
     const [yieldInvestments, setYieldInvestments] = useState([]);
     const [loadingYield, setLoadingYield] = useState(false);
+    const now = new Date();
 
     useEffect(() => {
         if (!account) return;
@@ -1743,7 +1744,7 @@ export default function ProfilePage() {
                                                                  <div className="w-px h-6 bg-gray-100" />
                                                                  <div>
                                                                      <p className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Investment Date</p>
-                                                                     <p className="text-[9px] font-bold text-gray-600">{new Date(inv.timestamp).toLocaleDateString()} {new Date(inv.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                                                     <p className="text-[9px] font-bold text-gray-600">{validStart.toLocaleDateString()} {validStart.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                                                                  </div>
                                                              </div>
                                                          </div>

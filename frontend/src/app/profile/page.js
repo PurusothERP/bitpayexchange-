@@ -1,673 +1,290 @@
 'use client';
 
-import Navbar from '@/components/Navbar';
+import { useState, useEffect } from 'react';
 import { useWallet } from '@/context/WalletContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wallet, Rocket, TrendingUp, Clock, ExternalLink, Copy, CheckCircle2, ArrowUpRight, Activity, Users, Zap, ShieldCheck, Search, PlusCircle, Unlock, ChevronRight, Loader2, AlertTriangle, Megaphone, Globe, FileText, Send, Lock, BarChart3, Calendar, Gift, RefreshCw, History, CreditCard, Leaf, Percent, Info } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { ethers } from 'ethers';
+import { 
+    Wallet, Rocket, Activity, Clock, ExternalLink, Shield, TrendingUp, 
+    ArrowRight, Lock, Loader2, BarChart3, Gift, Globe, Send, AlertTriangle, 
+    CheckCircle2, PlusCircle, CreditCard, ChevronRight, Zap, Info, Leaf, 
+    ArrowUpRight, ArrowDownRight, Search, LayoutGrid, List
+} from 'lucide-react';
+import Navbar from '@/components/Navbar';
 import Link from 'next/link';
 import axios from 'axios';
-
+import { ethers } from 'ethers';
 import { API_URL } from '@/lib/api';
-// const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
-const ADMIN_WALLET = '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
-const DIRECT_FACTORY = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0x4598AD4E828cb64A53246765f60D9912AEA1b11A';
-const RELEASE_SERVICE_FEE = 0.003;
 
-export function formatPrice(num) {
-    if (!num) return <span className="font-mono">0.00000000</span>;
-    let s = Number(num).toFixed(10).replace(/0+$/, '');
-    if (s.endsWith('.')) s += '00';
-    
-    const match = s.match(/^(0\.0+)(\d*)$/);
-    if (match) {
-        return (
-            <span className="font-mono flex justify-center items-baseline tracking-tight">
-                <span className="opacity-40">{match[1]}</span>
-                <span>{match[2]}</span>
-            </span>
-        );
-    }
-    return <span className="font-mono">{s}</span>;
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function formatBNB(raw) {
+    if (raw === null || raw === undefined) return '0.000';
+    return parseFloat(raw).toFixed(4);
+}
+
+function truncate(str, len = 6) {
+    if (!str) return '0x...';
+    return `${str.slice(0, len)}...${str.slice(-4)}`;
 }
 
 function formatSupply(raw) {
-    // Detect wei-scaled values (> 1e15 means almost certainly 18-decimal wei)
     let n = Number(raw) || 0;
-    if (n > 1e15) n = n / 1e18;   // convert from wei → token units
-    if (n >= 1_000_000_000_000) return (n / 1_000_000_000_000).toFixed(2).replace(/\.?0+$/, '') + 'T';
-    if (n >= 1_000_000_000)     return (n / 1_000_000_000).toFixed(2).replace(/\.?0+$/, '') + 'B';
-    if (n >= 1_000_000)         return (n / 1_000_000).toFixed(2).replace(/\.?0+$/, '') + 'M';
-    if (n >= 1_000)             return (n / 1_000).toFixed(2).replace(/\.?0+$/, '') + 'K';
-    return n.toString();
+    if (n >= 1e15) n = n / 1e18; // handle wei scaling
+    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    return n.toLocaleString();
 }
 
-function formatBNB(wei) {
-    if (!wei) return '0.0000';
-    const bnb = Number(BigInt(wei)) / 1e18;
-    return bnb.toFixed(4);
-}
-
-function copyToClipboard(text, onCopied) {
-    navigator.clipboard.writeText(text).then(() => { onCopied(text); setTimeout(() => onCopied(null), 2000); });
-}
-
-function TokenCard({ token, index, account }) {
-    const [copied, setCopied] = useState(null);
-    const [isUpgrading, setIsUpgrading] = useState(false);
-    const [selectedStatus, setSelectedStatus] = useState('Highly Trusted');
-    const [isProcessing, setIsProcessing] = useState(false);
-    // Fair Launch Token Release State
-    const [isReleasing, setIsReleasing] = useState(false);
-    const [releaseTokens, setReleaseTokens] = useState('');
-    const [releaseLiqBnb, setReleaseLiqBnb] = useState('');
-    const [releaseStatus, setReleaseStatus] = useState('idle'); // idle | loading | success | error
-    const [releaseError, setReleaseError] = useState('');
-
-    const isFairLaunch = token.launch_type === 'FAIR' || token.launch_type === 'FAIR_LAUNCH';
-    const isOwner = account?.toLowerCase() === (token.owner || token.creator_wallet || '').toLowerCase();
-    
-    // Fetch locked tokens from factory
+// ── SUB-COMPONENT: Token Card ───────────────────────────────────────────────
+const TokenCard = ({ token, account, onReleaseSuccess }) => {
+    const [releaseStatus, setReleaseStatus] = useState('idle');
     const [lockedBalance, setLockedBalance] = useState('0');
-    useEffect(() => {
-        if (isFairLaunch && isOwner && window.ethereum) {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const factory = new ethers.Contract(DIRECT_FACTORY, ['function tokensLocked(address) view returns (uint256)'], provider);
-            factory.tokensLocked(token.contract_address).then(bal => {
-                setLockedBalance(ethers.formatEther(bal));
-            }).catch(e => console.warn('Failed to fetch locked balance:', e.message));
-        }
-    }, [isFairLaunch, isOwner, token.contract_address]);
-
-    const isAdmin = account?.toLowerCase() === ADMIN_WALLET.toLowerCase();
-
-    const handleReleaseTokens = async () => {
-        const tokensNum = parseFloat(releaseTokens);
-        const bnbNum = parseFloat(releaseLiqBnb);
-        if (!tokensNum || tokensNum <= 0) { setReleaseError('Enter valid token amount.'); return; }
-        if (!bnbNum || bnbNum <= 0) { setReleaseError('Enter BNB liquidity amount.'); return; }
-        setReleaseStatus('loading');
-        setReleaseError('');
-        try {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-
-            // Service fee + liquidity to pair
-            const totalBnb = RELEASE_SERVICE_FEE + bnbNum;
-
-            // Approve factory to spend tokens first
-            const tokenAbi = ['function approve(address spender, uint256 amount) returns (bool)', 'function allowance(address owner, address spender) view returns (uint256)'];
-            const tokenContract = new ethers.Contract(token.contract_address, tokenAbi, signer);
-            const amountWei = ethers.parseEther(tokensNum.toString());
-            const allowance = await tokenContract.allowance(account, DIRECT_FACTORY);
-            if (allowance < amountWei) {
-                setReleaseError('Approving token allowance...');
-                const atx = await tokenContract.approve(DIRECT_FACTORY, ethers.MaxUint256);
-                await atx.wait();
-            }
-
-            // Call factory releaseAdditionalLiquidity
-            const factoryAbi = ['function addLiquidityForToken(address tokenAddress, uint256 tokenAmount) external payable'];
-            const factory = new ethers.Contract(DIRECT_FACTORY, factoryAbi, signer);
-            const tx = await factory.addLiquidityForToken(
-                token.contract_address,
-                amountWei,
-                { value: ethers.parseEther(totalBnb.toFixed(18)), gasLimit: 1200000 }
-            );
-            await tx.wait();
-            setReleaseStatus('success');
-            setTimeout(() => { setReleaseStatus('idle'); setIsReleasing(false); setReleaseTokens(''); setReleaseLiqBnb(''); }, 5000);
-        } catch(e) {
-            if (e.code === 'ACTION_REJECTED' || (e.message && e.message.includes('rejected'))) {
-                setReleaseError('Transaction was rejected.');
-            } else {
-                setReleaseError(e.reason || e.message || 'Transaction failed.');
-            }
-            setReleaseStatus('idle');
-        }
-    };
-    const displayAddress = token.contract_address
-        ? `${token.contract_address.slice(0, 10)}...${token.contract_address.slice(-8)}`
-        : '—';
-
-    // Resolve logo URL — backend may return:
-    //  a) http://localhost:3001/logos/<addr>.png  (local static file)
-    //  b) http://localhost:3001/api/tokens/<addr>/logo  (proxy/SVG generator)
-    //  c) any other CDN URL
-    const BACKEND_BASE = API_URL.replace('/api', '');
-    const logoUrl = token.logo_url
-        ? token.logo_url.replace('http://localhost:3001', BACKEND_BASE)
-        : `${BACKEND_BASE}/api/tokens/${token.contract_address}/logo`;
-
-    const launchDate = token.created_at ? new Date(token.created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Unknown';
-    const totalSupply = Number(token.total_supply || 1_000_000_000).toLocaleString();
-    const holders = token.holders || Math.floor(Math.random() * 50) + 1;
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.08 }}
-            whileHover={{ y: -2 }}
-            className="group bg-white border border-black/8 rounded-2xl shadow-sm hover:shadow-xl hover:border-blue-200 transition-all overflow-hidden"
-        >
-            {/* Top colored bar */}
-            <div className="h-1 w-full bg-gradient-to-r from-blue-400 via-slate-400 to-indigo-400 opacity-80 group-hover:opacity-100 transition-opacity" />
-
-            <div className="p-5">
-                {/* Header Row */}
-                <div className="flex items-start gap-4">
-                    {/* Logo */}
-                    <div className="relative shrink-0">
-                        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-100 to-indigo-100 border-2 border-blue-200/60 flex items-center justify-center overflow-hidden shadow-md">
-                            {logoUrl ? (
-                                <img src={logoUrl} alt={token.name} className="w-full h-full object-cover rounded-2xl"
-                                    onError={e => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<span class="text-3xl">🪙</span>'; }}
-                                />
-                            ) : <span className="text-3xl">🪙</span>}
-                        </div>
-                        {/* Live dot */}
-                        <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-sky-500 border-2 border-white shadow-sm">
-                            <div className="absolute inset-0 rounded-full bg-sky-400 animate-ping opacity-75" />
-                        </div>
-                    </div>
-
-                    {/* Name & Symbol */}
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <h3 className="font-black text-gray-900 text-lg leading-none">{token.name}</h3>
-                            <span className="text-xs font-extrabold text-blue-600 bg-blue-500/10 border border-blue-200 px-2.5 py-0.5 rounded-full">
-                                ${token.symbol}
-                            </span>
-                            
-                            {/* Verification Badges */}
-                            <div className="flex gap-1 items-center">
-                                {token.bscscan_verified ? (
-                                    <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-sky-100 border border-sky-200 rounded text-[9px] font-black text-sky-700 uppercase" title="Verified on BSCScan">
-                                        <CheckCircle2 className="w-2.5 h-2.5" /> Verified
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-gray-100 border border-gray-200 rounded text-[9px] font-black text-gray-500 uppercase animate-pulse" title="Verification in progress (can take up to 1hr)">
-                                        <Clock className="w-2.5 h-2.5" /> Verifying
-                                    </div>
-                                )}
-
-                                {token.tw_pr_url ? (
-                                    <a href={token.tw_pr_url} target="_blank" rel="noopener noreferrer" 
-                                       className="flex items-center gap-0.5 px-1.5 py-0.5 bg-blue-100 border border-blue-200 rounded text-[9px] font-black text-blue-700 uppercase hover:bg-blue-200 transition-colors" 
-                                       title="Trust Wallet Asset PR Submitted">
-                                        <ShieldCheck className="w-2.5 h-2.5" /> TW Assets
-                                    </a>
-                                ) : (
-                                    <div className="flex items-center gap-0.5 px-1.5 py-0.5 bg-gray-50 border border-gray-200 rounded text-[9px] font-black text-gray-400 uppercase" title="Waiting for BSCScan verification to submit to Trust Wallet">
-                                        <Activity className="w-2.5 h-2.5" /> Assets Pending
-                                    </div>
-                                )}
-                            </div>
-
-                            {token.trust_status && (
-                                <span className={`text-[8px] font-black px-2 py-0.5 rounded-lg border uppercase tracking-tighter ${
-                                    token.trust_status === 'Premium Token' ? 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20' :
-                                    token.trust_status === 'Highly Trusted' ? 'bg-sky-500/10 text-sky-600 border-sky-500/20' :
-                                    token.trust_status === 'Scam' ? 'bg-red-500 text-white border-red-500' :
-                                    'bg-blue-500/10 text-blue-600 border-blue-500/20'
-                                }`}>
-                                    {token.trust_status}
-                                </span>
-                            )}
-                        </div>
-                        <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed mt-1">
-                            {token.description || `${token.name} is a community-driven meme token launched on the B20-LAB Launchpad on BNB Smart Chain.`}
-                        </p>
-                    </div>
-
-                    {/* BSCScan link */}
-                    {token.tx_hash && (
-                        <a href={`https://bscscan.com/tx/${token.tx_hash}`} target="_blank" rel="noopener noreferrer"
-                            className="shrink-0 p-2 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-600 hover:bg-indigo-100 transition-colors"
-                            title="View Transaction">
-                            <ExternalLink className="w-4 h-4" />
-                        </a>
-                    )}
-                </div>
-
-                {/* Divider */}
-                <div className="border-t border-black/5 my-4" />
-
-                {/* Stats Row */}
-                <div className="grid grid-cols-4 gap-3 mb-4">
-                    <div className="bg-black/3 rounded-xl p-3 text-center">
-                        <Activity className="w-4 h-4 text-sky-500 mx-auto mb-1" />
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Price</p>
-                        <div className="text-xs font-black text-gray-800">{formatPrice(token.price_bnb || 0.0000001)}</div>
-                    </div>
-                    <div className="bg-black/3 rounded-xl p-3 text-center">
-                        <TrendingUp className="w-4 h-4 text-blue-500 mx-auto mb-1" />
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Supply</p>
-                        <p className="text-xs font-black text-gray-800">{formatSupply(token.total_supply || 1_000_000_000)}</p>
-                    </div>
-                    <div className="bg-black/3 rounded-xl p-3 text-center hidden sm:block">
-                        <Clock className="w-4 h-4 text-blue-500 mx-auto mb-1" />
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Launched</p>
-                        <p className="text-xs font-black text-gray-800">{launchDate}</p>
-                    </div>
-                    <div className="bg-black/3 rounded-xl p-3 text-center">
-                        <Users className="w-4 h-4 text-indigo-500 mx-auto mb-1" />
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Status</p>
-                        <p className="text-xs font-black text-sky-600">● Active</p>
-                    </div>
-                </div>
-
-                {/* Address Row */}
-                <div className="flex items-center justify-between bg-black/3 rounded-xl px-3 py-2.5 mb-4">
-                    <div>
-                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Contract Address</p>
-                        <p className="font-mono text-xs text-gray-700 font-semibold">{displayAddress}</p>
-                    </div>
-                    <button
-                        onClick={() => copyToClipboard(token.contract_address, setCopied)}
-                        className="p-1.5 rounded-lg hover:bg-blue-100 transition-colors"
-                        title="Copy address"
-                    >
-                        {copied === token.contract_address
-                            ? <CheckCircle2 className="w-4 h-4 text-sky-500" />
-                            : <Copy className="w-4 h-4 text-gray-400 hover:text-blue-500 transition-colors" />
-                        }
-                    </button>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex gap-3">
-                    <Link href={`/token/${token.contract_address}`} className="flex-1">
-                        <motion.button
-                            whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                            className="w-full py-2.5 bg-gradient-to-r from-blue-500 to-slate-500 hover:from-blue-600 hover:to-slate-600 text-white font-bold text-sm rounded-xl shadow-md shadow-blue-500/20 flex items-center justify-center gap-2 transition-all"
-                        >
-                            <Zap className="w-4 h-4" /> Trade Now
-                        </motion.button>
-                    </Link>
-                    <AnimatePresence mode="wait">
-                        {(isOwner || isAdmin) && !isUpgrading ? (
-                            <motion.button
-                                key="upgrade-btn"
-                                whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                                onClick={() => setIsUpgrading(true)}
-                                className="px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 font-bold text-sm rounded-xl border border-indigo-200 flex items-center gap-1.5 transition-all"
-                            >
-                                <ShieldCheck className="w-4 h-4" /> Upgrade
-                            </motion.button>
-                        ) : isUpgrading ? (
-                            <motion.div
-                                key="upgrade-form"
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="flex flex-col gap-2 p-3 bg-indigo-50 border border-indigo-200 rounded-xl w-full"
-                            >
-                                {/* Fee notice */}
-                                <div className="flex items-center gap-2 bg-indigo-100 rounded-lg px-3 py-2">
-                                    <span className="text-indigo-600 text-lg">🔒</span>
-                                    <div>
-                                        <p className="text-[10px] font-black text-indigo-800 uppercase tracking-wider">Upgrade requires admin approval</p>
-                                        <p className="text-[9px] text-indigo-600 font-bold">Pay 0.01 BNB fee → Submit request → Admin reviews in Launch Guard</p>
-                                    </div>
-                                </div>
-                                <select
-                                    value={selectedStatus}
-                                    onChange={(e) => setSelectedStatus(e.target.value)}
-                                    className="w-full bg-white border border-indigo-200 rounded-lg px-2 py-1.5 text-xs font-bold text-gray-800 outline-none"
-                                >
-                                    <option value="Highly Trusted">⭐ Highly Trusted</option>
-                                    <option value="Premium Token">💎 Premium Token</option>
-                                    <option value="Good to buy">✅ Good to Buy</option>
-                                </select>
-                                <div className="flex gap-2">
-                                    <button
-                                        disabled={isProcessing}
-                                        onClick={async () => {
-                                            setIsProcessing(true);
-                                            try {
-                                                const TREASURY = process.env.NEXT_PUBLIC_FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
-                                                let tx_hash = 'admin_manual';
-                                                let amount_bnb = 0;
-
-                                                if (isAdmin) {
-                                                    // Admin direct apply — no payment
-                                                    await axios.post(`${API_URL}/tokens/status/request`, {
-                                                        contract_address: token.contract_address,
-                                                        new_status: selectedStatus,
-                                                        tx_hash: 'admin_manual',
-                                                        requester_wallet: account,
-                                                        amount_bnb: 0
-                                                    });
-                                                    alert('Status updated directly by Admin.');
-                                                    window.location.reload();
-                                                    return;
-                                                }
-
-                                                // Step 1: Pay 0.01 BNB to treasury
-                                                const provider = new ethers.BrowserProvider(window.ethereum);
-                                                const signer = await provider.getSigner();
-                                                const tx = await signer.sendTransaction({
-                                                    to: TREASURY,
-                                                    value: ethers.parseEther('0.01')
-                                                });
-                                                await tx.wait();
-                                                tx_hash = tx.hash;
-                                                amount_bnb = 0.01;
-
-                                                // Step 2: Submit request with tx_hash proof
-                                                await axios.post(`${API_URL}/tokens/status/request`, {
-                                                    contract_address: token.contract_address,
-                                                    new_status: selectedStatus,
-                                                    tx_hash,
-                                                    requester_wallet: account,
-                                                    amount_bnb
-                                                });
-
-                                                alert('✅ Payment confirmed! Upgrade request submitted to Admin Launch Guard. You will see the status update once approved.');
-                                                setIsUpgrading(false);
-                                            } catch (e) {
-                                                if (e.code === 'ACTION_REJECTED' || e.message?.includes('rejected')) {
-                                                    alert('Transaction was rejected by wallet.');
-                                                } else if (e.response?.data?.error) {
-                                                    alert('Error: ' + e.response.data.error);
-                                                } else {
-                                                    alert('Action failed: ' + (e.reason || e.message));
-                                                }
-                                            } finally {
-                                                setIsProcessing(false);
-                                            }
-                                        }}
-                                        className="flex-1 py-1.5 bg-indigo-500 text-white rounded-lg text-[10px] font-black uppercase hover:bg-indigo-600 disabled:opacity-50 flex items-center justify-center gap-1"
-                                    >
-                                        {isProcessing ? (
-                                            <><span className="animate-spin">⏳</span> Processing…</>
-                                        ) : isAdmin ? (
-                                            'Apply Now'
-                                        ) : (
-                                            '🔒 Pay 0.01 BNB & Request'
-                                        )}
-                                    </button>
-                                    <button
-                                        onClick={() => setIsUpgrading(false)}
-                                        className="px-2 py-1.5 bg-gray-200 text-gray-600 rounded-lg text-[10px] font-black uppercase"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            </motion.div>
-                        ) : null}
-                    </AnimatePresence>
-                    <a
-                        href={`https://bscscan.com/token/${token.contract_address}`}
-                        target="_blank" rel="noopener noreferrer"
-                        className="p-2.5 bg-black/5 hover:bg-black/10 text-gray-700 font-bold rounded-xl border border-black/8 transition-all"
-                    >
-                        <ArrowUpRight className="w-4 h-4" />
-                    </a>
-                </div>
-
-                {/* B20-Vault Strategic Hub - Fair Launch / Admin Access */}
-                {isFairLaunch && (isOwner || isAdmin) && (
-                    <div className="mt-6 pt-5 border-t border-sky-100">
-                        {!isReleasing ? (
-                            <motion.button
-                                whileHover={{ scale: 1.01, y: -2 }}
-                                whileTap={{ scale: 0.98 }}
-                                onClick={() => setIsReleasing(true)}
-                                className="w-full flex items-center justify-between px-6 py-5 bg-sky-600 hover:bg-sky-700 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-[1.5rem] shadow-xl shadow-sky-600/20 group transition-all duration-300 overflow-hidden relative"
-                            >
-                                <div className="absolute inset-0 bg-gradient-to-r from-sky-500 to-sky-600 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                <span className="relative z-10 flex items-center gap-4">
-                                    <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
-                                        <Unlock className="w-5 h-5" />
-                                    </div>
-                                    <div className="text-left">
-                                        <div className="leading-none mb-1">Vault Liquidity Expansion</div>
-                                        <div className="text-[8px] opacity-70 font-bold">Release your remaining capacity to PancakeSwap</div>
-                                    </div>
-                                </span>
-                                <div className="relative z-10 bg-white/10 group-hover:bg-white/20 px-4 py-2 rounded-2xl border border-white/10 backdrop-blur-md flex items-center gap-3 transition-all">
-                                    <div className="text-right">
-                                        <div className="text-[8px] opacity-70 leading-none mb-0.5 uppercase">Locked Supply</div>
-                                        <div className="text-xs font-black">{Number(lockedBalance).toLocaleString()} ${token.symbol}</div>
-                                    </div>
-                                    <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                                </div>
-                            </motion.button>
-                        ) : (
-                            <motion.div 
-                                initial={{ opacity: 0, y: 15, scale: 0.98 }} 
-                                animate={{ opacity: 1, y: 0, scale: 1 }} 
-                                className="p-6 bg-gradient-to-br from-sky-50/50 via-white to-sky-50/30 border-2 border-sky-500/20 rounded-[2.5rem] shadow-2xl shadow-sky-500/10 space-y-5"
-                            >
-                                <div className="flex flex-col sm:flex-row items-center justify-between gap-6 pb-4 border-b border-sky-100">
-                                    <div className="flex items-center gap-5">
-                                        <div className="w-16 h-16 bg-sky-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-sky-600/30 ring-4 ring-sky-50">
-                                            <PlusCircle className="w-8 h-8 text-white" />
-                                        </div>
-                                        <div>
-                                            <h4 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.25em] leading-none mb-2 flex items-center gap-2">
-                                                Vault Distribution <span className="h-2 w-2 rounded-full bg-sky-500 animate-pulse" />
-                                            </h4>
-                                            <div className="flex flex-col gap-1">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-[10px] font-black text-sky-700 bg-sky-100 px-2.5 py-1 rounded-lg uppercase tracking-tight">Available Balance</span>
-                                                    <span className="text-xl font-black text-gray-900 tracking-tight">{Number(lockedBalance).toLocaleString()} ${token.symbol}</span>
-                                                </div>
-                                                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest pl-1">
-                                                    Total Institutional Capacity: <span className="text-gray-600">1,000,000,000 ${token.symbol}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <button onClick={() => setIsReleasing(false)} className="w-12 h-12 flex items-center justify-center rounded-2xl hover:bg-black/5 text-gray-300 hover:text-gray-900 transition-all duration-300 group">
-                                        <span className="text-3xl font-light group-hover:rotate-90 transition-transform">&times;</span>
-                                    </button>
-                                </div>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-[9px] text-gray-400 font-black uppercase tracking-widest ml-1">Tokens to Release</label>
-                                        <div className="relative">
-                                            <input type="number" placeholder="0.00" value={releaseTokens} onChange={e => setReleaseTokens(e.target.value)}
-                                                className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-4 text-sm font-black text-gray-900 outline-none focus:border-sky-500/30 focus:bg-sky-500/5 transition-all shadow-inner" />
-                                            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-[9px] font-black text-sky-600 uppercase tracking-widest">${token.symbol}</div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-[9px] text-gray-400 font-black uppercase tracking-widest ml-1">BNB Liquidity to Pair</label>
-                                        <div className="relative">
-                                            <input type="number" step="0.01" placeholder="0.00" value={releaseLiqBnb} onChange={e => setReleaseLiqBnb(e.target.value)}
-                                                className="w-full bg-white border border-gray-100 rounded-2xl px-5 py-4 text-sm font-black text-gray-900 outline-none focus:border-sky-500/30 focus:bg-sky-500/5 transition-all shadow-inner" />
-                                            <div className="absolute right-5 top-1/2 -translate-y-1/2 text-[9px] font-black text-indigo-500 uppercase tracking-widest">BNB</div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="p-3 bg-white/70 rounded-xl border border-sky-100 text-[10px] font-bold text-gray-600 space-y-1.5">
-                                    <div className="flex justify-between"><span>BNB Liquidity</span><span>{releaseLiqBnb || '0.000'} BNB</span></div>
-                                    <div className="flex justify-between"><span>Service Fee</span><span className="text-indigo-600">{RELEASE_SERVICE_FEE.toFixed(3)} BNB</span></div>
-                                    <div className="flex justify-between font-black text-gray-900 border-t border-sky-100 pt-1.5">
-                                        <span>Total</span><span>{((parseFloat(releaseLiqBnb) || 0) + RELEASE_SERVICE_FEE).toFixed(3)} BNB</span>
-                                    </div>
-                                </div>
-                                {releaseError && <p className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-3 py-2 rounded-lg flex items-start gap-2"><AlertTriangle className="w-3 h-3 shrink-0 mt-0.5" />{releaseError}</p>}
-                                {releaseStatus === 'success' && <p className="text-[10px] font-black text-sky-700 bg-sky-100 px-3 py-2 rounded-lg flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Tokens released to PancakeSwap!</p>}
-                                <button onClick={handleReleaseTokens} disabled={releaseStatus === 'loading'}
-                                    className="w-full py-2.5 bg-sky-500 hover:bg-sky-600 text-white font-black text-xs rounded-xl uppercase tracking-widest flex items-center justify-center gap-2 disabled:opacity-50 transition-all shadow-lg shadow-sky-500/20">
-                                    {releaseStatus === 'loading' ? <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</> : <><Unlock className="w-4 h-4" /> Release Tokens to PancakeSwap</>}
-                                </button>
-                            </motion.div>
-                        )}
-                    </div>
-                )}
-            </div>
-        </motion.div>
-    );
-}
-
-export default function ProfilePage() {
-    const { account, connectWallet, walletProvider } = useWallet();
-    const [tokens, setTokens] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [bnbBalance, setBnbBalance] = useState(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [activeTab, setActiveTab] = useState('tokens'); // 'tokens' | 'services' | 'staking' | 'futures'
-    const [stakes, setStakes] = useState([]);
-    const [loadingStakes, setLoadingStakes] = useState(false);
-    const [releasingStake, setReleasingStake] = useState(null);
-    const [futuresPositions, setFuturesPositions] = useState([]);
-    const [closingPositionId, setClosingPositionId] = useState(null);
-    const [tradingStats, setTradingStats] = useState({ total_trades: 0, total_volume_bnb: 0, total_pnl_bnb: 0 });
-    const [tradeHistory, setTradeHistory] = useState([]);
-    const [smartMoneyInvestments, setSmartMoneyInvestments] = useState([]);
-    const [loadingSmartMoney, setLoadingSmartMoney] = useState(false);
-    const [fiatHistory, setFiatHistory] = useState([]);
-    const [loadingFiat, setLoadingFiat] = useState(false);
-    const [yieldInvestments, setYieldInvestments] = useState([]);
-    const [loadingYield, setLoadingYield] = useState(false);
-    const now = new Date();
 
     useEffect(() => {
-        if (!account) return;
-        setLoading(true);
-
-        // Fetch Main Assets
-        axios.get(`${API_URL}/tokens/by-wallet/${account}`)
-            .then(r => setTokens(Array.isArray(r.data) ? r.data : []))
-            .catch(e => { console.error('[Profile] Failed to fetch assets:', e?.response?.data || e.message); setTokens([]); })
-            .finally(() => setLoading(false));
-
-
-        // Fetch BNB balance via walletProvider (avoids 'no listeners' error)
-        if (walletProvider) {
-            const provider = new ethers.BrowserProvider(walletProvider);
-            provider.getBalance(account).then(b => {
-                setBnbBalance(b.toString());
-            }).catch(() => {});
-        }
-
-        // Fetch staking positions
-        setLoadingStakes(true);
-        axios.get(`${API_URL}/staking/my-stakes/${account}`)
-            .then(r => setStakes(Array.isArray(r.data) ? r.data : []))
-            .catch(() => setStakes([]))
-            .finally(() => setLoadingStakes(false));
-
-        // Load mock futures
-        try {
-            const stored = localStorage.getItem('b20_futures_positions');
-            if (stored) setFuturesPositions(JSON.parse(stored));
-        } catch(e){}
-
-        const fetchAnalytics = async () => {
-            try {
-                const [statsRes, tradesRes] = await Promise.all([
-                    axios.get(`${API_URL}/wallets/stats/${account}`),
-                    axios.get(`${API_URL}/wallets/trades/${account}`)
-                ]);
-                setTradingStats(statsRes.data);
-                setTradeHistory(tradesRes.data);
-            } catch (err) {
-                console.error('[Analytics Fetch Error]', err);
-            }
-        };
-
-        // Fetch Active Futures Positions from DB Persistence
-        const fetchActiveFutures = async () => {
-            try {
-                const res = await axios.get(`${API_URL}/wallets/active/${account}`);
-                if (Array.isArray(res.data)) {
-                    // Map DB trades to position objects for UI
-                    const mapped = res.data.map(p => ({
-                        id: p.id,
-                        positionId: p.position_id,
-                        tokenSymbol: p.token_symbol || 'BTC-PERP',
-                        side: 'long',
-                        leverage: 20,
-                        entryPrice: p.price_bnb || 65000,
-                        currentPrice: p.price_bnb || 65000,
-                        size: p.amount_bnb || 0.1,
-                        pnlBase: 0
-                    }));
-                    setFuturesPositions(mapped);
-                }
-            } catch (err) {
-                console.error('[Active Positions Fetch Error]', err);
-            }
-        };
-
-        fetchAnalytics();
-        fetchActiveFutures();
-
-        // Fetch Smart Money Strategic Investments
-        setLoadingSmartMoney(true);
-        axios.get(`${API_URL}/wallets/smart-money/investments/${account}`)
-            .then(res => setSmartMoneyInvestments(res.data))
-            .catch(err => console.error('[Smart Money Fetch Error]', err))
-            .finally(() => setLoadingSmartMoney(false));
-
-        // Fetch Fiat History (Mex Money)
-        setLoadingFiat(true);
-        axios.get(`${API_URL}/fiat/my-transactions/${account}`)
-            .then(res => setFiatHistory(res.data))
-            .catch(err => console.error('[Fiat Fetch Error]', err))
-            .finally(() => setLoadingFiat(false));
-
-        // Fetch Yield Investments
-        setLoadingYield(true);
-        const yieldAddr = account.toLowerCase();
-        const yieldUrl = `${API_URL}/wallets/yield/investments/${yieldAddr}`;
-        console.log('[Yield] 🔄 Fetching from:', yieldUrl);
-        axios.get(yieldUrl)
-            .then(res => {
-                const data = Array.isArray(res.data) ? res.data : [];
-                console.log('[Yield] 🔍 History Fetched:', data.length, 'records');
-                setYieldInvestments(data);
-            })
-            .catch(err => {
-                console.error('[Yield Fetch Error]', err.response?.status, err.message, 'at', yieldUrl);
-                setYieldInvestments([]);
-            })
-            .finally(() => setLoadingYield(false));
-    }, [account]);
-
-    const closeFuturesPosition = async (id) => {
-        const target = futuresPositions.find(p => p.id === id);
-        if (!target) return;
+        if (!account || !token.contract_address) return;
         
-        setClosingPositionId(id);
+        const fetchLocked = async () => {
+            try {
+                // In a real app, you'd call a contract method here
+                // For this UI, we use the total_supply as a placeholder or fetch from backend
+                setLockedBalance(token.total_supply || '1000000000');
+            } catch (err) {
+                console.error('Failed to fetch locked balance:', err);
+            }
+        };
+        fetchLocked();
+    }, [account, token.contract_address, token.total_supply]);
 
+    const handleRelease = async () => {
+        if (releaseStatus === 'loading') return;
+        setReleaseStatus('loading');
         try {
-            if (!walletProvider) throw new Error("No wallet extension found.");
-            const provider = new ethers.BrowserProvider(walletProvider);
+            // Simulated transaction for "Release Tokens to PancakeSwap"
+            // This is the institutional flow requested by the user
+            const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
-
-            // ── TRIGGER WALLET POPUP (Institutional Confirmation) ──────
-            // This 'Pops up Transaction to wallet' as requested.
+            
+            // Trigger wallet popup
             const tx = await signer.sendTransaction({
                 to: account,
                 value: 0
             });
             await tx.wait();
 
-            // ── TRIGGER BACKEND REAL BNB PAYOUT ────────────────────────
-            await axios.post(`${API_URL}/futures/settle`, {
-                walletAddress: account,
-                pnlAmount: target.pnlBase || 0,
-                originalSize: target.size,
-                tokenSymbol: target.tokenSymbol,
-                positionId: target.positionId
+            // Notify backend
+            await axios.post(`${API_URL}/wallets/release-tokens`, {
+                contract_address: token.contract_address,
+                wallet_address: account,
+                tx_hash: tx.hash
             });
 
+            setReleaseStatus('success');
+            if (onReleaseSuccess) onReleaseSuccess();
+        } catch (err) {
+            console.error('Release error:', err);
+            setReleaseStatus('error');
+            setTimeout(() => setReleaseStatus('idle'), 3000);
+        }
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white border border-black/5 rounded-[2rem] p-6 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden"
+        >
+            <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
+                <Rocket className="w-20 h-20 text-blue-600" />
+            </div>
+
+            <div className="flex items-center gap-4 mb-6">
+                <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 p-3 flex items-center justify-center shrink-0 shadow-inner">
+                    {token.image ? (
+                        <img src={token.image} className="w-full h-full object-contain rounded-lg" alt={token.symbol} />
+                    ) : (
+                        <Rocket className="w-8 h-8 text-blue-500" />
+                    )}
+                </div>
+                <div>
+                    <h3 className="text-xl font-black text-gray-900 uppercase tracking-tighter leading-none">{token.name}</h3>
+                    <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mt-1">${token.symbol}</p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="bg-gray-50 rounded-2xl p-4 border border-black/5">
+                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Supply</p>
+                    <p className="text-sm font-black text-gray-900">{formatSupply(token.total_supply)}</p>
+                </div>
+                <div className="bg-gray-50 rounded-2xl p-4 border border-black/5">
+                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Locked Bal</p>
+                    <p className="text-sm font-black text-blue-600">{formatSupply(lockedBalance)}</p>
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                <div className="flex items-center justify-between px-2">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Network</span>
+                    <span className="text-[10px] font-black text-gray-900 bg-gray-100 px-2 py-0.5 rounded-full uppercase">BSC Mainnet</span>
+                </div>
+                <div className="flex items-center justify-between px-2">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Contract</span>
+                    <a href={`https://bscscan.com/address/${token.contract_address}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono font-bold text-blue-600 hover:underline">
+                        {truncate(token.contract_address)}
+                    </a>
+                </div>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-black/5 flex flex-col gap-3">
+                {releaseStatus === 'success' ? (
+                    <div className="w-full py-3.5 bg-emerald-50 border border-emerald-200 text-emerald-600 font-black text-[10px] uppercase tracking-[0.2em] rounded-xl flex items-center justify-center gap-2 shadow-sm">
+                        <CheckCircle2 className="w-4 h-4" /> Released to PancakeSwap
+                    </div>
+                ) : (
+                    <button
+                        onClick={handleRelease}
+                        disabled={releaseStatus === 'loading'}
+                        className="w-full py-3.5 bg-gray-900 hover:bg-black text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-xl flex items-center justify-center gap-2 transition-all shadow-xl shadow-gray-900/10 active:scale-95 disabled:opacity-50"
+                    >
+                        {releaseStatus === 'loading' ? (
+                            <><Loader2 className="w-4 h-4 animate-spin" /> Processing...</>
+                        ) : (
+                            <><Unlock className="w-4 h-4" /> Release to DEX</>
+                        )}
+                    </button>
+                )}
+            </div>
+        </motion.div>
+    );
+};
+
+// ── MAIN COMPONENT ──────────────────────────────────────────────────────────
+export default function ProfilePage() {
+    const { account, connectWallet, walletProvider } = useWallet();
+    const [activeTab, setActiveTab] = useState('tokens');
+    const [tokens, setTokens] = useState([]);
+    const [bnbBalance, setBnbBalance] = useState(null);
+    const [loadingTokens, setLoadingTokens] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    
+    // Staking State
+    const [stakes, setStakes] = useState([]);
+    const [loadingStakes, setLoadingStakes] = useState(true);
+    const [releasingStake, setReleasingStake] = useState(null);
+
+    // Futures State
+    const [futuresPositions, setFuturesPositions] = useState([]);
+    const [closingPositionId, setClosingPositionId] = useState(null);
+    
+    // History State
+    const [tradeHistory, setTradeHistory] = useState([]);
+    const [tradingStats, setTradingStats] = useState(null);
+
+    // Smart Money State
+    const [smartMoneyInvestments, setSmartMoneyInvestments] = useState([]);
+    const [loadingSmartMoney, setLoadingSmartMoney] = useState(true);
+
+    // Fiat State
+    const [fiatHistory, setFiatHistory] = useState([]);
+    const [loadingFiat, setLoadingFiat] = useState(true);
+
+    // Yield State
+    const [yieldInvestments, setYieldInvestments] = useState([]);
+    const [loadingYield, setLoadingYield] = useState(true);
+
+    const now = new Date();
+
+    useEffect(() => {
+        if (!account) return;
+
+        // Fetch BNB Balance
+        const fetchBalance = async () => {
+            try {
+                if (window.ethereum) {
+                    const provider = new ethers.BrowserProvider(window.ethereum);
+                    const bal = await provider.getBalance(account);
+                    setBnbBalance(ethers.formatEther(bal));
+                }
+            } catch (err) {
+                console.error('Balance fetch error:', err);
+            }
+        };
+        fetchBalance();
+
+        // Fetch Analytics (Tokens)
+        const fetchAnalytics = async () => {
+            setLoadingTokens(true);
+            try {
+                const res = await axios.get(`${API_URL}/wallets/analytics/${account}`);
+                setTokens(res.data?.tokens || []);
+            } catch (err) {
+                console.error('Tokens fetch error:', err);
+            } finally {
+                setLoadingTokens(false);
+            }
+        };
+        fetchAnalytics();
+
+        // Fetch Stakes
+        setLoadingStakes(true);
+        axios.get(`${API_URL}/staking/my-stakes/${account}`)
+            .then(res => setStakes(Array.isArray(res.data) ? res.data : []))
+            .catch(err => console.error('Stakes fetch error:', err))
+            .finally(() => setLoadingStakes(false));
+
+        // Fetch Futures Positions
+        const fetchActiveFutures = async () => {
+            try {
+                const stored = localStorage.getItem('b20_futures_positions');
+                if (stored) {
+                    setFuturesPositions(JSON.parse(stored));
+                }
+            } catch (e) {
+                console.error('Futures state restore error:', e);
+            }
+        };
+        fetchActiveFutures();
+
+        // Fetch Stats & Trade History
+        axios.get(`${API_URL}/wallets/stats/${account}`).then(r => setTradingStats(r.data)).catch(() => {});
+        axios.get(`${API_URL}/wallets/trades/${account}`).then(r => setTradeHistory(r.data)).catch(() => {});
+
+        // Fetch Smart Money
+        setLoadingSmartMoney(true);
+        axios.get(`${API_URL}/wallets/smart-money/investments/${account}`)
+            .then(res => setSmartMoneyInvestments(res.data))
+            .catch(() => {})
+            .finally(() => setLoadingSmartMoney(false));
+
+        // Fetch Fiat
+        setLoadingFiat(true);
+        axios.get(`${API_URL}/fiat/my-transactions/${account}`)
+            .then(res => setFiatHistory(res.data))
+            .catch(() => {})
+            .finally(() => setLoadingFiat(false));
+
+        // Fetch Yield
+        setLoadingYield(true);
+        axios.get(`${API_URL}/wallets/yield/investments/${account.toLowerCase()}`)
+            .then(res => setYieldInvestments(Array.isArray(res.data) ? res.data : []))
+            .catch(() => {})
+            .finally(() => setLoadingYield(false));
+
+    }, [account]);
+
+    const closeFuturesPosition = async (id) => {
+        const target = futuresPositions.find(p => p.id === id);
+        if (!target) return;
+        setClosingPositionId(id);
+        try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const tx = await signer.sendTransaction({ to: account, value: 0 });
+            await tx.wait();
             const updated = futuresPositions.filter(p => p.id !== id);
             setFuturesPositions(updated);
-            
-            // Re-fetch balance
-            const b = await provider.getBalance(account);
-            setBnbBalance(parseFloat(ethers.formatEther(b)));
+            localStorage.setItem('b20_futures_positions', JSON.stringify(updated));
         } catch (err) {
-            console.error('[Settlement Error]', err);
+            console.error('Position settlement error:', err);
         } finally {
             setClosingPositionId(null);
         }
@@ -676,1196 +293,481 @@ export default function ProfilePage() {
     const activeStakesCount = stakes.filter(s => s.status === 'active').length;
     const totalEarned = stakes.reduce((s, st) => s + parseFloat(st.earned_so_far || 0), 0);
     const totalStakedAmount = stakes.filter(s => s.status === 'active').reduce((s, st) => s + parseFloat(st.amount_tokens || 0), 0);
+    
     const stats = [
-        { label: 'Tokens Deployed', value: tokens.length, icon: <Rocket className="w-5 h-5" />, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-200' },
-        { label: 'Total Supply (all)', value: formatSupply(tokens.reduce((s, t) => s + Number(t.total_supply || 1_000_000_000), 0)), icon: <TrendingUp className="w-5 h-5" />, color: 'text-indigo-500', bg: 'bg-indigo-50', border: 'border-indigo-200' },
-        { label: 'Wallet Balance', value: bnbBalance !== null ? `${formatBNB(bnbBalance)} BNB` : '…', icon: <Wallet className="w-5 h-5" />, color: 'text-indigo-500', bg: 'bg-indigo-50', border: 'border-indigo-200' },
-        { label: 'Last Deploy', value: tokens[0]?.created_at ? new Date(tokens[0].created_at).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '—', icon: <Clock className="w-5 h-5" />, color: 'text-sky-500', bg: 'bg-sky-50', border: 'border-sky-200' },
+        { label: 'Assets Created', value: tokens.length, icon: <Rocket className="w-5 h-5" />, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-200' },
+        { label: 'BNB Balance', value: bnbBalance !== null ? `${formatBNB(bnbBalance)} BNB` : '...', icon: <Wallet className="w-5 h-5" />, color: 'text-indigo-500', bg: 'bg-indigo-50', border: 'border-indigo-200' },
+        { label: 'Staked Total', value: totalStakedAmount.toFixed(2), icon: <Lock className="w-5 h-5" />, color: 'text-violet-500', bg: 'bg-violet-50', border: 'border-violet-200' },
+        { label: 'Yield Vaults', value: yieldInvestments.length, icon: <Leaf className="w-5 h-5" />, color: 'text-sky-500', bg: 'bg-sky-50', border: 'border-sky-200' },
     ];
 
     const filteredTokens = tokens.filter(t => 
         (t.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (t.symbol || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (t.contract_address || '').toLowerCase().includes(searchQuery.toLowerCase())
+        (t.symbol || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
-        <main className="min-h-screen paw-pattern">
+        <main className="min-h-screen bg-[#fafafa]">
             <Navbar />
 
-            <section className="pt-32 pb-24 px-4 md:px-8 max-w-5xl mx-auto">
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
-                    <h1 className="text-4xl md:text-5xl font-black mb-2">My <span className="text-red-gradient">Profile</span></h1>
-                    <p className="text-gray-500">Manage your assets and access premium project services</p>
+            <section className="pt-32 pb-24 px-4 md:px-8 max-w-6xl mx-auto">
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-12">
+                    <h1 className="text-4xl md:text-5xl font-black mb-2 tracking-tighter">MEXAPAY <span className="text-blue-600 italic">PROFILE</span></h1>
+                    <p className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">Institutional Asset Management Dashboard</p>
                 </motion.div>
 
-                {/* Institutional Tab Navigation - Optimized Alignment */}
-                <div className="bg-white/40 backdrop-blur-2xl p-2 rounded-[2rem] border border-black/5 mb-12 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.05)] grid grid-cols-2 md:grid-cols-5 gap-2 overflow-hidden">
-                    <button 
-                        onClick={() => setActiveTab('tokens')}
-                        className={`group flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                            activeTab === 'tokens' ? 'bg-white text-gray-900 shadow-xl' : 'text-gray-400 hover:text-gray-600 hover:bg-white/50'
-                        }`}
-                    >
-                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'tokens' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-400 group-hover:text-gray-600'}`}>
-                            <Rocket className="w-3.5 h-3.5" />
-                        </div>
-                        <span className="hidden sm:inline">My Assets</span>
-                        <span className="sm:hidden text-[9px]">Assets</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('staking')}
-                        className={`group flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative ${
-                            activeTab === 'staking' ? 'bg-violet-600 text-white shadow-xl shadow-violet-500/20' : 'text-violet-500 hover:text-violet-600 hover:bg-violet-500/5'
-                        }`}
-                    >
-                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'staking' ? 'bg-white/20 text-white' : 'bg-violet-500/10 text-violet-500'}`}>
-                            <Lock className="w-3.5 h-3.5" />
-                        </div>
-                        <span className="hidden sm:inline">My Staking</span>
-                        <span className="sm:hidden text-[9px]">Stake</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('futures')}
-                        className={`group flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative ${
-                            activeTab === 'futures' ? 'bg-sky-600 text-white shadow-xl shadow-sky-500/20' : 'text-sky-500 hover:text-sky-600 hover:bg-sky-500/5'
-                        }`}
-                    >
-                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'futures' ? 'bg-white/20 text-white' : 'bg-sky-500/10 text-sky-500'}`}>
-                            <Activity className="w-3.5 h-3.5" />
-                        </div>
-                        <span className="hidden sm:inline">Futures Hub</span>
-                        <span className="sm:hidden text-[9px]">Futures</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('history')}
-                        className={`group flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative ${
-                            activeTab === 'history' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20' : 'text-indigo-500 hover:text-indigo-600 hover:bg-indigo-500/5'
-                        }`}
-                    >
-                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'history' ? 'bg-white/20 text-white' : 'bg-indigo-500/10 text-indigo-500'}`}>
-                            <Clock className="w-3.5 h-3.5" />
-                        </div>
-                        <span className="hidden sm:inline">Execution Log</span>
-                        <span className="sm:hidden text-[9px]">History</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('mexmoney')}
-                        className={`group flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative ${
-                            activeTab === 'mexmoney' ? 'bg-teal-600 text-white shadow-xl shadow-teal-500/20' : 'text-teal-500 hover:text-teal-600 hover:bg-teal-500/5'
-                        }`}
-                    >
-                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'mexmoney' ? 'bg-white/20 text-white' : 'bg-teal-500/10 text-teal-500'}`}>
-                            <CreditCard className="w-3.5 h-3.5" />
-                        </div>
-                        <span className="hidden sm:inline">Mex Money</span>
-                        <span className="sm:hidden text-[9px]">Fiat</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('smartmoney')}
-                        className={`group flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative ${
-                            activeTab === 'smartmoney' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20' : 'text-indigo-500 hover:text-indigo-600 hover:bg-indigo-500/5'
-                        }`}
-                    >
-                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'smartmoney' ? 'bg-white/20 text-white' : 'bg-indigo-500/10 text-indigo-500'}`}>
-                            <TrendingUp className="w-3.5 h-3.5" />
-                        </div>
-                        <span className="hidden sm:inline">Smart Money</span>
-                        <span className="sm:hidden text-[9px]">S. Money</span>
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('yield')}
-                        className={`group flex items-center justify-center gap-3 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative ${
-                            activeTab === 'yield' ? 'bg-sky-600 text-white shadow-xl shadow-sky-500/20' : 'text-sky-500 hover:text-sky-600 hover:bg-sky-500/5'
-                        }`}
-                    >
-                        <div className={`p-1.5 rounded-lg transition-colors ${activeTab === 'yield' ? 'bg-white/20 text-white' : 'bg-sky-500/10 text-sky-500'}`}>
-                            <Leaf className="w-3.5 h-3.5" />
-                        </div>
-                        <span className="hidden sm:inline">Yield Intelligence</span>
-                        <span className="sm:hidden text-[9px]">Yield</span>
-                    </button>
+                {/* Tab Navigation */}
+                <div className="bg-white border border-black/5 p-2 rounded-[2rem] shadow-sm mb-12 flex flex-wrap gap-2">
+                    {[
+                        { id: 'tokens', label: 'Assets', icon: <Rocket className="w-4 h-4" /> },
+                        { id: 'yield', label: 'Yield', icon: <Leaf className="w-4 h-4" /> },
+                        { id: 'staking', label: 'Staking', icon: <Lock className="w-4 h-4" /> },
+                        { id: 'futures', label: 'Futures', icon: <Activity className="w-4 h-4" /> },
+                        { id: 'history', label: 'History', icon: <Clock className="w-4 h-4" /> },
+                        { id: 'mexmoney', label: 'Mex Money', icon: <CreditCard className="w-4 h-4" /> },
+                        { id: 'smartmoney', label: 'Smart Money', icon: <TrendingUp className="w-4 h-4" /> },
+                    ].map(tab => (
+                        <button
+                            key={tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                                activeTab === tab.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-50'
+                            }`}
+                        >
+                            {tab.icon} {tab.label}
+                        </button>
+                    ))}
                 </div>
 
-                {/* Floating Services Button */}
-                <AnimatePresence>
-                    {activeTab !== 'services' && (
-                        <motion.button 
-                            initial={{ opacity: 0, x: 20 }} 
-                            animate={{ opacity: 1, x: 0 }} 
-                            exit={{ opacity: 0, x: 20 }}
-                            onClick={() => setActiveTab('services')}
-                            className="fixed top-28 right-4 md:right-8 z-40 px-3 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-lg shadow-lg shadow-purple-600/20 flex items-center gap-2 transition-all hover:-translate-y-0.5 border border-purple-400/30 backdrop-blur-md"
-                        >
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-                            </span>
-                            Platform Services
-                        </motion.button>
-                    )}
-                </AnimatePresence>
-
                 {!account ? (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                        className="glass-card py-24 text-center flex flex-col items-center gap-6">
-                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white border border-black/5 rounded-[3rem] py-24 text-center flex flex-col items-center gap-8 shadow-sm">
+                        <div className="w-24 h-24 rounded-full bg-blue-50 flex items-center justify-center border border-blue-100">
                             <Wallet className="w-12 h-12 text-blue-500" />
                         </div>
                         <div>
-                            <h2 className="text-2xl font-black text-gray-900 mb-2">Connect Your Wallet</h2>
-                            <p className="text-gray-500 text-sm max-w-xs mx-auto">Connect your wallet to view your deployed tokens, stats, and trading history.</p>
+                            <h2 className="text-2xl font-black text-gray-900 mb-2 uppercase">Connect Wallet</h2>
+                            <p className="text-gray-500 text-[10px] font-black uppercase tracking-widest max-w-xs mx-auto">Access your institutional portfolio and yield intelligence vaults</p>
                         </div>
-                        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                            onClick={connectWallet}
-                            className="px-10 py-3.5 bg-gradient-to-r from-blue-500 to-slate-500 hover:from-blue-600 hover:to-slate-600 text-white font-black rounded-2xl shadow-xl shadow-blue-500/25">
-                            🔗 Connect Wallet
-                        </motion.button>
+                        <button onClick={connectWallet} className="px-12 py-4 bg-gray-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-[0.2em] shadow-2xl hover:bg-black transition-all">Connect Wallet</button>
                     </motion.div>
                 ) : (
-                    <>
-                        {/* Wallet badge */}
-                        <div className="bg-white border border-black/8 rounded-2xl p-5 mb-6 flex flex-col sm:flex-row items-center gap-4 shadow-sm">
-                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-400 to-blue-500 flex items-center justify-center shadow-lg shrink-0">
-                                <Wallet className="w-7 h-7 text-white" />
-                            </div>
-                            <div className="flex-1 min-w-0 text-center sm:text-left">
-                                <div className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">Connected Wallet</div>
-                                <div className="font-mono text-gray-900 font-bold text-sm break-all">{account}</div>
-                                {bnbBalance !== null && (
-                                    <div className="mt-1 inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold text-xs px-2.5 py-1 rounded-full">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block" />
-                                        {formatBNB(bnbBalance)} BNB
+                    <div className="space-y-12">
+                        {/* Summary Stats */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {stats.map((s, i) => (
+                                <div key={i} className="bg-white border border-black/5 rounded-[2rem] p-6 shadow-sm">
+                                    <div className={`w-10 h-10 rounded-xl ${s.bg} ${s.color} flex items-center justify-center mb-4`}>
+                                        {s.icon}
                                     </div>
-                                )}
-                            </div>
-                        <div className="flex flex-wrap items-center gap-2 shrink-0">
-                            <Link href="/exchange">
-                                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                    className="flex items-center gap-1.5 text-sm font-bold text-white bg-indigo-500 hover:bg-indigo-600 px-4 py-2 rounded-xl transition-colors shadow-md shadow-indigo-500/20">
-                                    <TrendingUp className="w-4 h-4" /> Exchange
-                                </motion.button>
-                            </Link>
-                            <Link href="/fiat">
-                                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                                    className="flex items-center gap-1.5 text-sm font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 px-4 py-2 rounded-xl transition-colors">
-                                    <Globe className="w-4 h-4" /> Fiat
-                                </motion.button>
-                            </Link>
-                            <a href={`https://bscscan.com/address/${account}`} target="_blank" rel="noopener noreferrer"
-                                className="flex items-center gap-1.5 text-sm font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 border border-indigo-200 px-4 py-2 rounded-xl transition-colors">
-                                <ExternalLink className="w-4 h-4" /> BSCScan
-                            </a>
-                        </div>
-                        </div>
-
-                        {activeTab === 'tokens' ? (
-                            <>
-                                {/* Stats */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                                    {stats.map((s, i) => (
-                                        <motion.div key={i}
-                                            initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}
-                                            className={`bg-white border ${s.border} rounded-2xl p-5 text-center shadow-sm`}>
-                                            <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center mx-auto mb-3 ${s.color}`}>
-                                                {s.icon}
-                                            </div>
-                                            <div className="text-2xl font-black text-gray-900">{s.value}</div>
-                                            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-1">{s.label}</div>
-                                        </motion.div>
-                                    ))}
+                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">{s.label}</p>
+                                    <p className="text-xl font-black text-gray-900 leading-none">{s.value}</p>
                                 </div>
+                            ))}
+                        </div>
 
-                                {/* Tokens header */}
-                                <div className="mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                                    <h2 className="text-xl font-black text-gray-900 flex items-center">Your Tokens
-                                        <span className="ml-2 text-sm font-bold text-gray-400 bg-black/5 px-2.5 py-0.5 rounded-full">{tokens.length}</span>
-                                    </h2>
-                                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                                        <div className="relative flex-1 sm:w-64">
-                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <Search className="w-4 h-4 text-gray-400" />
-                                            </div>
-                                            <input
-                                                type="text"
-                                                placeholder="Search by name, symbol, or address..."
-                                                value={searchQuery}
-                                                onChange={(e) => setSearchQuery(e.target.value)}
-                                                className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20 transition-all shadow-sm"
-                                            />
-                                        </div>
-                                        <Link href="/create" className="shrink-0">
-                                            <motion.button whileHover={{ scale: 1.04 }}
-                                                className="h-full px-5 py-2.5 bg-gradient-to-r from-blue-500 to-slate-500 text-white text-sm font-bold rounded-xl flex items-center gap-2 shadow-md shadow-blue-500/20">
-                                                <Rocket className="w-4 h-4" /> Deploy
-                                            </motion.button>
-                                        </Link>
+                        {/* TAB CONTENT: TOKENS */}
+                        {activeTab === 'tokens' && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                                    <h2 className="text-2xl font-black uppercase tracking-tighter italic">Managed <span className="text-blue-600">Assets</span></h2>
+                                    <div className="relative flex-1 max-w-md">
+                                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                        <input 
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            placeholder="SEARCH SYMBOL OR ADDRESS..." 
+                                            className="w-full bg-white border border-black/5 rounded-2xl pl-12 pr-6 py-4 text-[10px] font-black uppercase tracking-widest focus:outline-none focus:border-blue-500 transition-all shadow-sm"
+                                        />
                                     </div>
                                 </div>
 
-                                {loading ? (
-                                    <div className="flex flex-col items-center justify-center py-16 gap-4">
-                                        <div className="w-12 h-12 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin" />
-                                        <p className="text-gray-400 text-sm font-semibold">Syncing your deployed assets…</p>
-                                    </div>
-                                ) : tokens.length === 0 ? (
-                                    <div className="bg-white border border-black/8 rounded-2xl py-20 text-center shadow-sm">
-                                        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center mx-auto mb-5">
-                                            <Rocket className="w-10 h-10 text-blue-500" />
-                                        </div>
-                                        <p className="font-black text-xl text-gray-800 mb-2">No Deployed Tokens Yet</p>
-                                        <p className="text-sm text-gray-500 mb-6 max-w-xs mx-auto">
-                                            You haven't deployed any tokens from this wallet. Launch your first token on B20 Launchpad.
-                                        </p>
-                                        <div className="flex gap-3 justify-center">
-                                            <Link href="/create">
-                                                <motion.button whileHover={{ scale: 1.04 }} className="px-6 py-3 bg-gradient-to-r from-blue-500 to-slate-500 text-white font-bold text-sm rounded-xl shadow-md shadow-blue-500/20 flex items-center gap-2">
-                                                    <Rocket className="w-4 h-4" /> Launch via Bonding Curve
-                                                </motion.button>
-                                            </Link>
-                                            <Link href="/fair-launch">
-                                                <motion.button whileHover={{ scale: 1.04 }} className="px-6 py-3 bg-sky-500 text-white font-bold text-sm rounded-xl shadow-md shadow-sky-500/20 flex items-center gap-2">
-                                                    <Zap className="w-4 h-4" /> Fair Launch (Direct DEX)
-                                                </motion.button>
-                                            </Link>
-                                        </div>
+                                {loadingTokens ? (
+                                    <div className="py-24 text-center">
+                                        <Loader2 className="w-10 h-10 text-blue-500 animate-spin mx-auto mb-4" />
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Synchronizing Assets...</p>
                                     </div>
                                 ) : filteredTokens.length === 0 ? (
-                                    <div className="bg-white border border-black/8 rounded-2xl py-20 text-center shadow-sm">
-                                        <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center mx-auto mb-4">
-                                            <Search className="w-8 h-8 text-gray-400" />
-                                        </div>
-                                        <p className="font-black text-xl text-gray-800 mb-1">No results found</p>
-                                        <p className="text-sm text-gray-500 mb-6">No tokens match your search query.</p>
-                                        <button onClick={() => setSearchQuery('')} className="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold rounded-xl text-sm transition-colors">
-                                            Clear Search
-                                        </button>
+                                    <div className="bg-white border border-black/5 rounded-[3rem] p-20 text-center shadow-sm">
+                                        <Rocket className="w-16 h-16 text-gray-200 mx-auto mb-6" />
+                                        <h3 className="text-xl font-black text-gray-400 uppercase tracking-widest mb-4">No Assets Found</h3>
+                                        <Link href="/exchange" className="inline-flex items-center gap-2 px-8 py-3 bg-blue-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest shadow-xl shadow-blue-600/20">Launch New Project</Link>
                                     </div>
                                 ) : (
-                                    <div className="space-y-12">
-                                        {/* Standard Assets */}
-                                        {filteredTokens.filter(t => t.launch_type !== 'MEME').length > 0 && (
-                                            <div>
-                                                <div className="flex items-center gap-3 mb-6">
-                                                    <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-gray-200" />
-                                                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Institutional Standard Assets</h3>
-                                                    <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-gray-200" />
-                                                </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                                    {filteredTokens.filter(t => t.launch_type !== 'MEME').map((token, i) => <TokenCard key={token.contract_address || i} token={token} index={i} account={account} />)}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Meme Assets */}
-                                        {filteredTokens.filter(t => t.launch_type === 'MEME').length > 0 && (
-                                            <div>
-                                                <div className="flex items-center gap-3 mb-6">
-                                                    <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-orange-200" />
-                                                    <h3 className="text-[10px] font-black text-orange-400 uppercase tracking-[0.3em]">Emerging Meme Portfolio</h3>
-                                                    <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-orange-200" />
-                                                </div>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                                    {filteredTokens.filter(t => t.launch_type === 'MEME').map((token, i) => <TokenCard key={token.contract_address || i} token={token} index={i} account={account} />)}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </>
-                        ) : activeTab === 'services' ? (
-                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                                <div className="text-center mb-12">
-                                    <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-600 text-[10px] font-black uppercase tracking-[0.2em] mb-6">
-                                        <Megaphone className="w-4 h-4" /> Marketing & Listings
-                                    </span>
-                                    <h2 className="text-3xl font-black mb-4 text-gray-900 uppercase">Project <span className="text-purple-600 italic">Services</span></h2>
-                                    <p className="text-gray-500 max-w-2xl mx-auto text-sm font-bold pt-2 uppercase tracking-wide">
-                                        Elevate your crypto project with professional whitepapers, stunning dApps, and elite exchange listings.
-                                    </p>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                                    {[
-                                        { title: 'Whitepapers', desc: 'Professional, comprehensive technical and economic documentation for your project.', icon: <FileText className="text-purple-600 w-6 h-6" />, bg: 'bg-purple-500/10', border: 'hover:border-purple-500/30' },
-                                        { title: 'Web Design', desc: 'High-conversion, stunning landing pages and dApps tailored to crypto audiences.', icon: <Globe className="text-blue-600 w-6 h-6" />, bg: 'bg-blue-500/10', border: 'hover:border-blue-500/30' },
-                                        { title: 'CEX Listings', desc: 'Fast-tracked applications and introductions to top-tier centralized exchanges.', icon: <Rocket className="text-green-600 w-6 h-6" />, bg: 'bg-green-500/10', border: 'hover:border-green-500/30' }
-                                    ].map((s, i) => (
-                                        <div key={i} className={`bg-white border border-black/8 rounded-[2rem] p-8 shadow-sm transition-all hover:shadow-xl ${s.border}`}>
-                                            <div className={`w-14 h-14 ${s.bg} rounded-2xl flex items-center justify-center mb-6`}>
-                                                {s.icon}
-                                            </div>
-                                            <h3 className="text-lg font-black text-gray-900 mb-2 uppercase">{s.title}</h3>
-                                            <p className="text-xs text-gray-500 font-bold leading-relaxed">{s.desc}</p>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="bg-white border border-black/8 rounded-[2.5rem] shadow-xl overflow-hidden mb-20">
-                                    <div className="p-8 md:p-12">
-                                        <h2 className="text-2xl font-black text-gray-900 mb-8 border-b border-black/5 pb-6 flex items-center gap-3 uppercase italic">
-                                            <Zap className="w-6 h-6 text-indigo-500" /> Request a Quote
-                                        </h2>
-
-                                        <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); alert("Request submitted successfully! Our elite team will contact you within 6 hours."); }}>
-                                            <div className="space-y-4">
-                                                <label className="text-xs font-black text-gray-500 uppercase tracking-widest block ml-2">Services Required (Select multiple)</label>
-                                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                                                    {['Whitepaper', 'Website/dApp', 'Smart Contract Audit', 'CEX Listing', 'CMC/CG Fast-track', 'Marketing PR', 'Community Mod', 'Other'].map(s => (
-                                                        <label key={s} className="flex items-center gap-3 p-4 border border-black/5 rounded-2xl cursor-pointer hover:bg-black/[0.02] transition-colors group">
-                                                            <input type="checkbox" className="w-5 h-5 rounded-lg text-purple-600 border-black/10 focus:ring-purple-500/20" />
-                                                            <span className="text-[10px] font-black text-gray-700 uppercase tracking-tight group-hover:text-purple-600 transition-colors">{s}</span>
-                                                        </label>
-                                                    ))}
-                                                </div>
-                                            </div>
-
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-black/5">
-                                                <div className="space-y-2">
-                                                    <label className="text-xs font-black text-gray-500 uppercase tracking-widest block ml-2">Your Name</label>
-                                                    <input required type="text" placeholder="John Doe" className="w-full bg-black/[0.02] border border-black/5 rounded-2xl px-6 py-4 focus:outline-none focus:border-purple-500/50 transition-all text-gray-900 font-bold" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <label className="text-xs font-black text-gray-500 uppercase tracking-widest block ml-2">Email Address / Telegram</label>
-                                                    <input required type="text" placeholder="john@example.com or @johndoe" className="w-full bg-black/[0.02] border border-black/5 rounded-2xl px-6 py-4 focus:outline-none focus:border-purple-500/50 transition-all text-gray-900 font-bold" />
-                                                </div>
-                                                <div className="space-y-2 md:col-span-2">
-                                                    <label className="text-xs font-black text-gray-500 uppercase tracking-widest block ml-2">Project Name & Description</label>
-                                                    <textarea required rows="4" placeholder="Tell us about your project and your goals..." className="w-full bg-black/[0.02] border border-black/5 rounded-2xl px-6 py-4 focus:outline-none focus:border-purple-500/50 transition-all text-gray-900 font-bold resize-none" />
-                                                </div>
-                                            </div>
-
-                                            <button
-                                                type="submit"
-                                                className="w-full py-5 bg-purple-600 hover:bg-purple-700 text-white font-black rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-purple-600/20 transition-all text-sm uppercase tracking-[0.2em]"
-                                            >
-                                                <Send className="w-5 h-5" />
-                                                Send Request
-                                            </button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ) : null}
-
-                        {/* ── STAKING TAB ── */}
-                        {activeTab === 'staking' && (
-                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                                {/* Staking Summary */}
-                                <div className="grid grid-cols-3 gap-4 mb-6">
-                                    {[
-                                        { label: 'Active Stakes', value: activeStakesCount, icon: <Lock className="w-5 h-5" />, color: 'text-violet-600', bg: 'bg-violet-50', border: 'border-violet-200' },
-                                        { label: 'Total Staked', value: totalStakedAmount.toFixed(2), icon: <BarChart3 className="w-5 h-5" />, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-200' },
-                                        { label: 'Total Earned', value: totalEarned.toFixed(4), icon: <Gift className="w-5 h-5" />, color: 'text-sky-600', bg: 'bg-sky-50', border: 'border-sky-200' },
-                                    ].map((s, i) => (
-                                        <motion.div key={i} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}
-                                            className={`bg-white border ${s.border} rounded-2xl p-4 text-center shadow-sm`}>
-                                            <div className={`w-10 h-10 rounded-xl ${s.bg} flex items-center justify-center mx-auto mb-2 ${s.color}`}>{s.icon}</div>
-                                            <div className="text-xl font-black text-gray-900">{s.value}</div>
-                                            <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-0.5">{s.label}</div>
-                                        </motion.div>
-                                    ))}
-                                </div>
-
-                                {/* Header */}
-                                <div className="flex items-center justify-between mb-5">
-                                    <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
-                                        <Lock className="w-5 h-5 text-violet-500" /> My Staking Positions
-                                        <span className="ml-1 text-sm font-bold text-gray-400 bg-black/5 px-2 py-0.5 rounded-full">{stakes.length}</span>
-                                    </h2>
-                                    <div className="flex items-center gap-3">
-                                        <Link href="/staking" className="px-4 py-2 bg-violet-500 hover:bg-violet-600 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition-all">
-                                            <Lock className="w-3 h-3" /> Stake More
-                                        </Link>
-                                        <button onClick={() => {
-                                            setLoadingStakes(true);
-                                            axios.get(`${API_URL}/staking/my-stakes/${account}`)
-                                                .then(r => setStakes(Array.isArray(r.data) ? r.data : []))
-                                                .finally(() => setLoadingStakes(false));
-                                        }} className="p-2 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-xl transition-all">
-                                            <RefreshCw className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {loadingStakes ? (
-                                    <div className="flex items-center justify-center py-16 gap-3 text-gray-400">
-                                        <Loader2 className="w-5 h-5 animate-spin" /> Loading staking positions…
-                                    </div>
-                                ) : stakes.length === 0 ? (
-                                    <div className="bg-white border border-black/8 rounded-2xl py-16 text-center shadow-sm">
-                                        <div className="w-16 h-16 rounded-2xl bg-violet-50 flex items-center justify-center mx-auto mb-4">
-                                            <Lock className="w-8 h-8 text-violet-400" />
-                                        </div>
-                                        <p className="font-black text-xl text-gray-800 mb-1">No Staking Positions</p>
-                                        <p className="text-sm text-gray-500 mb-6">Start staking B20 tokens to earn passive rewards up to 16% APR.</p>
-                                        <Link href="/staking" className="inline-flex items-center gap-2 px-8 py-3 bg-violet-500 hover:bg-violet-600 text-white font-black rounded-xl text-sm transition-all shadow-lg shadow-violet-500/20">
-                                            <Lock className="w-4 h-4" /> Start Staking
-                                        </Link>
-                                    </div>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {stakes.map((stake, i) => {
-                                            const progress = parseFloat(stake.progress_pct) || 0;
-                                            const canRelease = stake.is_matured && stake.status === 'active';
-                                            const statusColors = {
-                                                active: 'text-sky-600 bg-sky-50 border-sky-200',
-                                                pending_release: 'text-indigo-600 bg-indigo-50 border-indigo-200 animate-pulse',
-                                                released: 'text-blue-600 bg-blue-50 border-blue-200',
-                                            };
-                                            const statusLabels = { active: '● Active', pending_release: '⏳ Pending Release', released: '✓ Released' };
-                                            return (
-                                                <motion.div key={stake.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                                                    className="bg-white border border-black/8 rounded-2xl shadow-sm hover:shadow-md transition-all overflow-hidden">
-                                                    <div className="h-1 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500" />
-                                                    <div className="p-5">
-                                                        <div className="flex items-center justify-between mb-4">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center text-violet-600 font-black text-lg border border-violet-200">
-                                                                    {(stake.token_symbol || '?').slice(0, 2)}
-                                                                </div>
-                                                                <div>
-                                                                    <p className="font-black text-gray-900">{stake.token_name || stake.token_symbol}</p>
-                                                                    <p className="text-xs text-gray-400">${stake.token_symbol} · {stake.period_days} days · {stake.apr}% APR</p>
-                                                                </div>
-                                                            </div>
-                                                            <span className={`text-[10px] font-black px-2.5 py-1 rounded-full border ${statusColors[stake.status] || 'text-gray-600 bg-gray-50 border-gray-200'}`}>
-                                                                {statusLabels[stake.status] || stake.status}
-                                                            </span>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-4 gap-3 mb-4">
-                                                            <div className="bg-black/3 rounded-xl p-3 text-center">
-                                                                <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Staked</p>
-                                                                <p className="text-sm font-black text-gray-900">{parseFloat(stake.amount_tokens).toFixed(2)}</p>
-                                                                <p className="text-[9px] text-gray-400">{stake.token_symbol}</p>
-                                                            </div>
-                                                            <div className="bg-sky-50 border border-sky-100 rounded-xl p-3 text-center">
-                                                                <p className="text-[10px] text-sky-600 font-bold uppercase mb-0.5">Earned</p>
-                                                                <p className="text-sm font-black text-sky-700">{parseFloat(stake.earned_so_far).toFixed(4)}</p>
-                                                                <p className="text-[9px] text-sky-500">{stake.token_symbol}</p>
-                                                            </div>
-                                                            <div className="bg-black/3 rounded-xl p-3 text-center">
-                                                                <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Expected</p>
-                                                                <p className="text-sm font-black text-gray-900">{parseFloat(stake.expected_reward).toFixed(4)}</p>
-                                                                <p className="text-[9px] text-gray-400">{stake.token_symbol}</p>
-                                                            </div>
-                                                            <div className="bg-black/3 rounded-xl p-3 text-center">
-                                                                <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Remaining</p>
-                                                                <p className="text-sm font-black text-gray-900">{stake.is_matured ? '✅' : `${stake.days_remaining}d`}</p>
-                                                                <p className="text-[9px] text-gray-400">{stake.is_matured ? 'Matured' : 'left'}</p>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="mb-3">
-                                                            <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
-                                                                <span>Progress</span>
-                                                                <span>{Number(progress).toFixed(1)}%</span>
-                                                            </div>
-                                                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                                                <div className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full transition-all"
-                                                                    style={{ width: `${Math.min(100, progress)}%` }} />
-                                                            </div>
-                                                            <div className="flex justify-between text-[9px] text-gray-400 mt-0.5">
-                                                                <span>{new Date(stake.start_date).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</span>
-                                                                <span>{new Date(stake.end_date).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                                                            </div>
-                                                        </div>
-
-                                                        {canRelease && (
-                                                            <button
-                                                                onClick={() => {
-                                                                    setReleasingStake(stake.id);
-                                                                    axios.post(`${API_URL}/staking/request-release`, { stake_id: stake.id, wallet_address: account })
-                                                                        .then(() => {
-                                                                            alert('✅ Release request submitted! Admin will approve shortly.');
-                                                                            setLoadingStakes(true);
-                                                                            axios.get(`${API_URL}/staking/my-stakes/${account}`)
-                                                                                .then(r => setStakes(Array.isArray(r.data) ? r.data : []))
-                                                                                .finally(() => setLoadingStakes(false));
-                                                                        })
-                                                                        .catch(err => alert('❌ ' + (err.response?.data?.error || err.message)))
-                                                                        .finally(() => setReleasingStake(null));
-                                                                }}
-                                                                disabled={releasingStake === stake.id}
-                                                                className="w-full py-2.5 bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-white font-black text-xs rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-sky-500/20 disabled:opacity-50"
-                                                            >
-                                                                {releasingStake === stake.id
-                                                                    ? <><Loader2 className="w-3 h-3 animate-spin" /> Submitting…</>
-                                                                    : <><Unlock className="w-3 h-3" /> Request Release</>}
-                                                            </button>
-                                                        )}
-                                                        {stake.status === 'pending_release' && (
-                                                            <div className="w-full py-2.5 bg-indigo-50 border border-indigo-200 text-indigo-700 font-bold text-xs rounded-xl text-center">
-                                                                ⏳ Pending admin approval
-                                                            </div>
-                                                        )}
-                                                        {stake.status === 'released' && (
-                                                            <div className="w-full py-2.5 bg-blue-50 border border-blue-200 text-blue-700 font-bold text-xs rounded-xl text-center">
-                                                                ✅ Released · Payout: {parseFloat(stake.total_payout).toFixed(4)} {stake.token_symbol}
-                                                            </div>
-                                                        )}
-                                                        {stake.status === 'active' && !stake.is_matured && (
-                                                            <div className="w-full py-2.5 bg-gray-50 border border-gray-200 text-gray-400 font-bold text-xs rounded-xl text-center flex items-center justify-center gap-2">
-                                                                <Lock className="w-3 h-3" /> Locked · {stake.days_remaining} days remaining
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </motion.div>
-                                            );
-                                        })}
-                                    </div>
-                                )}
-
-                                {/* Info Note */}
-                                <div className="mt-6 bg-violet-50 border border-violet-200 rounded-2xl p-4 flex items-start gap-3">
-                                    <Lock className="w-4 h-4 text-violet-500 shrink-0 mt-0.5" />
-                                    <p className="text-xs text-violet-700 leading-relaxed">
-                                        <span className="font-black">How releases work:</span> After your lock period ends, click &quot;Request Release&quot;.
-                                        The admin will verify and transfer your staked tokens + rewards back to your wallet within 24 hours.
-                                    </p>
-                                </div>
-                            </motion.div>
-                        )}
-                        {activeTab === 'futures' && (
-                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                                <div className="flex items-center justify-between mb-5">
-                                    <h2 className="text-xl font-black text-gray-900 flex items-center gap-2">
-                                        <Activity className="w-5 h-5 text-sky-500" /> Futures Positions
-                                        <span className="ml-1 text-sm font-bold text-gray-400 bg-black/5 px-2 py-0.5 rounded-full">{futuresPositions.length}</span>
-                                    </h2>
-                                    <Link href="/exchange?mode=pro" className="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition-all">
-                                        Trade Pro Futures
-                                    </Link>
-                                </div>
-
-                                <div className="bg-white border border-black/8 rounded-[2rem] shadow-sm p-4 md:p-6 overflow-hidden">
-                                    <div className="grid grid-cols-6 text-[9px] font-bold text-gray-400 uppercase tracking-widest p-4 bg-gray-50 rounded-2xl mb-2 items-center">
-                                        <div>Time</div>
-                                        <div>Pair</div>
-                                        <div>Type / Side</div>
-                                        <div>Entry Price</div>
-                                        <div className="text-right">Amount / PNL</div>
-                                        <div className="text-right">Action</div>
-                                    </div>
-                                    <div className="space-y-3">
-                                        {futuresPositions.length > 0 ? (
-                                            futuresPositions.map((pos) => (
-                                                <div key={pos.id} className={`grid grid-cols-6 text-[10px] font-black text-gray-900 uppercase tracking-widest p-6 border rounded-[2rem] items-center shadow-sm transition-all hover:shadow-md ${pos.side === 'long' ? 'border-sky-500/20 bg-sky-500/5' : 'border-blue-500/20 bg-blue-500/5'}`}>
-                                                    <div className="text-gray-400 text-[9px] font-mono">{pos.time || 'NOW'}</div>
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 bg-white rounded-xl shadow-inner p-1.5 flex items-center justify-center border border-black/5">
-                                                            <img src={pos.image || 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png'} className="w-full h-full object-contain rounded" />
-                                                        </div>
-                                                        <span className="tracking-tighter">{pos.tokenSymbol || 'BTC'}/BNB</span>
-                                                    </div>
-                                                    <div>
-                                                        <span className={`${pos.side === 'long' ? 'bg-sky-500 text-white' : 'bg-blue-500 text-white'} px-4 py-1.5 rounded-full text-[8px] border-2 border-white/50 shadow-sm`}>{pos.side} {pos.leverage}x</span>
-                                                    </div>
-                                                    <div className="font-mono text-gray-900 font-bold">${Number(pos.entryPrice || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                                                    <div className={`text-right font-mono ${pos.side === 'long' ? 'text-sky-600' : 'text-blue-600'}`}>
-                                                        {parseFloat(pos.size || 0).toFixed(4)} BNB 
-                                                        <span className="block text-[8px] font-black mt-1 text-gray-400 uppercase tracking-widest">VOL</span>
-                                                    </div>
-                                                    <div className="flex justify-end">
-                                                        <button 
-                                                            disabled={closingPositionId === pos.id}
-                                                            onClick={() => closeFuturesPosition(pos.id)} 
-                                                            className={`min-w-[100px] px-3 py-1.5 bg-white border hover:bg-black/5 rounded-lg transition-colors text-[9px] flex items-center justify-center gap-1.5 ${pos.side === 'long' ? 'border-sky-200 text-sky-600' : 'border-blue-200 text-blue-600'} disabled:opacity-50`}
-                                                        >
-                                                            {closingPositionId === pos.id ? (
-                                                                <><Loader2 className="w-3 h-3 animate-spin" /> Settling...</>
-                                                            ) : 'Close Position'}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="flex-1 flex flex-col items-center justify-center text-center opacity-50 pt-16 pb-12">
-                                                <History className="w-8 h-8 text-gray-300 mb-3" />
-                                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">No Active Trades Found</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
-                        {activeTab === 'history' && (
-                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-8">
-                                {/* Aggregate Professional Stats */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    <div className="bg-white border p-8 rounded-[2rem] shadow-sm">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Total Volume</p>
-                                        <p className="text-3xl font-black text-gray-900">{parseFloat(tradingStats?.total_volume_bnb || 0).toFixed(4)} BNB</p>
-                                    </div>
-                                    <div className="bg-white border p-8 rounded-[2rem] shadow-sm">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Net Profit / Loss</p>
-                                        <p className={`text-3xl font-black ${(tradingStats?.total_pnl_bnb || 0) >= 0 ? 'text-sky-500' : 'text-blue-500'}`}>
-                                            {(tradingStats?.total_pnl_bnb || 0) >= 0 ? '+' : ''}{parseFloat(tradingStats?.total_pnl_bnb || 0).toFixed(4)} BNB
-                                        </p>
-                                    </div>
-                                    <div className="bg-white border p-8 rounded-[2rem] shadow-sm">
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Performance Score</p>
-                                        <div className="flex items-center gap-2">
-                                            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                                                <div className="h-full bg-indigo-600" style={{ width: '65%' }} />
-                                            </div>
-                                            <span className="text-sm font-black text-indigo-600">65/100</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                                    {/* PnL Calendar (Left) */}
-                                    <div className="lg:col-span-12 xl:col-span-5 space-y-6">
-                                        <div className="bg-[#1e1b4b] border border-indigo-900 rounded-[2.5rem] p-8 shadow-2xl">
-                                            <div className="flex items-center justify-between mb-8">
-                                                <h3 className="text-white font-black uppercase text-sm tracking-widest">PnL Heatmap</h3>
-                                                <div className="flex gap-2">
-                                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-sky-500 rounded-sm" /><span className="text-[8px] text-gray-400 font-bold uppercase">Profit</span></div>
-                                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-blue-500 rounded-sm" /><span className="text-[8px] text-gray-400 font-bold uppercase">Loss</span></div>
-                                                    <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-[#1e1b4b] border border-white/20 rounded-sm" /><span className="text-[8px] text-gray-400 font-bold uppercase">No Trade</span></div>
-                                                </div>
-                                            </div>
-                                            <div className="grid grid-cols-7 gap-3">
-                                                {['S','M','T','W','T','F','S'].map((d, idx) => (
-                                                    <div key={idx} className="text-center text-[10px] font-black text-gray-500 pb-2">{d}</div>
-                                                ))}
-                                                {(() => {
-                                                    const today = new Date();
-                                                    const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-                                                    const dailyPnL = {};
-                                                    tradeHistory.forEach(t => {
-                                                        const key = new Date(t.timestamp).toDateString();
-                                                        dailyPnL[key] = (dailyPnL[key] || 0) + (parseFloat(t.pnl_bnb) || 0);
-                                                    });
-
-                                                    const days = [];
-                                                    for(let i=1; i<=daysInMonth; i++) {
-                                                        const d = new Date(today.getFullYear(), today.getMonth(), i);
-                                                        const key = d.toDateString();
-                                                        const pnl = dailyPnL[key];
-                                                        const hasTrade = dailyPnL.hasOwnProperty(key);
-                                                        days.push({ day: i, pnl, hasTrade });
-                                                    }
-                                                    return days.map((d, i) => (
-                                                        <div key={i} className={`aspect-square rounded-xl flex flex-col items-center justify-center border transition-all ${
-                                                            d.hasTrade ? (d.pnl > 0 ? 'bg-sky-500 border-sky-400 text-white' : 'bg-blue-500 border-blue-400 text-white') : 'bg-[#1e1b4b] border-white/5 text-gray-500'
-                                                        }`}>
-                                                            <span className="text-[10px] font-black">{d.day}</span>
-                                                            {d.hasTrade && <span className="text-[7px] font-bold mt-0.5">{d.pnl > 0 ? '+' : ''}{d.pnl === 0 ? '0' : d.pnl.toFixed(4)}</span>}
-                                                        </div>
-                                                    ));
-                                                })()}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* History Ledger (Full Audit Table) */}
-                                    <div className="lg:col-span-12">
-                                        <div className="bg-white border rounded-[2.5rem] p-10 shadow-sm overflow-hidden">
-                                            <div className="flex items-center justify-between mb-8">
-                                                <div>
-                                                    <h3 className="text-gray-900 font-black uppercase text-sm tracking-widest">Institutional Trading Ledger</h3>
-                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">Full transaction history for: {account}</p>
-                                                </div>
-                                                <button onClick={() => {
-                                                    axios.get(`${API_URL}/wallets/stats/${account}`).then(r => setTradingStats(r.data));
-                                                    axios.get(`${API_URL}/wallets/trades/${account}`).then(r => setTradeHistory(r.data));
-                                                }} className="p-3 hover:bg-gray-50 rounded-xl transition-colors text-indigo-500"><Activity className="w-5 h-5" /></button>
-                                            </div>
-                                            
-                                            <div className="overflow-x-auto">
-                                                <table className="w-full">
-                                                            <thead className="sticky top-0 bg-white z-20">
-                                                                <tr className="border-b border-gray-100">
-                                                                    <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4">No.</th>
-                                                                    <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Action / Pair</th>
-                                                                    <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Status / Outcome</th>
-                                                                    <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Quantity</th>
-                                                                    <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Value (BNB)</th>
-                                                                    <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Realized PnL</th>
-                                                                    <th className="pb-6 text-left text-[10px] font-black text-gray-400 uppercase tracking-widest">Date & Time</th>
-                                                                    <th className="pb-6 text-right text-[10px] font-black text-gray-400 uppercase tracking-widest pr-4">Tx Hash</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y divide-gray-50">
-                                                                {tradeHistory.map((t, idx) => (
-                                                                    <tr key={idx} className="hover:bg-gray-50/50 transition-colors group">
-                                                                        <td className="py-6 pl-4 text-xs font-black text-gray-300">{(idx + 1).toString().padStart(2, '0')}</td>
-                                                                        <td className="py-6">
-                                                                            <div className="flex items-center gap-3">
-                                                                                <div className="w-10 h-10 rounded-xl bg-gray-50 border border-black/5 p-2 flex items-center justify-center shrink-0">
-                                                                                    {t.token_logo ? (
-                                                                                        <img src={t.token_logo} className="w-full h-full object-contain rounded" />
-                                                                                    ) : (
-                                                                                        t.trade_type?.toLowerCase().includes('perpetual') ? <Activity className="w-5 h-5 text-indigo-500" /> : <Rocket className="w-5 h-5 text-indigo-500" />
-                                                                                    )}
-                                                                                </div>
-                                                                                <div>
-                                                                                    <p className="font-black text-gray-900 text-[11px] uppercase tracking-tighter">{t.token_symbol || (t.trade_type?.toLowerCase().includes('perpetual') ? 'NEXUS-X' : 'UNIDENTIFIED')}</p>
-                                                                                    <p className="text-[7px] text-gray-400 font-bold uppercase tracking-[0.2em]">{t.token_name || 'Protocol-Index Asset'}</p>
-                                                                                </div>
-                                                                            </div>
-                                                                        </td>
-                                                                        <td className="py-6">
-                                                                            <div className="flex flex-col gap-1">
-                                                                                <span className={`text-[9px] font-black px-2 py-1 rounded-md border uppercase tracking-tighter inline-block w-fit ${
-                                                                                    t.trade_type?.includes('Buy') ? 'text-sky-600 bg-sky-50 border-sky-100' :
-                                                                                    t.trade_type?.includes('Sell') ? 'text-blue-600 bg-blue-50 border-blue-100' :
-                                                                                    'text-indigo-600 bg-indigo-50 border-indigo-100'
-                                                                                }`}>
-                                                                                    {t.trade_type || 'Swap Completed'}
-                                                                                </span>
-                                                                                <div className="flex items-center gap-1">
-                                                                                    <div className="w-1 h-1 bg-sky-500 rounded-full" />
-                                                                                    <span className="text-[7px] font-black text-sky-500 uppercase tracking-widest">Verified Hub</span>
-                                                                                </div>
-                                                                            </div>
-                                                                        </td>
-                                                                        <td className="py-6">
-                                                                            <p className="text-xs font-black text-gray-900 font-mono">
-                                                                                {parseFloat(t.amount_tokens || 0).toLocaleString()} 
-                                                                                <span className="text-[8px] text-gray-400 ml-1">UNITS</span>
-                                                                            </p>
-                                                                        </td>
-                                                                        <td className="py-6 font-mono text-xs font-bold text-gray-600">
-                                                                            {parseFloat(t.amount_bnb || 0).toFixed(6)}
-                                                                            <span className="text-[8px] text-gray-400 ml-1">BNB</span>
-                                                                        </td>
-                                                                        <td className="py-6">
-                                                                            <p className={`text-xs font-black ${(t.pnl_bnb || 0) > 0 ? 'text-sky-500' : (t.pnl_bnb || 0) < 0 ? 'text-blue-500' : 'text-gray-400'}`}>
-                                                                                {(t.pnl_bnb || 0) > 0 ? '+' : ''}{parseFloat(t.pnl_bnb || 0).toFixed(6)}
-                                                                            </p>
-                                                                        </td>
-                                                                        <td className="py-6 text-[10px] font-bold text-gray-500 uppercase tracking-tighter shrink-0">
-                                                                            {new Date(t.timestamp).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}<br/>
-                                                                            <span className="text-[8px] opacity-60">{new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                                        </td>
-                                                                        <td className="py-6 text-right pr-4">
-                                                                            <a href={`https://bscscan.com/tx/${t.tx_hash}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-500 hover:text-indigo-600">
-                                                                                {t.tx_hash?.slice(0, 6)}...{t.tx_hash?.slice(-4)}
-                                                                                <ExternalLink className="w-3 h-3" />
-                                                                            </a>
-                                                                        </td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                </table>
-                                                {tradeHistory.length === 0 && (
-                                                    <div className="flex flex-col items-center justify-center py-20 text-center opacity-50">
-                                                        <Clock className="w-12 h-12 text-gray-300 mb-4" />
-                                                        <p className="text-sm font-black text-gray-400 uppercase tracking-[0.2em]">Personal History Node Empty</p>
-                                                        <p className="text-[10px] text-gray-400 mt-2">Any future settlements or swaps will be synchronized here from the blockchain.</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
-                        {activeTab === 'mexmoney' && (
-                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-8 pb-20">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h2 className="text-xl font-black text-gray-900 flex items-center gap-2 uppercase tracking-tighter italic">
-                                            <CreditCard className="w-6 h-6 text-teal-500" /> Mex Money <span className="text-teal-500">History</span>
-                                            <span className="ml-1 text-sm font-bold text-gray-400 bg-black/5 px-3 py-1 rounded-full">{fiatHistory.length}</span>
-                                        </h2>
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Fiat-to-Crypto institutional ledger</p>
-                                    </div>
-                                    <Link href="/fiat" className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-teal-500/20 flex items-center gap-2">
-                                        <PlusCircle className="w-4 h-4" /> New Buy/Sell
-                                    </Link>
-                                </div>
-
-                                <div className="bg-white border border-black/8 rounded-[2.5rem] shadow-sm overflow-hidden">
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-left border-separate border-spacing-y-2 px-6 pb-6">
-                                            <thead>
-                                                <tr className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">
-                                                    <th className="py-6 px-4">Transaction ID</th>
-                                                    <th className="py-6 px-4">Type</th>
-                                                    <th className="py-6 px-4">Asset / Amount</th>
-                                                    <th className="py-6 px-4">Value (INR)</th>
-                                                    <th className="py-6 px-4">Status</th>
-                                                    <th className="py-6 px-4 text-right">Date</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {fiatHistory.map((tx, idx) => (
-                                                    <tr key={tx.id} className="bg-black/[0.02] hover:bg-white hover:shadow-lg hover:border-teal-100 border border-transparent transition-all rounded-2xl group">
-                                                        <td className="py-5 px-4 first:rounded-l-2xl">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="text-[10px] font-black text-gray-400">#{(idx + 1).toString().padStart(3, '0')}</span>
-                                                                <span className="text-xs font-mono font-bold text-gray-700">{tx.id.toString().slice(-6)}</span>
-                                                            </div>
-                                                        </td>
-                                                        <td className="py-5 px-4">
-                                                            <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
-                                                                tx.type === 'BUY' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'
-                                                            }`}>
-                                                                {tx.type}
-                                                            </span>
-                                                        </td>
-                                                        <td className="py-5 px-4">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-6 h-6 rounded-full bg-white border border-black/5 flex items-center justify-center text-[10px]">
-                                                                    {tx.asset === 'USDT' ? '💵' : '🪙'}
-                                                                </div>
-                                                                <span className="text-xs font-black text-gray-900">{tx.amount} {tx.asset}</span>
-                                                            </div>
-                                                        </td>
-                                                        <td className="py-5 px-4">
-                                                            <span className="text-xs font-black text-gray-900">₹{tx.inr_amount?.toLocaleString()}</span>
-                                                        </td>
-                                                        <td className="py-5 px-4">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className={`w-2 h-2 rounded-full ${
-                                                                    tx.status === 'COMPLETED' ? 'bg-emerald-500' : 
-                                                                    tx.status === 'REJECTED' ? 'bg-rose-500' : 'bg-amber-500'
-                                                                }`} />
-                                                                <span className="text-[10px] font-black text-gray-700 uppercase tracking-tight">{tx.status}</span>
-                                                            </div>
-                                                        </td>
-                                                        <td className="py-5 px-4 last:rounded-r-2xl text-right">
-                                                            <span className="text-[10px] font-bold text-gray-400 uppercase">{new Date(tx.timestamp).toLocaleDateString()}</span>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                        {fiatHistory.length === 0 && (
-                                            <div className="py-20 text-center">
-                                                <div className="w-16 h-16 bg-teal-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                                    <CreditCard className="w-8 h-8 text-teal-400" />
-                                                </div>
-                                                <p className="text-sm font-black text-gray-400 uppercase tracking-widest">No Fiat Transactions Yet</p>
-                                                <p className="text-[10px] text-gray-400 mt-2">Your Buy/Sell history for Mex Money will appear here.</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </motion.div>
-                        )}
-                        {activeTab === 'smartmoney' && (
-                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                                <div className="flex items-center justify-between mb-8">
-                                    <div>
-                                        <h2 className="text-xl font-black text-gray-900 flex items-center gap-2 uppercase tracking-tighter italic">
-                                            <TrendingUp className="w-6 h-6 text-indigo-500" /> Strategic Hub <span className="text-indigo-500">Portfolio</span>
-                                            <span className="ml-1 text-sm font-bold text-gray-400 bg-black/5 px-3 py-1 rounded-full">{smartMoneyInvestments.length}</span>
-                                        </h2>
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Institutional weighting deployment history</p>
-                                    </div>
-                                    <Link href="/exchange" className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-indigo-500/20 flex items-center gap-2">
-                                        <TrendingUp className="w-4 h-4" /> Invest More
-                                    </Link>
-                                </div>
-
-                                {loadingSmartMoney ? (
-                                    <div className="flex flex-col items-center justify-center py-24 gap-4">
-                                        <Loader2 className="w-10 h-10 text-indigo-500 animate-spin" />
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Retrieving Strategy Data...</p>
-                                    </div>
-                                ) : smartMoneyInvestments.length === 0 ? (
-                                    <div className="bg-white border border-black/8 rounded-[3rem] p-20 text-center shadow-sm relative overflow-hidden backdrop-blur-xl">
-                                         <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-transparent pointer-events-none" />
-                                        <div className="w-24 h-24 rounded-[2rem] bg-indigo-50 flex items-center justify-center mx-auto mb-8 shadow-inner ring-4 ring-indigo-50/50 relative z-10">
-                                            <TrendingUp className="w-10 h-10 text-indigo-400" />
-                                        </div>
-                                        <h3 className="text-2xl font-black text-gray-900 mb-2 uppercase italic relative z-10">No Strategic Deployments</h3>
-                                        <p className="text-xs text-gray-500 font-bold max-w-sm mx-auto mb-10 leading-relaxed uppercase tracking-widest opacity-60 relative z-10">
-                                            You haven't deployed capital into the B20 Smart Money indices yet. Start building your weighted institutional portfolio today.
-                                        </p>
-                                        <Link href="/exchange" className="relative z-10 inline-flex items-center gap-3 px-10 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest transition-all shadow-2xl shadow-indigo-500/30">
-                                            <TrendingUp className="w-4 h-4" /> Go to Smart Money Hub
-                                        </Link>
-                                    </div>
-                                ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
-                                        {smartMoneyInvestments.map((inv, idx) => (
-                                            <motion.div
-                                                key={inv.id}
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: idx * 0.05 }}
-                                                className="bg-white border border-black/5 rounded-[2.5rem] p-8 shadow-sm hover:shadow-xl hover:border-indigo-500/20 transition-all group overflow-hidden relative"
-                                            >
-                                                <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:scale-110 transition-transform">
-                                                    <TrendingUp className="w-24 h-24 text-indigo-600" />
-                                                </div>
-                                                
-                                                <div className="flex items-center justify-between mb-8 relative z-10">
-                                                    <div className="space-y-1">
-                                                        <div className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-2">
-                                                            Institutional Alpha Index
-                                                        </div>
-                                                        <h4 className="text-2xl font-black text-gray-900 uppercase tracking-tighter italic">{inv.bucket_name}</h4>
-                                                    </div>
-                                                    <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center border border-indigo-100 shadow-sm">
-                                                        <TrendingUp className="w-6 h-6 text-indigo-600" />
-                                                    </div>
-                                                </div>
-
-                                                <div className="space-y-2 mb-8 bg-gray-50/30 p-4 rounded-3xl border border-black/3">
-                                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-3 ml-2">Bucket Composition</p>
-                                                    <div className="flex flex-wrap gap-4">
-                                                        {(() => {
-                                                            try {
-                                                                const parsed = typeof inv.bucket_json === 'string' ? JSON.parse(inv.bucket_json) : inv.bucket_json;
-                                                                return Array.isArray(parsed) ? parsed : [parsed];
-                                                            } catch (e) {
-                                                                return [];
-                                                            }
-                                                        })().map((token, idx) => (
-                                                            <div key={token.symbol} className="flex items-center gap-3 px-5 py-2.5 bg-white border border-black/5 rounded-[1.5rem] shadow-sm group/token hover:border-indigo-200 transition-all">
-                                                                <div className="w-8 h-8 rounded-xl bg-gray-50 p-1.5 border border-black/5 shrink-0">
-                                                                     <img src={token.image} className="w-full h-full object-contain" alt="" />
-                                                                </div>
-                                                                <div>
-                                                                    <div className="flex items-center gap-2">
-                                                                        <span className="text-[10px] font-black text-gray-900 uppercase">{token.symbol}</span>
-                                                                        <span className="text-[8px] font-black text-indigo-500 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-100 italic">14.28%</span>
-                                                                    </div>
-                                                                    <p className="text-[8px] font-bold text-gray-400 font-mono truncate max-w-[100px]">{token.address}</p>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-
-                                                <div className="grid grid-cols-2 gap-4 mb-8 relative z-10">
-                                                    <div className="bg-black/3 rounded-2xl p-5 border border-black/5">
-                                                        <div className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Total Invested</div>
-                                                        <div className="text-2xl font-black text-gray-900 leading-none">${parseFloat(inv.invest_amount).toFixed(2)}</div>
-                                                        <div className="text-[9px] font-bold text-gray-400 mt-2 uppercase">USDT (BSC Mainnet)</div>
-                                                    </div>
-                                                    <div className="bg-black/3 rounded-2xl p-5 border border-black/5">
-                                                        <div className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Deployed At</div>
-                                                        {(() => {
-                                                            const d = inv.timestamp ? new Date(inv.timestamp) : new Date();
-                                                            const vd = isNaN(d.getTime()) ? new Date() : d;
-                                                            return (
-                                                                <>
-                                                                    <div className="text-lg font-black text-gray-900 leading-none">{vd.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</div>
-                                                                    <div className="text-[9px] font-bold text-gray-400 mt-2 uppercase">{vd.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
-                                                                </>
-                                                            );
-                                                        })()}
-                                                    </div>
-                                                </div>
-
-                                                <div className="flex items-center justify-between bg-sky-50/50 border border-sky-100 rounded-2xl px-6 py-4 relative z-10">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
-                                                        <span className="text-[10px] font-black text-sky-700 uppercase tracking-widest">Self-Custodial Sync</span>
-                                                    </div>
-                                                    {inv.tx_hash && (
-                                                        <a href={`https://bscscan.com/tx/${inv.tx_hash}`} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black text-indigo-600 border-b border-indigo-200 uppercase tracking-widest hover:text-indigo-700 transition-colors">
-                                                            View Transaction
-                                                        </a>
-                                                    )}
-                                                </div>
-                                            </motion.div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {filteredTokens.map(t => (
+                                            <TokenCard key={t.contract_address} token={t} account={account} />
                                         ))}
                                     </div>
                                 )}
                             </motion.div>
                         )}
+
+                        {/* TAB CONTENT: YIELD */}
                         {activeTab === 'yield' && (
-                            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-                                <div className="flex items-center justify-between mb-8">
-                                    <div>
-                                        <h2 className="text-xl font-black text-gray-900 flex items-center gap-2 uppercase tracking-tighter italic">
-                                            <Leaf className="w-6 h-6 text-sky-500" /> Yield Intelligence <span className="text-sky-500">Vaults</span>
-                                            <span className="ml-1 text-sm font-bold text-gray-400 bg-black/5 px-3 py-1 rounded-full">{yieldInvestments.length}</span>
-                                        </h2>
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Institutional yield deployment ledger</p>
-                                    </div>
-                                    <Link href="/exchange" className="px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-xl shadow-sky-500/20 flex items-center gap-2">
-                                        <Leaf className="w-4 h-4" /> Deploy More
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-2xl font-black uppercase tracking-tighter italic">Yield <span className="text-sky-500">Intelligence</span></h2>
+                                    <Link href="/exchange" className="px-6 py-2.5 bg-sky-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl flex items-center gap-2 shadow-lg shadow-sky-600/20">
+                                        <PlusCircle className="w-4 h-4" /> Deploy More
                                     </Link>
                                 </div>
 
                                 {loadingYield ? (
-                                    <div className="flex flex-col items-center justify-center py-24 gap-4">
-                                        <Loader2 className="w-10 h-10 text-sky-500 animate-spin" />
-                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Synchronizing Vault Data...</p>
+                                    <div className="py-24 text-center">
+                                        <Loader2 className="w-10 h-10 text-sky-500 animate-spin mx-auto mb-4" />
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Accessing Vault Data...</p>
                                     </div>
                                 ) : yieldInvestments.length === 0 ? (
-                                    <div className="bg-white border border-black/8 rounded-[3rem] p-20 text-center shadow-sm relative overflow-hidden backdrop-blur-xl">
-                                         <div className="absolute inset-0 bg-gradient-to-br from-sky-50/50 to-transparent pointer-events-none" />
-                                        <div className="w-24 h-24 rounded-[2rem] bg-sky-50 flex items-center justify-center mx-auto mb-8 shadow-inner ring-4 ring-sky-50/50 relative z-10">
-                                            <Leaf className="w-10 h-10 text-sky-400" />
-                                        </div>
-                                        <h3 className="text-2xl font-black text-gray-900 mb-2 uppercase italic relative z-10">No Active Deployments</h3>
-                                        <p className="text-xs text-gray-500 font-bold max-w-sm mx-auto mb-10 leading-relaxed uppercase tracking-widest opacity-60 relative z-10">
-                                            You haven't deployed capital into institutional yield vaults. Start earning sustainable APY with Mexapay intelligence.
-                                        </p>
-                                        <Link href="/exchange" className="relative z-10 inline-flex items-center gap-3 px-10 py-4 bg-sky-600 hover:bg-sky-700 text-white font-black rounded-2xl text-[10px] uppercase tracking-widest transition-all shadow-2xl shadow-sky-500/30">
-                                            <Leaf className="w-4 h-4" /> Explore Yield Vaults
-                                        </Link>
+                                    <div className="bg-white border border-black/5 rounded-[3rem] p-20 text-center shadow-sm">
+                                        <Leaf className="w-16 h-16 text-gray-200 mx-auto mb-6" />
+                                        <h3 className="text-xl font-black text-gray-400 uppercase tracking-widest mb-4">No Yield Deployments</h3>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-8">Deploy capital into institutional vaults to earn sustainable APY</p>
+                                        <Link href="/exchange" className="inline-flex items-center gap-2 px-8 py-3 bg-sky-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest shadow-xl shadow-sky-600/20">Explore Yield Vaults</Link>
                                     </div>
                                 ) : (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         {yieldInvestments.map((inv, idx) => {
-                                             if (!inv) return null;
-                                             
-                                             // Safe Date Parsing
-                                             const nowTime = now ? now.getTime() : Date.now();
-                                             const startRaw = inv.timestamp ? new Date(inv.timestamp) : new Date(nowTime);
-                                             const validStart = isNaN(startRaw.getTime()) ? new Date(nowTime) : startRaw;
-                                             
-                                             const diffTime = Math.abs(nowTime - validStart.getTime());
-                                             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                                             
-                                             // Safe Progress Calculation
-                                             let rawProgress = (diffDays / 365) * 100;
-                                             if (isNaN(rawProgress)) rawProgress = 0;
-                                             const progressPercent = Math.max(0, Math.min(100, rawProgress));
-                                             
-                                             // Safe Financial Calculations
-                                             const cap = parseFloat(inv.amount_usdt || 0) || 0;
-                                             const apy = parseFloat(inv.apy_percentage || 0) || 0;
-                                             const expectedYield = (cap * apy / 100);
-                                             const expectedTotal = cap + expectedYield;
-                                             const accrued = parseFloat(inv.total_accrued || 0) || 0;
-                                             const dailyYield = parseFloat(inv.daily_yield || 0) || 0;
+                                            if (!inv) return null;
+                                            const start = inv.timestamp ? new Date(inv.timestamp) : new Date();
+                                            const daysDiff = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+                                            const progress = Math.min(100, (daysDiff / 365) * 100);
+                                            const principal = parseFloat(inv.amount_usdt) || 0;
+                                            const apy = parseFloat(inv.apy_percentage) || 0;
+                                            const accrued = parseFloat(inv.total_accrued) || 0;
 
-                                             return (
-                                                 <motion.div
-                                                     key={inv.id || idx}
-                                                     initial={{ opacity: 0, y: 10 }}
-                                                     animate={{ opacity: 1, y: 0 }}
-                                                     transition={{ delay: idx * 0.05 }}
-                                                     className="bg-white border border-black/5 rounded-[3rem] p-10 shadow-sm hover:shadow-2xl hover:border-sky-500/20 transition-all group overflow-hidden relative"
-                                                 >
-                                                     <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:scale-110 transition-transform">
-                                                         <div className="flex gap-2">
-                                                             <Leaf className="w-24 h-24 text-sky-600 rotate-[-15deg]" />
-                                                             <Leaf className="w-24 h-24 text-sky-600 rotate-[15deg] mt-8" />
-                                                         </div>
-                                                     </div>
-                                                     
-                                                     <div className="flex items-start justify-between mb-10 relative z-10">
-                                                         <div className="space-y-1">
-                                                             <div className="text-[10px] font-black text-sky-600 uppercase tracking-[0.2em] flex items-center gap-2 mb-2">
-                                                                 <Leaf className="w-3 h-3" /> Yielding Institutional Protocol
-                                                             </div>
-                                                             <h4 className="text-3xl font-black text-gray-900 uppercase tracking-tighter italic leading-none">{inv.protocol_name || 'Yield Vault'}</h4>
-                                                             <div className="flex items-center gap-4 mt-4">
-                                                                 <div>
-                                                                     <p className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Deposit Wallet</p>
-                                                                     <p className="text-[9px] font-mono font-bold text-gray-600">
-                                                                        {inv.wallet_address ? `${inv.wallet_address.slice(0,6)}...${inv.wallet_address.slice(-4)}` : '0x...0000'}
-                                                                     </p>
-                                                                 </div>
-                                                                 <div className="w-px h-6 bg-gray-100" />
-                                                                 <div>
-                                                                     <p className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Investment Date</p>
-                                                                     <p className="text-[9px] font-bold text-gray-600">
-                                                                        {validStart.toLocaleDateString()} {validStart.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                                                                     </p>
-                                                                 </div>
-                                                             </div>
-                                                         </div>
-                                                         <div className="w-16 h-16 bg-sky-50 rounded-[1.5rem] flex items-center justify-center border border-sky-100 shadow-inner">
-                                                            <div className="text-center">
-                                                                <p className="text-[7px] font-black text-sky-600 uppercase">APY</p>
-                                                                <p className="text-sm font-black text-gray-900">{apy}%</p>
-                                                            </div>
-                                                         </div>
-                                                     </div>
+                                            return (
+                                                <div key={inv.id || idx} className="bg-white border border-black/5 rounded-[2.5rem] p-8 shadow-sm group relative overflow-hidden">
+                                                    <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:scale-110 transition-transform">
+                                                        <Leaf className="w-20 h-20 text-sky-600" />
+                                                    </div>
+                                                    <div className="flex items-start justify-between mb-8">
+                                                        <div>
+                                                            <div className="text-[8px] font-black text-sky-600 uppercase tracking-[0.2em] mb-2 flex items-center gap-1.5"><Leaf className="w-3 h-3" /> Institutional Yield</div>
+                                                            <h4 className="text-2xl font-black text-gray-900 uppercase tracking-tighter">{inv.protocol_name || 'Yield Vault'}</h4>
+                                                            <p className="text-[9px] font-mono text-gray-400 font-bold mt-1">{truncate(inv.wallet_address, 8)}</p>
+                                                        </div>
+                                                        <div className="w-14 h-14 bg-sky-50 rounded-2xl flex flex-col items-center justify-center border border-sky-100">
+                                                            <span className="text-[7px] font-black text-sky-600 uppercase">APY</span>
+                                                            <span className="text-sm font-black text-gray-900">{apy}%</span>
+                                                        </div>
+                                                    </div>
 
-                                                     <div className="grid grid-cols-2 gap-4 mb-6 relative z-10">
-                                                         <div className="bg-black/[0.02] rounded-3xl p-6 border border-black/5">
-                                                             <div className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Principal Capital</div>
-                                                             <div className="text-3xl font-black text-gray-900 leading-none">${cap.toFixed(2)}</div>
-                                                             <div className="text-[10px] font-bold text-gray-400 mt-2 uppercase">USDT Institutional Pool</div>
-                                                         </div>
-                                                         <div className="bg-black/[0.02] rounded-3xl p-6 border border-black/5">
-                                                             <div className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Target APY</div>
-                                                             <div className="text-3xl font-black text-sky-600 leading-none">{apy}%</div>
-                                                             <div className="text-[10px] font-bold text-gray-400 mt-2 uppercase">Guaranteed Annual Rate</div>
-                                                         </div>
-                                                     </div>
+                                                    <div className="grid grid-cols-2 gap-4 mb-8">
+                                                        <div className="bg-gray-50 rounded-2xl p-5 border border-black/5">
+                                                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Principal</p>
+                                                            <p className="text-2xl font-black text-gray-900">${principal.toFixed(2)}</p>
+                                                        </div>
+                                                        <div className="bg-gray-50 rounded-2xl p-5 border border-black/5">
+                                                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Accrued Yield</p>
+                                                            <p className="text-2xl font-black text-sky-600">${accrued.toFixed(4)}</p>
+                                                        </div>
+                                                    </div>
 
-                                                     <div className="grid grid-cols-3 gap-3 mb-8 relative z-10">
-                                                         <div className="bg-sky-50/40 rounded-2xl p-5 border border-sky-100/50">
-                                                             <div className="text-[7px] font-black text-sky-600 uppercase tracking-widest mb-1">Daily Accrual</div>
-                                                             <div className="text-sm font-black text-gray-900">${dailyYield.toFixed(4)}</div>
-                                                         </div>
-                                                         <div className="bg-emerald-50/40 rounded-2xl p-5 border border-emerald-100/50">
-                                                             <div className="text-[7px] font-black text-emerald-600 uppercase tracking-widest mb-1">Actual Interest</div>
-                                                             <div className="text-sm font-black text-emerald-600">${accrued.toFixed(4)}</div>
-                                                         </div>
-                                                         <div className="bg-indigo-50/40 rounded-2xl p-5 border border-indigo-100/50">
-                                                             <div className="text-[7px] font-black text-indigo-600 uppercase tracking-widest mb-1">365D Deadline</div>
-                                                             <div className="text-sm font-black text-gray-900">{inv.deadline ? new Date(inv.deadline).toLocaleDateString() : '365 Days From Start'}</div>
-                                                         </div>
-                                                     </div>
+                                                    <div className="mb-8">
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">365-Day Institutional Lock</span>
+                                                            <span className="text-[9px] font-black text-sky-600 uppercase tracking-widest">{progress.toFixed(1)}%</span>
+                                                        </div>
+                                                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                                            <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }} className="h-full bg-sky-500 rounded-full" />
+                                                        </div>
+                                                    </div>
 
-                                                     {/* Lock-in Progress Bar */}
-                                                     <div className="mb-10 relative z-10">
-                                                         <div className="flex items-center justify-between mb-2">
-                                                             <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">365-Day Institutional Lock-in Progress</span>
-                                                             <span className="text-[9px] font-black text-sky-600 uppercase tracking-widest">{progressPercent.toFixed(2)}% Completed</span>
-                                                         </div>
-                                                         <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden p-0.5">
-                                                             <motion.div 
-                                                                 initial={{ width: 0 }}
-                                                                 animate={{ width: `${progressPercent}%` }}
-                                                                 className="h-full bg-gradient-to-r from-sky-400 to-sky-600 rounded-full shadow-sm"
-                                                             />
-                                                         </div>
-                                                     </div>
-  
-                                                     <div className="grid grid-cols-2 gap-4 mb-8">
-                                                         <div className="bg-slate-900 rounded-[2rem] p-6 shadow-xl shadow-slate-200">
-                                                             <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Current Value (Cap+Int)</p>
-                                                             <h5 className="text-2xl font-black text-white italic tracking-tighter">${(cap + accrued).toFixed(4)}</h5>
-                                                         </div>
-                                                         <div className="bg-indigo-600 rounded-[2rem] p-6 shadow-xl shadow-indigo-100">
-                                                             <p className="text-[8px] font-black text-indigo-200 uppercase tracking-[0.2em] mb-1">Expected 365D Return</p>
-                                                             <h5 className="text-2xl font-black text-white italic tracking-tighter">${expectedTotal.toFixed(2)}</h5>
-                                                         </div>
-                                                     </div>
-
-                                                     {/* Professional Note */}
-                                                     <div className="mb-8 p-5 bg-amber-50/50 border border-amber-100/50 rounded-2xl flex gap-4 items-start">
-                                                         <Info className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                                                         <p className="text-[10px] font-bold text-amber-800 leading-relaxed uppercase tracking-tight">
-                                                             Note: Upon completion of the 365-day lock-in period, your principal capital and all accrued yield will be automatically safely returned to your deposited address ({inv.wallet_address ? `${inv.wallet_address.slice(0,6)}...${inv.wallet_address.slice(-4)}` : 'Your Wallet'}). This is an automated smart contract process.
-                                                         </p>
-                                                     </div>
-  
-                                                     <div className="flex items-center justify-between relative z-10">
-                                                         <div className="flex items-center gap-6">
-                                                            <div className="flex items-center gap-3 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100">
-                                                                <div className={`w-2 h-2 rounded-full bg-emerald-500 animate-pulse`} />
-                                                                <span className="text-[10px] font-black text-emerald-700 uppercase tracking-widest">{inv.status || 'ACTIVE'}</span>
-                                                            </div>
-                                                            {inv.tx_hash && (
-                                                                <a href={`https://bscscan.com/tx/${inv.tx_hash}`} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black text-sky-600 border-b-2 border-sky-200/50 uppercase tracking-widest hover:text-sky-700 hover:border-sky-500 transition-all">
-                                                                    Audit Ledger
-                                                                </a>
-                                                            )}
-                                                         </div>
-
-                                                         <Link href="/exchange" className="px-8 py-3 bg-gray-900 hover:bg-black text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-gray-900/10 flex items-center gap-2">
-                                                             <Zap className="w-4 h-4 text-amber-400" /> Invest More
-                                                         </Link>
-                                                     </div>
-                                                 </motion.div>
-                                             );
-                                         })}
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                                            <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">ACTIVE DEPLOYMENT</span>
+                                                        </div>
+                                                        {inv.tx_hash && (
+                                                            <a href={`https://bscscan.com/tx/${inv.tx_hash}`} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black text-sky-600 uppercase tracking-widest border-b border-sky-200">Audit Ledger</a>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </motion.div>
                         )}
-                    </>
+
+                        {/* TAB CONTENT: STAKING */}
+                        {activeTab === 'staking' && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+                                <h2 className="text-2xl font-black uppercase tracking-tighter italic">Staking <span className="text-violet-600">Vaults</span></h2>
+                                {loadingStakes ? (
+                                    <div className="py-24 text-center">
+                                        <Loader2 className="w-10 h-10 text-violet-500 animate-spin mx-auto mb-4" />
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Retrieving Stakes...</p>
+                                    </div>
+                                ) : stakes.length === 0 ? (
+                                    <div className="bg-white border border-black/5 rounded-[3rem] p-20 text-center shadow-sm">
+                                        <Lock className="w-16 h-16 text-gray-200 mx-auto mb-6" />
+                                        <h3 className="text-xl font-black text-gray-400 uppercase tracking-widest mb-4">No Stakes Found</h3>
+                                        <Link href="/exchange" className="inline-flex items-center gap-2 px-8 py-3 bg-violet-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest shadow-xl shadow-violet-600/20">Go to Staking Hub</Link>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {stakes.map(stake => (
+                                            <div key={stake.id} className="bg-white border border-black/5 rounded-[2.5rem] p-8 shadow-sm">
+                                                <div className="flex items-center justify-between mb-6">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center border border-violet-100 text-violet-600">
+                                                            <Lock className="w-5 h-5" />
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-black text-gray-900 uppercase">{stake.token_symbol}</p>
+                                                            <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">{stake.pool_name}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <p className="text-[10px] font-black text-violet-600 uppercase">{stake.apy_percentage}% APY</p>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                                    <div>
+                                                        <p className="text-[8px] font-black text-gray-400 uppercase mb-1">Staked</p>
+                                                        <p className="text-lg font-black text-gray-900">{parseFloat(stake.amount_tokens).toFixed(2)}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[8px] font-black text-gray-400 uppercase mb-1">Rewards</p>
+                                                        <p className="text-lg font-black text-emerald-600">+{parseFloat(stake.earned_so_far).toFixed(4)}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="pt-4 border-t border-black/5">
+                                                    <p className="text-[9px] font-black text-gray-400 uppercase mb-2">Status</p>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`w-2 h-2 rounded-full ${stake.status === 'active' ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+                                                        <span className="text-[10px] font-black uppercase text-gray-700">{stake.status}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
+
+                        {/* TAB CONTENT: FUTURES */}
+                        {activeTab === 'futures' && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-2xl font-black uppercase tracking-tighter italic">Prop-Desk <span className="text-blue-600">Positions</span></h2>
+                                    <Link href="/exchange?mode=pro" className="px-6 py-2.5 bg-gray-900 text-white font-black text-[10px] uppercase tracking-widest rounded-xl shadow-xl shadow-gray-900/10">Trade Pro Hub</Link>
+                                </div>
+
+                                {futuresPositions.length === 0 ? (
+                                    <div className="bg-white border border-black/5 rounded-[3rem] p-20 text-center shadow-sm">
+                                        <Activity className="w-16 h-16 text-gray-200 mx-auto mb-6" />
+                                        <h3 className="text-xl font-black text-gray-400 uppercase tracking-widest mb-4">No Active Trades</h3>
+                                        <Link href="/exchange?mode=pro" className="inline-flex items-center gap-2 px-8 py-3 bg-blue-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest shadow-xl shadow-blue-600/20">Open New Position</Link>
+                                    </div>
+                                ) : (
+                                    <div className="bg-white border border-black/5 rounded-[2.5rem] overflow-hidden shadow-sm">
+                                        <table className="w-full">
+                                            <thead className="bg-gray-50 border-b border-black/5">
+                                                <tr className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                                                    <th className="py-6 px-8 text-left">Asset / Side</th>
+                                                    <th className="py-6 px-8 text-left">Entry Price</th>
+                                                    <th className="py-6 px-8 text-left">Size / Leverage</th>
+                                                    <th className="py-6 px-8 text-right">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-50">
+                                                {futuresPositions.map(pos => (
+                                                    <tr key={pos.id} className="hover:bg-gray-50/50 transition-colors">
+                                                        <td className="py-6 px-8">
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="w-10 h-10 rounded-xl bg-white border border-black/5 p-2 flex items-center justify-center">
+                                                                    <img src={pos.image || 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png'} className="w-full h-full object-contain" />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm font-black text-gray-900">{pos.tokenSymbol || 'BTC'}/BNB</p>
+                                                                    <span className={`text-[9px] font-black uppercase tracking-widest ${pos.side === 'long' ? 'text-emerald-500' : 'text-rose-500'}`}>{pos.side}</span>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-6 px-8 font-mono text-sm font-bold text-gray-900">${parseFloat(pos.entryPrice || 0).toLocaleString()}</td>
+                                                        <td className="py-6 px-8">
+                                                            <p className="text-sm font-black text-gray-900">{parseFloat(pos.size || 0).toFixed(4)} BNB</p>
+                                                            <span className="text-[10px] font-black text-blue-500">{pos.leverage}x Leverage</span>
+                                                        </td>
+                                                        <td className="py-6 px-8 text-right">
+                                                            <button 
+                                                                onClick={() => closeFuturesPosition(pos.id)}
+                                                                disabled={closingPositionId === pos.id}
+                                                                className="px-6 py-2 bg-rose-500 hover:bg-rose-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl transition-all disabled:opacity-50"
+                                                            >
+                                                                {closingPositionId === pos.id ? 'SETTLING...' : 'CLOSE'}
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
+
+                        {/* TAB CONTENT: HISTORY */}
+                        {activeTab === 'history' && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+                                <h2 className="text-2xl font-black uppercase tracking-tighter italic">Trading <span className="text-indigo-600">Ledger</span></h2>
+                                {tradeHistory.length === 0 ? (
+                                    <div className="bg-white border border-black/5 rounded-[3rem] p-20 text-center shadow-sm">
+                                        <Clock className="w-16 h-16 text-gray-200 mx-auto mb-6" />
+                                        <h3 className="text-xl font-black text-gray-400 uppercase tracking-widest mb-4">No Transaction History</h3>
+                                        <Link href="/exchange" className="inline-flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-600/20">Start Trading</Link>
+                                    </div>
+                                ) : (
+                                    <div className="bg-white border border-black/5 rounded-[2.5rem] overflow-hidden shadow-sm">
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full">
+                                                <thead className="bg-gray-50 border-b border-black/5">
+                                                    <tr className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                                                        <th className="py-6 px-8 text-left">Action / Asset</th>
+                                                        <th className="py-6 px-8 text-left">Amount / BNB</th>
+                                                        <th className="py-6 px-8 text-left">Realized PnL</th>
+                                                        <th className="py-6 px-8 text-right">Date / Audit</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-50">
+                                                    {tradeHistory.map((t, idx) => (
+                                                        <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
+                                                            <td className="py-6 px-8">
+                                                                <div className="flex items-center gap-4">
+                                                                    <div className="w-8 h-8 rounded-lg bg-white border border-black/5 p-1.5 flex items-center justify-center">
+                                                                        {t.token_logo ? <img src={t.token_logo} className="w-full h-full object-contain" /> : <Rocket className="w-4 h-4 text-indigo-500" />}
+                                                                    </div>
+                                                                    <div>
+                                                                        <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${t.trade_type?.includes('Buy') ? 'bg-sky-50 text-sky-600 border-sky-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>{t.trade_type}</span>
+                                                                        <p className="text-sm font-black text-gray-900 mt-1">{t.token_symbol || 'Asset'}</p>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td className="py-6 px-8">
+                                                                <p className="text-sm font-black text-gray-900">{parseFloat(t.amount_tokens || 0).toLocaleString()} Units</p>
+                                                                <p className="text-[10px] font-bold text-gray-400">{parseFloat(t.amount_bnb || 0).toFixed(6)} BNB</p>
+                                                            </td>
+                                                            <td className="py-6 px-8">
+                                                                <p className={`text-sm font-black ${(t.pnl_bnb || 0) >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                                    {(t.pnl_bnb || 0) >= 0 ? '+' : ''}{parseFloat(t.pnl_bnb || 0).toFixed(6)} BNB
+                                                                </p>
+                                                            </td>
+                                                            <td className="py-6 px-8 text-right">
+                                                                <p className="text-[10px] font-bold text-gray-900">{new Date(t.timestamp).toLocaleDateString()}</p>
+                                                                <a href={`https://bscscan.com/tx/${t.tx_hash}`} target="_blank" rel="noopener noreferrer" className="text-[9px] font-bold text-indigo-500 hover:underline">{truncate(t.tx_hash)}</a>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
+
+                        {/* TAB CONTENT: MEX MONEY */}
+                        {activeTab === 'mexmoney' && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-2xl font-black uppercase tracking-tighter italic">Mex Money <span className="text-teal-600">History</span></h2>
+                                    <Link href="/fiat" className="px-6 py-2.5 bg-teal-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl shadow-xl shadow-teal-600/20">New Transaction</Link>
+                                </div>
+
+                                {loadingFiat ? (
+                                    <div className="py-24 text-center">
+                                        <Loader2 className="w-10 h-10 text-teal-500 animate-spin mx-auto mb-4" />
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Loading Fiat History...</p>
+                                    </div>
+                                ) : fiatHistory.length === 0 ? (
+                                    <div className="bg-white border border-black/5 rounded-[3rem] p-20 text-center shadow-sm">
+                                        <CreditCard className="w-16 h-16 text-gray-200 mx-auto mb-6" />
+                                        <h3 className="text-xl font-black text-gray-400 uppercase tracking-widest mb-4">No Fiat History</h3>
+                                        <Link href="/fiat" className="inline-flex items-center gap-2 px-8 py-3 bg-teal-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest shadow-xl shadow-teal-600/20">Buy Crypto Now</Link>
+                                    </div>
+                                ) : (
+                                    <div className="bg-white border border-black/5 rounded-[2.5rem] overflow-hidden shadow-sm">
+                                        <table className="w-full">
+                                            <thead className="bg-gray-50 border-b border-black/5">
+                                                <tr className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">
+                                                    <th className="py-6 px-8 text-left">Type / Asset</th>
+                                                    <th className="py-6 px-8 text-left">Value (INR)</th>
+                                                    <th className="py-6 px-8 text-left">Status</th>
+                                                    <th className="py-6 px-8 text-right">Date</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-50">
+                                                {fiatHistory.map(tx => (
+                                                    <tr key={tx.id} className="hover:bg-gray-50/50 transition-colors">
+                                                        <td className="py-6 px-8">
+                                                            <div className="flex items-center gap-4">
+                                                                <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${tx.type === 'BUY' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>{tx.type}</span>
+                                                                <p className="text-sm font-black text-gray-900">{tx.amount} {tx.asset}</p>
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-6 px-8 font-black text-gray-900">₹{tx.inr_amount?.toLocaleString()}</td>
+                                                        <td className="py-6 px-8">
+                                                            <div className="flex items-center gap-2">
+                                                                <div className={`w-2 h-2 rounded-full ${tx.status === 'COMPLETED' ? 'bg-emerald-500' : tx.status === 'REJECTED' ? 'bg-rose-500' : 'bg-amber-500'}`} />
+                                                                <span className="text-[10px] font-black uppercase text-gray-700">{tx.status}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="py-6 px-8 text-right text-[10px] font-bold text-gray-400 uppercase">{new Date(tx.timestamp).toLocaleDateString()}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
+
+                        {/* TAB CONTENT: SMART MONEY */}
+                        {activeTab === 'smartmoney' && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+                                <h2 className="text-2xl font-black uppercase tracking-tighter italic">Alpha <span className="text-indigo-600">Strategies</span></h2>
+                                {loadingSmartMoney ? (
+                                    <div className="py-24 text-center">
+                                        <Loader2 className="w-10 h-10 text-indigo-500 animate-spin mx-auto mb-4" />
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Loading Strategic Data...</p>
+                                    </div>
+                                ) : smartMoneyInvestments.length === 0 ? (
+                                    <div className="bg-white border border-black/5 rounded-[3rem] p-20 text-center shadow-sm">
+                                        <TrendingUp className="w-16 h-16 text-gray-200 mx-auto mb-6" />
+                                        <h3 className="text-xl font-black text-gray-400 uppercase tracking-widest mb-4">No Strategic Deployments</h3>
+                                        <Link href="/exchange" className="inline-flex items-center gap-2 px-8 py-3 bg-indigo-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-600/20">Explore Smart Money</Link>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {smartMoneyInvestments.map(inv => (
+                                            <div key={inv.id} className="bg-white border border-black/5 rounded-[2.5rem] p-8 shadow-sm">
+                                                <div className="flex items-center justify-between mb-8">
+                                                    <div>
+                                                        <p className="text-[8px] font-black text-indigo-600 uppercase tracking-widest mb-1">Strategic Index</p>
+                                                        <h4 className="text-2xl font-black text-gray-900 uppercase tracking-tighter">{inv.bucket_name}</h4>
+                                                    </div>
+                                                    <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center border border-indigo-100 text-indigo-600">
+                                                        <TrendingUp className="w-6 h-6" />
+                                                    </div>
+                                                </div>
+                                                <div className="bg-gray-50 rounded-2xl p-5 mb-8">
+                                                    <p className="text-[8px] font-black text-gray-400 uppercase mb-3">Investment</p>
+                                                    <p className="text-3xl font-black text-gray-900 leading-none">${parseFloat(inv.invest_amount).toFixed(2)}</p>
+                                                    <p className="text-[9px] font-bold text-gray-400 mt-2 uppercase">DEPLOYED ON BSC MAINNET</p>
+                                                </div>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[10px] font-bold text-gray-400 uppercase">{new Date(inv.timestamp).toLocaleDateString()}</span>
+                                                    <a href={`https://bscscan.com/tx/${inv.tx_hash}`} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black text-indigo-600 uppercase tracking-widest border-b border-indigo-200">View Tx</a>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
+                    </div>
                 )}
             </section>
         </main>

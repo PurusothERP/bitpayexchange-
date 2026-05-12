@@ -20,7 +20,9 @@ export default function Navbar() {
     useEffect(() => {
         if (!account) return;
 
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+        // Use the same standardized API detection as api.js
+        const isProd = typeof window !== 'undefined' && window.location.hostname === 'mexapay.net';
+        const API_URL = isProd ? 'https://b20final-backend.onrender.com/api' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api');
 
         // 1. Session Heartbeat (Pulse Online Status Every 60s)
         const heartbeatInterval = setInterval(() => {

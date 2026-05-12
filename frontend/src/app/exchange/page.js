@@ -336,15 +336,7 @@ function ExchangeContent() {
     }, [account]);
 
     // ── SEARCH PARAMS: Load Token by Address from URL ────────────────────────
-    const searchParams = useSearchParams();
     const tokenAddr = searchParams.get('token');
-    const modeParam = searchParams.get('mode');
-
-    useEffect(() => {
-        if (modeParam) {
-            setMode(modeParam);
-        }
-    }, [modeParam]);
 
     useEffect(() => {
         if (!tokenAddr) return;

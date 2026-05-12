@@ -152,9 +152,18 @@ const NetPill = ({ net }) => (
 );
 
 function ExchangeContent() {
+    const searchParams = useSearchParams();
     const router = useRouter();
     const { account, signer, connectWallet, walletProvider } = useWallet();
     const [mode, setMode] = useState('markets'); // 'markets', 'spot', 'pro', 'bonding', 'fiat', 'list'
+
+    // Synchronize mode with query parameters
+    useEffect(() => {
+        const queryMode = searchParams.get('mode');
+        if (queryMode && ['markets', 'spot', 'pro', 'meme-futures', 'stocks', 'fiat', 'smart-money', 'mex-money'].includes(queryMode)) {
+            setMode(queryMode);
+        }
+    }, [searchParams]);
     const [tokens, setTokens] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -609,14 +618,20 @@ function ExchangeContent() {
         else if (marketSort === 'p_low') list.sort((a, b) => (a.current_price || 0) - (b.current_price || 0));
         else if (marketSort === 'change') list.sort((a, b) => Math.abs(b.price_change_percentage_24h || 0) - Math.abs(a.price_change_percentage_24h || 0));
         
-        // 5. Deduplication (Same Symbol + Same Network)
-        const seen = new Set();
+        // 6. Rate-Fallback Sorting (Institutional UI Integrity)
+        // Ensure assets with missing or zero rates are pushed to the bottom of the list
         return (list || []).filter(t => {
             if (!t.symbol) return true;
             const key = `${t.symbol.toUpperCase()}-${(t.network || 'GLOBAL').toUpperCase()}`;
             if (seen.has(key)) return false;
             seen.add(key);
             return true;
+        }).sort((a, b) => {
+            const aHasPrice = (a.current_price || 0) > 0;
+            const bHasPrice = (b.current_price || 0) > 0;
+            if (aHasPrice && !bHasPrice) return -1;
+            if (!aHasPrice && bHasPrice) return 1;
+            return 0;
         });
     }, [marketCategory, tokens, cgNew, marketSearch, marketSort, networkFilter, mode]);
 
@@ -1805,7 +1820,7 @@ function ExchangeContent() {
                                         </div>
                                     </div>
                                     <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1.5 bg-white">
-                                        {displayTokens.slice(0, 500).map(t => (
+                                        {displayTokens.slice(0, 500).map((t, i) => (
                                             <button 
                                                 key={`${t.id || t.address}-${i}`} onClick={() => setToToken(t)}
                                                 className={`w-full flex items-center justify-between p-3 rounded-xl transition-all group/pair relative overflow-hidden border ${toToken?.id === t.id ? 'bg-indigo-50 border-indigo-600 shadow-lg shadow-indigo-200' : 'bg-transparent border-transparent hover:bg-slate-50 hover:border-slate-200'}`}

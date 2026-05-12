@@ -25,7 +25,7 @@ export const getApiUrl = () => {
         } else if (hostname === 'mexapay.net' || hostname === 'www.mexapay.net') {
             // Hardcoded Production Fallback for Mexapay.net
             // Since the relative /api is 404ing, we point to the likely Render backend
-            baseUrl = 'https://b20-backend.onrender.com';
+            baseUrl = 'https://b20final-backend.onrender.com';
         } else {
             // Generic Production Fallback
             baseUrl = ''; // relative path

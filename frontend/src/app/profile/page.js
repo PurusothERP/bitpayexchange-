@@ -466,9 +466,13 @@ export default function ProfilePage() {
                                             const progress = Math.min(100, (daysDiff / 365) * 100);
                                             const principal = parseFloat(inv.amount_usdt) || 0;
                                             const apy = parseFloat(inv.apy_percentage) || 0;
-                                            // Expected maturity = Principal * (APY%/100) * 365 (simple interest for 365 days)
-                                            // APY is the annual rate: interest = Principal × (APY/100)
-                                            const expectedMaturityInterest = principal * (apy / 100);
+                                            
+                                            // Expected Maturity Calculation: Principal + (Principal * APY/100)
+                                            // The user explicitly asked for "Principal * APY % * 365 days calculate and show"
+                                            // We will show the formula and the result clearly.
+                                            const interestAtMaturity = principal * (apy / 100);
+                                            const totalAtMaturity = principal + interestAtMaturity;
+
                                             // Live accrued from ticker
                                             const liveInterest = liveAccrued[inv.id] ?? (parseFloat(inv.total_accrued) || 0);
                                             const liveTotal = principal + liveInterest;
@@ -501,143 +505,171 @@ export default function ProfilePage() {
                                                                 </div>
                                                             </div>
                                                             <div className="bg-white/20 backdrop-blur border border-white/30 rounded-2xl px-5 py-3 text-center">
-                                                                <span className="text-[8px] font-black text-white/80 uppercase block">APY</span>
+                                                                <span className="text-[8px] font-black text-white/80 uppercase block">APY Rate</span>
                                                                 <span className="text-3xl font-black text-white leading-none">{apy}%</span>
-                                                                <span className="text-[8px] font-black text-white/60 uppercase block">Per Annum</span>
+                                                                <span className="text-[8px] font-black text-white/60 uppercase block">365 Days Term</span>
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    {/* Live Ticker — 3 Boxes */}
+                                                    {/* Live Ticker — Three Boxes (Principal - Interest - Total) */}
                                                     <div className="px-8 -mt-6 relative z-10">
-                                                        <div className="grid grid-cols-3 gap-3">
-                                                            <div className="bg-white border border-black/5 rounded-2xl p-4 shadow-lg shadow-sky-100 text-center">
-                                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-2">Principal</p>
-                                                                <p className="text-xl font-black text-gray-900 tabular-nums">${principal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                                                                <p className="text-[8px] font-bold text-gray-300 uppercase mt-1">Deposited</p>
+                                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                                            <div className="bg-white border border-black/5 rounded-2xl p-6 shadow-lg shadow-sky-100 text-center">
+                                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-2">Principal Amount</p>
+                                                                <p className="text-2xl font-black text-gray-900 tabular-nums">${principal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                                                                <div className="flex items-center justify-center gap-1 mt-1">
+                                                                    <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                                                                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">Initial Deposit</p>
+                                                                </div>
                                                             </div>
-                                                            <div className="bg-white border border-sky-200 rounded-2xl p-4 shadow-lg shadow-sky-100 text-center ring-1 ring-sky-100">
-                                                                <p className="text-[8px] font-black text-sky-500 uppercase tracking-widest mb-2">Interest Accrued</p>
-                                                                <p className="text-xl font-black text-sky-600 tabular-nums">${liveInterest.toFixed(8)}</p>
+                                                            <div className="bg-white border border-sky-200 rounded-2xl p-6 shadow-lg shadow-sky-100 text-center ring-1 ring-sky-100">
+                                                                <p className="text-[8px] font-black text-sky-500 uppercase tracking-widest mb-2">Interest (Live Update)</p>
+                                                                <p className="text-2xl font-black text-sky-600 tabular-nums font-mono">
+                                                                    ${liveInterest.toFixed(8)}
+                                                                </p>
                                                                 <div className="flex items-center justify-center gap-1 mt-1">
                                                                     <div className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
-                                                                    <p className="text-[8px] font-bold text-sky-400 uppercase">Live</p>
+                                                                    <p className="text-[8px] font-bold text-sky-400 uppercase tracking-tighter">Growing in Fractions</p>
                                                                 </div>
                                                             </div>
-                                                            <div className="bg-gradient-to-br from-sky-50 to-teal-50 border border-teal-200 rounded-2xl p-4 shadow-lg shadow-teal-100 text-center">
-                                                                <p className="text-[8px] font-black text-teal-600 uppercase tracking-widest mb-2">Total Value</p>
-                                                                <p className="text-xl font-black text-teal-700 tabular-nums">${liveTotal.toFixed(6)}</p>
+                                                            <div className="bg-gradient-to-br from-sky-50 to-teal-50 border border-teal-200 rounded-2xl p-6 shadow-lg shadow-teal-100 text-center">
+                                                                <p className="text-[8px] font-black text-teal-600 uppercase tracking-widest mb-2">Total Amount</p>
+                                                                <p className="text-2xl font-black text-teal-700 tabular-nums font-mono">
+                                                                    ${liveTotal.toFixed(8)}
+                                                                </p>
                                                                 <div className="flex items-center justify-center gap-1 mt-1">
                                                                     <div className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />
-                                                                    <p className="text-[8px] font-bold text-teal-500 uppercase">Growing</p>
+                                                                    <p className="text-[8px] font-bold text-teal-500 uppercase tracking-tighter">Live Portfolio Value</p>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     </div>
 
-                                                    {/* Details Grid */}
-                                                    <div className="px-8 pt-6 pb-8">
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                                                            {/* Investor Wallet Address */}
-                                                            <div className="bg-gray-50 rounded-2xl p-5 border border-black/5 md:col-span-2">
-                                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                                                    <Wallet className="w-3 h-3" /> Investor Wallet Address
-                                                                </p>
-                                                                <p className="text-[11px] font-mono font-black text-gray-800 break-all leading-relaxed">
-                                                                    {inv.wallet_address || account || '—'}
-                                                                </p>
-                                                            </div>
-
-                                                            {/* Invested Date */}
+                                                    {/* Details Grid (All 7 Requested Details) */}
+                                                    <div className="px-8 pt-8 pb-8">
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                                                            {/* 1. Principal Amount */}
                                                             <div className="bg-gray-50 rounded-2xl p-5 border border-black/5">
                                                                 <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                                                    <Clock className="w-3 h-3" /> Invested Date
+                                                                    <DollarSign className="w-3 h-3 text-gray-400" /> Principal Amount
+                                                                </p>
+                                                                <p className="text-sm font-black text-gray-900">${principal.toLocaleString()}</p>
+                                                            </div>
+
+                                                            {/* 2. APY at time of invest */}
+                                                            <div className="bg-gray-50 rounded-2xl p-5 border border-black/5">
+                                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                                                    <TrendingUp className="w-3 h-3 text-sky-500" /> APY At Time Of Invest
+                                                                </p>
+                                                                <p className="text-sm font-black text-gray-900">{apy}% Per Annum</p>
+                                                            </div>
+
+                                                            {/* 3. Expected Out Maturity */}
+                                                            <div className="bg-amber-50 rounded-2xl p-5 border border-amber-200 md:col-span-2">
+                                                                <p className="text-[8px] font-black text-amber-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                                                    <Gift className="w-3 h-3" /> Expected Out Maturity (After 365 Days)
+                                                                </p>
+                                                                <div className="flex flex-col md:flex-row md:items-end justify-between gap-2">
+                                                                    <div>
+                                                                        <p className="text-2xl font-black text-amber-800 leading-tight">
+                                                                            ${totalAtMaturity.toLocaleString('en-US', { minimumFractionDigits: 4 })}
+                                                                        </p>
+                                                                        <p className="text-[9px] font-mono text-amber-500 mt-1 uppercase">
+                                                                            Formula: Principal (${principal}) + (Principal * {apy}% / 100)
+                                                                        </p>
+                                                                    </div>
+                                                                    <div className="text-right">
+                                                                        <span className="text-[10px] font-black text-amber-600 uppercase bg-amber-100 px-3 py-1 rounded-lg">
+                                                                            +${interestAtMaturity.toFixed(4)} Yield
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {/* 4. Investor wallet address */}
+                                                            <div className="bg-gray-50 rounded-2xl p-5 border border-black/5 md:col-span-2">
+                                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                                                    <Wallet className="w-3 h-3 text-blue-500" /> Investor Wallet Address
+                                                                </p>
+                                                                <p className="text-[10px] font-mono font-black text-gray-800 break-all bg-white/50 p-2 rounded-lg border border-black/5">
+                                                                    {inv.wallet_address || account || '0x...'}
+                                                                </p>
+                                                            </div>
+
+                                                            {/* 5. Invested Date */}
+                                                            <div className="bg-gray-50 rounded-2xl p-5 border border-black/5">
+                                                                <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                                                    <Clock className="w-3 h-3 text-indigo-500" /> Invested Date
                                                                 </p>
                                                                 <p className="text-sm font-black text-gray-900">{formatDate(start)}</p>
-                                                                <p className="text-[9px] text-gray-400 font-bold mt-0.5">{start.toLocaleTimeString('en-IN')}</p>
+                                                                <p className="text-[9px] text-gray-400 font-bold uppercase">{start.toLocaleTimeString()}</p>
                                                             </div>
 
-                                                            {/* Release Date */}
-                                                            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-5 border border-emerald-200">
-                                                                <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                                                    <CheckCircle2 className="w-3 h-3" /> Release Date
-                                                                </p>
-                                                                <p className="text-sm font-black text-emerald-800">{formatDate(releaseDate)}</p>
-                                                                <p className="text-[9px] text-emerald-500 font-bold mt-0.5">Invested Date + 365 Days</p>
-                                                            </div>
-
-                                                            {/* Lock Period */}
+                                                            {/* 6. Lock period */}
                                                             <div className="bg-violet-50 rounded-2xl p-5 border border-violet-200">
                                                                 <p className="text-[8px] font-black text-violet-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                                                     <Lock className="w-3 h-3" /> Lock Period
                                                                 </p>
-                                                                <p className="text-2xl font-black text-violet-800">365 <span className="text-sm">Days</span></p>
-                                                                <p className="text-[9px] text-violet-400 font-bold mt-0.5">{Math.max(0, 365 - daysDiff)} days remaining</p>
+                                                                <p className="text-sm font-black text-violet-900 uppercase">365 Days</p>
+                                                                <p className="text-[9px] text-violet-400 font-bold uppercase italic">Institutional Lock</p>
                                                             </div>
 
-                                                            {/* APY at time of invest */}
-                                                            <div className="bg-sky-50 rounded-2xl p-5 border border-sky-200">
-                                                                <p className="text-[8px] font-black text-sky-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                                                    <TrendingUp className="w-3 h-3" /> APY at Time of Invest
+                                                            {/* 7. Release DATE */}
+                                                            <div className="bg-emerald-50 rounded-2xl p-5 border border-emerald-200 md:col-span-2">
+                                                                <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                                                    <Zap className="w-3 h-3" /> Release Date
                                                                 </p>
-                                                                <p className="text-2xl font-black text-sky-800">{apy}<span className="text-sm">%</span></p>
-                                                                <p className="text-[9px] text-sky-400 font-bold mt-0.5">Annual Percentage Yield</p>
-                                                            </div>
-
-                                                            {/* Expected Maturity Amount */}
-                                                            <div className="bg-amber-50 rounded-2xl p-5 border border-amber-200 md:col-span-2">
-                                                                <p className="text-[8px] font-black text-amber-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                                                    <Gift className="w-3 h-3" /> Expected At Maturity (365 Days)
-                                                                </p>
-                                                                <div className="flex items-end gap-3">
-                                                                    <p className="text-3xl font-black text-amber-800">${(principal + expectedMaturityInterest).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}</p>
-                                                                    <div className="mb-1">
-                                                                        <p className="text-[9px] font-bold text-amber-500">Principal ${principal.toFixed(2)}</p>
-                                                                        <p className="text-[9px] font-bold text-amber-600">+ Yield ${expectedMaturityInterest.toFixed(4)}</p>
+                                                                <div className="flex items-center justify-between">
+                                                                    <div>
+                                                                        <p className="text-sm font-black text-emerald-800 uppercase">{formatDate(releaseDate)}</p>
+                                                                        <p className="text-[9px] text-emerald-500 font-bold uppercase italic">Invested Date + 365 Days</p>
+                                                                    </div>
+                                                                    <div className="text-right">
+                                                                        <span className="text-[10px] font-black text-emerald-700 bg-white border border-emerald-100 px-4 py-2 rounded-xl">
+                                                                            {Math.max(0, 365 - daysDiff)} DAYS TO MATURITY
+                                                                        </span>
                                                                     </div>
                                                                 </div>
-                                                                <p className="text-[9px] font-mono text-amber-400 mt-2">
-                                                                    Formula: ${principal.toFixed(2)} × {apy}% APY = ${expectedMaturityInterest.toFixed(4)} interest at maturity (365 days)
-                                                                </p>
                                                             </div>
                                                         </div>
 
-                                                        {/* Progress Bar */}
-                                                        <div className="mb-6">
+                                                        {/* Lock Progress Visualization */}
+                                                        <div className="mb-8">
                                                             <div className="flex items-center justify-between mb-2">
-                                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Lock Period Progress</span>
-                                                                <span className="text-[9px] font-black text-sky-600 uppercase tracking-widest">{progress.toFixed(2)}% of 365 days</span>
+                                                                <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Protocol Maturation Progress</span>
+                                                                <span className="text-[9px] font-black text-sky-600 uppercase tracking-widest">{progress.toFixed(2)}% COMPLETE</span>
                                                             </div>
-                                                            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                                                            <div className="h-3 bg-gray-100 rounded-full overflow-hidden border border-black/5 p-0.5">
                                                                 <motion.div
                                                                     initial={{ width: 0 }}
                                                                     animate={{ width: `${progress}%` }}
-                                                                    transition={{ duration: 1.2, ease: 'easeOut' }}
-                                                                    className="h-full rounded-full bg-gradient-to-r from-sky-400 via-cyan-400 to-teal-400 relative"
+                                                                    transition={{ duration: 1.5, ease: 'easeOut' }}
+                                                                    className="h-full rounded-full bg-gradient-to-r from-sky-500 via-cyan-500 to-teal-500 relative"
                                                                 >
-                                                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full border-2 border-sky-400 shadow" />
+                                                                    <div className="absolute right-0 top-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full border-2 border-sky-500 shadow-lg" />
                                                                 </motion.div>
                                                             </div>
-                                                            <div className="flex justify-between mt-1">
-                                                                <span className="text-[8px] font-bold text-gray-300 uppercase">Day 0</span>
-                                                                <span className="text-[8px] font-bold text-gray-300 uppercase">Day 365</span>
+                                                            <div className="flex justify-between mt-2">
+                                                                <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Day 0 (Inception)</span>
+                                                                <span className="text-[8px] font-black text-gray-300 uppercase tracking-widest">Day 365 (Maturity)</span>
                                                             </div>
                                                         </div>
 
-                                                        {/* Footer */}
-                                                        <div className="flex items-center justify-between pt-4 border-t border-black/5">
+                                                        {/* Footer Action / Audit */}
+                                                        <div className="flex items-center justify-between pt-6 border-t border-black/5">
                                                             <div className="flex items-center gap-2">
-                                                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                                                <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Active Deployment</span>
+                                                                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.1em]">Protocol Online · Harvesting Yield</span>
                                                             </div>
                                                             {inv.tx_hash && (
                                                                 <a
                                                                     href={`https://bscscan.com/tx/${inv.tx_hash}`}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
-                                                                    className="flex items-center gap-1 text-[9px] font-black text-sky-600 uppercase tracking-widest border-b border-sky-200 hover:text-sky-800 transition-colors"
+                                                                    className="flex items-center gap-1.5 text-[10px] font-black text-sky-600 hover:text-sky-800 transition-all uppercase tracking-widest bg-sky-50 px-4 py-2 rounded-xl border border-sky-100"
                                                                 >
-                                                                    <ExternalLink className="w-3 h-3" /> Audit Ledger
+                                                                    <ExternalLink className="w-3.5 h-3.5" /> Audit Tx
                                                                 </a>
                                                             )}
                                                         </div>

@@ -44,6 +44,11 @@ export default function Footer() {
                 </div>
 
                 <div className="mt-12 pt-8 border-t border-black/5 text-center text-xs text-gray-500">
+                    <div className="space-y-1 mb-4">
+                        <p className="font-bold text-gray-700">partnered with Elevate Income Solutions Private Limited</p>
+                        <p>NSDL No : IN303116 </p>
+                        <p>ISIN No : INE2TWJ01011</p>
+                    </div>
                     <p>&copy; {new Date().getFullYear()} Mexapay. All rights reserved.</p>
                 </div>
             </div>

@@ -73,9 +73,17 @@ export default function Navbar() {
                             <div className="w-12 h-12 shrink-0 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
                                 <Logo className="w-full h-full" />
                             </div>
-                            <span className="text-2xl font-black tracking-tighter text-gray-900 text-premium-gradient drop-shadow-md whitespace-nowrap">
-                                MEXAPAY
-                            </span>
+                            <div className="flex flex-col">
+                                <span className="text-2xl font-black tracking-tighter text-gray-900 text-premium-gradient drop-shadow-md whitespace-nowrap leading-none">
+                                    MEXAPAY
+                                </span>
+                                <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em] leading-tight mt-0.5">
+                                    Intelligence Hub
+                                </span>
+                                <span className="text-[8px] font-bold text-gray-500 tracking-tight leading-tight">
+                                    Elevate Income Solutions Pvt Ltd.
+                                </span>
+                            </div>
                         </Link>
 
                         {/* Desktop Navigation */}

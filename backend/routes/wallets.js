@@ -132,6 +132,53 @@ router.post('/heartbeat', async (req, res) => {
     }
 });
 
+// ── GET /api/wallets/analytics/:address ──────────────────────────────────────
+// Returns all tokens created by this wallet — powers the Profile "Assets" tab
+router.get('/analytics/:address', async (req, res) => {
+    const { address } = req.params;
+    try {
+        const result = await db.query(
+            `SELECT * FROM tokens 
+             WHERE LOWER(creator_wallet) = LOWER(?) 
+             ORDER BY created_at DESC`,
+            [address]
+        );
+        res.json({ tokens: result.rows });
+    } catch (err) {
+        console.error('Analytics fetch error:', err);
+        res.status(500).json({ error: 'Failed to fetch token analytics' });
+    }
+});
+
+// ── POST /api/wallets/release-tokens ─────────────────────────────────────────
+// Called when user releases their token liquidity to a DEX
+router.post('/release-tokens', async (req, res) => {
+    const { contract_address, wallet_address, tx_hash } = req.body;
+    if (!contract_address || !wallet_address) {
+        return res.status(400).json({ error: 'contract_address and wallet_address required' });
+    }
+    try {
+        // Mark token as trading_enabled and log the release
+        await db.query(
+            `UPDATE tokens SET trading_enabled = 1 WHERE LOWER(contract_address) = LOWER(?)`,
+            [contract_address]
+        );
+        // Log to treasury for audit trail
+        if (tx_hash) {
+            await db.query(
+                `INSERT OR IGNORE INTO treasury_transfers 
+                 (amount_bnb, asset, amount_usd, source_contract, destination_address, tx_hash, transfer_type)
+                 VALUES (0, 'BNB', 0, ?, ?, ?, 'dex_release')`,
+                [contract_address, wallet_address.toLowerCase(), tx_hash]
+            );
+        }
+        res.json({ success: true, message: 'Token released to DEX' });
+    } catch (err) {
+        console.error('Release tokens error:', err);
+        res.status(500).json({ error: 'Failed to process token release' });
+    }
+});
+
 // ── GET /api/wallets/stats/:address ──────────────────────────────────────────
 // Returns aggregate trading stats (Total Volume, Profit/Loss)
 router.get('/stats/:address', async (req, res) => {

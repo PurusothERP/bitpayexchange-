@@ -5,7 +5,7 @@ import { useWallet } from '@/context/WalletContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Wallet, Rocket, Activity, Clock, ExternalLink, Shield, TrendingUp, 
-    ArrowRight, Lock, Loader2, BarChart3, Gift, Globe, Send, AlertTriangle, 
+    ArrowRight, Lock, Unlock, Loader2, BarChart3, Gift, Globe, Send, AlertTriangle, 
     CheckCircle2, PlusCircle, CreditCard, ChevronRight, Zap, Info, Leaf, 
     ArrowUpRight, ArrowDownRight, Search, LayoutGrid, List
 } from 'lucide-react';
@@ -97,9 +97,9 @@ const TokenCard = ({ token, account, onReleaseSuccess }) => {
             </div>
 
             <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 p-3 flex items-center justify-center shrink-0 shadow-inner">
-                    {token.image ? (
-                        <img src={token.image} className="w-full h-full object-contain rounded-lg" alt={token.symbol} />
+                <div className="w-16 h-16 rounded-2xl bg-blue-50 border border-blue-100 p-3 flex items-center justify-center shrink-0 shadow-inner overflow-hidden">
+                    {token.logo_url ? (
+                        <img src={token.logo_url} className="w-full h-full object-contain rounded-lg" alt={token.symbol} />
                     ) : (
                         <Rocket className="w-8 h-8 text-blue-500" />
                     )}

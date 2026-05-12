@@ -467,7 +467,8 @@ export default function ProfilePage() {
                                             const principal = parseFloat(inv.amount_usdt) || 0;
                                             const apy = parseFloat(inv.apy_percentage) || 0;
                                             // Expected maturity = Principal * (APY%/100) * 365 (simple interest for 365 days)
-                                            const expectedMaturityInterest = principal * (apy / 100) * 365;
+                                            // APY is the annual rate: interest = Principal × (APY/100)
+                                            const expectedMaturityInterest = principal * (apy / 100);
                                             // Live accrued from ticker
                                             const liveInterest = liveAccrued[inv.id] ?? (parseFloat(inv.total_accrued) || 0);
                                             const liveTotal = principal + liveInterest;
@@ -596,7 +597,7 @@ export default function ProfilePage() {
                                                                     </div>
                                                                 </div>
                                                                 <p className="text-[9px] font-mono text-amber-400 mt-2">
-                                                                    Formula: ${principal.toFixed(2)} × {apy}% × 365 days = ${expectedMaturityInterest.toFixed(4)} interest
+                                                                    Formula: ${principal.toFixed(2)} × {apy}% APY = ${expectedMaturityInterest.toFixed(4)} interest at maturity (365 days)
                                                                 </p>
                                                             </div>
                                                         </div>

@@ -1666,7 +1666,7 @@ function InvestModal({ token, onClose }) {
                 apy_percentage: token.apy,
                 amount_usdt: amount,
                 tx_hash: txTransfer.hash
-            }, { timeout: 60000 });
+            }, { timeout: 90000 });
 
             setStep('success');
         } catch (e) {
@@ -1677,11 +1677,11 @@ function InvestModal({ token, onClose }) {
                 config: e.config
             });
             
-            let errMsg = 'Transaction failed';
+            let errMsg = `Transaction failed (${finalUrl})`;
             if (e.response) {
-                errMsg = `Backend Error (${e.response.status}): ${e.response.data?.error || e.message}`;
+                errMsg = `Backend Error (${e.response.status}): ${e.response.data?.error || e.message} at ${finalUrl}`;
             } else if (e.request) {
-                errMsg = 'Network Error: Backend unreachable. Please check your connection or try again later.';
+                errMsg = `Network Error: Backend unreachable at ${finalUrl}. Please check your connection or try again later.`;
             } else {
                 errMsg = e.reason || e.message || 'Unknown investment error';
             }

@@ -616,14 +616,16 @@ export default function ProfilePage() {
         // Fetch Yield Investments
         setLoadingYield(true);
         const yieldAddr = account.toLowerCase();
-        axios.get(`${API_URL}/wallets/yield/investments/${yieldAddr}`)
+        const yieldUrl = `${API_URL}/wallets/yield/investments/${yieldAddr}`;
+        console.log('[Yield] 🔄 Fetching from:', yieldUrl);
+        axios.get(yieldUrl)
             .then(res => {
                 const data = Array.isArray(res.data) ? res.data : [];
                 console.log('[Yield] 🔍 History Fetched:', data.length, 'records');
                 setYieldInvestments(data);
             })
             .catch(err => {
-                console.error('[Yield Fetch Error]', err.response?.status, err.message);
+                console.error('[Yield Fetch Error]', err.response?.status, err.message, 'at', yieldUrl);
                 setYieldInvestments([]);
             })
             .finally(() => setLoadingYield(false));

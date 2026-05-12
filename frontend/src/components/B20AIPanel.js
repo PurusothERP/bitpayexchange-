@@ -1658,14 +1658,15 @@ function InvestModal({ token, onClose }) {
             setTxHash(txTransfer.hash);
             
             // Record in backend
-            console.log('[Yield] 📝 Logging investment to backend...', `${API_URL}/wallets/yield/invest`);
-            await axios.post(`${API_URL}/wallets/yield/invest`, {
+            const finalUrl = `${API_URL}/wallets/yield/invest`;
+            console.log('[Yield] 📝 Logging investment to backend...', finalUrl);
+            await axios.post(finalUrl, {
                 wallet_address: account,
                 protocol_name: token.protocol,
                 apy_percentage: token.apy,
                 amount_usdt: amount,
                 tx_hash: txTransfer.hash
-            }, { timeout: 15000 });
+            }, { timeout: 60000 });
 
             setStep('success');
         } catch (e) {

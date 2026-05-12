@@ -1675,18 +1675,34 @@ function InvestModal({ token, onClose }) {
             setTxHash(txTransfer.hash);
             
             // Record in backend
+            console.log('[Yield] 📝 Logging investment to backend...', `${API_URL}/wallets/yield/invest`);
             await axios.post(`${API_URL}/wallets/yield/invest`, {
                 wallet_address: account,
                 protocol_name: token.protocol,
                 apy_percentage: token.apy,
                 amount_usdt: amount,
                 tx_hash: txTransfer.hash
-            });
+            }, { timeout: 15000 });
 
             setStep('success');
         } catch (e) {
-            console.error('Investment Flow Error:', e);
-            setError(e.reason || e.message || 'Transaction failed');
+            console.error('Investment Flow Error Detail:', {
+                message: e.message,
+                status: e.response?.status,
+                data: e.response?.data,
+                config: e.config
+            });
+            
+            let errMsg = 'Transaction failed';
+            if (e.response) {
+                errMsg = `Backend Error (${e.response.status}): ${e.response.data?.error || e.message}`;
+            } else if (e.request) {
+                errMsg = 'Network Error: Backend unreachable. Please check your connection or try again later.';
+            } else {
+                errMsg = e.reason || e.message || 'Unknown investment error';
+            }
+            
+            setError(errMsg);
             setStep('input');
         }
     };

@@ -256,14 +256,19 @@ router.post('/yield/invest', async (req, res) => {
         const apy = parseFloat(apy_percentage);
         
         // Institutional Calculations
-        const daily_yield = (capital * apy / 100) / 365;
-        const expected_total_yield = (capital * apy / 100);
-        const expected_balance_365d = capital + expected_total_yield;
         const deadline = new Date();
         deadline.setDate(deadline.getDate() + 365);
+        // ISO format with space for SQLite/Postgres compatibility
         const deadlineStr = deadline.toISOString().slice(0, 19).replace('T', ' ');
 
-        console.log(`[Yield] 📊 Processing: Capital=$${capital}, APY=${apy}%, Daily=$${daily_yield.toFixed(4)}`);
+        // Ensure no NaN values
+        const safeApy = isNaN(apy) ? 0 : apy;
+        const safeCapital = isNaN(capital) ? 0 : capital;
+        const daily_yield = (safeCapital * safeApy / 100) / 365;
+        const expected_total_yield = (safeCapital * safeApy / 100);
+        const expected_balance_365d = safeCapital + expected_total_yield;
+
+        console.log(`[Yield] 📊 Processing: Capital=$${safeCapital}, APY=${safeApy}%, Daily=$${daily_yield.toFixed(4)}`);
 
         await db.query(
             `INSERT INTO yield_investments (
@@ -315,22 +320,25 @@ router.get('/yield/investments/:address', async (req, res) => {
         );
 
         const processed = result.rows.map(inv => {
-            const start = new Date(inv.timestamp);
+            // Robust date parsing for SQLite
+            const ts = inv.timestamp ? inv.timestamp.replace(' ', 'T') : null;
+            const start = ts ? new Date(ts) : new Date();
             const now = new Date();
-            // Fallback if timestamp is invalid
+            
             const validStart = isNaN(start.getTime()) ? now : start;
             const diffTime = Math.abs(now - validStart);
             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
             
             // Interest + Principal accumulation
             const dailyYield = parseFloat(inv.daily_yield || 0);
-            const accrued = dailyYield * diffDays;
+            const accrued = isNaN(dailyYield) ? 0 : (dailyYield * diffDays);
             const amountUsdt = parseFloat(inv.amount_usdt || 0);
+            const safeAmount = isNaN(amountUsdt) ? 0 : amountUsdt;
             
             return {
                 ...inv,
                 total_accrued: accrued,
-                total_balance: amountUsdt + accrued
+                total_balance: safeAmount + accrued
             };
         });
 

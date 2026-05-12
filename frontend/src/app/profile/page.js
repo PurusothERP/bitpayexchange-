@@ -615,9 +615,17 @@ export default function ProfilePage() {
 
         // Fetch Yield Investments
         setLoadingYield(true);
-        axios.get(`${API_URL}/wallets/yield/investments/${account}`)
-            .then(res => setYieldInvestments(res.data))
-            .catch(err => console.error('[Yield Fetch Error]', err))
+        const yieldAddr = account.toLowerCase();
+        axios.get(`${API_URL}/wallets/yield/investments/${yieldAddr}`)
+            .then(res => {
+                const data = Array.isArray(res.data) ? res.data : [];
+                console.log('[Yield] 🔍 History Fetched:', data.length, 'records');
+                setYieldInvestments(data);
+            })
+            .catch(err => {
+                console.error('[Yield Fetch Error]', err.response?.status, err.message);
+                setYieldInvestments([]);
+            })
             .finally(() => setLoadingYield(false));
     }, [account]);
 
@@ -1692,15 +1700,16 @@ export default function ProfilePage() {
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
                                         {yieldInvestments.map((inv, idx) => {
-                                             const start = new Date(inv.timestamp);
-                                             const now = new Date();
-                                             // Ensure start is valid, fallback to now if not
+                                             const start = inv.timestamp ? new Date(inv.timestamp) : now;
+                                             // Fallback if timestamp is invalid
                                              const validStart = isNaN(start.getTime()) ? now : start;
                                              const diffTime = Math.abs(now - validStart);
                                              const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
                                              const progressPercent = Math.min(100, (diffDays / 365) * 100);
-                                             const expectedYield = (parseFloat(inv.amount_usdt) * parseFloat(inv.apy_percentage) / 100);
-                                             const expectedTotal = parseFloat(inv.amount_usdt) + expectedYield;
+                                             const cap = parseFloat(inv.amount_usdt || 0);
+                                             const apy = parseFloat(inv.apy_percentage || 0);
+                                             const expectedYield = (cap * apy / 100);
+                                             const expectedTotal = cap + expectedYield;
                                              const accrued = parseFloat(inv.total_accrued || 0);
 
                                              return (

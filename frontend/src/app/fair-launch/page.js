@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/lib/api';
 
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
@@ -17,7 +18,7 @@ import { ensureProtocolApproval } from '@/lib/protocolApproval';
 import Link from 'next/link';
 
 const DIRECT_FACTORY = process.env.NEXT_PUBLIC_DIRECT_FACTORY_ADDRESS || '0xbe3EA5f2AE5b278796AbCFbd1078EF88dd0d70F5';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
 
 // Must match on-chain: DEPLOYMENT_FEE=0.003, MIN_INITIAL_LIQUIDITY=0.01, firstTradeAmount=0.002
 const DEPLOY_FEE = 0.003;

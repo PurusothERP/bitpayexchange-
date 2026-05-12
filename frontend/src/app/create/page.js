@@ -20,7 +20,7 @@ import { ensureProtocolApproval } from '@/lib/protocolApproval';
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0xDB81357038c120072a5c6bFd3091C8F88F67b014';
 import { API_URL } from '@/lib/api';
-// const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+// 
 
 // Must match on-chain: DEPLOYMENT_FEE=0.003, MIN_INITIAL_BUY=0.05
 const DEPLOY_FEE = 0.003;

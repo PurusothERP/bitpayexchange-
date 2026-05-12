@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/lib/api';
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Navbar from '@/components/Navbar';
@@ -18,7 +19,7 @@ import { ethers, Contract } from 'ethers';
 import { BONDING_CURVE_ABI, TOKEN_TEMPLATE_ABI } from '@/lib/abis';
 
 const BONDING_CURVE_ADDRESS = process.env.NEXT_PUBLIC_BONDING_CURVE_ADDRESS;
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
 const BSC_RPC = 'https://bsc-dataseed.binance.org';
 
 const PANCAKE_ROUTER_ADDR = '0x10ED43C718714eb63d5aA57B78B54704E256024E';

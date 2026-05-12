@@ -18,7 +18,7 @@ import { Brain, FileText, Sparkles, Loader2, Info, ShoppingCart, ArrowRightLeft,
 
 const BONDING_CURVE_ADDRESS = process.env.NEXT_PUBLIC_BONDING_CURVE_ADDRESS;
 const FACTORY_ADDRESS       = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;
-const API_URL               = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+import { API_URL } from '@/lib/api';
 const BSC_RPC               = 'https://bsc-dataseed.binance.org';
 
 function shortAddr(a, pre = 6, suf = 6) {

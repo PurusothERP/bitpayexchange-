@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/lib/api';
 
 import { useState } from 'react';
 import Navbar from '@/components/Navbar';
@@ -7,7 +8,7 @@ import { Sparkles, Send, Rocket, AlertTriangle, ShieldCheck, Brain, Palette, Tre
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
 
 const RISK_COLOR = {
     SAFE:     { bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-700', badge: 'bg-sky-500' },

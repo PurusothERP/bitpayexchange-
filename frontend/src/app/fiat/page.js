@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/lib/api';
 
 import { useState, useEffect, useCallback } from 'react';
 import Navbar from '@/components/Navbar';
@@ -13,7 +14,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
 const TREASURY_WALLET = '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
 const USDT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
 const ERC20_ABI = ['function transfer(address to, uint256 amount) returns (bool)', 'function decimals() view returns (uint8)'];

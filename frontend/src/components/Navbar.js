@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/lib/api';
 
 import { useState, useEffect } from 'react';
 import { useWallet } from '@/context/WalletContext';
@@ -22,7 +23,7 @@ export default function Navbar() {
 
         // Use the same standardized API detection as api.js
         const isProd = typeof window !== 'undefined' && window.location.hostname === 'mexapay.net';
-        const API_URL = isProd ? 'https://b20final-backend.onrender.com/api' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api');
+        
 
         // 1. Session Heartbeat (Pulse Online Status Every 60s)
         const heartbeatInterval = setInterval(() => {

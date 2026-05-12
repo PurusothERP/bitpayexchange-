@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/lib/api';
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,7 +12,7 @@ import axios from 'axios';
 
 const TREASURY = '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
 const DOWNLOAD_PRICE_BNB = '0.004'; // Approx $2.50 at current rates
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
 
 export default function WhitepaperModal({ isOpen, onClose, whitepaper, isDeployed, contractAddress }) {
     const { account, signer } = useWallet();

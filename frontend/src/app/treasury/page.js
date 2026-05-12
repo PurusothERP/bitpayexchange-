@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/lib/api';
 
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
@@ -6,7 +7,7 @@ import axios from 'axios';
 import { ShieldCheck, CheckCircle2, Clock, Wallet, ExternalLink, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
 
 export default function TreasuryDashboard() {
     const [tokens, setTokens] = useState([]);

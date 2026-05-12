@@ -1,11 +1,12 @@
 'use client';
+import { API_URL } from '@/lib/api';
 
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import TokenCard from './TokenCard';
 import { Search, Rocket } from 'lucide-react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
 
 export default function TokenList() {
     const [tokens, setTokens] = useState([]);

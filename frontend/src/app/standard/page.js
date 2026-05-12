@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/lib/api';
 
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
@@ -45,7 +46,7 @@ export default function StandardAsset() {
     const [isMimicChecking, setIsMimicChecking] = useState(false);
     const [isMimicIgnored, setIsMimicIgnored] = useState(false);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+    
 
     const FEE_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
     const isTreasury = account?.toLowerCase() === FEE_WALLET.toLowerCase();

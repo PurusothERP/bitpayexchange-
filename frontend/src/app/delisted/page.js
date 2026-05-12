@@ -1,11 +1,12 @@
 'use client';
+import { API_URL } from '@/lib/api';
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { motion } from 'framer-motion';
 import { ShieldAlert, Trash2, Ghost, ArrowRight, ExternalLink, Hash, Clock, Ban } from 'lucide-react';
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
 
 export default function DelistedPage() {
     const [tokens, setTokens] = useState([]);

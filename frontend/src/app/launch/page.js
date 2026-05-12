@@ -13,7 +13,7 @@ import Link from 'next/link';
 import axios from 'axios';
 
 import { API_URL } from '@/lib/api';
-// const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+// 
 
 // ── Components ───────────────────────────────────────────────────────────────
 

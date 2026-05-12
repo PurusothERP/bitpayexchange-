@@ -1,11 +1,12 @@
 'use client';
+import { API_URL } from '@/lib/api';
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, X, Send, Sparkles, Loader2, Bot, User, Trash2 } from 'lucide-react';
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
 
 export default function ChatBox() {
     const [isOpen, setIsOpen] = useState(false);

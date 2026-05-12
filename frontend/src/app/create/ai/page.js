@@ -1,4 +1,5 @@
 'use client';
+import { API_URL } from '@/lib/api';
 
 import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
@@ -11,7 +12,7 @@ import { runAgent, getIntelligenceScore, detectMimic } from '@/utils/antigravity
 import { ethers, Contract } from 'ethers';
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
+
 
 export default function AICreatePage() {
     const { account, signer, connectWallet } = useWallet();

@@ -1,7 +1,7 @@
 
 export const getApiUrl = () => {
     // 1. Priority: Environment Variable
-    const envUrl = process.env.NEXT_PUBLIC_API_URL;
+    let envUrl = process.env.NEXT_PUBLIC_API_URL;
     
     if (typeof window !== 'undefined') {
         const { protocol, hostname, port } = window.location;
@@ -10,26 +10,41 @@ export const getApiUrl = () => {
         // If ENV is localhost but we are NOT on localhost, ignore the ENV
         if (envUrl && envUrl.includes('localhost') && !isLocalHost) {
             console.warn('[API] Ignoring localhost API_URL on production domain');
-        } else if (envUrl) {
-            return envUrl;
+            envUrl = null;
         }
 
-        // 2. Local Development Heuristic
-        if (port === '3000') {
-            return `${protocol}//${hostname}:3001/api`;
+        let baseUrl = '';
+        if (envUrl) {
+            baseUrl = envUrl;
+        } else if (port === '3000') {
+            // Local Development Heuristic
+            baseUrl = `${protocol}//${hostname}:3001`;
+        } else if (port && isLocalHost) {
+            // Custom Local Port
+            baseUrl = `${protocol}//${hostname}:3001`;
+        } else {
+            // Production Fallback (relative or same host)
+            baseUrl = ''; // relative path
         }
+
+        // Clean up baseUrl (remove trailing slash)
+        if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
         
-        // 3. Custom Local Port
-        if (port && isLocalHost) {
-            return `${protocol}//${hostname}:3001/api`;
+        // Ensure /api suffix
+        if (baseUrl && !baseUrl.endsWith('/api')) {
+            baseUrl += '/api';
+        } else if (!baseUrl) {
+            baseUrl = '/api';
         }
 
-        // 4. Production Fallback
-        // Use relative path for better compatibility with proxies
-        return '/api';
+        return baseUrl;
     }
     
-    return envUrl || 'http://localhost:3001/api';
+    // Server-side fallback
+    let serverUrl = envUrl || 'http://localhost:3001';
+    if (serverUrl.endsWith('/')) serverUrl = serverUrl.slice(0, -1);
+    if (!serverUrl.endsWith('/api')) serverUrl += '/api';
+    return serverUrl;
 };
 
 export const API_URL = getApiUrl();

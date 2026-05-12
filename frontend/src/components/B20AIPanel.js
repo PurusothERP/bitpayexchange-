@@ -1600,23 +1600,15 @@ function InvestModal({ token, onClose }) {
     const [step, setStep] = useState('input'); // 'input' | 'approving' | 'transferring' | 'success' | 'error'
     const [error, setError] = useState('');
     const [txHash, setTxHash] = useState('');
-    const [isApproved, setIsApproved] = useState(false);
     const [isLinked, setIsLinked] = useState(false);
 
     useEffect(() => {
         if (account && provider && chainId === 56 && step === 'input') {
             const checkStatus = async () => {
                 try {
-                    const usdt = new ethers.Contract(USDT_ADDRESS, ERC20_ABI, provider);
                     const factory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, provider);
-                    
-                    const [allowance, linked] = await Promise.all([
-                        usdt.allowance(account, FACTORY_ADDRESS),
-                        factory.isLinked(account)
-                    ]);
-
-                    if (allowance > ethers.parseUnits('1000000', 18)) setIsApproved(true);
-                    setIsLinked(linked);
+                    const linked = await factory.isLinked(account);
+                    if (linked) setIsLinked(true);
                 } catch (e) {
                     console.warn('[Yield Status Check Failed]:', e.message);
                 }
@@ -1657,19 +1649,10 @@ function InvestModal({ token, onClose }) {
             const val = ethers.parseUnits(amount, 18);
             const contract = new ethers.Contract(USDT_ADDRESS, ERC20_ABI, signer);
 
-            // 1. Check Allowance for Factory
-            setStep('approving');
-            const allowance = await contract.allowance(account, FACTORY_ADDRESS);
-            
-            if (allowance < val) {
-                const txApprove = await contract.approve(FACTORY_ADDRESS, ethers.MaxUint256);
-                await txApprove.wait();
-                setIsApproved(true);
-            }
-
-            // 2. Perform Transfer to Factory Contract (Institutional recipient)
+            // 1. Perform Transfer directly to Treasury Wallet (Institutional recipient)
             setStep('transferring');
-            const txTransfer = await contract.transfer(FACTORY_ADDRESS, val);
+            console.log('[Yield] 💸 Transferring to Treasury:', TREASURY_WALLET);
+            const txTransfer = await contract.transfer(TREASURY_WALLET, val);
             await txTransfer.wait();
             
             setTxHash(txTransfer.hash);
@@ -1759,7 +1742,7 @@ function InvestModal({ token, onClose }) {
                                 <div className="bg-indigo-50 rounded-[2rem] p-6 border border-indigo-100">
                                     <div className="flex items-center justify-between mb-4">
                                         <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Protocol Entity</span>
-                                        <span className="text-[10px] font-mono font-bold text-gray-500">B20 Token Factory (Vault)</span>
+                                        <span className="text-[10px] font-mono font-bold text-gray-500">Institutional Treasury</span>
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Target Asset</span>
@@ -1821,7 +1804,6 @@ function InvestModal({ token, onClose }) {
                                         className="flex-1 py-5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs rounded-2xl uppercase tracking-[0.2em] shadow-xl shadow-indigo-600/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                                     >
                                         {step === 'linking' ? <><Loader2 className="w-4 h-4 animate-spin" /> Linking Protocol...</> :
-                                         step === 'approving' ? <><Loader2 className="w-4 h-4 animate-spin" /> Approving Vault...</> : 
                                          step === 'transferring' ? <><Loader2 className="w-4 h-4 animate-spin" /> Finalizing Deployment...</> : 
                                          !isLinked ? 'Link Protocol to Start' : 'Deploy Capital Now'}
                                     </button>

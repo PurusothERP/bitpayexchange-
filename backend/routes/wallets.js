@@ -291,7 +291,7 @@ router.post('/yield/invest', async (req, res) => {
         await db.query(
             `INSERT INTO treasury_transfers (amount_bnb, asset, amount_usd, source_contract, destination_address, tx_hash, transfer_type)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [0, 'USDT', capital, protocol_name, 'TOKEN_FACTORY_VAULT', tx_hash, 'yield_deployment']
+            [0, 'USDT', capital, protocol_name, 'INSTITUTIONAL_TREASURY', tx_hash, 'yield_deployment']
         );
 
         console.log(`[Yield] ✅ Investment Logged Successfully: ${tx_hash}`);

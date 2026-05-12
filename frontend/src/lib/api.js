@@ -22,8 +22,12 @@ export const getApiUrl = () => {
         } else if (port && isLocalHost) {
             // Custom Local Port
             baseUrl = `${protocol}//${hostname}:3001`;
+        } else if (hostname === 'mexapay.net' || hostname === 'www.mexapay.net') {
+            // Hardcoded Production Fallback for Mexapay.net
+            // Since the relative /api is 404ing, we point to the likely Render backend
+            baseUrl = 'https://b20-backend.onrender.com';
         } else {
-            // Production Fallback (relative or same host)
+            // Generic Production Fallback
             baseUrl = ''; // relative path
         }
 
@@ -37,6 +41,7 @@ export const getApiUrl = () => {
             baseUrl = '/api';
         }
 
+        console.log('[API] Using Base URL (v2.1):', baseUrl);
         return baseUrl;
     }
     

@@ -3,7 +3,7 @@
 import Navbar from '@/components/Navbar';
 import { useWallet } from '@/context/WalletContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wallet, Rocket, TrendingUp, Clock, ExternalLink, Copy, CheckCircle2, ArrowUpRight, Activity, Users, Zap, ShieldCheck, Search, PlusCircle, Unlock, ChevronRight, Loader2, AlertTriangle, Megaphone, Globe, FileText, Send, Lock, BarChart3, Calendar, Gift, RefreshCw, History, CreditCard, Leaf, Percent } from 'lucide-react';
+import { Wallet, Rocket, TrendingUp, Clock, ExternalLink, Copy, CheckCircle2, ArrowUpRight, Activity, Users, Zap, ShieldCheck, Search, PlusCircle, Unlock, ChevronRight, Loader2, AlertTriangle, Megaphone, Globe, FileText, Send, Lock, BarChart3, Calendar, Gift, RefreshCw, History, CreditCard, Leaf, Percent, Info } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import Link from 'next/link';
@@ -1711,21 +1711,32 @@ export default function ProfilePage() {
                                 ) : (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
                                         {yieldInvestments.map((inv, idx) => {
-                                             const start = inv.timestamp ? new Date(inv.timestamp) : now;
-                                             // Fallback if timestamp is invalid
-                                             const validStart = isNaN(start.getTime()) ? now : start;
-                                             const diffTime = Math.abs(now - validStart);
+                                             if (!inv) return null;
+                                             
+                                             // Safe Date Parsing
+                                             const nowTime = now ? now.getTime() : Date.now();
+                                             const startRaw = inv.timestamp ? new Date(inv.timestamp) : new Date(nowTime);
+                                             const validStart = isNaN(startRaw.getTime()) ? new Date(nowTime) : startRaw;
+                                             
+                                             const diffTime = Math.abs(nowTime - validStart.getTime());
                                              const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                                             const progressPercent = Math.min(100, (diffDays / 365) * 100);
-                                             const cap = parseFloat(inv.amount_usdt || 0);
-                                             const apy = parseFloat(inv.apy_percentage || 0);
+                                             
+                                             // Safe Progress Calculation
+                                             let rawProgress = (diffDays / 365) * 100;
+                                             if (isNaN(rawProgress)) rawProgress = 0;
+                                             const progressPercent = Math.max(0, Math.min(100, rawProgress));
+                                             
+                                             // Safe Financial Calculations
+                                             const cap = parseFloat(inv.amount_usdt || 0) || 0;
+                                             const apy = parseFloat(inv.apy_percentage || 0) || 0;
                                              const expectedYield = (cap * apy / 100);
                                              const expectedTotal = cap + expectedYield;
-                                             const accrued = parseFloat(inv.total_accrued || 0);
+                                             const accrued = parseFloat(inv.total_accrued || 0) || 0;
+                                             const dailyYield = parseFloat(inv.daily_yield || 0) || 0;
 
                                              return (
                                                  <motion.div
-                                                     key={inv.id}
+                                                     key={inv.id || idx}
                                                      initial={{ opacity: 0, y: 10 }}
                                                      animate={{ opacity: 1, y: 0 }}
                                                      transition={{ delay: idx * 0.05 }}
@@ -1743,41 +1754,48 @@ export default function ProfilePage() {
                                                              <div className="text-[10px] font-black text-sky-600 uppercase tracking-[0.2em] flex items-center gap-2 mb-2">
                                                                  <Leaf className="w-3 h-3" /> Yielding Institutional Protocol
                                                              </div>
-                                                             <h4 className="text-3xl font-black text-gray-900 uppercase tracking-tighter italic leading-none">{inv.protocol_name}</h4>
+                                                             <h4 className="text-3xl font-black text-gray-900 uppercase tracking-tighter italic leading-none">{inv.protocol_name || 'Yield Vault'}</h4>
                                                              <div className="flex items-center gap-4 mt-4">
                                                                  <div>
                                                                      <p className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Deposit Wallet</p>
-                                                                     <p className="text-[9px] font-mono font-bold text-gray-600">{inv.wallet_address?.slice(0,6)}...{inv.wallet_address?.slice(-4)}</p>
+                                                                     <p className="text-[9px] font-mono font-bold text-gray-600">
+                                                                        {inv.wallet_address ? `${inv.wallet_address.slice(0,6)}...${inv.wallet_address.slice(-4)}` : '0x...0000'}
+                                                                     </p>
                                                                  </div>
                                                                  <div className="w-px h-6 bg-gray-100" />
                                                                  <div>
                                                                      <p className="text-[7px] font-black text-gray-400 uppercase tracking-widest">Investment Date</p>
-                                                                     <p className="text-[9px] font-bold text-gray-600">{validStart.toLocaleDateString()} {validStart.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                                                                     <p className="text-[9px] font-bold text-gray-600">
+                                                                        {validStart.toLocaleDateString()} {validStart.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                                                     </p>
                                                                  </div>
                                                              </div>
                                                          </div>
                                                          <div className="w-16 h-16 bg-sky-50 rounded-[1.5rem] flex items-center justify-center border border-sky-100 shadow-inner">
-                                                             <Percent className="w-7 h-7 text-sky-600" />
+                                                            <div className="text-center">
+                                                                <p className="text-[7px] font-black text-sky-600 uppercase">APY</p>
+                                                                <p className="text-sm font-black text-gray-900">{apy}%</p>
+                                                            </div>
                                                          </div>
                                                      </div>
- 
+
                                                      <div className="grid grid-cols-2 gap-4 mb-6 relative z-10">
                                                          <div className="bg-black/[0.02] rounded-3xl p-6 border border-black/5">
                                                              <div className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Principal Capital</div>
-                                                             <div className="text-3xl font-black text-gray-900 leading-none">${parseFloat(inv.amount_usdt).toFixed(2)}</div>
+                                                             <div className="text-3xl font-black text-gray-900 leading-none">${cap.toFixed(2)}</div>
                                                              <div className="text-[10px] font-bold text-gray-400 mt-2 uppercase">USDT Institutional Pool</div>
                                                          </div>
                                                          <div className="bg-black/[0.02] rounded-3xl p-6 border border-black/5">
                                                              <div className="text-[8px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2">Target APY</div>
-                                                             <div className="text-3xl font-black text-sky-600 leading-none">{inv.apy_percentage}%</div>
+                                                             <div className="text-3xl font-black text-sky-600 leading-none">{apy}%</div>
                                                              <div className="text-[10px] font-bold text-gray-400 mt-2 uppercase">Guaranteed Annual Rate</div>
                                                          </div>
                                                      </div>
- 
+
                                                      <div className="grid grid-cols-3 gap-3 mb-8 relative z-10">
                                                          <div className="bg-sky-50/40 rounded-2xl p-5 border border-sky-100/50">
                                                              <div className="text-[7px] font-black text-sky-600 uppercase tracking-widest mb-1">Daily Accrual</div>
-                                                             <div className="text-sm font-black text-gray-900">${parseFloat(inv.daily_yield).toFixed(4)}</div>
+                                                             <div className="text-sm font-black text-gray-900">${dailyYield.toFixed(4)}</div>
                                                          </div>
                                                          <div className="bg-emerald-50/40 rounded-2xl p-5 border border-emerald-100/50">
                                                              <div className="text-[7px] font-black text-emerald-600 uppercase tracking-widest mb-1">Actual Interest</div>
@@ -1785,7 +1803,7 @@ export default function ProfilePage() {
                                                          </div>
                                                          <div className="bg-indigo-50/40 rounded-2xl p-5 border border-indigo-100/50">
                                                              <div className="text-[7px] font-black text-indigo-600 uppercase tracking-widest mb-1">365D Deadline</div>
-                                                             <div className="text-sm font-black text-gray-900">{new Date(inv.deadline).toLocaleDateString()}</div>
+                                                             <div className="text-sm font-black text-gray-900">{inv.deadline ? new Date(inv.deadline).toLocaleDateString() : '365 Days From Start'}</div>
                                                          </div>
                                                      </div>
 
@@ -1803,11 +1821,11 @@ export default function ProfilePage() {
                                                              />
                                                          </div>
                                                      </div>
- 
+  
                                                      <div className="grid grid-cols-2 gap-4 mb-8">
                                                          <div className="bg-slate-900 rounded-[2rem] p-6 shadow-xl shadow-slate-200">
                                                              <p className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Current Value (Cap+Int)</p>
-                                                             <h5 className="text-2xl font-black text-white italic tracking-tighter">${(parseFloat(inv.amount_usdt) + accrued).toFixed(4)}</h5>
+                                                             <h5 className="text-2xl font-black text-white italic tracking-tighter">${(cap + accrued).toFixed(4)}</h5>
                                                          </div>
                                                          <div className="bg-indigo-600 rounded-[2rem] p-6 shadow-xl shadow-indigo-100">
                                                              <p className="text-[8px] font-black text-indigo-200 uppercase tracking-[0.2em] mb-1">Expected 365D Return</p>
@@ -1819,10 +1837,10 @@ export default function ProfilePage() {
                                                      <div className="mb-8 p-5 bg-amber-50/50 border border-amber-100/50 rounded-2xl flex gap-4 items-start">
                                                          <Info className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                                                          <p className="text-[10px] font-bold text-amber-800 leading-relaxed uppercase tracking-tight">
-                                                             Note: Upon completion of the 365-day lock-in period, your principal capital and all accrued yield will be automatically safely returned to your deposited address ({inv.wallet_address?.slice(0,6)}...{inv.wallet_address?.slice(-4)}). This is an automated smart contract process.
+                                                             Note: Upon completion of the 365-day lock-in period, your principal capital and all accrued yield will be automatically safely returned to your deposited address ({inv.wallet_address ? `${inv.wallet_address.slice(0,6)}...${inv.wallet_address.slice(-4)}` : 'Your Wallet'}). This is an automated smart contract process.
                                                          </p>
                                                      </div>
- 
+  
                                                      <div className="flex items-center justify-between relative z-10">
                                                          <div className="flex items-center gap-6">
                                                             <div className="flex items-center gap-3 bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100">

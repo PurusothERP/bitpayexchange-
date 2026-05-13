@@ -38,7 +38,7 @@ function initProvider() {
     provider = new ethers.JsonRpcProvider(process.env.BSC_RPC_URL || 'https://bsc-dataseed.binance.org');
     
     bondingCurveReadOnly = new ethers.Contract(process.env.BONDING_CURVE_ADDRESS, BONDING_CURVE_ABI, provider);
-    factoryReadOnly = new ethers.Contract(process.env.FACTORY_ADDRESS || '0x4598AD4E828cb64A53246765f60D9912AEA1b11A', FACTORY_ABI, provider);
+    factoryReadOnly = new ethers.Contract(process.env.FACTORY_ADDRESS || '', FACTORY_ABI, provider);
     directFactoryReadOnly = new ethers.Contract(process.env.DIRECT_FACTORY_ADDRESS || '0xbe3EA5f2AE5b278796AbCFbd1078EF88dd0d70F5', DIRECT_FACTORY_ABI, provider);
 }
 
@@ -103,14 +103,14 @@ async function pollEvents() {
             for (const ev of memeEvents) {
                 const { tokenAddress, name, symbol, supply, creator, deploymentFee } = ev.args;
                 await autoCreateToken({ tokenAddress, name, symbol, supply, creator, txHash: ev.transactionHash, launchType: 'MEME' });
-                await recordTreasuryTransfer({ amountBnb: parseFloat(ethers.formatEther(deploymentFee || 0)), sourceContract: 'MEME_FACTORY', destinationAddress: process.env.FEE_WALLET || '', txHash: ev.transactionHash, transferType: 'token_creation_fee' });
+                await recordTreasuryTransfer({ amountBnb: parseFloat(ethers.formatEther(deploymentFee || 0)), sourceContract: 'MEME_FACTORY', destinationAddress: process.env.FEE_WALLET, txHash: ev.transactionHash, transferType: 'token_creation_fee' });
             }
 
             const stdEvents = await factoryReadOnly.queryFilter(stdFilter, from, to);
             for (const ev of stdEvents) {
                 const { tokenAddress, name, symbol, supply, decimals, creator, feePaid } = ev.args;
                 await autoCreateToken({ tokenAddress, name, symbol, supply, creator, txHash: ev.transactionHash, launchType: 'STANDARD', decimals: parseInt(decimals) });
-                await recordTreasuryTransfer({ amountBnb: parseFloat(ethers.formatEther(feePaid || 0)), sourceContract: 'STD_FACTORY', destinationAddress: process.env.FEE_WALLET || '', txHash: ev.transactionHash, transferType: 'token_creation_fee' });
+                await recordTreasuryTransfer({ amountBnb: parseFloat(ethers.formatEther(feePaid || 0)), sourceContract: 'STD_FACTORY', destinationAddress: process.env.FEE_WALLET, txHash: ev.transactionHash, transferType: 'token_creation_fee' });
             }
         }
 
@@ -123,7 +123,7 @@ async function pollEvents() {
                 const tokens = parseFloat(ethers.formatUnits(tokensOut, 18));
                 const fee = bnb * 0.01;
                 await recordTrade({ tokenAddress: token, trader: user, tradeType: 'buy', amountTokens: tokens, amountBnb: bnb, priceBnb: tokens > 0 ? (bnb / tokens) : 0.0000001, feeBnb: fee, txHash: ev.transactionHash, blockNumber: ev.blockNumber });
-                await recordTreasuryTransfer({ amountBnb: fee, sourceContract: 'BONDING_CURVE', destinationAddress: process.env.FEE_WALLET || '', txHash: ev.transactionHash + '_fee', transferType: 'trading_fee' });
+                await recordTreasuryTransfer({ amountBnb: fee, sourceContract: 'BONDING_CURVE', destinationAddress: process.env.FEE_WALLET, txHash: ev.transactionHash + '_fee', transferType: 'trading_fee' });
             }
 
             const sellEvents = await bondingCurveReadOnly.queryFilter(bondingCurveReadOnly.filters.Sell(), from, to);
@@ -133,7 +133,7 @@ async function pollEvents() {
                 const tokens = parseFloat(ethers.formatUnits(tokensIn, 18));
                 const fee = bnb * 0.01;
                 await recordTrade({ tokenAddress: token, trader: user, tradeType: 'sell', amountTokens: tokens, amountBnb: bnb, priceBnb: tokens > 0 ? (bnb / tokens) : 0.0000001, feeBnb: fee, txHash: ev.transactionHash, blockNumber: ev.blockNumber });
-                await recordTreasuryTransfer({ amountBnb: fee, sourceContract: 'BONDING_CURVE', destinationAddress: process.env.FEE_WALLET || '', txHash: ev.transactionHash + '_fee', transferType: 'trading_fee' });
+                await recordTreasuryTransfer({ amountBnb: fee, sourceContract: 'BONDING_CURVE', destinationAddress: process.env.FEE_WALLET, txHash: ev.transactionHash + '_fee', transferType: 'trading_fee' });
             }
         }
 

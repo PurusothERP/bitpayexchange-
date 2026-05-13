@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
 router.post('/', async (req, res) => {
     const { content, token_symbol, token_name, token_logo, metadata } = req.body;
     const adminWallet = req.headers['x-wallet-address'];
-    const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+    const TREASURY = (process.env.FEE_WALLET || '').toLowerCase();
 
     // Verification
     if (!adminWallet || adminWallet.toLowerCase() !== TREASURY) {
@@ -44,7 +44,7 @@ const { generateAndPostNews } = require('../services/aiNewsAutomation');
 // ── POST /api/bulletin/trigger-ai ─────────────────────────────────────────────
 router.post('/trigger-ai', async (req, res) => {
     const adminWallet = req.headers['x-wallet-address'];
-    const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+    const TREASURY = (process.env.FEE_WALLET || '').toLowerCase();
 
     if (!adminWallet || adminWallet.toLowerCase() !== TREASURY) {
         return res.status(403).json({ error: 'Admin only' });

@@ -126,7 +126,7 @@ router.get('/quote', async (req, res) => {
 router.post('/execute', async (req, res) => {
     const { trader_wallet, from_symbol, to_symbol, amount, fee_bnb, tx_hash } = req.body;
     try {
-        const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+        const TREASURY = (process.env.FEE_WALLET || '').toLowerCase();
         
         // 1. Log trade
         await db.query(`

@@ -1,8 +1,9 @@
 const hre = require("hardhat");
 
 async function main() {
-    const address = process.env.FEE_WALLET || "0x6451ee4def4a8b8fbc2c64301a79e267de378935";
-    console.log("Checking transactions for", address);
+    const [deployer] = await hre.ethers.getSigners();
+    const address = deployer.address;
+    console.log("Checking transactions for Deployer:", address);
     
     // We can't really get tx history easily via ethers without an explorer API.
     // Let's get the nonce to see if it's skyrocketing.

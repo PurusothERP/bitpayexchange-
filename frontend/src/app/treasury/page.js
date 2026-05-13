@@ -44,12 +44,12 @@ export default function TreasuryDashboard() {
             
             <div className="pt-32 pb-24 px-4 md:px-8 max-w-7xl mx-auto">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-12">
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full mb-4">
-                        <ShieldCheck className="w-4 h-4 text-indigo-600" />
-                        <span className="text-xs font-black text-indigo-600 uppercase tracking-widest">Internal Logistics</span>
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-teal-500/10 border border-teal-500/20 rounded-full mb-4">
+                        <ShieldCheck className="w-4 h-4 text-teal-600" />
+                        <span className="text-xs font-black text-teal-600 uppercase tracking-widest">Internal Logistics</span>
                     </div>
                     <h1 className="text-4xl md:text-5xl font-black text-gray-900 mb-4 tracking-tighter">
-                        Treasury <span className="text-indigo-600">Command</span>
+                        Treasury <span className="text-teal-600">Command</span>
                     </h1>
                     <p className="text-gray-500 max-w-2xl text-lg font-medium">
                         Live monitoring of the global protocol flow. All bonded BNB and 10% auto-transfers verified in real-time.
@@ -63,13 +63,13 @@ export default function TreasuryDashboard() {
                         </div>
                         <div>
                             <p className="text-xs font-black text-gray-400 tracking-widest uppercase mb-1">Treasury Wallet</p>
-                            <p className="text-sm font-mono text-gray-900 font-bold break-all">0x6451ee4def4a8b8fbc2c64301a79e267de378935</p>
+                            <p className="text-sm font-mono text-gray-900 font-bold break-all">process.env.NEXT_PUBLIC_FEE_WALLET</p>
                         </div>
                     </div>
                     
                     <div className="bg-white border border-black/5 rounded-3xl p-6 shadow-sm flex items-center gap-5">
-                        <div className="w-14 h-14 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center shrink-0">
-                            <Wallet className="w-6 h-6 text-indigo-600" />
+                        <div className="w-14 h-14 bg-teal-500/10 border border-teal-500/20 rounded-2xl flex items-center justify-center shrink-0">
+                            <Wallet className="w-6 h-6 text-teal-600" />
                         </div>
                         <div>
                             <p className="text-xs font-black text-gray-400 tracking-widest uppercase mb-1">Total Assets Tracked</p>
@@ -78,13 +78,13 @@ export default function TreasuryDashboard() {
                     </div>
 
                     <div className="bg-white border border-black/5 rounded-3xl p-6 shadow-sm flex items-center gap-5">
-                        <div className="w-14 h-14 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-center shrink-0 animate-pulse">
-                            <Activity className="w-6 h-6 text-blue-600" />
+                        <div className="w-14 h-14 bg-teal-500/10 border border-teal-500/20 rounded-2xl flex items-center justify-center shrink-0 animate-pulse">
+                            <Activity className="w-6 h-6 text-teal-600" />
                         </div>
                         <div>
                             <p className="text-xs font-black text-gray-400 tracking-widest uppercase mb-1">Sweep Status</p>
                             <p className="text-[11px] font-bold text-gray-500 leading-tight">
-                                Trading fees (1%) are automatically pushed to the Treasury <span className="text-blue-500">instantly on every trade</span> natively within the smart contract!
+                                Trading fees (1%) are automatically pushed to the Treasury <span className="text-teal-600">instantly on every trade</span> natively within the smart contract!
                             </p>
                         </div>
                     </div>
@@ -131,12 +131,12 @@ export default function TreasuryDashboard() {
                                                 {/* Token Identity */}
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-white border border-black/5 rounded-xl flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                                                        <div className="w-10 h-10 bg-gradient-to-br from-teal-600 to-white border border-black/5 rounded-xl flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
                                                             {token.logo_url ? <img src={token.logo_url} alt="" className="w-full h-full object-cover" /> : <span className="text-xl">🪙</span>}
                                                         </div>
                                                         <div>
                                                             <div className="font-black text-gray-900 truncate max-w-[150px]">{token.name}</div>
-                                                            <div className="text-[10px] font-black uppercase text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded flex w-min">${token.symbol}</div>
+                                                            <div className="text-[10px] font-black uppercase text-teal-600 bg-teal-50 px-2 py-0.5 rounded flex w-min">${token.symbol}</div>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -147,7 +147,7 @@ export default function TreasuryDashboard() {
                                                         <span className="font-mono text-xs text-gray-500 bg-gray-50 px-2 py-1 flex items-center rounded-md border border-black/5 shadow-inner">
                                                             {shortAddr(token.contract_address || token.token_address || '')}
                                                         </span>
-                                                        <a href={`https://bscscan.com/token/${token.contract_address || token.token_address}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-indigo-600 transition-colors">
+                                                        <a href={`https://bscscan.com/token/${token.contract_address || token.token_address}`} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-teal-600 transition-colors">
                                                             <ExternalLink className="w-4 h-4" />
                                                         </a>
                                                     </div>

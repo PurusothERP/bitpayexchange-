@@ -13,8 +13,8 @@ const provider = new ethers.JsonRpcProvider(BSC_MAINNET_RPC);
 
 // ── All known factory / direct-factory addresses (mainnet) ───────────────────
 const MEME_FACTORY_ADDRESSES = [
-    '0x4598AD4E828cb64A53246765f60D9912AEA1b11A',  // Backend env factory
-    '0xDB81357038c120072a5c6bFd3091C8F88F67b014',  // Frontend factory
+    process.env.FACTORY_ADDRESS,  // Backend env factory
+    process.env.FACTORY_ADDRESS,  // Frontend factory
     '0xc4F46f4ee4F48498f8243D63b026d321e5C2aCe2',  // Missing factory found in test-deploy.js
 ];
 

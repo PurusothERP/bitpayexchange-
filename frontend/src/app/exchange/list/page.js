@@ -13,7 +13,7 @@ import {
 
 import { API_URL } from '@/lib/api';
 const LISTING_FEE = '0.10';
-const TREASURY_WALLET = '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
+const TREASURY_WALLET = 'process.env.NEXT_PUBLIC_FEE_WALLET';
 
 export default function ListTokenPage() {
     const { account, signer, connectWallet } = useWallet();
@@ -90,19 +90,19 @@ export default function ListTokenPage() {
 
             {/* Ambient */}
             <div className="fixed inset-0 pointer-events-none -z-10">
-                <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-blue-500/10 rounded-full blur-[150px]" />
-                <div className="absolute bottom-[-20%] right-[-10%] w-[1000px] h-[1000px] bg-indigo-500/10 rounded-full blur-[150px]" />
+                <div className="absolute top-[-20%] left-[-10%] w-[800px] h-[800px] bg-teal-500/10 rounded-full blur-[150px]" />
+                <div className="absolute bottom-[-20%] right-[-10%] w-[1000px] h-[1000px] bg-teal-500/10 rounded-full blur-[150px]" />
             </div>
 
             <div className="pt-32 px-6 max-w-7xl mx-auto">
                 {/* Header */}
                 <div className="text-center mb-16">
                     <motion.span initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-[0.3em] mb-6">
+                        className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-500 text-[10px] font-black uppercase tracking-[0.3em] mb-6">
                         <Plus className="w-3 h-3" /> Professional Listing Portal
                     </motion.span>
                     <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter mb-6">
-                        List Your <span className="bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Token</span> on Mexapay
+                        List Your <span className="bg-gradient-to-r from-teal-600 to-teal-700 bg-clip-text text-transparent">Token</span> on Tez Exchange
                     </h1>
                     <p className="text-white/40 text-sm font-bold uppercase tracking-[0.2em] max-w-2xl mx-auto">
                         Complete the form below, pay the listing fee, and our team will verify and list your token within 24 hours.
@@ -126,7 +126,7 @@ export default function ListTokenPage() {
                         {/* Left: Benefits */}
                         <div className="lg:col-span-4 space-y-6">
                             <div className="p-8 bg-white/[0.03] border border-white/10 rounded-[3rem] space-y-8">
-                                <h2 className="text-xl font-black uppercase tracking-tight">Why List on <span className="text-blue-400">Mexapay?</span></h2>
+                                <h2 className="text-xl font-black uppercase tracking-tight">Why List on <span className="text-teal-500">Tez Exchange?</span></h2>
                                 {[
                                     { icon: <Zap className="w-5 h-5" />, title: 'Instant Liquidity', desc: 'Direct connection to major BSC pools for seamless trading volume.' },
                                     { icon: <ShieldCheck className="w-5 h-5" />, title: 'Verified Trust Badge', desc: 'B20 Verified badge enhances project credibility and investor confidence.' },
@@ -134,7 +134,7 @@ export default function ListTokenPage() {
                                     { icon: <Globe className="w-5 h-5" />, title: 'Global Exposure', desc: 'Featured in trending markets section seen by thousands daily.' },
                                 ].map((b, i) => (
                                     <div key={i} className="flex gap-4">
-                                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shrink-0 text-blue-400">{b.icon}</div>
+                                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center border border-white/10 shrink-0 text-teal-500">{b.icon}</div>
                                         <div>
                                             <h4 className="text-sm font-black uppercase tracking-wide text-white mb-1">{b.title}</h4>
                                             <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest leading-relaxed">{b.desc}</p>
@@ -142,11 +142,11 @@ export default function ListTokenPage() {
                                     </div>
                                 ))}
                                 <div className="pt-4 border-t border-white/10">
-                                    <div className="p-5 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 rounded-2xl border border-white/10">
+                                    <div className="p-5 bg-gradient-to-r from-teal-600/20 to-teal-700/20 rounded-2xl border border-white/10">
                                         <p className="text-[10px] font-bold text-white/50 uppercase tracking-widest mb-3">One-time listing fee</p>
                                         <div className="flex items-center justify-between text-xs font-black uppercase">
                                             <span>Official Listing Fee</span>
-                                            <span className="text-blue-400 text-xl">0.10 BNB</span>
+                                            <span className="text-teal-500 text-xl">0.10 BNB</span>
                                         </div>
                                     </div>
                                 </div>
@@ -178,7 +178,7 @@ export default function ListTokenPage() {
                                                     <label className="text-[10px] font-black text-white/40 uppercase tracking-widest pl-2">{f.label}</label>
                                                     <input required type="text" placeholder={f.placeholder}
                                                         value={formData[f.key]} onChange={e => set(f.key, e.target.value)}
-                                                        className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-blue-500/50 transition-all text-white" />
+                                                        className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-teal-500/50 transition-all text-white" />
                                                 </div>
                                             ))}
                                         </div>
@@ -189,7 +189,7 @@ export default function ListTokenPage() {
                                         <label className="text-[10px] font-black text-white/40 uppercase tracking-widest pl-2">Contract Address (BEP-20) *</label>
                                         <input required type="text" placeholder="0x..."
                                             value={formData.contractId} onChange={e => set('contractId', e.target.value)}
-                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold font-mono outline-none focus:border-blue-500/50 transition-all text-white" />
+                                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold font-mono outline-none focus:border-teal-500/50 transition-all text-white" />
                                     </div>
 
                                     {/* Description + Supply */}
@@ -198,17 +198,17 @@ export default function ListTokenPage() {
                                             <label className="text-[10px] font-black text-white/40 uppercase tracking-widest pl-2">Description</label>
                                             <textarea rows={3} placeholder="Brief project description..."
                                                 value={formData.description} onChange={e => set('description', e.target.value)}
-                                                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-blue-500/50 transition-all text-white resize-none" />
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-teal-500/50 transition-all text-white resize-none" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black text-white/40 uppercase tracking-widest pl-2">Total Supply</label>
                                             <input type="text" placeholder="e.g. 1,000,000,000"
                                                 value={formData.totalSupply} onChange={e => set('totalSupply', e.target.value)}
-                                                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-blue-500/50 transition-all text-white" />
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-teal-500/50 transition-all text-white" />
                                             <label className="text-[10px] font-black text-white/40 uppercase tracking-widest pl-2 mt-3 block">Logo URL</label>
                                             <input type="text" placeholder="https://... (512×512 PNG/JPG)"
                                                 value={formData.logo} onChange={e => set('logo', e.target.value)}
-                                                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-blue-500/50 transition-all text-white" />
+                                                className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-teal-500/50 transition-all text-white" />
                                         </div>
                                     </div>
 
@@ -226,7 +226,7 @@ export default function ListTokenPage() {
                                                     <label className="text-[10px] font-black text-white/40 uppercase tracking-widest pl-2 flex items-center gap-1.5">{f.icon} {f.label}</label>
                                                     <input type="text" placeholder={f.placeholder}
                                                         value={formData[f.key]} onChange={e => set(f.key, e.target.value)}
-                                                        className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-blue-500/50 transition-all text-white" />
+                                                        className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-xs font-bold outline-none focus:border-teal-500/50 transition-all text-white" />
                                                 </div>
                                             ))}
                                         </div>
@@ -243,14 +243,14 @@ export default function ListTokenPage() {
                                         )}
                                         {status === 'paying' && (
                                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                                className="p-5 bg-blue-500/10 border border-blue-500/20 rounded-2xl text-center">
-                                                <p className="text-xs font-black text-blue-300 uppercase tracking-widest">Awaiting wallet confirmation for 0.10 BNB listing fee…</p>
+                                                className="p-5 bg-teal-500/10 border border-teal-500/20 rounded-2xl text-center">
+                                                <p className="text-xs font-black text-teal-400 uppercase tracking-widest">Awaiting wallet confirmation for 0.10 BNB listing fee…</p>
                                             </motion.div>
                                         )}
                                         {status === 'submitting' && (
                                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                                                className="p-5 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl text-center">
-                                                <p className="text-xs font-black text-indigo-300 uppercase tracking-widest">Fee paid ✓ — Saving application to admin queue…</p>
+                                                className="p-5 bg-teal-500/10 border border-teal-500/20 rounded-2xl text-center">
+                                                <p className="text-xs font-black text-teal-600 uppercase tracking-widest">Fee paid ✓ — Saving application to admin queue…</p>
                                             </motion.div>
                                         )}
                                     </AnimatePresence>
@@ -258,7 +258,7 @@ export default function ListTokenPage() {
                                     <button
                                         type="submit"
                                         disabled={status === 'paying' || status === 'submitting'}
-                                        className="w-full py-6 bg-white text-black font-black text-sm uppercase tracking-[0.3em] rounded-[2rem] shadow-2xl hover:bg-blue-500 hover:text-white transition-all active:scale-[0.98] flex items-center justify-center gap-4 group disabled:opacity-40"
+                                        className="w-full py-6 bg-white text-black font-black text-sm uppercase tracking-[0.3em] rounded-[2rem] shadow-2xl hover:bg-teal-500 hover:text-white transition-all active:scale-[0.98] flex items-center justify-center gap-4 group disabled:opacity-40"
                                     >
                                         {status === 'paying' ? 'Processing Fee Payment…' :
                                          status === 'submitting' ? 'Saving Application…' :
@@ -266,7 +266,7 @@ export default function ListTokenPage() {
                                     </button>
 
                                     <p className="text-center text-[10px] text-white/25 font-bold uppercase tracking-widest">
-                                        Fee is non-refundable. Mexapay reserves the right to reject any application.
+                                        Fee is non-refundable. Tez Exchange reserves the right to reject any application.
                                     </p>
                                 </form>
                             </div>

@@ -159,8 +159,8 @@ async function verifyCoreContracts() {
                     ['address', 'address', 'address'],
                     [
                         process.env.BONDING_CURVE_ADDRESS || '0xf7E5D2791F70051BEe564Ba5AC9896937cdf3d0a',
-                        process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935',
-                        process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935'
+                        process.env.FEE_WALLET || process.env.FEE_WALLET,
+                        process.env.FEE_WALLET || ''
                     ]
                 );
                 await submitVerification(factoryAddr, 'TokenFactory', src, args);
@@ -181,8 +181,8 @@ async function verifyCoreContracts() {
                 const args = abiCoder.encode(
                     ['address', 'address', 'address'],
                     [
-                        process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935',
-                        process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935',
+                        process.env.FEE_WALLET || process.env.FEE_WALLET,
+                        process.env.FEE_WALLET || process.env.FEE_WALLET,
                         '0x10ED43C718714eb63d5aA57B78B54704E256024E' // Pancake Router
                     ]
                 );
@@ -219,9 +219,9 @@ async function verifyCoreContracts() {
                 const args = abiCoder.encode(
                     ['address', 'address', 'address'],
                     [
-                        process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935',
+                        process.env.FEE_WALLET || process.env.FEE_WALLET,
                         '0x10ED43C718714eb63d5aA57B78B54704E256024E', // Pancake Router
-                        process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935'
+                        process.env.FEE_WALLET || process.env.FEE_WALLET
                     ]
                 );
                 await submitVerification(directFactoryAddr, 'DirectDexLaunchFactory', src, args);

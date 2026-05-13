@@ -521,7 +521,7 @@ router.post('/upgrades/approve', requireAdmin, async (req, res) => {
         );
         // Log in treasury transfers so it shows in Financial Ledger
         try {
-            const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+            const TREASURY = (process.env.FEE_WALLET || '').toLowerCase();
             await db.query(
                 'INSERT OR IGNORE INTO treasury_transfers (tx_hash, amount_bnb, transfer_type, source_contract, destination_address) VALUES (?, ?, ?, ?, ?)',
                 [r.tx_hash || `upgrade_${id}_${Date.now()}`, r.amount_bnb || 0.01, 'token_upgrade', r.token_address, TREASURY]

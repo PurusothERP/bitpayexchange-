@@ -34,7 +34,7 @@ const CardVariant = ({
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-1">{type}</p>
                     </div>
                     {isComingSoon && (
-                        <span className="px-4 py-1.5 bg-indigo-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-500/20">
+                        <span className="px-4 py-1.5 bg-teal-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-teal-200/20">
                             Coming Soon
                         </span>
                     )}
@@ -71,7 +71,7 @@ const CardVariant = ({
                         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Starting From</p>
                         <p className="text-3xl font-black text-gray-900">${price}</p>
                     </div>
-                    <button className="px-8 py-4 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-500 transition-all flex items-center gap-2 group">
+                    <button className="px-8 py-4 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-teal-500 transition-all flex items-center gap-2 group">
                         Pre-Order <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                     </button>
                 </div>
@@ -82,16 +82,16 @@ const CardVariant = ({
 
 export default function CardsPage() {
     return (
-        <main className="min-h-screen bg-[#FDFDFD] text-gray-900 selection:bg-indigo-500 selection:text-white pb-32 font-sans relative">
+        <main className="min-h-screen bg-[#FDFDFD] text-gray-900 selection:bg-teal-500 selection:text-white pb-32 font-sans relative">
             <Navbar theme="light" />
             
             {/* Soft Ambient Backgrounds */}
             <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden">
-                <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-indigo-500/5 rounded-full blur-[120px]" />
+                <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-teal-500/5 rounded-full blur-[120px]" />
                 <div className="absolute bottom-[-10%] left-[-10%] w-[800px] h-[800px] bg-gray-200/20 rounded-full blur-[150px]" />
             </div>
 
-            <div className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-200 via-indigo-500 to-indigo-200 z-[100]" />
+            <div className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-600 via-teal-600 to-teal-700 z-[100]" />
 
             <div className="pt-32 pb-20 px-6 md:px-12">
                 <div className="max-w-7xl mx-auto text-center mb-24">
@@ -100,12 +100,12 @@ export default function CardsPage() {
                         animate={{ opacity: 1, y: 0 }}
                         className="inline-flex items-center gap-3 px-6 py-2 bg-white shadow-xl shadow-gray-200/50 rounded-full border border-gray-100 mb-8"
                     >
-                        <CreditCard className="w-4 h-4 text-indigo-500" />
+                        <CreditCard className="w-4 h-4 text-teal-600" />
                         <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest">B20CARDS • The Future of Spending</span>
                     </motion.div>
                     
                     <h1 className="text-5xl md:text-8xl font-black text-gray-900 tracking-tighter mb-8 leading-none">
-                        CRYPTO <span className="text-indigo-500">REALITY</span>
+                        CRYPTO <span className="text-teal-600">REALITY</span>
                     </h1>
                     <p className="text-lg md:text-2xl font-bold text-gray-400 uppercase tracking-[0.2em] max-w-3xl mx-auto leading-relaxed">
                         Spend your digital assets anywhere in the physical world. Instant loads, global reach.
@@ -117,10 +117,10 @@ export default function CardsPage() {
                         name="Platinum"
                         type="Virtual + Physical Available"
                         price="30"
-                        colorClass="bg-blue-500"
+                        colorClass="bg-teal-500"
                         image="/assets/b20card_platinum.png"
                         features={[
-                            "Instant Loading from Mexapay",
+                            "Instant Loading from Tez Exchange",
                             "Universal Online Purchase Support",
                             "Free Virtual Card Creation",
                             "1.5% Standard Transaction Fee",
@@ -131,7 +131,7 @@ export default function CardsPage() {
                         name="Prestige"
                         type="Premium Matte Black Finish"
                         price="50"
-                        colorClass="bg-indigo-500"
+                        colorClass="bg-teal-500"
                         image="/assets/b20card_prestige_matte_black.png"
                         features={[
                             "Luxury Physical Card Hardware",
@@ -149,12 +149,12 @@ export default function CardsPage() {
                     <div className="relative z-10">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
                             <div className="space-y-6">
-                                <div className="w-16 h-16 bg-indigo-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-indigo-500/40">
+                                <div className="w-16 h-16 bg-teal-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-teal-200/40">
                                     <Zap className="w-8 h-8 text-white" />
                                 </div>
                                 <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Instant Loading</h3>
                                 <p className="text-gray-400 font-bold leading-relaxed uppercase text-xs tracking-widest">
-                                    Sell crypto on Mexapay and your funds are instantly available on your B20CARD. No waiting for banking cycles.
+                                    Sell crypto on Tez Exchange and your funds are instantly available on your B20CARD. No waiting for banking cycles.
                                 </p>
                             </div>
                             <div className="space-y-6">
@@ -167,7 +167,7 @@ export default function CardsPage() {
                                 </p>
                             </div>
                             <div className="space-y-6">
-                                <div className="w-16 h-16 bg-blue-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-blue-500/40">
+                                <div className="w-16 h-16 bg-teal-500 rounded-3xl flex items-center justify-center shadow-2xl shadow-teal-200/40">
                                     <Shield className="w-8 h-8 text-white" />
                                 </div>
                                 <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Neo-Bank Security</h3>
@@ -185,7 +185,7 @@ export default function CardsPage() {
                                 { label: "Settlement", value: "Instant", icon: <Star className="w-4 h-4" /> }
                             ].map((stat, i) => (
                                 <div key={i} className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-indigo-500 select-none">
+                                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-teal-600 select-none">
                                         {stat.icon}
                                     </div>
                                     <div>

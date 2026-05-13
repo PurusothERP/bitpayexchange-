@@ -61,12 +61,12 @@ export default function ChatBox() {
                         initial={{ opacity: 0, y: 20, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                        className="mb-4 w-[350px] md:w-[400px] h-[550px] glass-card flex flex-col overflow-hidden shadow-2xl border-blue-500/20"
+                        className="mb-4 w-[350px] md:w-[400px] h-[550px] glass-card flex flex-col overflow-hidden shadow-2xl border-teal-500/20"
                     >
                         {/* Header */}
                         <div className="p-4 bg-gradient-to-r from-gray-900 to-gray-800 text-white flex items-center justify-between border-b border-white/5">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl overflow-hidden border border-blue-500/30 shadow-lg shadow-blue-500/10">
+                                <div className="w-10 h-10 rounded-xl overflow-hidden border border-teal-500/30 shadow-lg shadow-teal-200/10">
                                     <img src="/assets/neura_ai.jpg" alt="Neura AI" className="w-full h-full object-cover" />
                                 </div>
                                 <div>
@@ -93,13 +93,13 @@ export default function ChatBox() {
                                 <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                     <div className={`flex gap-3 max-w-[85%] ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm ${
-                                            msg.role === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-900 text-blue-500 border border-white/10'
+                                            msg.role === 'user' ? 'bg-teal-500 text-white' : 'bg-gray-900 text-teal-600 border border-white/10'
                                         }`}>
                                             {msg.role === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
                                         </div>
                                         <div className={`p-3 rounded-2xl text-xs font-medium leading-relaxed shadow-sm ${
                                             msg.role === 'user' 
-                                            ? 'bg-blue-500 text-white rounded-tr-none' 
+                                            ? 'bg-teal-500 text-white rounded-tr-none' 
                                             : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
                                         }`}>
                                             {msg.content}
@@ -110,13 +110,13 @@ export default function ChatBox() {
                             {isLoading && (
                                 <div className="flex justify-start">
                                     <div className="flex gap-3 max-w-[85%]">
-                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-gray-900 text-blue-500 border border-white/10">
+                                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-gray-900 text-teal-600 border border-white/10">
                                             <Loader2 className="w-4 h-4 animate-spin" />
                                         </div>
                                         <div className="p-3 rounded-2xl bg-white border border-gray-100 rounded-tl-none flex gap-1">
-                                            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                                            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                                            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                                            <span className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                                            <span className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                                            <span className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                                         </div>
                                     </div>
                                 </div>
@@ -130,12 +130,12 @@ export default function ChatBox() {
                                 value={input}
                                 onChange={(e) => setInput(e.target.value)}
                                 placeholder="Ask Neura anything..."
-                                className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-xs font-bold outline-none focus:border-blue-500/30 focus:bg-white transition-all shadow-inner"
+                                className="flex-1 bg-gray-50 border border-gray-100 rounded-xl px-4 py-2 text-xs font-bold outline-none focus:border-teal-500/30 focus:bg-white transition-all shadow-inner"
                             />
                             <button 
                                 type="submit" 
                                 disabled={!input.trim() || isLoading}
-                                className="w-10 h-10 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-200 text-white rounded-xl flex items-center justify-center transition-all shadow-lg shadow-blue-500/20 active:scale-90"
+                                className="w-10 h-10 bg-teal-500 hover:bg-teal-600 disabled:bg-gray-200 text-white rounded-xl flex items-center justify-center transition-all shadow-lg shadow-teal-200/20 active:scale-90"
                             >
                                 <Send className="w-4 h-4" />
                             </button>
@@ -150,7 +150,7 @@ export default function ChatBox() {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsOpen(!isOpen)}
                 className={`w-16 h-16 rounded-3xl flex items-center justify-center shadow-2xl transition-all relative ${
-                    isOpen ? 'bg-gray-900 text-blue-500' : 'bg-blue-500 text-white'
+                    isOpen ? 'bg-gray-900 text-teal-600' : 'bg-teal-500 text-white'
                 }`}
             >
                 <AnimatePresence mode='wait'>
@@ -162,7 +162,7 @@ export default function ChatBox() {
                         <motion.div key="open" className="relative" initial={{ opacity: 0, rotate: 90 }} animate={{ opacity: 1, rotate: 0 }} exit={{ opacity: 0, rotate: -90 }}>
                             <MessageSquare className="w-8 h-8" />
                             <div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow-md">
-                                <Sparkles className="w-2.5 h-2.5 text-blue-500 animate-pulse" />
+                                <Sparkles className="w-2.5 h-2.5 text-teal-600 animate-pulse" />
                             </div>
                         </motion.div>
                     )}

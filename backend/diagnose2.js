@@ -1,7 +1,7 @@
 const { ethers } = require('ethers');
 const mainnet = new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org');
 
-const NEW_FACTORY  = '0x4598AD4E828cb64A53246765f60D9912AEA1b11A';
+const NEW_FACTORY  = process.env.FACTORY_ADDRESS;
 const NEW_BONDING  = '0xf7E5D2791F70051BEe564Ba5AC9896937cdf3d0a';
 const NEW_LIQUIDITY = '0x971414356b3b7f4a2e891CB97B46E06B22c237C6';
 const DIRECT_FACTORY = '0xbe3EA5f2AE5b278796AbCFbd1078EF88dd0d70F5';

@@ -15,7 +15,7 @@ const ECOSYSTEM_SERVICES = [
     id: "wallet",
     category: "Wallet & Account Layer",
     icon: Wallet,
-    color: "from-blue-500 to-cyan-500",
+    color: "from-teal-600 to-cyan-500",
     products: [
       { name: "Crypto Wallets", features: ["Store/send/receive digital assets", "Seed phrase or private key control", "Multi-chain & multi-token support"] },
       { name: "Smart Contract Wallets", features: ["Account abstraction (no seed phrase needed)", "Social recovery & multi-sig security", "Gasless transactions"] },
@@ -27,7 +27,7 @@ const ECOSYSTEM_SERVICES = [
     id: "trading",
     category: "Trading & Exchange Layer",
     icon: Activity,
-    color: "from-blue-500 to-slate-500",
+    color: "from-teal-600 to-slate-500",
     products: [
       { name: "Centralized Exchanges (CEX)", features: ["Fiat on/off ramp", "High liquidity trading", "Advanced order types"] },
       { name: "Decentralized Exchanges (DEX)", features: ["Non-custodial trading", "AMM-based liquidity pools", "Permissionless token listing"] },
@@ -62,7 +62,7 @@ const ECOSYSTEM_SERVICES = [
     id: "defi",
     category: "DeFi (Financial Services)",
     icon: Landmark,
-    color: "from-indigo-500 to-yellow-500",
+    color: "from-teal-600 to-yellow-500",
     products: [
       { name: "Lending Platforms", features: ["Lend crypto for interest", "Overcollateralized loans", "Automated liquidation"] },
       { name: "Borrowing Platforms", features: ["Borrow against crypto assets", "Instant liquidity", "No credit score needed"] },
@@ -76,7 +76,7 @@ const ECOSYSTEM_SERVICES = [
     id: "analytics",
     category: "Analytics & Intelligence",
     icon: LineChart,
-    color: "from-indigo-500 to-blue-500",
+    color: "from-teal-600 to-teal-700",
     products: [
       { name: "Portfolio Trackers", features: ["Multi-wallet tracking", "Profit/loss analytics", "Alerts & insights"] },
       { name: "On-Chain Analytics", features: ["Blockchain data analysis", "Whale tracking", "Transaction insights"] },
@@ -122,7 +122,7 @@ const ECOSYSTEM_SERVICES = [
     id: "security",
     category: "Security & Risk",
     icon: Shield,
-    color: "from-red-500 to-blue-500",
+    color: "from-red-500 to-teal-700",
     products: [
       { name: "Custody Services", features: ["Institutional asset storage", "Multi-sig security", "Insurance protection"] },
       { name: "Crypto Insurance", features: ["Cover hacks/losses", "Risk pooling", "Claim automation"] },
@@ -134,7 +134,7 @@ const ECOSYSTEM_SERVICES = [
     id: "compliance",
     category: "Compliance & Legal",
     icon: Gavel,
-    color: "from-blue-600 to-indigo-600",
+    color: "from-teal-600 to-teal-700",
     products: [
       { name: "KYC/Identity Platforms", features: ["User verification", "Regulatory compliance", "Fraud prevention"] },
       { name: "Crypto Tax Tools", features: ["Tax calculation", "Transaction history", "Country-specific compliance"] }
@@ -144,7 +144,7 @@ const ECOSYSTEM_SERVICES = [
     id: "userfacing",
     category: "User-Facing Ecosystems",
     icon: Gamepad2,
-    color: "from-pink-500 to-blue-500",
+    color: "from-pink-500 to-teal-700",
     products: [
       { name: "NFT Platforms", features: ["Mint/buy/sell NFTs", "Royalties for creators", "Digital ownership"] },
       { name: "GameFi Platforms", features: ["Play-to-earn games", "Token economies", "NFT assets"] },
@@ -195,12 +195,12 @@ export default function Services() {
     const activeCategory = ECOSYSTEM_SERVICES.find(c => c.id === activeTab);
 
     return (
-        <main className="min-h-screen bg-[#0b0f19] selection:bg-blue-500 selection:text-white pb-32">
+        <main className="min-h-screen bg-[#0b0f19] selection:bg-teal-500 selection:text-white pb-32">
             <Navbar />
 
             {/* Premium Background Effects */}
             <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-                <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-500/10 blur-[120px]" />
+                <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-teal-500/10 blur-[120px]" />
                 <div className="absolute top-[20%] right-[-10%] w-[40%] h-[40%] rounded-full bg-slate-500/10 blur-[120px]" />
                 <div className="absolute bottom-[-20%] left-[20%] w-[60%] h-[40%] rounded-full bg-purple-500/10 blur-[120px]" />
             </div>
@@ -214,11 +214,11 @@ export default function Services() {
                     transition={{ duration: 0.6 }}
                     className="text-center mb-20"
                 >
-                    <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black uppercase tracking-[0.3em] mb-8 shadow-lg shadow-blue-500/10">
+                    <span className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-500 text-[10px] font-black uppercase tracking-[0.3em] mb-8 shadow-lg shadow-teal-200/10">
                         <Sparkles className="w-4 h-4" /> Comprehensive Ecosystem
                     </span>
                     <h1 className="text-5xl md:text-7xl lg:text-8xl font-black mb-6 text-white tracking-tighter leading-tight">
-                        Build the <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-500">Unimaginable</span>
+                        Build the <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-teal-700">Unimaginable</span>
                     </h1>
                     <p className="text-gray-400 max-w-3xl mx-auto text-lg md:text-xl font-medium leading-relaxed">
                         We develop cutting-edge Web3 products and services across 50+ specialized sectors. From advanced DeFi layers to robust compliance infrastructure, our elite architects deploy production-ready protocols tailored to your ultimate vision.
@@ -310,16 +310,16 @@ export default function Services() {
                     viewport={{ once: true }}
                     className="relative bg-[#111827] border border-white/10 shadow-2xl rounded-[3rem] p-8 md:p-14 overflow-hidden"
                 >
-                    <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-bl from-blue-500/10 to-transparent rounded-full blur-3xl pointer-events-none" />
+                    <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-bl from-teal-600/10 to-transparent rounded-full blur-3xl pointer-events-none" />
                     
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 relative z-10">
                         
                         {/* LHS: Info */}
                         <div>
-                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-xl shadow-blue-500/20 mb-8">
+                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-teal-600 to-teal-700 text-white shadow-xl shadow-teal-200/20 mb-8">
                                 <PhoneCall className="w-8 h-8" />
                             </div>
-                            <h2 className="text-4xl lg:text-5xl font-black text-white mb-6 tracking-tighter leading-tight">Request an Expert <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Consultation</span></h2>
+                            <h2 className="text-4xl lg:text-5xl font-black text-white mb-6 tracking-tighter leading-tight">Request an Expert <br/><span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-teal-700">Consultation</span></h2>
                             <p className="text-gray-400 text-lg mb-8 font-medium leading-relaxed">
                                 Ready to deploy institutional-grade infrastructure? Our elite architects and development teams are on standby to engineer your vision.
                                 <br/><br/>
@@ -328,7 +328,7 @@ export default function Services() {
                             
                             <div className="space-y-6">
                                 <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5">
-                                    <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-blue-400">
+                                    <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-teal-500">
                                         <ShieldCheck className="w-6 h-6" />
                                     </div>
                                     <div>
@@ -337,7 +337,7 @@ export default function Services() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/5">
-                                    <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-indigo-400">
+                                    <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center text-teal-500">
                                         <Globe className="w-6 h-6" />
                                     </div>
                                     <div>
@@ -363,45 +363,45 @@ export default function Services() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Your Name</label>
-                                            <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Satoshi Nakamoto" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all text-white placeholder-gray-600 font-medium" />
+                                            <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Satoshi Nakamoto" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-teal-500/50 focus:bg-white/10 transition-all text-white placeholder-gray-600 font-medium" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Phone Number</label>
-                                            <input required type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="+1 (555) 000-0000" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all text-white placeholder-gray-600 font-medium" />
+                                            <input required type="tel" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="+1 (555) 000-0000" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-teal-500/50 focus:bg-white/10 transition-all text-white placeholder-gray-600 font-medium" />
                                         </div>
                                     </div>
                                     
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Email or Telegram</label>
-                                        <input required type="text" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="founder@project.io or @founder" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all text-white placeholder-gray-600 font-medium" />
+                                        <input required type="text" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="founder@project.io or @founder" className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-teal-500/50 focus:bg-white/10 transition-all text-white placeholder-gray-600 font-medium" />
                                     </div>
 
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2 mb-1 block flex items-center justify-between">
                                             <span>Target Infrastructure</span>
                                             {formData.interestedProduct && (
-                                                <button type="button" onClick={() => setFormData({...formData, interestedProduct: ''})} className="text-blue-500 hover:text-white transition-colors">Clear</button>
+                                                <button type="button" onClick={() => setFormData({...formData, interestedProduct: ''})} className="text-teal-600 hover:text-white transition-colors">Clear</button>
                                             )}
                                         </label>
                                         {formData.interestedProduct ? (
-                                            <div className="w-full bg-gradient-to-r from-blue-500/10 to-indigo-500/10 border border-blue-500/30 rounded-2xl px-5 py-4 text-blue-400 font-black tracking-wide flex items-center justify-between">
+                                            <div className="w-full bg-gradient-to-r from-teal-600/10 to-teal-700/10 border border-teal-500/30 rounded-2xl px-5 py-4 text-teal-500 font-black tracking-wide flex items-center justify-between">
                                                 {formData.interestedProduct}
-                                                <CheckCircle2 className="w-5 h-5 text-blue-500" />
+                                                <CheckCircle2 className="w-5 h-5 text-teal-600" />
                                             </div>
                                         ) : (
-                                            <input type="text" value={formData.project} onChange={e => setFormData({...formData, project: e.target.value})} placeholder="e.g. Multi-chain DEX, zk-Rollup, Custom Token..." className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all text-white placeholder-gray-600 font-medium" />
+                                            <input type="text" value={formData.project} onChange={e => setFormData({...formData, project: e.target.value})} placeholder="e.g. Multi-chain DEX, zk-Rollup, Custom Token..." className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-teal-500/50 focus:bg-white/10 transition-all text-white placeholder-gray-600 font-medium" />
                                         )}
                                     </div>
 
                                     <div className="space-y-2">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-2">Deployment Specifications</label>
-                                        <textarea required rows="4" value={formData.details} onChange={e => setFormData({...formData, details: e.target.value})} placeholder="Describe your vision, current phase, and operational goals..." className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-blue-500/50 focus:bg-white/10 transition-all text-white placeholder-gray-600 font-medium resize-none" />
+                                        <textarea required rows="4" value={formData.details} onChange={e => setFormData({...formData, details: e.target.value})} placeholder="Describe your vision, current phase, and operational goals..." className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-teal-500/50 focus:bg-white/10 transition-all text-white placeholder-gray-600 font-medium resize-none" />
                                     </div>
 
                                     <button
                                         type="submit"
                                         disabled={status === 'submitting'}
-                                        className="w-full group py-5 bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 text-white font-black rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50"
+                                        className="w-full group py-5 bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-600 hover:to-teal-700 text-white font-black rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-teal-200/20 transition-all active:scale-95 disabled:opacity-50"
                                     >
                                         {status === 'submitting' ? 'Negotiating Deployment...' : 'Initiate Secure Callback'} 
                                         {!status && <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}

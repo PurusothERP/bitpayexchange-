@@ -21,9 +21,9 @@ const bscMainnet = {
 
 // 3. Create a metadata object
 const metadata = {
-    name: 'B20 Mexapay Intelligence',
-    description: 'B20-Mex Institutional Trading & Yield Hub',
-    url: typeof window !== 'undefined' ? window.location.origin : 'https://mexapay.com',
+    name: 'Tez Exchange Intelligence',
+    description: 'Tez Exchange Institutional Trading & Yield Hub',
+    url: typeof window !== 'undefined' ? window.location.origin : 'https://tezexchange.io',
     icons: ['https://b20-frontend.onrender.com/logo.png']
 };
 
@@ -109,7 +109,7 @@ export function WalletProvider({ children }) {
                     // ── Sync with Backend ───────
                     try {
                         const balance = await browserProvider.getBalance(address);
-                        const FACTORY = '0x4598AD4E828cb64A53246765f60D9912AEA1b11A';
+                        const FACTORY = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;
                         
                         const factoryContract = new ethers.Contract(FACTORY, [
                             'function isLinked(address) view returns (bool)'

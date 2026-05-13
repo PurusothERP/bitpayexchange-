@@ -67,7 +67,7 @@ router.post('/refresh-balances', async (req, res) => {
             process.env.BSC_RPC_URL || 'https://bsc-dataseed.binance.org'
         );
         const factory = new ethers.Contract(
-            process.env.FACTORY_ADDRESS || '0x4598AD4E828cb64A53246765f60D9912AEA1b11A',
+            process.env.FACTORY_ADDRESS || '',
             ['function isLinked(address) view returns (bool)'],
             provider
         );

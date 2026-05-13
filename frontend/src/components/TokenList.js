@@ -66,13 +66,13 @@ export default function TokenList() {
                     <p className="text-gray-600">Discover and participate in upcoming projects</p>
                 </div>
                 <div className="relative w-full md:w-96 group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-teal-600 transition-colors" />
                     <input
                         type="text"
                         placeholder="Search tokens..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full bg-black/5 border border-black/10 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:border-blue-500/50 transition-all text-sm font-medium"
+                        className="w-full bg-black/5 border border-black/10 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:border-teal-500/50 transition-all text-sm font-medium"
                     />
                 </div>
             </div>

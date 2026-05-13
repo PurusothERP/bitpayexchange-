@@ -201,7 +201,7 @@ router.post('/whitepaper/paid', async (req, res) => {
         await db.query(
             `INSERT INTO treasury_transfers (amount_bnb, source_contract, destination_address, tx_hash, transfer_type) 
              VALUES (?, ?, ?, ?, 'whitepaper_fee')`,
-            [amount_bnb || 0, contract_address || 'ADMIN', '0x6451ee4def4a8b8fbc2c64301a79e267de378935', tx_hash, 'whitepaper_fee']
+            [amount_bnb || 0, contract_address || 'ADMIN', process.env.FEE_WALLET, tx_hash, 'whitepaper_fee']
         );
 
         res.json({ success: true });

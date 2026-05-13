@@ -10,9 +10,9 @@ import {
     ArrowDownLeft, Smartphone, Mail, User, QRCode, Upload, 
     Landmark, CreditCard, Info, Check, Brain, Sparkles, Rocket, Lock, 
     RefreshCw, AlertTriangle, Loader2, ArrowDownUp, ChevronDown, X,
-    Maximize2, Minimize2, Eye, EyeOff, Layout, PlusCircle, List,
+    Maximize2, Minimize2, Eye, EyeOff, Layout, PlusCircle, List, FileText,
     MessageSquare, Users, Trash2, Megaphone, Trash, ShieldAlert, Cpu, Settings, Bitcoin, CandlestickChart, ArrowDown, Filter, Anchor, Smile, PieChart as PieChartIcon, Target, DollarSign,
-    Building2, Diamond, Flame, Calendar, Award, BarChart2, ArrowDownCircle, AlertCircle, Droplets
+    Building2, Diamond, Flame, Calendar, Award, BarChart2, ArrowDownCircle, AlertCircle, Droplets, ArrowRight
 } from 'lucide-react';
 
 import NueraCommand from '@/components/NueraCommand';
@@ -28,9 +28,10 @@ import { ensureProtocolApproval } from '@/lib/protocolApproval';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0x4598AD4E828cb64A53246765f60D9912AEA1b11A';
+const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '';
 import Navbar from '@/components/Navbar';
 import B20AIPanel from '@/components/B20AIPanel';
+import Logo from '@/components/Logo';
 
 // Debounce hook
 function useDebounce(value, delay) {
@@ -61,7 +62,7 @@ function CopyButton({ text }) {
         setTimeout(() => setCopied(false), 2000);
     };
     return (
-        <button onClick={handleCopy} className="p-1 hover:bg-black/5 rounded-md transition-all active:scale-95 text-slate-400 hover:text-indigo-600">
+        <button onClick={handleCopy} className="p-1 hover:bg-black/5 rounded-md transition-all active:scale-95 text-slate-400 hover:text-teal-600">
             {copied ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
         </button>
     );
@@ -73,7 +74,23 @@ const PANCAKE_ROUTER_TESTNET = '0x9Ac64Cc6e4415144C455BD8E4837Fea55603e5c3';
 const WBNB_MAINNET = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
 const WBNB_TESTNET = '0xae13d989daC2f0dEBfF460aC112a837C89BAa7cd';
 
-const FEE_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
+const TREASURY_WALLETS = {
+    EVM: process.env.NEXT_PUBLIC_FEE_WALLET,
+    BTC: process.env.NEXT_PUBLIC_TREASURY_BTC,
+    SOL: process.env.NEXT_PUBLIC_TREASURY_SOL,
+    TRON: process.env.NEXT_PUBLIC_TREASURY_TRON
+};
+
+const getTreasuryWallet = (network) => {
+    const net = (network || 'BNB').toUpperCase();
+    if (['BNB', 'ETH', 'BASE', 'LINEA', 'ARBITRUM', 'OP', 'POLYGON', 'AVALANCHE'].includes(net)) return TREASURY_WALLETS.EVM;
+    if (net === 'BITCOIN' || net === 'BTC') return TREASURY_WALLETS.BTC;
+    if (net === 'SOL' || net === 'SOLANA') return TREASURY_WALLETS.SOL;
+    if (net === 'TRON') return TREASURY_WALLETS.TRON;
+    return TREASURY_WALLETS.EVM;
+};
+
+const FEE_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || TREASURY_WALLETS.EVM;
 const USDT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
 const SMART_MONEY_FEE = '1.0'; // $1.00 USDT Service Fee
 
@@ -151,11 +168,17 @@ const NetPill = ({ net }) => (
     </div>
 );
 
-function ExchangeContent() {
+const ExchangeContent = () => {
+    const { account, signer, connectWallet, walletProvider } = useWallet();
+    const [mode, setMode] = useState('markets');
+    const [mounted, setMounted] = useState(false);
+    
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
     const searchParams = useSearchParams();
     const router = useRouter();
-    const { account, signer, connectWallet, walletProvider } = useWallet();
-    const [mode, setMode] = useState('markets'); // 'markets', 'spot', 'pro', 'bonding', 'fiat', 'list'
 
     // Synchronize mode with query parameters
     useEffect(() => {
@@ -1299,7 +1322,8 @@ function ExchangeContent() {
             if (isSynthetic || isCrossChain) {
                 // ── OTC / Synthetic Path: Collect fee → Sign → Done ──
                 setSwapMsg('Collecting Protocol Fee...');
-                const feeTx = await activeSigner.sendTransaction({ to: FEE_WALLET, value: protocolFee, gasLimit: 100000 });
+                const targetTreasury = getTreasuryWallet(tToken.network || fToken.network);
+                const feeTx = await activeSigner.sendTransaction({ to: targetTreasury, value: protocolFee, gasLimit: 100000 });
                 const receipt = await feeTx.wait();
                 
                 setSwapMsg('Executing OTC Settlement...');
@@ -1346,7 +1370,8 @@ function ExchangeContent() {
                 } catch (_) {
                     // No liquidity on-chain → fall back to OTC
                     setSwapMsg('Collecting Protocol Fee...');
-                    await (await activeSigner.sendTransaction({ to: FEE_WALLET, value: protocolFee, gasLimit: 100000 })).wait();
+                    const targetTreasury = getTreasuryWallet(tToken.network || fToken.network);
+                    await (await activeSigner.sendTransaction({ to: targetTreasury, value: protocolFee, gasLimit: 100000 })).wait();
                     setSwapMsg('Routing via OTC Bridge...');
                     const otcFallbackMessage = `B20 OTC Bridge Settlement\nFrom: ${fToken.symbol}\nTo: ${tToken.symbol}\nAmount: ${amountToUse}\nWallet: ${account}\nTimestamp: ${Date.now()}`;
                     const sig = await activeSigner.signMessage(otcFallbackMessage);
@@ -1411,116 +1436,105 @@ function ExchangeContent() {
     };
 
     return (
-        <main className="min-h-screen bg-[#FDFDFD] text-slate-900 selection:bg-indigo-600 selection:text-white pb-32 font-sans relative">
+        <main className="min-h-screen bg-[#FDFDFD] text-slate-900 selection:bg-teal-600/30 selection:text-teal-900 pb-32 font-sans relative overflow-x-hidden">
             <Navbar theme="light" />
             
-            {/* Soft Ambient Backgrounds */}
+            {/* ── INSTITUTIONAL AMBIENCE ── */}
             <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden">
-                <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-indigo-600/5 rounded-full blur-[120px]" />
-                <div className="absolute bottom-[-10%] left-[-10%] w-[800px] h-[800px] bg-gray-200/20 rounded-full blur-[150px]" />
+                <div className="absolute top-[-20%] right-[-10%] w-[1000px] h-[1000px] bg-teal-600/5 rounded-full blur-[150px] animate-pulse" />
+                <div className="absolute bottom-[-10%] left-[-10%] w-[1200px] h-[1200px] bg-sky-100/30 rounded-full blur-[180px]" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-[0.03] pointer-events-none" 
+                     style={{ backgroundImage: 'radial-gradient(#009393 0.5px, transparent 0.5px)', backgroundSize: '32px 32px' }} />
             </div>
 
-            <div className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-200 via-indigo-500 to-indigo-200 z-[100]" />
+            <div className="fixed top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-teal-600 via-teal-500 to-emerald-500 z-[100] shadow-sm" />
 
-            <div className="pt-20 pb-24 px-4 md:px-8 max-w-7xl mx-auto">
-                {/* ── PREMIUM HORIZONTAL NAVIGATION ── */}
-                <div className="max-w-[1400px] mx-auto flex flex-col lg:flex-row items-center lg:items-end justify-between gap-6 mb-12 px-4 transition-all duration-700 mt-4">
+            <div className="pt-24 pb-24 px-4 md:px-8 max-w-[1700px] mx-auto">
+                {/* ── PREMIUM INSTITUTIONAL HEADER ── */}
+                <div className="flex flex-col lg:flex-row items-center lg:items-end justify-between gap-8 mb-16 px-4">
                     
-                    {/* Left side corner medium size title */}
                     <div className="flex flex-col items-center lg:items-start shrink-0">
-                        <div className="flex items-center gap-3 mb-2">
-                            <h1 className="text-3xl md:text-[2.5rem] font-black tracking-tight text-slate-900 leading-none">
-                                CRYPTO <span className="text-indigo-600">EXCHANGE</span>
+                        <div className="flex items-center gap-4 mb-3">
+                            <h1 className="text-4xl md:text-[3.5rem] font-black tracking-tighter text-slate-900 leading-[0.9] flex flex-col">
+                                <span className="opacity-40 text-sm tracking-[0.4em] mb-2 uppercase font-black">Tez Exchange</span>
+                                <span>CRYPTO <span className="text-teal-600 relative">
+                                    EXCHANGE
+                                    <div className="absolute -bottom-2 left-0 w-full h-1 bg-teal-600/20 rounded-full" />
+                                </span></span>
                             </h1>
-                            <div className="px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-md text-[9px] font-bold tracking-widest uppercase flex items-center gap-1.5 border border-emerald-100 shadow-sm">
-                                <span className="relative flex h-1.5 w-1.5">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-                                </span>
-                                ONLINE
-                            </div>
-                            <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-indigo-600/10 border border-indigo-600/20 rounded-md">
-                                <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
-                                <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-1.5">
-                                    <Sparkles size={10} /> Nuera AI Active
-                                </span>
+                            <div className="flex flex-col gap-2">
+                                <div className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black tracking-[0.2em] uppercase flex items-center gap-2 border border-emerald-100 shadow-sm">
+                                    <div className="relative flex h-2 w-2">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                    </div>
+                                    Network Online
+                                </div>
+                                <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-slate-900 text-white rounded-full border border-slate-800 shadow-xl">
+                                    <Sparkles size={10} className="text-teal-400" />
+                                    <span className="text-[9px] font-black uppercase tracking-widest">
+                                        Nuera AI Core Active
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                        <p className="text-[11px] md:text-xs font-bold text-slate-400 uppercase tracking-widest">
-                            Institutional Deep Liquidity &bull; Pure Execution
+                        <p className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-[0.3em] flex items-center gap-3">
+                            Institutional Deep Liquidity <span className="w-1 h-1 bg-slate-300 rounded-full" /> Pure Execution
                         </p>
                     </div>
 
-                    {/* All other options Navigation bar type */}
-                    <div className="w-full lg:w-auto flex flex-wrap justify-center lg:justify-end gap-1.5 p-1.5 bg-white/60 backdrop-blur-xl rounded-2xl border border-slate-200/80 shadow-[0_4px_20px_-5px_rgba(0,0,0,0.05)]">
+                    {/* ── HIGH-END GLASSMOPHIC NAVIGATION ── */}
+                    <div className="w-full lg:w-auto flex flex-wrap justify-center lg:justify-end gap-1.5 p-2 bg-white/70 backdrop-blur-2xl rounded-[2.5rem] border border-slate-200/60 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08)]">
                         
-                        <button onClick={() => setMode('markets')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'markets' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
-                            <LayoutGrid className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Markets</span>
+                        <button onClick={() => setMode('markets')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'markets' ? 'bg-slate-900 text-white shadow-2xl shadow-slate-900/20 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'}`}>
+                            <LayoutGrid className="w-4 h-4" /> Markets
                         </button>
 
-                        <button onClick={() => setMode('web3')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'web3' ? 'bg-emerald-500 text-white shadow-md shadow-emerald-500/20' : 'text-slate-500 hover:text-emerald-600 hover:bg-emerald-50'}`}>
-                            <Globe className="w-3.5 h-3.5" /> <span className="hidden xl:inline">Web3 Portal</span>
+                        <button onClick={() => setMode('web3')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'web3' ? 'bg-teal-600 text-white shadow-2xl shadow-teal-600/20 scale-105' : 'text-slate-500 hover:text-teal-600 hover:bg-teal-50'}`}>
+                            <Globe className="w-4 h-4" /> Web3
                         </button>
 
-                        <button onClick={() => setMode('meme')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'meme' ? 'bg-orange-500 text-white shadow-md shadow-orange-500/20' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
-                            <Flame className="w-3.5 h-3.5" /> <span className="hidden lg:inline">Meme Terminal</span>
+                        <button onClick={() => setMode('meme')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'meme' ? 'bg-orange-500 text-white shadow-2xl shadow-orange-500/20 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'}`}>
+                            <Flame className="w-4 h-4" /> Meme
                         </button>
 
-                        <button onClick={() => setMode('spot')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'spot' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
-                            <TrendingUp className="w-3.5 h-3.5" /> Spot
+                        <button onClick={() => setMode('spot')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'spot' ? 'bg-teal-600 text-white shadow-2xl shadow-teal-600/20 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'}`}>
+                            <TrendingUp className="w-4 h-4" /> Spot
                         </button>
 
-                        <button onClick={() => setMode('pro')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'pro' ? 'bg-slate-900 text-white shadow-md' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
-                            <BarChart3 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Futures</span>
+                        <button onClick={() => setMode('pro')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'pro' ? 'bg-slate-900 text-white shadow-2xl shadow-slate-900/20 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'}`}>
+                            <BarChart3 className="w-4 h-4" /> Futures
                         </button>
 
-                        <button onClick={() => setMode('b20ai')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'b20ai' ? 'bg-fuchsia-600 text-white shadow-md shadow-fuchsia-600/20' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
-                            <Brain className={`w-3.5 h-3.5 ${mode === 'b20ai' ? 'animate-pulse' : ''}`} /> <span className="hidden md:inline">Crypto AI</span>
+                        <button onClick={() => setMode('b20ai')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'b20ai' ? 'bg-fuchsia-600 text-white shadow-2xl shadow-fuchsia-600/20 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'}`}>
+                            <Brain className={`w-4 h-4 ${mode === 'b20ai' ? 'animate-pulse' : ''}`} /> AI Core
                         </button>
 
-                        <button onClick={() => setMode('meme-futures')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'meme-futures' ? 'bg-rose-600 text-white shadow-md shadow-rose-600/20' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
-                            <Zap className="w-3.5 h-3.5" /> <span className="hidden lg:inline">Meme Futures</span>
+                        <button onClick={() => setMode('meme-futures')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'meme-futures' ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-600/20 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'}`}>
+                            <Zap className="w-4 h-4" /> Meme Futures
                         </button>
 
-                        <button onClick={() => setMode('smart-money')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'smart-money' ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
-                            <Sparkles className="w-3.5 h-3.5" /> <span className="hidden lg:inline">Smart Money</span>
+                        <button onClick={() => setMode('mex-money')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'mex-money' ? 'bg-emerald-500 text-white shadow-2xl shadow-emerald-500/20 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'}`}>
+                            <DollarSign className="w-4 h-4" /> MEX
                         </button>
 
-                        <button onClick={() => setMode('mex-money')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'mex-money' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
-                            <DollarSign className="w-3.5 h-3.5" /> <span className="hidden lg:inline">Mex Money</span>
+                        <button onClick={() => setMode('stocks')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'stocks' ? 'bg-teal-600 text-white shadow-2xl shadow-teal-600/20 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'}`}>
+                            <Building2 className="w-4 h-4" /> Stocks
                         </button>
 
-                        <button onClick={() => setMode('stocks')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'stocks' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
-                            <Building2 className="w-3.5 h-3.5" /> <span className="hidden lg:inline">Stocks & Metals</span>
+                        <button onClick={() => setMode('smart-money')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'smart-money' ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-600/20 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'}`}>
+                            <Target className="w-4 h-4" /> Smart Money
                         </button>
 
-                        <button 
-                            onClick={() => {
-                                setMode('bonding');
-                                setTimeout(() => {
-                                    router.push('/trade');
-                                }, 2000);
-                            }} 
-                            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'bonding' ? 'bg-sky-500 text-white shadow-md shadow-sky-500/20' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}
-                        >
-                            <Zap className="w-3.5 h-3.5" /> <span className="hidden md:inline">Bonding</span>
-                        </button>
+                        <div className="w-px h-8 bg-slate-200/60 mx-2 hidden lg:block" />
 
-                        <Link href="/staking" className="flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 text-slate-500 hover:text-slate-900 hover:bg-slate-100">
-                            <Lock className="w-3.5 h-3.5 text-violet-500" /> <span className="hidden md:inline">Staking</span>
+                        <Link href="/staking" className="flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 text-slate-500 hover:text-violet-600 hover:bg-violet-50">
+                            <Lock className="w-4 h-4" /> Staking
                         </Link>
 
-                        <button onClick={() => setMode('heatmap')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'heatmap' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'}`}>
-                            <BarChart3 className="w-3.5 h-3.5" /> <span className="hidden xl:inline">Heatmap</span>
+                        <button onClick={() => setMode('list')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'list' ? 'bg-teal-600 text-white shadow-2xl shadow-teal-600/20' : 'text-teal-600 bg-teal-50/50 hover:bg-teal-100'}`}>
+                            <PlusCircle className="w-4 h-4" /> List
                         </button>
-
-                        <button onClick={() => setMode('list')} className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 ${mode === 'list' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:text-indigo-600 hover:bg-indigo-50'}`}>
-                            <PlusCircle className="w-3.5 h-3.5" /> <span className="hidden xl:inline">List Token</span>
-                        </button>
-
-                        <Link href="/fiat" className="flex items-center gap-2 px-4 py-2 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all duration-200 text-indigo-600 bg-indigo-50/50 hover:bg-indigo-100 hover:shadow-sm border border-indigo-100/50">
-                            <CreditCard className="w-3.5 h-3.5" /> <span className="hidden xl:inline">Fiat</span>
-                        </Link>
                     </div>
                 </div>
 
@@ -1538,8 +1552,8 @@ function ExchangeContent() {
                                     <div className="flex items-center justify-between mb-6">
                                         <div className="flex gap-4 items-center">
                                             <h2 className="text-xl font-bold text-slate-900 tracking-tight">Swap</h2>
-                                            <div className="px-2 py-1 bg-indigo-50 text-indigo-600 rounded-md text-[10px] font-bold tracking-widest uppercase flex items-center gap-1.5">
-                                                <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" /> Live
+                                            <div className="px-2 py-1 bg-teal-50 text-teal-600 rounded-md text-[10px] font-bold tracking-widest uppercase flex items-center gap-1.5">
+                                                <div className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-pulse" /> Live
                                             </div>
                                         </div>
                                         <button className="p-2 text-slate-400 hover:text-slate-900 transition-colors rounded-xl hover:bg-slate-50">
@@ -1549,10 +1563,10 @@ function ExchangeContent() {
 
                                     <form onSubmit={handleSwap} className="space-y-1 relative">
                                         {/* From Input */}
-                                        <div className="bg-slate-50 hover:bg-slate-100 border border-transparent focus-within:border-indigo-200 focus-within:bg-white rounded-2xl p-4 transition-all">
+                                        <div className="bg-slate-50 hover:bg-slate-100 border border-transparent focus-within:border-teal-200 focus-within:bg-white rounded-2xl p-4 transition-all">
                                             <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500 mb-2">
                                                 <span>You pay</span>
-                                                <span className="cursor-pointer hover:text-indigo-600">Balance: {parseFloat(balances.from).toFixed(4)}</span>
+                                                <span className="cursor-pointer hover:text-teal-600">Balance: {parseFloat(balances.from).toFixed(4)}</span>
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <input 
@@ -1566,7 +1580,7 @@ function ExchangeContent() {
                                                 <button 
                                                     type="button"
                                                     onClick={() => { setSelectingFor('from'); setIsSelectorOpen(true); }}
-                                                    className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-indigo-300 hover:bg-indigo-50 transition-all font-bold text-sm shrink-0"
+                                                    className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-teal-300 hover:bg-teal-50 transition-all font-bold text-sm shrink-0"
                                                 >
                                                     {fromToken?.image ? <img src={fromToken.image} className="w-6 h-6 rounded-full" alt="" /> : null}
                                                     <span>{fromToken?.symbol}</span>
@@ -1584,7 +1598,7 @@ function ExchangeContent() {
                                                     setFromToken(toToken);
                                                     setToToken(temp);
                                                 }}
-                                                className="w-10 h-10 bg-white text-slate-500 hover:text-indigo-600 rounded-xl flex items-center justify-center shadow-md border border-slate-100 hover:scale-110 active:scale-95 transition-all"
+                                                className="w-10 h-10 bg-white text-slate-500 hover:text-teal-600 rounded-xl flex items-center justify-center shadow-md border border-slate-100 hover:scale-110 active:scale-95 transition-all"
                                             >
                                                 <ArrowDown className="w-5 h-5" />
                                             </button>
@@ -1608,7 +1622,7 @@ function ExchangeContent() {
                                                 <button 
                                                     type="button"
                                                     onClick={() => { setSelectingFor('to'); setIsSelectorOpen(true); }}
-                                                    className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-xl shadow-md hover:bg-indigo-700 transition-all font-bold text-sm shrink-0"
+                                                    className="flex items-center gap-2 px-3 py-2 bg-teal-600 text-white rounded-xl shadow-md hover:bg-teal-700 transition-all font-bold text-sm shrink-0"
                                                 >
                                                     {toToken?.image ? <img src={toToken.image} className="w-6 h-6 rounded-full bg-white p-0.5" alt="" /> : null}
                                                     <span>{toToken?.symbol}</span>
@@ -1640,7 +1654,7 @@ function ExchangeContent() {
                                                 </div>
                                                 <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500">
                                                     <span className="flex items-center gap-1">Routing <Info className="w-3 h-3" /></span>
-                                                    <span className="text-indigo-600 flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> Spot Oracle + DEX</span>
+                                                    <span className="text-teal-600 flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> Spot Oracle + DEX</span>
                                                 </div>
                                             </div>
                                         )}
@@ -1648,7 +1662,7 @@ function ExchangeContent() {
                                         <button 
                                             type="submit"
                                             disabled={swapStatus === 'loading' || !fromAmount}
-                                            className="w-full py-4 bg-indigo-600 text-white font-bold text-lg rounded-2xl mt-4 hover:bg-indigo-700 active:scale-[0.98] shadow-lg shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                                            className="w-full py-4 bg-teal-600 text-white font-bold text-lg rounded-2xl mt-4 hover:bg-teal-700 active:scale-[0.98] shadow-lg shadow-teal-200/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                                         >
                                             {swapStatus === 'loading' ? 'Confirming...' : (fromAmount ? 'Review Swap' : 'Enter an amount')}
                                         </button>
@@ -1680,7 +1694,7 @@ function ExchangeContent() {
                                                 </div>
                                                 <div className="flex justify-between items-center text-xs mt-2 pt-2 border-t border-emerald-100/50">
                                                     <span className="text-slate-500 font-semibold">Transaction</span>
-                                                    <a href={`https://bscscan.com/tx/${swapSuccessDetails.hash}`} target="_blank" rel="noopener noreferrer" className="font-mono font-bold text-indigo-500 hover:text-indigo-600 underline flex items-center gap-1">
+                                                    <a href={`https://bscscan.com/tx/${swapSuccessDetails.hash}`} target="_blank" rel="noopener noreferrer" className="font-mono font-bold text-teal-600 hover:text-teal-600 underline flex items-center gap-1">
                                                         {swapSuccessDetails.hash.slice(0,6)}...{swapSuccessDetails.hash.slice(-4)}
                                                         <ExternalLink className="w-3 h-3" />
                                                     </a>
@@ -1716,25 +1730,25 @@ function ExchangeContent() {
                         >
                             {/* 1. PROFESSIONAL TICKER HUD */}
                             <div className="bg-[#0B0E11] border border-gray-800 flex flex-wrap items-center gap-10 py-5 px-10 mb-6 rounded-3xl shadow-2xl relative z-[25] mt-4 overflow-hidden">
-                                <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-transparent pointer-events-none" />
+                                <div className="absolute inset-0 bg-gradient-to-r from-teal-600/5 to-transparent pointer-events-none" />
                                 
                                 <div className="flex items-center gap-6 relative z-10">
                                     <div className="flex items-center gap-4">
                                         <div className="w-14 h-14 bg-gray-900 rounded-2xl p-2 border border-gray-800 shadow-inner group overflow-hidden relative">
-                                            <div className="absolute inset-0 bg-indigo-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            <div className="absolute inset-0 bg-teal-500/10 opacity-0 group-hover:opacity-100 transition-opacity" />
                                             {toToken?.image ? <img src={toToken.image} className="w-full h-full object-contain rounded-lg relative z-10" alt="" /> : null}
                                         </div>
                                         <div className="flex flex-col">
                                             <div className="flex items-center gap-2">
                                                 <h2 className="text-2xl font-black text-white uppercase tracking-tighter leading-none">{toToken?.symbol}/USDT</h2>
-                                                <div className="flex items-center gap-1.5 bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-md">
-                                                    <span className="text-[8px] font-black text-indigo-400 tracking-[0.2em] uppercase">Perp</span>
+                                                <div className="flex items-center gap-1.5 bg-teal-500/10 border border-teal-500/20 px-2 py-0.5 rounded-md">
+                                                    <span className="text-[8px] font-black text-teal-500 tracking-[0.2em] uppercase">Perp</span>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2 mt-1">
                                                 <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">{toToken?.name}</span>
                                                 <div className="w-1 h-1 bg-gray-700 rounded-full" />
-                                                <span className="text-[9px] font-bold text-indigo-500 uppercase tracking-widest">Cross-Margin</span>
+                                                <span className="text-[9px] font-bold text-teal-600 uppercase tracking-widest">Cross-Margin</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1765,7 +1779,7 @@ function ExchangeContent() {
                                     <div className="flex flex-col gap-1.5 hidden xl:flex">
                                         <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Funding Rate / Countdown</p>
                                         <p className="text-sm font-black text-white font-mono flex items-center gap-2">
-                                            <span className="text-indigo-400">0.0100%</span>
+                                            <span className="text-teal-500">0.0100%</span>
                                             <span className="text-gray-600">/</span>
                                             <span className="text-gray-400">06:42:12</span>
                                         </p>
@@ -1782,7 +1796,7 @@ function ExchangeContent() {
                                 </div>
                                 <div className="ml-auto flex items-center gap-6 relative z-10">
                                     <div className="flex items-center gap-3 bg-gray-900 px-5 py-2.5 rounded-2xl border border-gray-800 shadow-inner">
-                                        <Activity className="w-3.5 h-3.5 text-indigo-500" />
+                                        <Activity className="w-3.5 h-3.5 text-teal-600" />
                                         <div className="flex flex-col">
                                             <span className="text-[9px] font-black text-white uppercase tracking-widest">Node-01 Active</span>
                                             <span className="text-[7px] font-bold text-gray-500 uppercase tracking-widest">Latency: 12ms</span>
@@ -1795,7 +1809,7 @@ function ExchangeContent() {
                                     <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                                         <div className="flex flex-col">
                                             <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
-                                                <LayoutGrid className="w-3.5 h-3.5 text-indigo-600" /> Pairs
+                                                <LayoutGrid className="w-3.5 h-3.5 text-teal-600" /> Pairs
                                             </h3>
                                             <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Institutional Scan</span>
                                         </div>
@@ -1805,10 +1819,10 @@ function ExchangeContent() {
                                     </div>
                                     <div className="p-4 border-b border-slate-100 bg-white">
                                         <div className="relative group/search">
-                                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within/search:text-indigo-600 transition-colors" />
+                                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 group-focus-within/search:text-teal-600 transition-colors" />
                                             <input 
                                                 type="text" placeholder="SEARCH PAIRS..." value={marketSearch} onChange={(e) => setMarketSearch(e.target.value)}
-                                                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-[10px] font-black text-slate-900 outline-none focus:bg-white focus:border-indigo-500/30 transition-all placeholder:text-slate-300 uppercase"
+                                                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-[10px] font-black text-slate-900 outline-none focus:bg-white focus:border-teal-500/30 transition-all placeholder:text-slate-300 uppercase"
                                             />
                                         </div>
                                     </div>
@@ -1816,7 +1830,7 @@ function ExchangeContent() {
                                         {displayTokens.slice(0, 500).map((t, i) => (
                                             <button 
                                                 key={`${t.id || t.address}-${i}`} onClick={() => setToToken(t)}
-                                                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all group/pair relative overflow-hidden border ${toToken?.id === t.id ? 'bg-indigo-50 border-indigo-600 shadow-lg shadow-indigo-200' : 'bg-transparent border-transparent hover:bg-slate-50 hover:border-slate-200'}`}
+                                                className={`w-full flex items-center justify-between p-3 rounded-xl transition-all group/pair relative overflow-hidden border ${toToken?.id === t.id ? 'bg-teal-50 border-teal-600 shadow-lg shadow-teal-200' : 'bg-transparent border-transparent hover:bg-slate-50 hover:border-slate-200'}`}
                                             >
                                                 {/* Left Performance Indicator */}
                                                 <div className={`absolute left-0 top-0 bottom-0 w-1 ${t.price_change_percentage_24h >= 0 ? 'bg-emerald-500/30' : 'bg-rose-500/30'}`} />
@@ -1826,7 +1840,7 @@ function ExchangeContent() {
                                                         {t.image ? (
                                                             <img src={t.image} className="w-full h-full object-contain rounded-sm" alt="" />
                                                         ) : (
-                                                            <div className="w-full h-full bg-indigo-600 rounded-sm flex items-center justify-center text-[10px] font-black text-white">{t.symbol?.charAt(0)}</div>
+                                                            <div className="w-full h-full bg-teal-600 rounded-sm flex items-center justify-center text-[10px] font-black text-white">{t.symbol?.charAt(0)}</div>
                                                         )}
                                                     </div>
                                                     <div className="text-left">
@@ -1860,14 +1874,14 @@ function ExchangeContent() {
                                             <div className="flex items-center gap-4">
                                                 <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-200">
                                                     {['1m', '5m', '15m', '1h', '4h', '1D'].map(tf => (
-                                                        <button key={tf} className={`px-4 py-1.5 text-[9px] font-black rounded-lg transition-all ${tf === '15m' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>{tf}</button>
+                                                        <button key={tf} className={`px-4 py-1.5 text-[9px] font-black rounded-lg transition-all ${tf === '15m' ? 'bg-teal-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>{tf}</button>
                                                     ))}
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-4">
-                                                <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 rounded-lg border border-indigo-100">
-                                                    <div className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse" />
-                                                    <span className="text-[8px] font-black text-indigo-600 uppercase tracking-widest">Global Node Sync</span>
+                                                <div className="flex items-center gap-2 px-3 py-1.5 bg-teal-50 rounded-lg border border-teal-100">
+                                                    <div className="w-1.5 h-1.5 bg-teal-600 rounded-full animate-pulse" />
+                                                    <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest">Global Node Sync</span>
                                                 </div>
                                                 <button className="p-2 text-slate-400 hover:text-slate-600 transition-colors">
                                                     <Maximize2 className="w-4 h-4" />
@@ -1884,8 +1898,8 @@ function ExchangeContent() {
                                         <div className="bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col overflow-hidden">
                                             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-indigo-50 rounded-lg">
-                                                        <Rocket className="w-3.5 h-3.5 text-indigo-600" />
+                                                    <div className="p-2 bg-teal-50 rounded-lg">
+                                                        <Rocket className="w-3.5 h-3.5 text-teal-600" />
                                                     </div>
                                                     <div className="flex flex-col">
                                                         <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Active Orders</h3>
@@ -1903,7 +1917,7 @@ function ExchangeContent() {
                                                 ) : (
                                                     <div className="space-y-3">
                                                         {openPositions.map(pos => (
-                                                            <div key={pos.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-between group hover:border-indigo-500/30 transition-all">
+                                                            <div key={pos.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-center justify-between group hover:border-teal-500/30 transition-all">
                                                                 <div className="flex items-center gap-4">
                                                                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${pos.side === 'long' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
                                                                         {pos.side === 'long' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
@@ -1911,7 +1925,7 @@ function ExchangeContent() {
                                                                     <div>
                                                                         <div className="flex items-center gap-2">
                                                                             <p className="text-[10px] font-black text-slate-900 uppercase">{pos.tokenSymbol}/USDT</p>
-                                                                            <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-white text-indigo-600 border border-slate-200">{pos.leverage}X</span>
+                                                                            <span className="text-[8px] font-black px-1.5 py-0.5 rounded-md bg-white text-teal-600 border border-slate-200">{pos.leverage}X</span>
                                                                         </div>
                                                                         <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Size: {pos.size}</p>
                                                                     </div>
@@ -1933,8 +1947,8 @@ function ExchangeContent() {
                                         <div className="bg-white border border-slate-200 rounded-3xl shadow-sm flex flex-col overflow-hidden">
                                             <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-indigo-50 rounded-lg">
-                                                        <Zap className="w-3.5 h-3.5 text-indigo-600" />
+                                                    <div className="p-2 bg-teal-50 rounded-lg">
+                                                        <Zap className="w-3.5 h-3.5 text-teal-600" />
                                                     </div>
                                                     <div className="flex flex-col">
                                                         <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Real-Time Tape</h3>
@@ -1972,16 +1986,16 @@ function ExchangeContent() {
                                 <div className="xl:col-span-3 flex flex-col gap-5 min-h-0">
                                     {/* PROP-DESK ORDER PANEL */}
                                     <div className="bg-white border border-slate-200 rounded-3xl flex flex-col min-h-0 shadow-sm relative overflow-hidden group p-6">
-                                        <div className="absolute inset-0 bg-gradient-to-b from-indigo-50/50 to-transparent pointer-events-none" />
+                                        <div className="absolute inset-0 bg-gradient-to-b from-teal-600/50 to-transparent pointer-events-none" />
                                         
                                         <div className="flex items-center justify-between mb-6 relative z-10">
                                             <div className="flex flex-col">
                                                 <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-widest">Alpha Desk</h3>
-                                                <span className="text-[7px] font-bold text-indigo-600 uppercase tracking-widest mt-0.5">Prop-Terminal Active</span>
+                                                <span className="text-[7px] font-bold text-teal-600 uppercase tracking-widest mt-0.5">Prop-Terminal Active</span>
                                             </div>
                                             <div className="flex bg-slate-50 border border-slate-200 p-1 rounded-xl">
-                                                <button onClick={() => setOrderType('market')} className={`px-4 py-1.5 text-[9px] font-black rounded-lg transition-all ${orderType === 'market' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>Market</button>
-                                                <button onClick={() => setOrderType('limit')} className={`px-4 py-1.5 text-[9px] font-black rounded-lg transition-all ${orderType === 'limit' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-600'}`}>Limit</button>
+                                                <button onClick={() => setOrderType('market')} className={`px-4 py-1.5 text-[9px] font-black rounded-lg transition-all ${orderType === 'market' ? 'bg-teal-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-600'}`}>Market</button>
+                                                <button onClick={() => setOrderType('limit')} className={`px-4 py-1.5 text-[9px] font-black rounded-lg transition-all ${orderType === 'limit' ? 'bg-teal-600 text-white' : 'text-slate-400 hover:text-slate-600'}`}>Limit</button>
                                             </div>
                                         </div>
 
@@ -2000,12 +2014,12 @@ function ExchangeContent() {
                                             <div className="space-y-3">
                                                 <div className="flex justify-between px-2">
                                                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Execution Size</span>
-                                                    <span className="text-[8px] font-black text-indigo-600 uppercase tracking-widest italic">Avail: 4.2 BNB</span>
+                                                    <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest italic">Avail: 4.2 BNB</span>
                                                 </div>
                                                 <div className="relative group/input">
                                                     <input 
                                                         type="number" value={orderSize} onChange={(e) => setOrderSize(e.target.value)}
-                                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 px-6 text-lg font-black text-slate-900 outline-none focus:bg-white focus:border-indigo-500/40 transition-all font-mono"
+                                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 px-6 text-lg font-black text-slate-900 outline-none focus:bg-white focus:border-teal-500/40 transition-all font-mono"
                                                         placeholder="0.00"
                                                     />
                                                     <div className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase tracking-widest">BNB</div>
@@ -2017,7 +2031,7 @@ function ExchangeContent() {
                                                     <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Leverage Intensity</p>
                                                     <div className="flex items-center gap-2">
                                                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Multiplier:</span>
-                                                        <p className="text-2xl font-black text-indigo-600 italic tracking-tighter">{leverage}X</p>
+                                                        <p className="text-2xl font-black text-teal-600 italic tracking-tighter">{leverage}X</p>
                                                     </div>
                                                 </div>
                                                 <div className="relative pt-2">
@@ -2030,7 +2044,7 @@ function ExchangeContent() {
                                                             <button 
                                                                 key={v} 
                                                                 onClick={() => setLeverage(v)} 
-                                                                className={`py-2 text-[9px] font-black rounded-lg border transition-all ${leverage == v ? 'bg-indigo-600 border-indigo-700 text-white shadow-lg' : 'bg-white border-slate-200 text-slate-400 hover:border-indigo-500 hover:text-slate-600'}`}
+                                                                className={`py-2 text-[9px] font-black rounded-lg border transition-all ${leverage == v ? 'bg-teal-600 border-teal-700 text-white shadow-lg' : 'bg-white border-slate-200 text-slate-400 hover:border-teal-500 hover:text-slate-600'}`}
                                                             >
                                                                 {v}X
                                                             </button>
@@ -2065,7 +2079,7 @@ function ExchangeContent() {
                                     <div className="bg-white border border-slate-200 rounded-3xl h-[550px] flex flex-col shadow-sm relative overflow-hidden group">
                                         <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
                                             <div className="flex items-center gap-3">
-                                                <BarChart3 className="w-3.5 h-3.5 text-indigo-600" />
+                                                <BarChart3 className="w-3.5 h-3.5 text-teal-600" />
                                                 <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest">Institutional Book</h3>
                                             </div>
                                             <div className="flex items-center gap-3">
@@ -2129,7 +2143,7 @@ function ExchangeContent() {
                                         <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
                                         <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">WEB3 CROSS-CHAIN EXPLORER // MULTI-NETWORK ACTIVE</span>
                                     </div>
-                                    <h1 className="text-5xl md:text-7xl font-black text-slate-900 uppercase tracking-tighter leading-none mb-4">WEB3 <span className="text-indigo-600">PORTAL</span></h1>
+                                    <h1 className="text-5xl md:text-7xl font-black text-slate-900 uppercase tracking-tighter leading-none mb-4">WEB3 <span className="text-teal-600">PORTAL</span></h1>
                                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">5000+ Cross-Chain Assets · DexScreener Indexed · Institutional Routing</p>
                                 </div>
                                 <div className="flex items-center gap-3 px-6 py-4 bg-emerald-50 border border-emerald-100 rounded-2xl">
@@ -2147,7 +2161,7 @@ function ExchangeContent() {
                                     {/* Network Filter */}
                                     <div className="flex flex-col gap-2 max-w-full">
                                         <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400 pl-2 flex items-center gap-1.5">
-                                            <Layers className="w-3 h-3 text-indigo-600" /> Network
+                                            <Layers className="w-3 h-3 text-teal-600" /> Network
                                         </span>
                                         <div className="max-w-full overflow-x-auto scrollbar-hide">
                                             <div className="flex bg-slate-50 shadow-inner p-1.5 rounded-[1.5rem] border border-slate-200/60 font-bold uppercase tracking-widest text-[9px] gap-1 min-w-max">
@@ -2155,7 +2169,7 @@ function ExchangeContent() {
                                                     <button 
                                                         key={net}
                                                         onClick={() => setNetworkFilter(net)}
-                                                        className={`px-4 py-3 rounded-[1.2rem] flex items-center gap-2 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-indigo-600 text-white shadow-lg scale-105' : 'text-slate-400 hover:text-slate-900'}`}
+                                                        className={`px-4 py-3 rounded-[1.2rem] flex items-center gap-2 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-teal-600 text-white shadow-lg scale-105' : 'text-slate-400 hover:text-slate-900'}`}
                                                     >
                                                         {net === 'ALL' ? <Globe className="w-4 h-4 flex-shrink-0" /> : <NetPill net={net} />}
                                                     </button>
@@ -2175,8 +2189,8 @@ function ExchangeContent() {
                                                 { id: 'new', label: 'Newly Launched', icon: <Sparkles className="w-3.5 h-3.5 text-cyan-500" /> },
                                                 { id: 'gainers', label: 'Gainers', icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> },
                                                 { id: 'losers', label: 'Losers', icon: <TrendingDown className="w-3.5 h-3.5 text-rose-500" /> },
-                                                { id: 'trending', label: 'Trending', icon: <TrendingUp className="w-3.5 h-3.5 text-indigo-600" /> },
-                                                { id: 'volume', label: 'High Volume', icon: <Activity className="w-3.5 h-3.5 text-blue-500" /> },
+                                                { id: 'trending', label: 'Trending', icon: <TrendingUp className="w-3.5 h-3.5 text-teal-600" /> },
+                                                { id: 'volume', label: 'High Volume', icon: <Activity className="w-3.5 h-3.5 text-teal-600" /> },
                                             ].map(cat => (
                                                 <button
                                                     key={cat.id}
@@ -2225,13 +2239,13 @@ function ExchangeContent() {
 
                                 {/* Row 2: Search Bar */}
                                 <div className="relative group/search">
-                                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within/search:text-indigo-600 transition-colors" />
+                                    <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within/search:text-teal-600 transition-colors" />
                                     <input
                                         type="text"
                                         placeholder="SEARCH BY NAME, SYMBOL OR PASTE CONTRACT ADDRESS (0x...)..."
                                         value={marketSearch}
                                         onChange={(e) => setMarketSearch(e.target.value)}
-                                        className="w-full bg-slate-50 border border-slate-200/60 rounded-[1.5rem] py-5 pl-16 pr-6 text-[10px] font-bold uppercase tracking-widest outline-none focus:bg-white focus:border-indigo-500/50 focus:shadow-xl focus:shadow-indigo-500/5 transition-all placeholder:text-gray-200"
+                                        className="w-full bg-slate-50 border border-slate-200/60 rounded-[1.5rem] py-5 pl-16 pr-6 text-[10px] font-bold uppercase tracking-widest outline-none focus:bg-white focus:border-teal-500/50 focus:shadow-xl focus:shadow-teal-200/5 transition-all placeholder:text-gray-200"
                                     />
                                     {marketSearch && (
                                         <button
@@ -2250,7 +2264,7 @@ function ExchangeContent() {
                                     {marketSearch.length > 30 && (
                                         <button
                                             onClick={() => handleSelectToken({ address: marketSearch, symbol: 'CUSTOM', name: 'Contract Import', image: 'https://cdn-icons-png.flaticon.com/512/2584/2584687.png', current_price: 0, price_change_percentage_24h: 0 })}
-                                            className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-indigo-500/20 hover:bg-indigo-600 transition-all"
+                                            className="flex items-center gap-2 px-6 py-3 bg-teal-600 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-teal-200/20 hover:bg-teal-600 transition-all"
                                         >
                                             <Rocket className="w-3.5 h-3.5" /> Import Contract
                                         </button>
@@ -2274,7 +2288,7 @@ function ExchangeContent() {
                                             <div className="flex items-center justify-between mb-6">
                                                 <div className="flex items-center gap-3">
                                                     <div className="relative">
-                                                        <div className="absolute -top-2 -left-2 bg-indigo-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-lg shadow-lg z-10">
+                                                        <div className="absolute -top-2 -left-2 bg-teal-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-lg shadow-lg z-10">
                                                             #{t.market_cap_rank || i + 1}
                                                         </div>
                                                         <div className="w-12 h-12 bg-white rounded-xl p-1 shadow-sm border border-gray-50 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -2292,7 +2306,7 @@ function ExchangeContent() {
                                             </div>
                                             <div className="mb-6">
                                                 <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest mb-1">Price</p>
-                                                <p className="text-xl font-black text-slate-900 group-hover:text-indigo-600 transition-colors font-mono">
+                                                <p className="text-xl font-black text-slate-900 group-hover:text-teal-600 transition-colors font-mono">
                                                     ${t.current_price < 0.01 ? t.current_price?.toFixed(6) : t.current_price?.toLocaleString()}
                                                 </p>
                                             </div>
@@ -2364,7 +2378,7 @@ function ExchangeContent() {
                             <div ref={scrollSentinelRef} className="h-40 w-full flex items-center justify-center pb-20">
                                 {displayTokens.length > visibleItems && (
                                     <div className="flex flex-col items-center gap-4">
-                                        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                                        <div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin" />
                                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">
                                             Synchronizing Institutional Liquidity... ({displayTokens.length - visibleItems} Assets Remaining)
                                         </span>
@@ -2394,17 +2408,17 @@ function ExchangeContent() {
                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 bg-white/40 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/60 shadow-xl">
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-14 h-14 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
+                                        <div className="w-14 h-14 bg-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-teal-200/20">
                                             <LayoutGrid className="text-white w-7 h-7" />
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-4 mb-1">
                                                 <h2 className="text-3xl font-black uppercase tracking-tighter italic text-slate-900 leading-none">
-                                                    Market <span className="text-indigo-600">Heatmap</span>
+                                                    Market <span className="text-teal-600">Heatmap</span>
                                                 </h2>
-                                                <div className="px-3 py-1.5 bg-indigo-600/10 border border-indigo-600/20 rounded-full flex items-center gap-2">
-                                                    <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
-                                                    <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-1.5">
+                                                <div className="px-3 py-1.5 bg-teal-600/10 border border-teal-600/20 rounded-full flex items-center gap-2">
+                                                    <div className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-pulse" />
+                                                    <span className="text-[10px] font-black text-teal-600 uppercase tracking-widest flex items-center gap-1.5">
                                                         <Sparkles size={10} /> Nuera AI Active
                                                     </span>
                                                 </div>
@@ -2472,7 +2486,7 @@ function ExchangeContent() {
                                     className="bg-white/40 backdrop-blur-xl border border-white/60 rounded-[2.5rem] p-8 shadow-xl cursor-pointer hover:shadow-2xl transition-all hover:scale-[1.02] active:scale-[0.98]"
                                 >
                                     <div className="flex items-center gap-4 mb-6">
-                                        <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center">
+                                        <div className="w-12 h-12 bg-teal-100 text-teal-600 rounded-2xl flex items-center justify-center">
                                             <Activity className="w-6 h-6" />
                                         </div>
                                         <div>
@@ -2485,11 +2499,11 @@ function ExchangeContent() {
                                             <p className="text-2xl font-black tracking-tighter text-slate-900">
                                                 {([...displayTokens].sort((a, b) => (b.total_volume || 0) - (a.total_volume || 0))[0]?.symbol || 'N/A')}
                                             </p>
-                                            <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mt-1">
+                                            <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest mt-1">
                                                 ${formatB20Number([...displayTokens].sort((a, b) => (b.total_volume || 0) - (a.total_volume || 0))[0]?.total_volume || 0)}
                                             </p>
                                         </div>
-                                        <BarChart3 className="w-10 h-10 text-indigo-200" />
+                                        <BarChart3 className="w-10 h-10 text-teal-600" />
                                     </div>
                                 </div>
 
@@ -2553,7 +2567,7 @@ function ExchangeContent() {
 
                                 {[
                                     { id: 'sentiment', label: 'Surveillance Sentiment', value: 'Extreme Greed', sub: 'Neural Flow Analysis', icon: <Zap size={22} />, color: 'text-emerald-400', accent: 'emerald' },
-                                    { id: 'volatility', label: 'Dynamic Volatility', value: '94.2/100', sub: 'Standard Deviation Matrix', icon: <Activity size={22} />, color: 'text-indigo-400', accent: 'indigo' },
+                                    { id: 'volatility', label: 'Dynamic Volatility', value: '94.2/100', sub: 'Standard Deviation Matrix', icon: <Activity size={22} />, color: 'text-teal-500', accent: 'indigo' },
                                     { id: 'dominance', label: 'Global Dominance', value: '42.1%', sub: 'Capitalization Weight', icon: <PieChartIcon size={22} />, color: 'text-violet-400', accent: 'violet' },
                                     { id: 'riskplot', label: 'Alpha Opportunity', value: 'High Efficiency', sub: 'Risk/Reward Simulation', icon: <Target size={22} />, color: 'text-amber-400', accent: 'amber' }
                                 ].map((stat, i) => (
@@ -2587,13 +2601,13 @@ function ExchangeContent() {
                             <div className="flex flex-col lg:flex-row items-center justify-between gap-6 mb-12 bg-white/60 backdrop-blur-xl p-6 rounded-[2.5rem] border border-slate-200 shadow-xl">
                                 <div className="flex flex-1 items-center gap-4 w-full">
                                     <div className="relative flex-1 group">
-                                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-600 transition-colors" />
+                                        <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-teal-600 transition-colors" />
                                         <input 
                                             type="text" 
                                             placeholder="SEARCH SYMBOL OR NAME..." 
                                             value={heatmapSearch}
                                             onChange={(e) => setHeatmapSearch(e.target.value)}
-                                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] outline-none focus:bg-white focus:border-indigo-500 transition-all placeholder:text-slate-300"
+                                            className="w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] outline-none focus:bg-white focus:border-teal-500 transition-all placeholder:text-slate-300"
                                         />
                                     </div>
                                     <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-200 shadow-inner">
@@ -2678,7 +2692,7 @@ function ExchangeContent() {
                                                         {t.image ? (
                                                             <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" />
                                                         ) : (
-                                                            <div className="w-full h-full bg-indigo-600/50 rounded-lg flex items-center justify-center text-white font-black text-xs">
+                                                            <div className="w-full h-full bg-teal-600/50 rounded-lg flex items-center justify-center text-white font-black text-xs">
                                                                 {t.symbol?.charAt(0)}
                                                             </div>
                                                         )}
@@ -2691,8 +2705,8 @@ function ExchangeContent() {
                                                 
                                                 <div className="flex flex-col gap-1.5 items-end">
                                                     {neuralAlphaIds.has(t.id || t.address) && (
-                                                        <div className="px-2.5 py-1 bg-indigo-500/20 text-indigo-400 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] border border-indigo-500/30 flex items-center gap-1.5 backdrop-blur-md">
-                                                            <div className="w-1 h-1 bg-indigo-400 rounded-full animate-pulse" />
+                                                        <div className="px-2.5 py-1 bg-teal-500/20 text-teal-500 rounded-lg text-[8px] font-black uppercase tracking-[0.2em] border border-teal-500/30 flex items-center gap-1.5 backdrop-blur-md">
+                                                            <div className="w-1 h-1 bg-teal-400 rounded-full animate-pulse" />
                                                             AI
                                                         </div>
                                                     )}
@@ -2753,13 +2767,13 @@ function ExchangeContent() {
                                                         {t.image ? (
                                                             <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" />
                                                         ) : (
-                                                            <div className="w-full h-full bg-indigo-600/10 rounded-lg flex items-center justify-center text-indigo-600 font-black text-[10px]">
+                                                            <div className="w-full h-full bg-teal-600/10 rounded-lg flex items-center justify-center text-teal-600 font-black text-[10px]">
                                                                 {t.symbol?.charAt(0)}
                                                             </div>
                                                         )}
                                                     </div>
                                                     <div className="min-w-0">
-                                                        <p className="text-sm font-black text-slate-900 uppercase tracking-tight leading-none group-hover:text-indigo-600 transition-colors">{t.symbol}</p>
+                                                        <p className="text-sm font-black text-slate-900 uppercase tracking-tight leading-none group-hover:text-teal-600 transition-colors">{t.symbol}</p>
                                                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1 truncate">{t.name}</p>
                                                     </div>
                                                 </div>
@@ -2777,7 +2791,7 @@ function ExchangeContent() {
                                                 </div>
                                                 <div className="col-span-2 flex gap-2">
                                                     {neuralAlphaIds.has(t.id || t.address) && (
-                                                        <div className="px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-md text-[8px] font-black uppercase tracking-widest border border-indigo-100">
+                                                        <div className="px-2 py-0.5 bg-teal-50 text-teal-600 rounded-md text-[8px] font-black uppercase tracking-widest border border-teal-100">
                                                             AI
                                                         </div>
                                                     )}
@@ -2825,402 +2839,635 @@ function ExchangeContent() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="max-w-[1600px] mx-auto space-y-2"
+                            className="max-w-[1700px] mx-auto space-y-6"
                         >
-                            {/* Floating Institutional Alpha HUD - Global Trending */}
-                            <div className="relative overflow-hidden py-1 group -mx-8 min-h-[60px]">
-                                <div className="absolute left-0 top-0 bottom-0 w-64 bg-gradient-to-r from-transparent via-[#FDFDFD]/80 to-transparent z-10 pointer-events-none" />
-                                <div className="absolute right-0 top-0 bottom-0 w-64 bg-gradient-to-l from-transparent via-[#FDFDFD]/80 to-transparent z-10 pointer-events-none" />
+                            {/* ── INSTITUTIONAL INTELLIGENCE HUD ── */}
+                            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 px-4">
+                                {/* Market Sentiment HUD */}
+                                <div className="bg-white/90 backdrop-blur-3xl border border-slate-200/60 rounded-[1.5rem] p-5 shadow-xl relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-4 opacity-30 group-hover:opacity-100 transition-opacity">
+                                        <Brain className="w-4 h-4 text-teal-600 animate-pulse" />
+                                    </div>
+                                    <div className="space-y-5 relative z-10">
+                                        <div className="flex items-center justify-between">
+                                            <div className="space-y-0.5">
+                                                <div className="flex items-center gap-1.5 text-teal-600 mb-1">
+                                                    <div className="w-1 h-1 bg-teal-600 rounded-full animate-ping" />
+                                                    <span className="text-[8px] font-black uppercase tracking-[0.2em]">Live Pulse</span>
+                                                </div>
+                                                <h2 className="text-sm font-black text-slate-900 tracking-tight uppercase">Sentiment <span className="text-teal-600">Index</span></h2>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-3xl font-black text-slate-900 tracking-tighter leading-none">74.2</div>
+                                                <span className="text-[8px] font-black text-emerald-500 uppercase">+12.4%</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200">
+                                                <motion.div 
+                                                    initial={{ width: 0 }} animate={{ width: '74.2%' }}
+                                                    className="h-full bg-gradient-to-r from-teal-400 to-indigo-600 rounded-full"
+                                                />
+                                            </div>
+                                            <div className="flex justify-between text-[7px] font-black text-slate-400 uppercase tracking-widest">
+                                                <span>Fear</span>
+                                                <span className="text-teal-600">Neutral</span>
+                                                <span>Greed</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-4 pt-4 border-t border-slate-100">
+                                            <div className="flex-1 space-y-1">
+                                                <div className="flex justify-between items-center text-[8px] font-bold">
+                                                    <span className="text-slate-400">SOCIAL</span>
+                                                    <span className="text-emerald-500">+85%</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-[8px] font-bold">
+                                                    <span className="text-slate-400">WHALES</span>
+                                                    <span className="text-teal-600">HIGH</span>
+                                                </div>
+                                            </div>
+                                            <div className="w-px h-6 bg-slate-100" />
+                                            <div className="flex-1">
+                                                <p className="text-[7px] font-black text-teal-800 leading-tight uppercase opacity-70">Meme divergence detected. Accumulate dips.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Liquidity Heatmap HUD */}
+                                <div className="lg:col-span-3 bg-slate-900 rounded-[1.5rem] p-5 shadow-xl relative overflow-hidden border border-white/5">
+                                    <div className="absolute inset-0 opacity-5 bg-[radial-gradient(circle_at_50%_50%,#009393,transparent_70%)]" />
+                                    <div className="flex items-center justify-between mb-4 relative z-10">
+                                        <div className="flex items-center gap-4">
+                                            <div className="space-y-0.5">
+                                                <div className="flex items-center gap-1.5 text-teal-500">
+                                                    <Zap size={10} className="animate-pulse" />
+                                                    <span className="text-[8px] font-black uppercase tracking-[0.2em]">Institutional</span>
+                                                </div>
+                                                <h2 className="text-sm font-black text-white tracking-tight uppercase">Liquidity <span className="text-teal-500 italic">Nexus</span></h2>
+                                            </div>
+                                            <div className="h-6 w-px bg-white/10 mx-2" />
+                                            <div>
+                                                <p className="text-[12px] font-black text-white tracking-tighter">$14.2B <span className="text-emerald-500 text-[8px]">+2.4%</span></p>
+                                                <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Global Pool</p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-3 text-[8px] font-black uppercase tracking-widest text-white/30">
+                                                <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-rose-500 rounded-full" /> SELL</div>
+                                                <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-teal-500 rounded-full" /> ACC</div>
+                                            </div>
+                                            <div className="bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
+                                                <span className="text-[8px] font-black text-white uppercase tracking-widest flex items-center gap-1.5">
+                                                    <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" /> SYNC
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-8 gap-1.5 relative z-10">
+                                        {['AI', 'RWA', 'MEME', 'INFRA', 'DEFI', 'L1', 'L2', 'GAME'].map((sector, sIdx) => (
+                                            <div key={sector} className="space-y-1.5">
+                                                <div className="grid grid-cols-3 gap-1">
+                                                    {[...Array(3)].map((_, i) => {
+                                                        const intensity = mounted ? Math.abs(Math.sin((sIdx + 1) * (i + 1) * 0.5)) : 0.5;
+                                                        const isSell = intensity < 0.2;
+                                                        const isBuy = intensity > 0.7;
+                                                        return (
+                                                            <div 
+                                                                key={i}
+                                                                className="h-6 rounded-md border border-white/5 relative overflow-hidden group/cell"
+                                                                style={{ 
+                                                                    backgroundColor: isBuy ? `rgba(13, 148, 136, ${0.4 + intensity * 0.5})` : 
+                                                                                     isSell ? `rgba(244, 63, 94, 0.15)` : 
+                                                                                     `rgba(255, 255, 255, 0.05)` 
+                                                                }}
+                                                            >
+                                                                {isBuy && <div className="absolute inset-0 bg-white/10 animate-pulse" />}
+                                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity bg-slate-900/90">
+                                                                    <span className="text-[5px] font-black text-white">{(intensity * 100).toFixed(0)}%</span>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                                <p className="text-[6px] font-black text-slate-500 text-center uppercase tracking-tighter">{sector}</p>
+                                                <p className="text-[5px] font-black text-teal-500/60 text-center uppercase tracking-tighter mt-0.5">
+                                                    ${(mounted ? Math.abs(Math.sin(sIdx + 1)) * 500 + 100 : 250).toFixed(0)}M
+                                                </p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── INSTITUTIONAL TICKER ── */}
+
+                            <div className="relative overflow-hidden py-4 -mx-4">
+                                <div className="absolute left-0 top-0 bottom-0 w-40 bg-gradient-to-r from-[#FDFDFD] to-transparent z-10 pointer-events-none" />
+                                <div className="absolute right-0 top-0 bottom-0 w-40 bg-gradient-to-l from-[#FDFDFD] to-transparent z-10 pointer-events-none" />
                                 
-                                <div className="absolute left-10 top-1/2 -translate-y-1/2 z-20 flex items-center gap-3">
-                                    <div className="w-2.5 h-2.5 bg-indigo-600 rounded-full animate-ping" />
-                                    <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest whitespace-nowrap bg-white/40 px-5 py-2 rounded-full border border-slate-200/60 backdrop-blur-md shadow-sm">Trending Alpha</span>
+                                <div className="flex items-center gap-4 mb-4 px-8">
+                                    <div className="flex items-center gap-2 px-3 py-1 bg-teal-600 text-white rounded-full shadow-lg shadow-teal-600/20">
+                                        <Activity size={12} className="animate-pulse" />
+                                        <span className="text-[10px] font-black uppercase tracking-widest">Global Pulse</span>
+                                    </div>
+                                    <div className="h-px flex-1 bg-slate-200/60" />
                                 </div>
 
                                 <motion.div 
-                                    className="flex gap-20 whitespace-nowrap pl-72"
-                                    animate={{ x: [0, -3000] }}
-                                    transition={{ duration: 55, repeat: Infinity, ease: "linear" }}
+                                    className="flex gap-4 whitespace-nowrap pl-8"
+                                    animate={{ x: [0, -2500] }}
+                                    transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
                                 >
-                                    {(cgTrending.length > 0 ? [...cgTrending, ...cgTrending, ...cgTrending, ...cgTrending] : []).map((t, idx) => (
+                                    {(cgTrending.length > 0 ? [...cgTrending, ...cgTrending, ...cgTrending] : []).map((t, idx) => (
                                         <div 
                                             key={`${t.id || t.address}-${idx}`}
                                             onClick={() => { setMode('spot'); setToToken(t); window.scrollTo({ top: 300, behavior: 'smooth' }); }}
-                                            className="flex items-center gap-6 cursor-pointer group/float py-2 hover:scale-105 transition-transform"
+                                            className="inline-flex items-center gap-4 px-5 py-3 bg-white border border-slate-200/60 rounded-2xl shadow-sm hover:shadow-xl hover:border-teal-500/40 transition-all cursor-pointer group/float active:scale-95"
                                         >
-                                            <div className="relative group">
-                                                <div className="absolute inset-0 bg-indigo-600/10 blur-xl rounded-full opacity-0 group-hover/float:opacity-100 transition-opacity" />
+                                            <div className="relative">
                                                 {t.image ? (
-                                                    <img
-                                                        src={t.image}
-                                                        className="w-10 h-10 relative z-10 object-contain rounded-xl opacity-80 group-hover/float:opacity-100 transition-all"
-                                                        alt={t.symbol}
-                                                        onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }}
-                                                    />
-                                                ) : null}
-                                                <div
-                                                    className="w-10 h-10 relative z-10 rounded-xl bg-gradient-to-br from-indigo-400 to-rose-500 flex items-center justify-center text-white font-black text-sm"
-                                                    style={{ display: t.image ? 'none' : 'flex' }}
-                                                >
-                                                    {(t.symbol || '?').charAt(0)}
-                                                </div>
+                                                    <img src={t.image} className="w-8 h-8 rounded-full shadow-sm" alt="" />
+                                                ) : (
+                                                    <div className="w-8 h-8 rounded-full bg-teal-600 flex items-center justify-center text-white font-black text-xs">{t.symbol?.charAt(0)}</div>
+                                                )}
                                             </div>
-                                            <div className="space-y-1">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-sm font-black text-slate-900 uppercase tracking-tight italic">{t.symbol}</span>
-                                                    <span className={`text-[11px] font-black ${t.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                        {t.price_change_percentage_24h >= 0 ? '+' : ''}{t.price_change_percentage_24h?.toFixed(2)}%
+                                            <div className="flex flex-col">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-[11px] font-black text-slate-900 uppercase tracking-tight">{t.symbol}</span>
+                                                    <span className={`text-[10px] font-bold ${t.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                        {t.price_change_percentage_24h >= 0 ? '+' : ''}{t.price_change_percentage_24h?.toFixed(1)}%
                                                     </span>
                                                 </div>
-                                                <div className="text-[10px] font-bold text-slate-400 font-mono tracking-tighter">
-                                                    ${t.current_price < 0.01 ? t.current_price.toFixed(7) : t.current_price?.toLocaleString()}
-                                                </div>
+                                                <span className="text-[9px] font-bold text-slate-400 font-mono italic">${t.current_price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}</span>
                                             </div>
-                                            <div className="w-1.5 h-1.5 bg-gray-200 rounded-full mx-2" />
                                         </div>
                                     ))}
                                 </motion.div>
                             </div>
 
-                            {/* Premium Market Intelligence Filter Card */}
-                            <div className="mx-4 flex flex-col gap-4 bg-white/80 backdrop-blur-xl shadow-xl shadow-slate-200/40 border border-slate-100 rounded-3xl px-5 py-3 transition-all duration-500">
-                                <div className="flex flex-col gap-4">
-                                    
-                                    {/* Section 1: Ecosystem Hub */}
-                                    {/* Section 1: Ecosystem Hub */}
-                                    <div className="flex flex-col gap-3">
-                                        <div className="flex items-center justify-between px-2">
-                                            <div className="flex items-center gap-2">
-                                                <Layers className="w-3.5 h-3.5 text-slate-400" />
-                                                <div className="flex flex-col">
-                                                    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Ecosystem Hub</span>
+                            {/* ── MARKET COMMAND CENTER ── */}
+                            <div className="mx-4 relative">
+                                <div className="bg-white/90 backdrop-blur-3xl shadow-xl border border-slate-200/60 rounded-[2.5rem] overflow-hidden">
+                                    <div className="grid grid-cols-1 lg:grid-cols-12">
+                                        {/* Left Side: Ecosystem Hub */}
+                                        <div className="lg:col-span-4 bg-slate-900 p-5 flex flex-col justify-between relative overflow-hidden">
+                                            <div className="absolute top-0 right-0 w-32 h-32 bg-teal-600/20 blur-[80px] -mr-16 -mt-16" />
+                                            <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-600/20 blur-[80px] -ml-16 -mb-16" />
+                                            
+                                            <div className="relative z-10 space-y-4">
+                                                <div className="space-y-0.5">
+                                                    <div className="flex items-center gap-2 text-teal-500 mb-1">
+                                                        <Layers size={10} className="animate-pulse" />
+                                                        <span className="text-[8px] font-black uppercase tracking-[0.3em]">Institutional Hub</span>
+                                                    </div>
+                                                    <h2 className="text-xl font-black text-white tracking-tighter leading-none uppercase">Asset<br/><span className="text-teal-500 italic">Ecosystems</span></h2>
                                                 </div>
-                                            </div>
-                                            <div className="flex items-center gap-1.5 px-2.5 py-0.5 bg-slate-50 border border-slate-200/50 rounded-full">
-                                                <div className="w-1 h-1 bg-indigo-500 rounded-full animate-pulse" />
-                                                <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Cross-Chain Sync Active</span>
-                                            </div>
-                                        </div>
 
-                                        <div className="max-w-full overflow-x-auto scrollbar-hide">
-                                            <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-200/50 gap-1.5 w-max">
-                                                <button 
-                                                    onClick={() => setNetworkFilter('ALL')}
-                                                    className={`px-5 py-2.5 rounded-xl flex items-center gap-2.5 transition-all text-[11px] font-bold uppercase tracking-wide whitespace-nowrap ${networkFilter === 'ALL' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm'}`}
-                                                >
-                                                    <Globe className="w-4 h-4 shrink-0" />
-                                                    All Assets
-                                                </button>
-                                                
-                                                <div className="w-px h-6 bg-slate-200/60 my-auto mx-1" />
-
-                                                {NETWORKS_LIST.map(net => (
+                                                <div className="grid grid-cols-2 gap-2">
                                                     <button 
-                                                        key={net}
-                                                        onClick={() => setNetworkFilter(net)}
-                                                        className={`px-4 py-2.5 rounded-xl flex items-center gap-2.5 transition-all text-[11px] font-bold uppercase tracking-wide whitespace-nowrap ${networkFilter === net ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm'}`}
+                                                        onClick={() => setNetworkFilter('ALL')}
+                                                        className={`flex items-center justify-center gap-2 py-2.5 rounded-xl transition-all text-[9px] font-black uppercase tracking-widest ${networkFilter === 'ALL' ? 'bg-white text-slate-900 shadow-lg' : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'}`}
                                                     >
-                                                        <img src={NETWORK_LOGOS[net] || getNetworkLogo(net)} alt="" className="w-4 h-4 rounded-full object-contain bg-white p-0.5" />
-                                                        {net}
+                                                        <Globe size={12} /> Global
                                                     </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Section 2: Market Category & Intelligence Sort */}
-                                    <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-end">
-                                        
-                                        <div className="xl:col-span-8 flex flex-col gap-2">
-                                            <div className="flex items-center gap-2 px-2">
-                                                <LayoutGrid className="w-3.5 h-3.5 text-slate-400" />
-                                                <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Market Intelligence Channels</span>
-                                            </div>
-                                            <div className="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-200/50 gap-1.5 flex-wrap">
-                                                {[
-                                                    { id: 'all', label: 'All Tokens', icon: <Globe className="w-4 h-4" /> },
-                                                    { id: 'new', label: 'Newly Launched', icon: <Sparkles className="w-4 h-4 text-cyan-500" /> },
-                                                    { id: 'gainers', label: 'Top Gainers', icon: <TrendingUp className="w-4 h-4 text-emerald-500" /> },
-                                                    { id: 'losers', label: 'Top Losers', icon: <TrendingDown className="w-4 h-4 text-rose-500" /> },
-                                                    { id: 'trending', label: 'Trending Alpha', icon: <Activity className="w-4 h-4 text-indigo-600" /> },
-                                                    { id: 'volume', label: 'High Volume', icon: <BarChart3 className="w-4 h-4 text-blue-500" /> },
-                                                ].map(cat => (
-                                                    <button
-                                                        key={cat.id}
-                                                        onClick={() => setMarketCategory(cat.id)}
-                                                        className={`px-5 py-2.5 rounded-xl flex items-center gap-2.5 transition-all text-[11px] font-bold uppercase tracking-wide ${marketCategory === cat.id ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-slate-500 hover:text-slate-900 hover:bg-white hover:shadow-sm'}`}
-                                                    >
-                                                        {cat.icon} {cat.label}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        <div className="xl:col-span-4 flex items-center gap-4">
-                                            <div className="flex-1 flex flex-col gap-2">
-                                                <div className="flex items-center gap-2 px-2">
-                                                    <Search className="w-3.5 h-3.5 text-slate-400" />
-                                                    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">Global Search</span>
-                                                </div>
-                                                <div className="relative group/search">
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Name, Symbol or 0x..."
-                                                        value={marketSearch}
-                                                        onChange={(e) => setMarketSearch(e.target.value)}
-                                                        className="w-full bg-slate-50 border border-slate-200/60 rounded-xl py-2.5 pl-10 pr-10 text-[10px] font-bold uppercase tracking-widest outline-none focus:bg-white focus:border-indigo-500 focus:shadow-md transition-all placeholder:text-slate-300"
-                                                    />
-                                                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-300 group-focus-within/search:text-indigo-600 transition-colors" />
-                                                    {marketSearch && (
-                                                        <button onClick={() => setMarketSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 hover:text-slate-900 transition-colors">
-                                                            <X className="w-3 h-3" />
+                                                    {NETWORKS_LIST.slice(0, 7).map(net => (
+                                                        <button 
+                                                            key={net}
+                                                            onClick={() => setNetworkFilter(net)}
+                                                            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all text-[9px] font-black uppercase tracking-widest ${networkFilter === net ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/20' : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'}`}
+                                                        >
+                                                            <img src={NETWORK_LOGOS[net] || getNetworkLogo(net)} alt="" className="w-3 h-3 rounded-full bg-white p-0.5" />
+                                                            {net}
                                                         </button>
-                                                    )}
-                                                </div>
-                                            </div>
-
-                                            <div className="flex flex-col gap-2 shrink-0">
-                                                <div className="flex items-center gap-2 px-2">
-                                                    <List className="w-3.5 h-3.5 text-slate-400" />
-                                                    <span className="text-[9px] font-bold uppercase tracking-widest text-slate-500">View</span>
-                                                </div>
-                                                <div className="flex bg-slate-50 border border-slate-200/60 p-1 rounded-xl gap-1">
-                                                    <button onClick={() => setViewType('card')} className={`p-1.5 rounded-lg transition-all ${viewType === 'card' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-900'}`}>
-                                                        <LayoutGrid className="w-3.5 h-3.5" />
-                                                    </button>
-                                                    <button onClick={() => setViewType('list')} className={`p-1.5 rounded-lg transition-all ${viewType === 'list' ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-900'}`}>
-                                                        <List className="w-3.5 h-3.5" />
+                                                    ))}
+                                                    <button className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/5 text-slate-500 hover:bg-white/10 transition-all text-[9px] font-black uppercase tracking-widest">
+                                                        + {NETWORKS_LIST.length - 7} More
                                                     </button>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div>
 
-                                    <div className="flex items-center justify-between px-2 pt-3 border-t border-slate-100">
-                                        <div className="flex items-center gap-6">
-                                            <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100">
-                                                <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                                                <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Liquidity Sync Active</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest italic">Institutional Intelligence Active //</span>
-                                                <span className="text-[10px] font-bold text-slate-900 uppercase tracking-widest border-b border-indigo-200">
-                                                    {displayTokens.length.toLocaleString()} Assets Indexed
-                                                </span>
+                                            <div className="relative z-10 pt-6">
+                                                <div className="flex items-center gap-3 text-white/30">
+                                                    <div className="flex -space-x-1.5">
+                                                        {[...Array(4)].map((_, i) => (
+                                                            <div key={i} className="w-5 h-5 rounded-full border border-slate-900 bg-slate-800 flex items-center justify-center text-[7px] font-black">
+                                                                {i + 1}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <span className="text-[7px] font-bold uppercase tracking-widest leading-tight">Nodes Online<br/>Ready</span>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Sort:</span>
-                                            <select
-                                                value={marketSort}
-                                                onChange={(e) => setMarketSort(e.target.value)}
-                                                className="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-[9px] font-bold uppercase tracking-widest text-slate-900 outline-none focus:border-indigo-500 shadow-sm"
-                                            >
-                                                <option value="rank">Crypto Rank</option>
-                                                <option value="mcap">Market Cap</option>
-                                                <option value="p_high">Price: High → Low</option>
-                                                <option value="p_low">Price: Low → High</option>
-                                                <option value="change">Volatility</option>
-                                            </select>
+                                        {/* Right Side: Search & Intelligence */}
+                                        <div className="lg:col-span-8 p-5 flex flex-col justify-between">
+                                            <div className="space-y-4">
+                                                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                                                    <div className="flex-1 w-full max-w-xl relative group">
+                                                        <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
+                                                            <Search className="w-4 h-4 text-slate-300 group-focus-within:text-teal-600 transition-colors" />
+                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            placeholder="Search Global Nexus..."
+                                                            value={marketSearch}
+                                                            onChange={(e) => setMarketSearch(e.target.value)}
+                                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3.5 pl-12 pr-10 text-[13px] font-bold tracking-tight outline-none focus:bg-white focus:border-teal-500/30 transition-all placeholder:text-slate-300 shadow-inner"
+                                                        />
+                                                    </div>
+
+                                                    <div className="flex bg-slate-50 p-1.5 rounded-xl gap-1.5 border border-slate-100">
+                                                        <button onClick={() => setViewType('card')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-[9px] font-black uppercase tracking-widest ${viewType === 'card' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-400 hover:text-slate-900'}`}>
+                                                            <LayoutGrid size={12} /> Grid
+                                                        </button>
+                                                        <button onClick={() => setViewType('list')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-[9px] font-black uppercase tracking-widest ${viewType === 'list' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-400 hover:text-slate-900'}`}>
+                                                            <List size={12} /> List
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-wrap gap-1.5">
+                                                    {[
+                                                        { id: 'all', label: 'All Indices', icon: <Activity className="w-3.5 h-3.5" /> },
+                                                        { id: 'trending', label: 'Trending Alpha', icon: <Flame className="w-3.5 h-3.5" /> },
+                                                        { id: 'new', label: 'Newly Minted', icon: <Sparkles className="w-3.5 h-3.5" /> },
+                                                        { id: 'gainers', label: 'Top ROI', icon: <TrendingUp className="w-3.5 h-3.5" /> },
+                                                        { id: 'volume', label: 'High Velocity', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+                                                    ].map(cat => (
+                                                        <button
+                                                            key={cat.id}
+                                                            onClick={() => setMarketCategory(cat.id)}
+                                                            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all text-[9px] font-black uppercase tracking-widest ${marketCategory === cat.id ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                                                        >
+                                                            {cat.icon} {cat.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-col md:flex-row items-center justify-between gap-4 mt-6 pt-6 border-t border-slate-100">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2">
+                                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                                        <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Integrity Active</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5 text-slate-400">
+                                                        <Info size={10} />
+                                                        <span className="text-[8px] font-bold uppercase tracking-widest">RPC: 0.2ms</span>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center gap-3">
+                                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sort</span>
+                                                    <select
+                                                        value={marketSort}
+                                                        onChange={(e) => setMarketSort(e.target.value)}
+                                                        className="bg-white border border-slate-200 rounded-xl px-4 py-1.5 text-[9px] font-black uppercase tracking-widest outline-none cursor-pointer hover:border-teal-500 transition-colors shadow-sm"
+                                                    >
+                                                        <option value="rank">Institutional Rank</option>
+                                                        <option value="mcap">Market Cap: High to Low</option>
+                                                        <option value="p_high">Execution Price: Desc</option>
+                                                        <option value="change">Highest 24H Volatility</option>
+                                                    </select>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
+                            {/* ── ASSET GRID DISPLAY ── */}
                             {viewType === 'card' ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 font-sans pb-20">
-                                {displayTokens.slice(0, visibleItems).map((t, i) => (
-                                <motion.div
-                                    key={`${t.id || t.address}-${i}`}
-                                    onClick={() => setSelectedMarketToken(t)}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: Math.min(i * 0.005, 0.15) }}
-                                    className={`relative p-5 bg-white shadow-xl shadow-slate-200/40 border border-slate-100 rounded-[2rem] hover:border-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-500 flex flex-col group overflow-hidden cursor-pointer ${t.price_change_percentage_24h >= 0 ? 'hover:bg-emerald-50/10' : 'hover:bg-rose-50/10'}`}
-                                >
-                                    {/* Card Glow Effect */}
-                                    <div className={`absolute -right-10 -top-10 w-32 h-32 blur-3xl opacity-0 group-hover:opacity-30 transition-opacity duration-700 ${t.price_change_percentage_24h >= 0 ? 'bg-emerald-400' : 'bg-rose-400'}`} />
-
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-12 h-12 bg-slate-50 rounded-2xl p-1.5 border border-slate-100 shadow-sm group-hover:scale-110 transition-transform duration-500">
-                                                {t.image ? (
-                                                    <img src={t.image} className="w-full h-full object-contain rounded-xl" alt="" />
-                                                ) : (
-                                                    <div className="w-full h-full bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-sm uppercase">
-                                                        {t.symbol?.charAt(0)}
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <div className="flex items-center gap-1.5">
-                                                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tighter truncate max-w-[80px]">{t.symbol}</h3>
-                                                    {t.network && (
-                                                        <div className="flex items-center gap-1 bg-slate-50 border border-slate-200/60 px-1.5 py-0.5 rounded-md">
-                                                            <img src={NETWORK_LOGOS[t.network] || getNetworkLogo(t.network)} alt="" className="w-2.5 h-2.5 rounded-full" />
-                                                            <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">{t.network}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-[100px]">{t.name}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-col items-end gap-1">
-                                            {t.market_cap_rank && t.market_cap_rank !== 999999 ? (
-                                                <span className="text-[8px] font-black text-slate-400 border border-slate-200 px-1.5 py-0.5 rounded-md uppercase tracking-widest">Rank #{t.market_cap_rank}</span>
-                                            ) : (
-                                                <span className="text-[8px] font-black text-indigo-500 border border-indigo-100 bg-indigo-50 px-1.5 py-0.5 rounded-md uppercase tracking-widest italic">Alpha</span>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="flex flex-col gap-1 mb-6">
-                                        <div className="flex items-baseline gap-2">
-                                            <span className="text-xl font-black text-slate-900 font-mono tracking-tighter">
-                                                ${t.current_price < 0.01 ? t.current_price.toFixed(8) : t.current_price?.toLocaleString()}
-                                            </span>
-                                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-lg ${t.price_change_percentage_24h >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
-                                                {t.price_change_percentage_24h >= 0 ? '↑' : '↓'} {Math.abs(t.price_change_percentage_24h || 0).toFixed(2)}%
-                                            </span>
-                                        </div>
-                                        <div className="w-full h-1 bg-slate-50 rounded-full overflow-hidden">
-                                            <motion.div 
-                                                initial={{ width: 0 }}
-                                                animate={{ width: `${Math.min(Math.max((t.price_change_percentage_24h || 0) + 50, 10), 100)}%` }}
-                                                className={`h-full ${t.price_change_percentage_24h >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-3 mb-6 p-3 bg-slate-50/50 rounded-2xl border border-slate-100">
-                                        <div className="flex flex-col">
-                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Market Cap</span>
-                                            <span className="text-[10px] font-black text-slate-900 font-mono">{formatB20Number(t.market_cap, "$")}</span>
-                                        </div>
-                                        <div className="flex flex-col border-l border-slate-200 pl-3">
-                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">Volume 24H</span>
-                                            <span className="text-[10px] font-black text-slate-900 font-mono">{formatB20Number(t.total_volume, "$")}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                        <button 
-                                            onClick={(e) => { e.stopPropagation(); setMode('spot'); setToToken(t); }}
-                                            className="flex-1 py-3.5 bg-slate-900 text-white font-black text-[9px] uppercase tracking-widest rounded-xl hover:bg-indigo-600 transition-all shadow-xl hover:shadow-indigo-500/20 active:scale-95 flex items-center justify-center gap-2"
-                                        >
-                                            <Activity className="w-3 h-3" />
-                                            Trade Now
-                                        </button>
-                                        {(t.isNewlyLaunched || t.trust_status === 'Newly Launched Token') && (
-                                            <div className="w-10 h-10 flex items-center justify-center bg-cyan-50 border border-cyan-100 rounded-xl text-cyan-600 shadow-sm shadow-cyan-100">
-                                                <Sparkles className="w-4 h-4" />
-                                            </div>
-                                        )}
-                                    </div>
-                                </motion.div>
-                                ))}
-                                </div>
-                            ) : (
-                                <div className="flex flex-col gap-3 pb-20 w-full overflow-x-auto custom-scrollbar">
-                                    <div className="min-w-[1200px] grid grid-cols-12 gap-6 px-10 py-5 bg-white border border-slate-100 rounded-[2rem] text-[9px] font-black text-slate-400 uppercase tracking-widest shadow-sm shadow-slate-100 hidden md:grid items-center">
-                                        <div className="col-span-1">Rank</div>
-                                        <div className="col-span-3">Institutional Asset</div>
-                                        <div className="col-span-2">Execution Price</div>
-                                        <div className="col-span-1">24H Dynamic</div>
-                                        <div className="col-span-2">Capitalization</div>
-                                        <div className="col-span-2 text-center">Liquidity Index</div>
-                                        <div className="text-right col-span-1">Terminal</div>
-                                    </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 px-4 pb-20">
                                     {displayTokens.slice(0, visibleItems).map((t, i) => (
                                         <motion.div
                                             key={`${t.id || t.address}-${i}`}
                                             onClick={() => setSelectedMarketToken(t)}
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            transition={{ delay: Math.min(i * 0.005, 0.1) }}
-                                            className="min-w-[1200px] grid grid-cols-1 md:grid-cols-12 items-center gap-6 px-10 py-4 bg-white hover:bg-slate-50/50 border border-slate-100 hover:border-indigo-200/50 rounded-[2rem] transition-all group relative overflow-hidden cursor-pointer"
+                                            initial={{ opacity: 0, y: 30 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: Math.min(i * 0.02, 0.2) }}
+                                            className="group relative bg-white border border-slate-200/80 rounded-[2.5rem] p-6 shadow-[0_15px_40px_-10px_rgba(0,0,0,0.05)] hover:shadow-[0_40px_80px_-20px_rgba(0,0,0,0.12)] hover:border-teal-500/40 hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden"
                                         >
-                                            <div className={`absolute left-0 top-0 bottom-0 w-1 transition-all group-hover:w-1.5 ${t.price_change_percentage_24h >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-
-                                            <div className="col-span-1">
-                                                <span className="text-[10px] font-black text-slate-300 group-hover:text-indigo-600 transition-colors">
-                                                    {t.market_cap_rank && t.market_cap_rank !== 999999 ? `#${t.market_cap_rank.toString().padStart(2, '0')}` : `#${(i + 1).toString().padStart(2, '0')}`}
-                                                </span>
-                                            </div>
-
-                                            <div className="col-span-3 flex items-center gap-4">
-                                                <div className="w-10 h-10 bg-slate-50 rounded-xl p-1.5 border border-slate-100 group-hover:scale-105 transition-transform">
-                                                    {t.image ? (
-                                                        <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" />
-                                                    ) : (
-                                                        <div className="w-full h-full bg-indigo-600 rounded-lg flex items-center justify-center text-white font-black text-xs">
-                                                            {t.symbol?.charAt(0)}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <div className="flex items-center gap-2">
-                                                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-tighter">{t.symbol}</h3>
-                                                        {t.network && (
-                                                            <img src={NETWORK_LOGOS[t.network] || getNetworkLogo(t.network)} alt="" className="w-3 h-3 rounded-full opacity-60 group-hover:opacity-100 transition-opacity" />
+                                            {/* Accent Glow */}
+                                            <div className={`absolute top-0 right-0 w-32 h-32 blur-[80px] opacity-0 group-hover:opacity-20 transition-opacity duration-700 ${t.price_change_percentage_24h >= 0 ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                                            
+                                            <div className="relative z-10 space-y-6">
+                                                <div className="flex justify-between items-start">
+                                                    <div className="w-14 h-14 bg-slate-50 rounded-2xl p-2 shadow-inner border border-slate-100 group-hover:scale-110 transition-transform duration-500">
+                                                        {t.image ? (
+                                                            <img src={t.image} className="w-full h-full object-contain rounded-xl" alt="" />
+                                                        ) : (
+                                                            <div className="w-full h-full bg-gradient-to-br from-teal-600 to-teal-800 rounded-xl flex items-center justify-center text-white font-black text-xl">{t.symbol?.charAt(0)}</div>
                                                         )}
                                                     </div>
-                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest truncate">{t.name}</p>
+                                                    <div className="flex flex-col items-end gap-2">
+                                                        <span className={`text-[10px] font-black px-3 py-1 rounded-full ${t.price_change_percentage_24h >= 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
+                                                            {t.price_change_percentage_24h >= 0 ? '↑' : '↓'} {Math.abs(t.price_change_percentage_24h || 0).toFixed(2)}%
+                                                        </span>
+                                                        {t.market_cap_rank && t.market_cap_rank < 5000 && (
+                                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest bg-slate-50 px-2 py-1 rounded-lg">Rank #{t.market_cap_rank}</span>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
 
-                                            <div className="col-span-2">
-                                                <p className="text-[11px] font-black text-slate-900 font-mono tracking-tight">
-                                                    ${t.current_price < 0.01 ? t.current_price.toFixed(8) : t.current_price?.toLocaleString()}
-                                                </p>
-                                            </div>
-
-                                            <div className="col-span-1">
-                                                <div className={`inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-lg ${t.price_change_percentage_24h >= 0 ? 'text-emerald-600 bg-emerald-50' : 'text-rose-600 bg-rose-50'}`}>
-                                                    {t.price_change_percentage_24h >= 0 ? '+' : ''}{t.price_change_percentage_24h?.toFixed(2)}%
+                                                <div>
+                                                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter leading-none mb-1 group-hover:text-teal-600 transition-colors">{t.symbol}</h3>
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate">{t.name}</p>
                                                 </div>
-                                            </div>
 
-                                            <div className="col-span-2">
-                                                <p className="text-[10px] font-black text-slate-600 font-mono">{formatB20Number(t.market_cap, "$")}</p>
-                                                <div className="w-20 h-1 bg-slate-100 rounded-full mt-1.5 overflow-hidden">
-                                                    <div className="h-full bg-indigo-400/20 w-3/4" />
+                                                <div className="space-y-4">
+                                                    <div className="flex flex-col">
+                                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Execution Price</span>
+                                                        <span className="text-2xl font-black text-slate-900 font-mono tracking-tighter">
+                                                            ${t.current_price < 0.01 ? t.current_price.toFixed(8) : t.current_price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        </span>
+                                                    </div>
+                                                    
+                                                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                                                        <div className="flex flex-col">
+                                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Market Cap</span>
+                                                            <span className="text-[10px] font-black text-slate-900 font-mono">{formatB20Number(t.market_cap, "$")}</span>
+                                                        </div>
+                                                        <div className="flex flex-col items-end">
+                                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Volume 24H</span>
+                                                            <span className="text-[10px] font-black text-slate-900 font-mono">{formatB20Number(t.total_volume, "$")}</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
 
-                                            <div className="col-span-2 flex flex-col items-center">
-                                                <div className="w-full max-w-[100px] h-8 flex items-end gap-0.5">
-                                                    {[...Array(8)].map((_, idx) => (
-                                                        <div 
-                                                            key={idx}
-                                                            className={`flex-1 rounded-t-sm transition-all duration-500 ${t.price_change_percentage_24h >= 0 ? 'bg-emerald-400/20 group-hover:bg-emerald-500/40' : 'bg-rose-400/20 group-hover:bg-rose-500/40'}`}
-                                                            style={{ height: `${Math.random() * 60 + 20}%` }}
-                                                        />
-                                                    ))}
-                                                </div>
-                                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1">Live Feed</span>
-                                            </div>
-
-                                            <div className="col-span-1 flex justify-end">
                                                 <button 
                                                     onClick={(e) => { e.stopPropagation(); setMode('spot'); setToToken(t); }}
-                                                    className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-indigo-600 transition-all shadow-lg hover:shadow-indigo-500/20 active:scale-90"
+                                                    className="w-full py-4 bg-slate-900 text-white font-black text-[10px] uppercase tracking-[0.2em] rounded-2xl group-hover:bg-teal-600 transition-all shadow-xl shadow-slate-900/10 group-hover:shadow-teal-600/30 active:scale-95 flex items-center justify-center gap-3"
                                                 >
-                                                    <Activity className="w-4 h-4" />
+                                                    <Activity className="w-3.5 h-3.5" /> Launch Terminal
                                                 </button>
                                             </div>
                                         </motion.div>
                                     ))}
                                 </div>
+                            ) : (
+                                <div className="px-4 pb-32">
+                                    <div className="bg-white/70 backdrop-blur-2xl border border-slate-200/60 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                                        <div className="grid grid-cols-12 gap-6 px-10 py-6 bg-slate-50 border-b border-slate-200/60 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                                            <div className="col-span-1">Rank</div>
+                                            <div className="col-span-3">Asset Identity</div>
+                                            <div className="col-span-2">Market Valuation</div>
+                                            <div className="col-span-2">Current Price</div>
+                                            <div className="col-span-2">24H Dynamic</div>
+                                            <div className="col-span-2 text-right">Execution</div>
+                                        </div>
+                                        <div className="divide-y divide-slate-100">
+                                            {displayTokens.slice(0, visibleItems).map((t, i) => (
+                                                <motion.div
+                                                    key={`${t.id || t.address}-${i}`}
+                                                    onClick={() => setSelectedMarketToken(t)}
+                                                    className="grid grid-cols-12 items-center gap-6 px-10 py-6 hover:bg-slate-50/80 transition-colors cursor-pointer group"
+                                                >
+                                                    <div className="col-span-1">
+                                                        <span className="text-xs font-black text-slate-300 group-hover:text-teal-600">
+                                                            {t.market_cap_rank && t.market_cap_rank < 10000 ? `#${t.market_cap_rank.toString().padStart(2, '0')}` : `#${(i+1).toString().padStart(2, '0')}`}
+                                                        </span>
+                                                    </div>
+                                                    <div className="col-span-3 flex items-center gap-4">
+                                                        <div className="w-10 h-10 bg-white rounded-xl p-1.5 shadow-sm border border-slate-100 group-hover:scale-110 transition-transform">
+                                                            {t.image ? (
+                                                                <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" />
+                                                            ) : (
+                                                                <div className="w-full h-full bg-teal-600 rounded-lg flex items-center justify-center text-white font-black text-xs">{t.symbol?.charAt(0)}</div>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="text-sm font-black text-slate-900 uppercase tracking-tighter">{t.symbol}</h4>
+                                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t.name}</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="col-span-2 font-mono text-xs font-black text-slate-900">
+                                                        {formatB20Number(t.market_cap, "$")}
+                                                    </div>
+                                                    <div className="col-span-2 font-mono text-xs font-black text-slate-900">
+                                                        ${t.current_price?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 })}
+                                                    </div>
+                                                    <div className="col-span-2">
+                                                        <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black ${t.price_change_percentage_24h >= 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
+                                                            {t.price_change_percentage_24h >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                                                            {Math.abs(t.price_change_percentage_24h || 0).toFixed(2)}%
+                                                        </div>
+                                                    </div>
+                                                    <div className="col-span-2 flex justify-end">
+                                                        <button 
+                                                            onClick={(e) => { e.stopPropagation(); setMode('spot'); setToToken(t); }}
+                                                            className="px-6 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-600 transition-all shadow-xl shadow-slate-900/10 active:scale-95"
+                                                        >
+                                                            Terminal
+                                                        </button>
+                                                    </div>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
                             )}
+
                             
+                            {/* ── ALPHA SPOTLIGHT (FEATURED) ── */}
+                            <div className="px-4">
+                                <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-[3rem] p-10 relative overflow-hidden shadow-2xl group border border-white/5">
+                                    <div className="absolute top-0 right-0 w-1/2 h-full bg-[radial-gradient(circle_at_70%_30%,#009393,transparent_60%)] opacity-30" />
+                                    <div className="absolute bottom-0 left-0 w-64 h-64 bg-teal-600/10 blur-[100px] -ml-32 -mb-32" />
+                                    
+                                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+                                        <div className="space-y-8">
+                                            <div className="inline-flex items-center gap-3 px-4 py-2 bg-teal-600/20 border border-teal-500/30 rounded-full">
+                                                <Sparkles className="w-4 h-4 text-teal-400" />
+                                                <span className="text-[10px] font-black text-teal-400 uppercase tracking-widest">Institutional Alpha Spotlight</span>
+                                            </div>
+                                            
+                                            <div className="space-y-4">
+                                                <h2 className="text-5xl font-black text-white tracking-tighter leading-[0.9]">TEZ PROTOCOL<br/><span className="text-teal-500 italic">GENESIS ASSET</span></h2>
+                                                <p className="text-slate-400 text-lg font-medium leading-relaxed max-w-md">
+                                                    Deploying institutional-grade liquidity sync across the global nexus. Experience zero-slippage execution on the BSC mainnet.
+                                                </p>
+                                            </div>
+
+                                            <div className="flex items-center gap-6">
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">24H Volume</span>
+                                                    <span className="text-2xl font-black text-white font-mono">$1.24B</span>
+                                                </div>
+                                                <div className="w-px h-10 bg-white/10" />
+                                                <div className="flex flex-col">
+                                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Alpha Index</span>
+                                                    <span className="text-2xl font-black text-teal-500 font-mono">+48.2%</span>
+                                                </div>
+                                            </div>
+
+                                            <button 
+                                                onClick={() => setMode('spot')}
+                                                className="px-10 py-5 bg-teal-600 text-white font-black text-xs uppercase tracking-[0.3em] rounded-2xl hover:bg-teal-500 transition-all shadow-[0_20px_40px_-10px_rgba(0,147,147,0.4)] active:scale-95 flex items-center gap-4"
+                                            >
+                                                Initialize Genesis Trade <ArrowUpRight className="w-5 h-5" />
+                                            </button>
+                                        </div>
+
+                                        <div className="relative group/card">
+                                            <div className="absolute inset-0 bg-teal-600/20 blur-3xl rounded-full scale-75 group-hover/card:scale-110 transition-transform duration-700" />
+                                            <div className="relative bg-white/5 backdrop-blur-3xl border border-white/10 rounded-[3rem] p-10 shadow-2xl rotate-3 group-hover/card:rotate-0 transition-all duration-700">
+                                                <div className="flex justify-between items-start mb-12">
+                                                    <div className="w-20 h-20 bg-white rounded-3xl p-3 shadow-2xl">
+                                                        <Logo className="w-full h-full" />
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="text-xs font-black text-teal-500 uppercase tracking-widest">Live Execution</div>
+                                                        <div className="text-3xl font-black text-white font-mono tracking-tighter">$1.0000</div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div className="h-32 w-full flex items-end gap-1.5 mb-8">
+                                                    {[...Array(20)].map((_, i) => (
+                                                        <motion.div 
+                                                            key={i}
+                                                            initial={{ height: 0 }}
+                                                            animate={{ height: mounted ? `${20 + Math.random() * 80}%` : "50%" }}
+                                                            transition={{ delay: i * 0.05, repeat: Infinity, repeatType: 'reverse', duration: 1.5 }}
+                                                            className="flex-1 bg-gradient-to-t from-teal-600/10 to-teal-500 rounded-full"
+                                                        />
+                                                    ))}
+                                                </div>
+
+                                                <div className="flex justify-between items-center text-[10px] font-black text-white/40 uppercase tracking-widest">
+                                                    <span>Protocol Integrity: 99.9%</span>
+                                                    <span>Institutional Grade</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── GLOBAL VOLUME TRENDS ── */}
+                            <div className="px-4 pb-12">
+                                <div className="bg-white/70 backdrop-blur-3xl border border-slate-200/60 rounded-[3rem] p-10 shadow-2xl space-y-8">
+                                    <div className="flex items-center justify-between">
+                                        <div className="space-y-1">
+                                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600">Global Nexus Trends</span>
+                                            <h2 className="text-2xl font-black text-slate-900 tracking-tighter">Institutional Volume Flow</h2>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            {['1H', '24H', '7D', '30D'].map(t => (
+                                                <button key={t} className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${t === '24H' ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>
+                                                    {t}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="h-64 w-full relative">
+                                        <ResponsiveContainer width="100%" height="100%">
+                                            <AreaChart data={mounted ? [...Array(20)].map((_, i) => ({ name: i, value: 400 + Math.random() * 600 })) : []}>
+                                                <defs>
+                                                    <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                                                        <stop offset="5%" stopColor="#009393" stopOpacity={0.3}/>
+                                                        <stop offset="95%" stopColor="#009393" stopOpacity={0}/>
+                                                    </linearGradient>
+                                                </defs>
+                                                <Area type="monotone" dataKey="value" stroke="#009393" strokeWidth={4} fillOpacity={1} fill="url(#colorValue)" />
+                                                <Tooltip 
+                                                    content={({ active, payload }) => {
+                                                        if (active && payload && payload.length) {
+                                                            return (
+                                                                <div className="bg-slate-900 border border-white/10 rounded-xl p-3 shadow-2xl">
+                                                                    <p className="text-[10px] font-black text-white/40 uppercase tracking-widest mb-1">Real-time Volume</p>
+                                                                    <p className="text-lg font-black text-teal-500 font-mono">${payload[0].value.toFixed(2)}M</p>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        return null;
+                                                    }}
+                                                />
+                                            </AreaChart>
+                                        </ResponsiveContainer>
+                                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-5">
+                                            <Logo className="w-64 h-64" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── SMART MONEY ALPHA STRATEGIES ── */}
+                            <div className="px-4 pb-12">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <div className="lg:col-span-2 bg-gradient-to-br from-indigo-900 to-slate-900 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group">
+                                        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 blur-[100px] -mr-32 -mt-32 animate-pulse" />
+                                        <div className="relative z-10 space-y-8">
+                                            <div className="flex items-center justify-between">
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-2 text-indigo-400">
+                                                        <Target size={14} className="animate-spin-slow" />
+                                                        <span className="text-[10px] font-black uppercase tracking-[0.3em]">Prop-Desk Alpha</span>
+                                                    </div>
+                                                    <h2 className="text-3xl font-black text-white tracking-tighter uppercase">Smart Money <span className="text-indigo-400 italic">Strategies</span></h2>
+                                                </div>
+                                                <button onClick={() => setMode('smart-money')} className="px-8 py-4 bg-white text-indigo-900 font-black rounded-2xl uppercase text-[10px] tracking-widest hover:bg-indigo-50 transition-all shadow-xl shadow-indigo-500/20 active:scale-95">Enter Strategy Hub</button>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                {[
+                                                    { name: 'Super 7 Pro B20', ROI: '+142%', risk: 'Low', color: 'teal' },
+                                                    { name: 'Meme Super 7 Premium', ROI: '+842%', risk: 'High', color: 'rose' }
+                                                ].map((strat, idx) => (
+                                                    <div key={idx} className="bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/10 transition-all cursor-pointer group/strat">
+                                                        <div className="flex justify-between items-start mb-4">
+                                                            <div>
+                                                                <p className="text-[9px] font-black text-white/40 uppercase tracking-widest mb-1">{strat.name}</p>
+                                                                <p className="text-2xl font-black text-white tabular-nums">{strat.ROI}</p>
+                                                            </div>
+                                                            <div className={`px-3 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border ${strat.risk === 'Low' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}>
+                                                                {strat.risk} Risk
+                                                            </div>
+                                                        </div>
+                                                        <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                                                            <motion.div initial={{ width: 0 }} animate={{ width: '70%' }} className={`h-full bg-${strat.color === 'teal' ? 'teal-500' : 'rose-500'}`} />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-white/80 backdrop-blur-3xl border border-slate-200/60 rounded-[3rem] p-8 shadow-2xl flex flex-col justify-between">
+                                        <div className="space-y-6">
+                                            <div className="w-16 h-16 bg-teal-50 rounded-2xl flex items-center justify-center text-teal-600 border border-teal-100 shadow-inner">
+                                                <Brain className="w-8 h-8" />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">B20 Oracle <span className="text-teal-600">Insights</span></h3>
+                                                <p className="text-xs font-bold text-slate-400 leading-relaxed uppercase">Our institutional-grade oracle monitors whale accumulation across 14 networks in real-time. Access curated indices for maximum capital efficiency.</p>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => setMode('smart-money')} className="w-full py-4 bg-slate-900 text-white font-black rounded-2xl uppercase text-[10px] tracking-widest hover:bg-black transition-all group">
+                                            Explore Index Pools <ArrowUpRight className="inline-block ml-2 w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* Infinite Scroll Sentinel for Markets Page */}
                             <div ref={scrollSentinelRef} className="h-40 w-full flex items-center justify-center pb-20">
                                 {displayTokens.length > visibleItems && (
                                     <div className="flex flex-col items-center gap-4">
-                                        <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">
+                                        <div className="relative">
+                                            <div className="w-12 h-12 border-4 border-teal-600/20 rounded-full animate-spin border-t-teal-600" />
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <div className="w-2 h-2 bg-teal-600 rounded-full animate-pulse" />
+                                            </div>
+                                        </div>
+                                        <span className="text-[10px] font-black text-teal-600 uppercase tracking-widest animate-pulse">
                                             Scanning Global Indices... ({displayTokens.length - visibleItems} Assets Remaining)
                                         </span>
                                     </div>
@@ -3245,7 +3492,7 @@ function ExchangeContent() {
                             key="bonding" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }}
                             className="max-w-[1600px] mx-auto"
                         >
-                            <div className="bg-white/50 backdrop-blur-3xl border border-slate-200/60 rounded-2xl p-8 text-center py-32 shadow-3xl shadow-indigo-900/5">
+                            <div className="bg-white/50 backdrop-blur-3xl border border-slate-200/60 rounded-2xl p-8 text-center py-32 shadow-3xl shadow-teal-200/5">
                                 <div className="w-24 h-24 bg-rose-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-8 border border-rose-500/20">
                                     <Zap className="w-12 h-12 text-rose-500" />
                                 </div>
@@ -3266,7 +3513,7 @@ function ExchangeContent() {
                             key="staking" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }}
                             className="max-w-[1200px] mx-auto"
                         >
-                             <div className="bg-white/50 backdrop-blur-3xl border border-slate-200/60 rounded-2xl p-8 text-center py-32 shadow-3xl shadow-indigo-900/5">
+                             <div className="bg-white/50 backdrop-blur-3xl border border-slate-200/60 rounded-2xl p-8 text-center py-32 shadow-3xl shadow-teal-200/5">
                                 <div className="w-24 h-24 bg-violet-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-8 border border-violet-500/20">
                                     <Lock className="w-12 h-12 text-violet-500" />
                                 </div>
@@ -3300,12 +3547,12 @@ function ExchangeContent() {
                     )}
 
                     {mode === 'meme' && (
-                        <div className="w-full mb-8 bg-indigo-600/10 border border-indigo-600/20 p-4 rounded-2xl flex items-center gap-4 animate-in fade-in slide-in-from-top-2">
-                            <div className="p-2 bg-indigo-600 text-white rounded-xl shadow-lg">
+                        <div className="w-full mb-8 bg-teal-600/10 border border-teal-600/20 p-4 rounded-2xl flex items-center gap-4 animate-in fade-in slide-in-from-top-2">
+                            <div className="p-2 bg-teal-600 text-white rounded-xl shadow-lg">
                                 <ShieldAlert size={20} />
                             </div>
                             <div>
-                                <p className="text-xs font-black text-indigo-700 uppercase tracking-widest leading-none mb-1">Institutional Liquidity Connectivity Notice</p>
+                                <p className="text-xs font-black text-teal-600 uppercase tracking-widest leading-none mb-1">Institutional Liquidity Connectivity Notice</p>
                                 <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.1em]">22,000+ meme tokens available for spot trading. Please ensure connection to the required liquidity pool system for seamless backend transactions.</p>
                             </div>
                         </div>
@@ -3367,7 +3614,7 @@ function ExchangeContent() {
                         />
                         <motion.div 
                             initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative w-full max-w-md bg-white rounded-[2.5rem] p-6 shadow-2xl shadow-indigo-900/20 border border-slate-100 overflow-hidden"
+                            className="relative w-full max-w-md bg-white rounded-[2.5rem] p-6 shadow-2xl shadow-teal-200/20 border border-slate-100 overflow-hidden"
                         >
                             {/* Decorative Background */}
                             <div className={`absolute top-0 left-0 right-0 h-32 opacity-20 ${selectedMarketToken.price_change_percentage_24h >= 0 ? 'bg-gradient-to-b from-emerald-400 to-transparent' : 'bg-gradient-to-b from-rose-400 to-transparent'}`} />
@@ -3378,7 +3625,7 @@ function ExchangeContent() {
                                         {selectedMarketToken.image ? (
                                             <img src={selectedMarketToken.image} className="w-full h-full object-contain rounded-xl" alt="" />
                                         ) : (
-                                            <div className="w-full h-full bg-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl uppercase">
+                                            <div className="w-full h-full bg-teal-600 rounded-xl flex items-center justify-center text-white font-black text-xl uppercase">
                                                 {selectedMarketToken.symbol?.charAt(0)}
                                             </div>
                                         )}
@@ -3393,7 +3640,7 @@ function ExchangeContent() {
                                                 </span>
                                             )}
                                             {selectedMarketToken.network && (
-                                                <span className="text-[9px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-widest border border-indigo-100">
+                                                <span className="text-[9px] font-black text-teal-600 bg-teal-50 px-2 py-0.5 rounded uppercase tracking-widest border border-teal-100">
                                                     {selectedMarketToken.network}
                                                 </span>
                                             )}
@@ -3423,12 +3670,12 @@ function ExchangeContent() {
                                 <div className="col-span-2 p-3 bg-slate-50 rounded-2xl border border-slate-100/60 flex items-center justify-between">
                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Contract Address</span>
                                     <div className="flex items-center gap-2 overflow-hidden">
-                                        <span className="text-[10px] font-bold text-indigo-600 font-mono truncate max-w-[200px]">
+                                        <span className="text-[10px] font-bold text-teal-600 font-mono truncate max-w-[200px]">
                                             {selectedMarketToken.contract_address || selectedMarketToken.contractAddress || selectedMarketToken.address || '0x' + (selectedMarketToken.symbol === 'BNB' ? '0x00...000' : '0x...')}
                                         </span>
                                         <button 
                                             onClick={() => { navigator.clipboard.writeText(selectedMarketToken.contract_address || selectedMarketToken.address); alert('Address Copied!'); }}
-                                            className="p-1 hover:bg-indigo-50 rounded transition-colors text-indigo-400 hover:text-indigo-600"
+                                            className="p-1 hover:bg-teal-50 rounded transition-colors text-teal-500 hover:text-teal-600"
                                         >
                                             <Copy size={10} />
                                         </button>
@@ -3457,7 +3704,7 @@ function ExchangeContent() {
 
                             <button 
                                 onClick={() => { setSelectedMarketToken(null); setMode('spot'); setToToken(selectedMarketToken); }}
-                                className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl shadow-indigo-600/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                                className="w-full py-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl shadow-teal-200/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                             >
                                 <Activity className="w-4 h-4" />
                                 Spot Buy {selectedMarketToken.symbol}
@@ -3519,7 +3766,7 @@ const MarketIntelligenceModal = ({ analytic, tokens, onClose }) => {
                         onClick={() => setSelectedStat({ title: 'Sentiment Analysis', value: `${stats.avgChange.toFixed(2)}%`, desc: 'Institutional bias intensity calculated from real-time order flow and market momentum.' })}
                         className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.05)] cursor-pointer transition-all hover:shadow-[0_40px_80px_rgba(99,102,241,0.15)] text-center relative overflow-hidden"
                     >
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl -z-10" />
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 blur-3xl -z-10" />
                         <h4 className="text-xs font-black text-slate-900 uppercase tracking-widest mb-8">Fear & Greed Index</h4>
                         <div className="flex justify-center mb-6">
                             <div className="relative w-64 h-32 overflow-hidden">
@@ -3534,7 +3781,7 @@ const MarketIntelligenceModal = ({ analytic, tokens, onClose }) => {
                             </div>
                         </div>
                         <p className="text-5xl font-black text-slate-900 tracking-tighter mb-2">{stats.avgChange > 0 ? 'GREED' : 'FEAR'}</p>
-                        <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest bg-indigo-50 px-4 py-1.5 rounded-full inline-block">Intensity Index: {stats.avgChange.toFixed(2)}%</p>
+                        <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest bg-teal-50 px-4 py-1.5 rounded-full inline-block">Intensity Index: {stats.avgChange.toFixed(2)}%</p>
                     </motion.div>
                 );
             case 'orderflow':
@@ -3580,14 +3827,14 @@ const MarketIntelligenceModal = ({ analytic, tokens, onClose }) => {
                             <AreaChart data={timeData}>
                                 <defs>
                                     <linearGradient id="colorFlow" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2}/>
-                                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                                        <stop offset="5%" stopColor="#009393" stopOpacity={0.2}/>
+                                        <stop offset="95%" stopColor="#009393" stopOpacity={0}/>
                                     </linearGradient>
                                 </defs>
                                 <XAxis dataKey="time" axisLine={false} tickLine={false} fontSize={8} />
                                 <YAxis hide />
                                 <Tooltip />
-                                <Area type="monotone" dataKey="flow" stroke="#3b82f6" fillOpacity={1} fill="url(#colorFlow)" strokeWidth={4} />
+                                <Area type="monotone" dataKey="flow" stroke="#009393" fillOpacity={1} fill="url(#colorFlow)" strokeWidth={4} />
                             </AreaChart>
                         </ResponsiveContainer>
                     </motion.div>
@@ -3702,9 +3949,9 @@ const MarketIntelligenceModal = ({ analytic, tokens, onClose }) => {
                                     <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2 italic">Avg. Pulse</p>
                                     <p className="text-4xl font-black text-emerald-700 tracking-tighter">+{stats.avgChange.toFixed(2)}%</p>
                                 </motion.div>
-                                <motion.div whileHover={{ y: -5 }} className="p-8 bg-indigo-50 rounded-[2rem] border border-indigo-100 shadow-xl shadow-indigo-500/5">
-                                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-2 italic">Sample Depth</p>
-                                    <p className="text-4xl font-black text-indigo-700 tracking-tighter">{tokens.length}</p>
+                                <motion.div whileHover={{ y: -5 }} className="p-8 bg-teal-50 rounded-[2rem] border border-teal-100 shadow-xl shadow-teal-200/5">
+                                    <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest mb-2 italic">Sample Depth</p>
+                                    <p className="text-4xl font-black text-teal-600 tracking-tighter">{tokens.length}</p>
                                 </motion.div>
                             </div>
 
@@ -3716,7 +3963,7 @@ const MarketIntelligenceModal = ({ analytic, tokens, onClose }) => {
                                     {stats.top.map((t, i) => (
                                         <div key={i} className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center font-black text-xs text-indigo-500 border border-slate-100">
+                                                <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center font-black text-xs text-teal-600 border border-slate-100">
                                                     {t.symbol.slice(0, 2).toUpperCase()}
                                                 </div>
                                                 <div>
@@ -3754,13 +4001,13 @@ const MarketIntelligenceModal = ({ analytic, tokens, onClose }) => {
                 {/* MODAL HEADER */}
                 <div className="p-8 md:p-12 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between bg-slate-50/30 gap-8">
                     <div className="flex items-center gap-6">
-                        <div className="w-16 h-16 bg-indigo-600 rounded-[2rem] flex items-center justify-center text-white shadow-[0_20px_40px_rgba(79,70,229,0.3)] transform -rotate-6">
+                        <div className="w-16 h-16 bg-teal-600 rounded-[2rem] flex items-center justify-center text-white shadow-[0_20px_40px_rgba(79,70,229,0.3)] transform -rotate-6">
                             <BarChart3 size={32} />
                         </div>
                         <div>
                             <div className="flex items-center gap-3 mb-1">
                                 <h3 className="text-3xl font-black text-slate-900 uppercase tracking-tighter italic">{analytic.label}</h3>
-                                <span className="px-3 py-1 bg-indigo-600 text-white text-[10px] font-black rounded-full uppercase tracking-widest shadow-lg shadow-indigo-600/20">Pro Suite</span>
+                                <span className="px-3 py-1 bg-teal-600 text-white text-[10px] font-black rounded-full uppercase tracking-widest shadow-lg shadow-teal-200/20">Pro Suite</span>
                             </div>
                             <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em]">Advanced Institutional Intelligence Terminal</p>
                         </div>
@@ -3771,7 +4018,7 @@ const MarketIntelligenceModal = ({ analytic, tokens, onClose }) => {
                             <button 
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
-                                className={`px-10 py-3 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] transition-all ${activeTab === tab ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-600/30' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                                className={`px-10 py-3 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] transition-all ${activeTab === tab ? 'bg-teal-600 text-white shadow-2xl shadow-teal-200/30' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
                             >
                                 {tab === 'data' ? 'Live Matrix' : 'Neural Forecast'}
                             </button>
@@ -3796,16 +4043,16 @@ const MarketIntelligenceModal = ({ analytic, tokens, onClose }) => {
                                 animate={{ y: 0, opacity: 1 }}
                                 className="bg-slate-900 rounded-[4rem] p-12 border border-white/5 shadow-2xl relative overflow-hidden group"
                             >
-                                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/10 blur-[120px] -z-10 group-hover:bg-indigo-500/20 transition-all duration-1000" />
+                                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-teal-500/10 blur-[120px] -z-10 group-hover:bg-teal-500/20 transition-all duration-1000" />
                                 <div className="flex flex-col md:flex-row items-center justify-between mb-12 gap-10">
                                     <div className="flex items-center gap-6">
-                                        <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-[2rem] flex items-center justify-center shadow-2xl shadow-indigo-500/40 transform group-hover:rotate-12 transition-transform">
+                                        <div className="w-16 h-16 bg-gradient-to-br from-teal-600 to-purple-600 text-white rounded-[2rem] flex items-center justify-center shadow-2xl shadow-teal-200/40 transform group-hover:rotate-12 transition-transform">
                                             <Sparkles size={32} />
                                         </div>
                                         <div>
                                             <div className="flex items-center gap-3 mb-2">
                                                 <h4 className="text-3xl font-black text-white uppercase tracking-tight italic">Neural Time-Traveler</h4>
-                                                <span className="px-3 py-1 bg-white/10 text-indigo-400 text-[10px] font-black rounded-lg uppercase tracking-widest border border-white/10">Active Inference</span>
+                                                <span className="px-3 py-1 bg-white/10 text-teal-500 text-[10px] font-black rounded-lg uppercase tracking-widest border border-white/10">Active Inference</span>
                                             </div>
                                             <p className="text-[12px] font-black text-slate-400 uppercase tracking-[0.3em]">Institutional Grade Predictive Corridors</p>
                                         </div>
@@ -3813,8 +4060,8 @@ const MarketIntelligenceModal = ({ analytic, tokens, onClose }) => {
                                     <div className="text-center md:text-right">
                                         <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2 italic">Neural Confidence Score</p>
                                         <div className="flex items-center justify-center md:justify-end gap-4">
-                                            <p className="text-5xl font-black text-indigo-400 tracking-tighter">94.8%</p>
-                                            <div className="w-4 h-4 bg-indigo-500 rounded-full animate-ping" />
+                                            <p className="text-5xl font-black text-teal-500 tracking-tighter">94.8%</p>
+                                            <div className="w-4 h-4 bg-teal-500 rounded-full animate-ping" />
                                         </div>
                                     </div>
                                 </div>
@@ -3850,7 +4097,7 @@ const MarketIntelligenceModal = ({ analytic, tokens, onClose }) => {
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                                 {[
-                                    { label: 'Momentum Velocity', val: '0.92x', color: 'text-indigo-400', bg: 'bg-indigo-500/5' },
+                                    { label: 'Momentum Velocity', val: '0.92x', color: 'text-teal-500', bg: 'bg-teal-500/5' },
                                     { label: 'Whale Accumulation', val: 'OVERWEIGHT', color: 'text-emerald-400', bg: 'bg-emerald-500/5' },
                                     { label: 'Liquidity Depth', val: 'PREMIUM', color: 'text-sky-400', bg: 'bg-sky-500/5' }
                                 ].map((m, i) => (
@@ -3900,10 +4147,10 @@ const MarketIntelligenceModal = ({ analytic, tokens, onClose }) => {
                                 <button onClick={() => setSelectedStat(null)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900 transition-colors">
                                     <X size={24} />
                                 </button>
-                                <div className="w-20 h-20 bg-indigo-50 rounded-[2rem] flex items-center justify-center text-indigo-600 mx-auto mb-8 shadow-inner">
+                                <div className="w-20 h-20 bg-teal-50 rounded-[2rem] flex items-center justify-center text-teal-600 mx-auto mb-8 shadow-inner">
                                     <TrendingUp size={40} />
                                 </div>
-                                <h4 className="text-xs font-black text-indigo-600 uppercase tracking-[0.5em] mb-4 italic">{selectedStat.title}</h4>
+                                <h4 className="text-xs font-black text-teal-600 uppercase tracking-[0.5em] mb-4 italic">{selectedStat.title}</h4>
                                 <p className="text-6xl font-black text-slate-900 tracking-tighter mb-6">{selectedStat.value}</p>
                                 <p className="text-sm font-bold text-slate-500 leading-relaxed italic">"{selectedStat.desc}"</p>
                                 <div className="mt-10 pt-10 border-t border-slate-50">
@@ -3943,7 +4190,7 @@ const AnnouncementsPortal = ({ setMode, setToToken, tokens }) => {
     }, []);
 
     return (
-        <div className="bg-white/50 backdrop-blur-3xl border border-slate-200/60 rounded-2xl p-8 md:p-8 shadow-3xl shadow-indigo-900/5 min-h-[500px]">
+        <div className="bg-white/50 backdrop-blur-3xl border border-slate-200/60 rounded-2xl p-8 md:p-8 shadow-3xl shadow-teal-200/5 min-h-[500px]">
             <div className="flex items-center gap-6 mb-12 border-b border-slate-200/60 pb-8">
                 <div className="w-16 h-16 bg-purple-500 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-purple-500/20">
                     <Megaphone className="w-8 h-8" />
@@ -3978,7 +4225,15 @@ const AnnouncementsPortal = ({ setMode, setToToken, tokens }) => {
                                     
                                     {a.token_symbol && (
                                         a.metadata ? (() => {
-                                            const t = typeof a.metadata === 'string' ? JSON.parse(a.metadata) : a.metadata;
+                                            let t = a.metadata;
+                                            if (typeof t === 'string') {
+                                                try {
+                                                    t = JSON.parse(t);
+                                                } catch (e) {
+                                                    console.error("Metadata parse error:", e);
+                                                    t = { logo: '', name: a.token_symbol, rank: 'N/A', mcap: 'N/A' };
+                                                }
+                                            }
                                             return (
                                                 <div className="mt-4 p-6 bg-slate-900 rounded-2xl text-white border border-slate-800 shadow-lg relative overflow-hidden group/card">
                                                     <div className="absolute top-0 right-0 p-6 opacity-5"><Megaphone size={80} className="text-purple-500" /></div>
@@ -4103,15 +4358,15 @@ const CommunityPortal = () => {
     };
 
     return (
-        <div className="bg-white/50 backdrop-blur-3xl border border-slate-200/60 rounded-2xl p-8 md:p-8 shadow-3xl shadow-indigo-900/5 min-h-[500px]">
+        <div className="bg-white/50 backdrop-blur-3xl border border-slate-200/60 rounded-2xl p-8 md:p-8 shadow-3xl shadow-teal-200/5 min-h-[500px]">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12 border-b border-slate-200/60 pb-8">
                 <div className="flex items-center gap-6">
-                    <div className="w-16 h-16 bg-blue-500 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/20">
+                    <div className="w-16 h-16 bg-teal-500 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-teal-200/20">
                         <MessageSquare className="w-8 h-8" />
                     </div>
                     <div>
                         <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">B20 Community Nexus</h2>
-                        <p className="text-xs font-black text-blue-500 uppercase tracking-wider mt-1">Live Institutional Sentiment</p>
+                        <p className="text-xs font-black text-teal-600 uppercase tracking-wider mt-1">Live Institutional Sentiment</p>
                     </div>
                 </div>
             </div>
@@ -4121,8 +4376,8 @@ const CommunityPortal = () => {
                     <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Compose Broadcast</h4>
                     <div className="space-y-4">
                         <div className="flex items-center gap-2 mb-2">
-                             <ShieldCheck className="w-3 h-3 text-blue-500" />
-                             <span className="text-[8px] font-black text-blue-500 uppercase tracking-widest">Enterprise-Grade Sanitisation Active</span>
+                             <ShieldCheck className="w-3 h-3 text-teal-600" />
+                             <span className="text-[8px] font-black text-teal-600 uppercase tracking-widest">Enterprise-Grade Sanitisation Active</span>
                         </div>
                         <textarea 
                             value={content}
@@ -4134,12 +4389,12 @@ const CommunityPortal = () => {
                                 }
                             }}
                             placeholder="Share market intelligence... Press Enter to post. Note: 0x-Redact automatically sanitizes PII (Emails/Phones) for node security."
-                            className="w-full h-40 bg-white border border-gray-200 rounded-xl p-6 font-medium text-sm outline-none focus:border-blue-500/50 transition-all resize-none shadow-sm"
+                            className="w-full h-40 bg-white border border-gray-200 rounded-xl p-6 font-medium text-sm outline-none focus:border-teal-500/50 transition-all resize-none shadow-sm"
                         />
                         <button 
                             onClick={handlePost}
                             disabled={submitting || !content.trim()}
-                            className="w-full py-5 bg-blue-500 text-white rounded-2xl font-black text-xs uppercase tracking-wide shadow-xl shadow-blue-500/20 hover:bg-blue-600 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                            className="w-full py-5 bg-teal-500 text-white rounded-2xl font-black text-xs uppercase tracking-wide shadow-xl shadow-teal-200/20 hover:bg-teal-600 transition-all disabled:opacity-50 flex items-center justify-center gap-3"
                         >
                             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Transmit Broadcast'}
                         </button>
@@ -4158,8 +4413,8 @@ const CommunityPortal = () => {
                                 <div key={p.id} className="p-6 bg-white rounded-xl border border-slate-200/60 shadow-sm flex flex-col gap-4">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center">
-                                                <User className="w-4 h-4 text-blue-500" />
+                                            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-teal-600 to-teal-700 flex items-center justify-center">
+                                                <User className="w-4 h-4 text-teal-600" />
                                             </div>
                                             <span className="font-black text-slate-900 font-mono tracking-wider">{maskWallet(p.wallet_address)}</span>
                                         </div>
@@ -4248,7 +4503,7 @@ const ListingPortal = () => {
 
     if (status === 'success') {
         return (
-            <div className="bg-white shadow-3xl shadow-indigo-900/5 border border-slate-200/60 rounded-2xl p-16 text-center flex flex-col items-center gap-8">
+            <div className="bg-white shadow-3xl shadow-teal-200/5 border border-slate-200/60 rounded-2xl p-16 text-center flex flex-col items-center gap-8">
                 <div className="w-24 h-24 bg-emerald-500 text-white rounded-[2rem] flex items-center justify-center shadow-2xl shadow-emerald-500/20">
                     <Check className="w-12 h-12" />
                 </div>
@@ -4258,13 +4513,13 @@ const ListingPortal = () => {
                         Your listing details have been routed to the Admin panel. Once approved by the core team, your token will automatically be launched and go LIVE for trading in the Launchpad.
                     </p>
                 </div>
-                <button onClick={() => window.location.reload()} className="px-12 py-5 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl">Back to Markets</button>
+                <button onClick={() => window.location.reload()} className="px-12 py-5 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-teal-600 transition-all shadow-xl">Back to Markets</button>
             </div>
         );
     }
 
     return (
-        <div className="bg-white shadow-3xl shadow-indigo-900/5 border border-slate-200/60 rounded-2xl overflow-hidden">
+        <div className="bg-white shadow-3xl shadow-teal-200/5 border border-slate-200/60 rounded-2xl overflow-hidden">
             <div className="p-8 relative">
                 <div className="absolute top-0 right-0 p-16 opacity-5 rotate-12 pointer-events-none">
                     <Rocket className="w-64 h-64" />
@@ -4273,12 +4528,12 @@ const ListingPortal = () => {
                 <div className="relative z-10 w-full mb-10">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-slate-200/60 pb-10">
                         <div className="flex items-center gap-6">
-                            <div className="w-16 h-16 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-500/20">
+                            <div className="w-16 h-16 bg-teal-600 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-teal-200/20">
                                 <PlusCircle className="w-8 h-8" />
                             </div>
                             <div>
                                 <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter">List Your Asset</h2>
-                                <p className="text-xs font-black text-indigo-600 uppercase tracking-wider mt-1">Global Launchpad Access</p>
+                                <p className="text-xs font-black text-teal-600 uppercase tracking-wider mt-1">Global Launchpad Access</p>
                             </div>
                         </div>
                         <div className="bg-rose-50 border-2 border-rose-100 p-4 rounded-xl flex items-center gap-4 max-w-sm">
@@ -4301,21 +4556,21 @@ const ListingPortal = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Contract Address *</label>
-                                <input required type="text" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} placeholder="0x..." className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-indigo-500/50" />
+                                <input required type="text" value={formData.address} onChange={(e) => setFormData({...formData, address: e.target.value})} placeholder="0x..." className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-teal-500/50" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Token Name *</label>
-                                <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="e.g. B20 Gold" className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-indigo-500/50" />
+                                <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} placeholder="e.g. B20 Gold" className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-teal-500/50" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Token Symbol *</label>
-                                <input required type="text" value={formData.symbol} onChange={(e) => setFormData({...formData, symbol: e.target.value})} placeholder="e.g. B20G" className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-indigo-500/50 uppercase" />
+                                <input required type="text" value={formData.symbol} onChange={(e) => setFormData({...formData, symbol: e.target.value})} placeholder="e.g. B20G" className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-teal-500/50 uppercase" />
                             </div>
                         </div>
 
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Asset Description</label>
-                            <textarea required rows="3" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} placeholder="Describe your project..." className="w-full bg-white border border-gray-200 rounded-[2rem] p-6 font-bold text-sm outline-none focus:border-indigo-500/50 resize-none"></textarea>
+                            <textarea required rows="3" value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} placeholder="Describe your project..." className="w-full bg-white border border-gray-200 rounded-[2rem] p-6 font-bold text-sm outline-none focus:border-teal-500/50 resize-none"></textarea>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -4334,14 +4589,14 @@ const ListingPortal = () => {
                                         )}
                                     </div>
                                     <div className="flex-1 space-y-1">
-                                        <input required type="text" value={formData.logoUrl} onChange={(e) => setFormData({...formData, logoUrl: e.target.value})} placeholder="https://..." className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-indigo-500/50" />
-                                        <p className="text-[9px] text-indigo-600 font-black ml-2 uppercase tracking-tighter">Required: Square JPEG or PNG (512x512 pixels)</p>
+                                        <input required type="text" value={formData.logoUrl} onChange={(e) => setFormData({...formData, logoUrl: e.target.value})} placeholder="https://..." className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-teal-500/50" />
+                                        <p className="text-[9px] text-teal-600 font-black ml-2 uppercase tracking-tighter">Required: Square JPEG or PNG (512x512 pixels)</p>
                                     </div>
                                 </div>
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Whitepaper URL</label>
-                                <input type="text" value={formData.whitepaperUrl} onChange={(e) => setFormData({...formData, whitepaperUrl: e.target.value})} placeholder="https://..." className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-indigo-500/50" />
+                                <input type="text" value={formData.whitepaperUrl} onChange={(e) => setFormData({...formData, whitepaperUrl: e.target.value})} placeholder="https://..." className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-teal-500/50" />
                                 <p className="text-[9px] text-slate-400 font-bold ml-2 uppercase tracking-tighter">Optional: Link to technical documentation</p>
                             </div>
                         </div>
@@ -4353,15 +4608,15 @@ const ListingPortal = () => {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Total Circulation Supply *</label>
-                                <input required type="text" value={formData.circulationSupply} onChange={(e) => setFormData({...formData, circulationSupply: e.target.value})} placeholder="e.g. 1000000" className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-indigo-500/50" />
+                                <input required type="text" value={formData.circulationSupply} onChange={(e) => setFormData({...formData, circulationSupply: e.target.value})} placeholder="e.g. 1000000" className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-teal-500/50" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Total Liquidity ($) *</label>
-                                <input required type="text" value={formData.totalLiquidity} onChange={(e) => setFormData({...formData, totalLiquidity: e.target.value})} placeholder="e.g. 50000" className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-indigo-500/50" />
+                                <input required type="text" value={formData.totalLiquidity} onChange={(e) => setFormData({...formData, totalLiquidity: e.target.value})} placeholder="e.g. 50000" className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-teal-500/50" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Paired Token *</label>
-                                <select value={formData.pairedToken} onChange={(e) => setFormData({...formData, pairedToken: e.target.value})} className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-indigo-500/50">
+                                <select value={formData.pairedToken} onChange={(e) => setFormData({...formData, pairedToken: e.target.value})} className="w-full bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-teal-500/50">
                                     <option value="BNB">BNB / WBNB</option>
                                     <option value="USDT">USDT</option>
                                     <option value="BUSD">BUSD</option>
@@ -4389,19 +4644,19 @@ const ListingPortal = () => {
                             ].map((item, idx) => (
                                 <button type="button" key={idx}
                                     onClick={() => setFormData({...formData, [item.key]: !formData[item.key]})}
-                                    className={`p-4 border rounded-2xl text-left transition-all ${formData[item.key] ? (item.highlight ? 'bg-indigo-50 border-indigo-200' : 'bg-emerald-50 border-emerald-200') : 'bg-white border-gray-200 hover:bg-slate-50'}`}>
+                                    className={`p-4 border rounded-2xl text-left transition-all ${formData[item.key] ? (item.highlight ? 'bg-teal-50 border-teal-200' : 'bg-emerald-50 border-emerald-200') : 'bg-white border-gray-200 hover:bg-slate-50'}`}>
                                     <div className="flex items-center justify-between mb-2">
-                                        <div className={`w-5 h-5 rounded-full flex items-center justify-center border ${formData[item.key] ? (item.highlight ? 'bg-indigo-500 border-indigo-500 text-white' : 'bg-emerald-500 border-emerald-500 text-white') : 'bg-white border-gray-300'}`}>
+                                        <div className={`w-5 h-5 rounded-full flex items-center justify-center border ${formData[item.key] ? (item.highlight ? 'bg-teal-500 border-teal-500 text-white' : 'bg-emerald-500 border-emerald-500 text-white') : 'bg-white border-gray-300'}`}>
                                             {formData[item.key] && <Check className="w-3 h-3" />}
                                         </div>
                                     </div>
-                                    <p className={`text-[10px] font-bold uppercase tracking-widest ${formData[item.key] ? (item.highlight ? 'text-indigo-700' : 'text-emerald-700') : 'text-gray-500'}`}>{item.label}</p>
+                                    <p className={`text-[10px] font-bold uppercase tracking-widest ${formData[item.key] ? (item.highlight ? 'text-teal-600' : 'text-emerald-700') : 'text-gray-500'}`}>{item.label}</p>
                                 </button>
                             ))}
                         </div>
                         <div className="space-y-2 mt-4 pt-4 border-t border-slate-200/60">
                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Contact Email ID *</label>
-                            <input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="admin@project.com" className="w-full md:w-1/2 bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-indigo-500/50" />
+                            <input required type="email" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} placeholder="admin@project.com" className="w-full md:w-1/2 bg-white border border-gray-200 rounded-2xl px-6 py-4 font-bold text-sm outline-none focus:border-teal-500/50" />
                         </div>
                     </div>
 
@@ -4412,7 +4667,7 @@ const ListingPortal = () => {
                         </div>
                         <button 
                             type="submit" disabled={status === 'processing'}
-                            className="w-full md:w-auto px-12 py-6 bg-indigo-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-indigo-600 transition-all shadow-xl shadow-indigo-500/20 disabled:opacity-50"
+                            className="w-full md:w-auto px-12 py-6 bg-teal-600 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-teal-600 transition-all shadow-xl shadow-teal-200/20 disabled:opacity-50"
                         >
                             {status === 'processing' ? 'PROCESSING...' : 'PAY & SUBMIT LISTING'}
                         </button>
@@ -4563,7 +4818,7 @@ const AssetDetails = ({ token, setMode }) => {
                                 {token.image ? (
                                     <img src={token.image} className="w-full h-full object-contain" alt="" />
                                 ) : (
-                                    <div className="w-full h-full bg-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-3xl">
+                                    <div className="w-full h-full bg-teal-600 rounded-2xl flex items-center justify-center text-white font-black text-3xl">
                                         {token.symbol?.charAt(0)}
                                     </div>
                                 )}
@@ -4577,7 +4832,7 @@ const AssetDetails = ({ token, setMode }) => {
                                 <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase">{token.name}</h1>
                                 <span className="px-3 py-1 bg-slate-100 text-slate-500 rounded-lg text-[9px] font-black uppercase tracking-widest">Tier 1</span>
                             </div>
-                            <p className="text-xl font-black text-indigo-500 uppercase tracking-[0.4em] italic">{token.symbol}</p>
+                            <p className="text-xl font-black text-teal-600 uppercase tracking-[0.4em] italic">{token.symbol}</p>
                         </div>
                     </div>
                     
@@ -4585,7 +4840,7 @@ const AssetDetails = ({ token, setMode }) => {
                         <div className="text-right px-6 py-3 bg-slate-50 rounded-2xl border border-slate-100 hidden sm:block">
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Asset Status</p>
                             <div className="flex items-center gap-2 justify-end">
-                                <Sparkles size={12} className="text-indigo-500" />
+                                <Sparkles size={12} className="text-teal-600" />
                                 <span className="text-xs font-black text-slate-900 uppercase">Institutional Grade</span>
                             </div>
                         </div>
@@ -4616,12 +4871,12 @@ const AssetDetails = ({ token, setMode }) => {
                         <p className="text-2xl font-black text-slate-900 font-mono tracking-tighter">{formatB20Number(token.total_volume, "$")}</p>
                         <p className="mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">High Liquidity Index</p>
                     </div>
-                    <div className="flex-1 p-6 bg-indigo-600 border border-indigo-500 rounded-3xl shadow-xl shadow-indigo-500/10 text-white min-w-[220px]">
-                        <p className="text-[10px] font-black text-indigo-100 uppercase tracking-widest mb-2">Nuera Sentiment</p>
+                    <div className="flex-1 p-6 bg-teal-600 border border-teal-500 rounded-3xl shadow-xl shadow-teal-200/10 text-white min-w-[220px]">
+                        <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest mb-2">Nuera Sentiment</p>
                         <p className="text-2xl font-black tracking-tighter uppercase italic truncate">Strong Buy</p>
                         <div className="mt-2 flex items-center gap-1.5">
                             <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                            <span className="text-[10px] font-black text-indigo-100 uppercase">94.2% Alpha Conviction</span>
+                            <span className="text-[10px] font-black text-teal-600 uppercase">94.2% Alpha Conviction</span>
                         </div>
                     </div>
                 </div>
@@ -4631,7 +4886,7 @@ const AssetDetails = ({ token, setMode }) => {
                     {/* Identification & Network */}
                     <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-8 space-y-6">
                         <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
-                            <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl">
+                            <div className="p-2 bg-teal-100 text-teal-600 rounded-xl">
                                 <Cpu size={16} />
                             </div>
                             <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Technical Identification</h5>
@@ -4648,7 +4903,7 @@ const AssetDetails = ({ token, setMode }) => {
                                     <div className="flex items-center gap-3">
                                         {item.img && <img src={item.img} className="w-4 h-4 rounded-full" alt="" />}
                                         {item.status && <div className={`w-1.5 h-1.5 bg-${item.status}-500 rounded-full animate-pulse`} />}
-                                        <span className={`text-[11px] font-black uppercase tracking-tight ${item.link ? 'text-indigo-600 cursor-pointer hover:underline' : 'text-slate-900'}`}>{item.value}</span>
+                                        <span className={`text-[11px] font-black uppercase tracking-tight ${item.link ? 'text-teal-600 cursor-pointer hover:underline' : 'text-slate-900'}`}>{item.value}</span>
                                         {item.icon && <item.icon text={item.payload} />}
                                     </div>
                                 </div>
@@ -4663,7 +4918,7 @@ const AssetDetails = ({ token, setMode }) => {
                         </div>
                         <div className="relative z-10 space-y-8">
                             <div className="flex items-center gap-3 border-b border-white/5 pb-4">
-                                <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl border border-indigo-500/30">
+                                <div className="p-2 bg-teal-500/20 text-teal-500 rounded-xl border border-teal-500/30">
                                     <Activity size={16} />
                                 </div>
                                 <h5 className="text-[11px] font-black text-white uppercase tracking-[0.2em]">Market Performance Matrix</h5>
@@ -4677,7 +4932,7 @@ const AssetDetails = ({ token, setMode }) => {
                                     </div>
                                     <div className="flex-1 px-8">
                                         <div className="h-1 bg-white/5 rounded-full relative">
-                                            <div className="absolute h-full bg-indigo-500 rounded-full" style={{ width: '70%' }} />
+                                            <div className="absolute h-full bg-teal-500 rounded-full" style={{ width: '70%' }} />
                                             <div className="absolute top-1/2 left-[70%] -translate-y-1/2 w-2 h-2 bg-white rounded-full shadow-lg" />
                                         </div>
                                     </div>
@@ -4696,7 +4951,7 @@ const AssetDetails = ({ token, setMode }) => {
                                     <div>
                                         <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Circulating Supply</p>
                                         <p className="text-base font-black text-white font-mono tracking-tighter">{formatB20Number(token.circulating_supply, "")}</p>
-                                        <p className="text-[9px] font-black text-indigo-400 uppercase mt-1">{((token.circulating_supply / (token.total_supply || 1)) * 100).toFixed(1)}% Liquid</p>
+                                        <p className="text-[9px] font-black text-teal-500 uppercase mt-1">{((token.circulating_supply / (token.total_supply || 1)) * 100).toFixed(1)}% Liquid</p>
                                     </div>
                                 </div>
                             </div>
@@ -4709,7 +4964,7 @@ const AssetDetails = ({ token, setMode }) => {
                     <div className="p-8 bg-slate-50 border border-slate-100 rounded-[2.5rem]">
                         <div className="flex items-center justify-between mb-8">
                             <div className="flex items-center gap-3">
-                                <Users size={16} className="text-indigo-600" />
+                                <Users size={16} className="text-teal-600" />
                                 <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Top 10 Holder Weights</h5>
                             </div>
                         </div>
@@ -4720,10 +4975,10 @@ const AssetDetails = ({ token, setMode }) => {
                                     <div className="flex items-center gap-4">
                                         <div className="text-right">
                                             <p className="text-[11px] font-black text-slate-900">{h.balance} {token.symbol?.toUpperCase()}</p>
-                                            <p className="text-[9px] font-black text-indigo-500 uppercase">{h.percent}% weight</p>
+                                            <p className="text-[9px] font-black text-teal-600 uppercase">{h.percent}% weight</p>
                                         </div>
                                         <div className="w-16 h-1 bg-slate-200 rounded-full overflow-hidden">
-                                            <div className="h-full bg-indigo-500" style={{ width: `${h.percent * 3}%` }} />
+                                            <div className="h-full bg-teal-500" style={{ width: `${h.percent * 3}%` }} />
                                         </div>
                                     </div>
                                 </div>
@@ -4754,7 +5009,7 @@ const AssetDetails = ({ token, setMode }) => {
                                 </div>
                             ))}
                         </div>
-                        <button className="w-full mt-8 py-4 bg-white border border-slate-200 text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] hover:text-indigo-600 hover:border-indigo-600 transition-all">
+                        <button className="w-full mt-8 py-4 bg-white border border-slate-200 text-slate-400 rounded-2xl text-[10px] font-black uppercase tracking-[0.3em] hover:text-teal-600 hover:border-teal-600 transition-all">
                             Scan Full Ledger Pipeline
                         </button>
                     </div>
@@ -4762,7 +5017,7 @@ const AssetDetails = ({ token, setMode }) => {
 
                 {/* Strategic Risk Assessment */}
                 <div className="p-10 bg-slate-900 rounded-[3rem] relative overflow-hidden shadow-2xl">
-                    <div className="absolute -right-20 -top-20 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl" />
+                    <div className="absolute -right-20 -top-20 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl" />
                     <div className="relative z-10">
                         <div className="flex items-center justify-between mb-8">
                             <h5 className="text-xs font-black text-slate-400 uppercase tracking-[0.3em]">Institutional Risk Profile</h5>
@@ -4803,26 +5058,26 @@ const AssetDetails = ({ token, setMode }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-4">
                     <button 
                         onClick={() => { setMode('spot'); setToToken(token); }}
-                        className="group relative h-24 bg-indigo-600 hover:bg-indigo-700 rounded-[2.5rem] overflow-hidden transition-all shadow-2xl shadow-indigo-500/30 active:scale-[0.98]"
+                        className="group relative h-24 bg-teal-600 hover:bg-teal-700 rounded-[2.5rem] overflow-hidden transition-all shadow-2xl shadow-teal-200/30 active:scale-[0.98]"
                     >
-                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 to-sky-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="absolute inset-0 bg-gradient-to-r from-teal-600 to-sky-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                         <div className="relative z-10 flex items-center justify-center gap-4">
                             <div className="p-3 bg-white/10 rounded-2xl backdrop-blur-md">
                                 <Rocket size={24} className="text-white animate-bounce" />
                             </div>
                             <div className="text-left">
                                 <p className="text-sm font-black text-white uppercase tracking-[0.2em] leading-none mb-1">Initiate Trade Order</p>
-                                <p className="text-[9px] font-bold text-indigo-200 uppercase tracking-widest opacity-70">Execute in Spot Terminal</p>
+                                <p className="text-[9px] font-bold text-teal-600 uppercase tracking-widest opacity-70">Execute in Spot Terminal</p>
                             </div>
                         </div>
                     </button>
                     <button 
                         onClick={() => setMode('staking')}
-                        className="group relative h-24 bg-white border-2 border-slate-100 hover:border-indigo-600 rounded-[2.5rem] overflow-hidden transition-all active:scale-[0.98]"
+                        className="group relative h-24 bg-white border-2 border-slate-100 hover:border-teal-600 rounded-[2.5rem] overflow-hidden transition-all active:scale-[0.98]"
                     >
                         <div className="relative z-10 flex items-center justify-center gap-4">
-                            <div className="p-3 bg-indigo-50 rounded-2xl group-hover:bg-indigo-600 transition-colors">
-                                <Lock size={24} className="text-indigo-600 group-hover:text-white transition-colors" />
+                            <div className="p-3 bg-teal-50 rounded-2xl group-hover:bg-teal-600 transition-colors">
+                                <Lock size={24} className="text-teal-600 group-hover:text-white transition-colors" />
                             </div>
                             <div className="text-left">
                                 <p className="text-sm font-black text-slate-900 uppercase tracking-[0.2em] leading-none mb-1">Staking Vault Gateway</p>
@@ -5161,14 +5416,14 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                 <div className="bg-white/95 backdrop-blur-3xl rounded-[2.9rem] p-10 md:p-14 relative z-10 flex flex-col md:flex-row items-center gap-8 border border-white/50">
                     <div className="flex-1 space-y-6">
                         <div className="flex items-center gap-4">
-                            <div className="bg-indigo-600 px-6 py-2 rounded-full text-white text-[10px] font-bold uppercase tracking-widest animate-pulse shadow-xl shadow-indigo-500/20">Institutional Alpha Index</div>
+                            <div className="bg-teal-600 px-6 py-2 rounded-full text-white text-[10px] font-bold uppercase tracking-widest animate-pulse shadow-xl shadow-teal-200/20">Institutional Alpha Index</div>
                             <div className="flex items-center gap-2 text-slate-400">
                                 <ShieldCheck className="w-4 h-4" />
                                 <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">B20 Global Verified</span>
                             </div>
                         </div>
                         <h1 className="text-4xl md:text-5xl font-black text-slate-900 uppercase tracking-tighter leading-tight italic">
-                            Smart Money <span className="text-indigo-600">Hub</span>
+                            Smart Money <span className="text-teal-600">Hub</span>
                         </h1>
                         <p className="text-sm font-bold text-gray-500 uppercase leading-relaxed tracking-widest max-w-2xl">
                              Engineered for institutional-grade diversification. Deploy capital across curated "Super 7" indices with weighted distribution algorithm.
@@ -5185,19 +5440,19 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                     className="bg-transparent text-2xl font-black text-slate-900 outline-none w-full mt-1"
                                 />
                             </div>
-                            <span className="text-xs font-black text-indigo-600">USDT</span>
+                            <span className="text-xs font-black text-teal-600">USDT</span>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div className="flex justify-center">
-                <div className="bg-white border border-slate-200/60 rounded-[2rem] p-3 flex gap-2 shadow-2xl shadow-indigo-500/5 max-w-full overflow-x-auto">
+                <div className="bg-white border border-slate-200/60 rounded-[2rem] p-3 flex gap-2 shadow-2xl shadow-teal-200/5 max-w-full overflow-x-auto">
                     {['crypto', 'meme', 'bnb', 'eth', 'sol', 'base', 'custom'].map(cat => (
                         <button 
                             key={cat}
                             onClick={() => setSelectedCategory(cat)}
-                            className={`px-10 py-4 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20' : 'text-slate-400 hover:text-slate-900 hover:bg-slate-50'}`}
+                            className={`px-10 py-4 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all whitespace-nowrap ${selectedCategory === cat ? 'bg-teal-600 text-white shadow-xl shadow-teal-200/20' : 'text-slate-400 hover:text-slate-900 hover:bg-slate-50'}`}
                         >
                             {cat} Strategic Pool
                         </button>
@@ -5208,15 +5463,15 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                 {selectedCategory !== 'custom' ? (
                     SMART_MONEY_BUCKETS[selectedCategory].map(bucket => (
-                        <div key={bucket.id} className="bg-white border border-slate-200/60 rounded-2xl p-10 flex flex-col gap-8 group hover:border-indigo-500/30 transition-all duration-500 shadow-3xl hover:shadow-[0_60px_100px_-20px_rgba(79,70,229,0.1)] relative overflow-hidden flex flex-col">
+                        <div key={bucket.id} className="bg-white border border-slate-200/60 rounded-2xl p-10 flex flex-col gap-8 group hover:border-teal-500/30 transition-all duration-500 shadow-3xl hover:shadow-[0_60px_100px_-20px_rgba(79,70,229,0.1)] relative overflow-hidden flex flex-col">
                             <div className="flex items-center justify-between">
                                 <div className="space-y-1">
-                                    <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter transition-colors group-hover:text-indigo-600 italic">{bucket.name}</h3>
-                                    <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-2">
+                                    <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter transition-colors group-hover:text-teal-600 italic">{bucket.name}</h3>
+                                    <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest flex items-center gap-2">
                                         <Layers className="w-3 h-3" /> Weighted Suggestions
                                     </p>
                                 </div>
-                                <div className="w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-indigo-500/20 transform group-hover:rotate-12 transition-all">
+                                <div className="w-14 h-14 bg-teal-600 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-teal-200/20 transform group-hover:rotate-12 transition-all">
                                     <TrendingUp className="w-6 h-6" />
                                 </div>
                             </div>
@@ -5230,7 +5485,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                     const display = getTokenDisplay(token);
                                     const weight = STRATEGIC_WEIGHTS[idx] || 10;
                                     return (
-                                        <div key={token.symbol} className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl flex items-center justify-between hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-indigo-100">
+                                        <div key={token.symbol} className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl flex items-center justify-between hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-teal-100">
                                             <div className="flex items-center gap-4">
                                                 <div className="w-10 h-10 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/60 flex items-center justify-center">
                                                     {display.image ? (
@@ -5269,7 +5524,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                 <button 
                                     onClick={() => handleInvest(bucket)}
                                     disabled={status === 'loading'}
-                                    className="w-full py-6 bg-gray-900 text-white rounded-[2rem] text-[11px] font-bold uppercase tracking-[0.25em] shadow-2xl hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 active:scale-95 group/btn"
+                                    className="w-full py-6 bg-gray-900 text-white rounded-[2rem] text-[11px] font-bold uppercase tracking-[0.25em] shadow-2xl hover:bg-teal-600 transition-all flex items-center justify-center gap-3 active:scale-95 group/btn"
                                 >
                                     {status === 'loading' ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Execute Strategic Trade <Zap className="w-4 h-4 ml-2 fill-white animate-pulse" /></>}
                                 </button>
@@ -5281,11 +5536,11 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                         </div>
                     ))
                 ) : (
-                    <div className="lg:col-span-3 bg-white border border-slate-200/60 rounded-2xl p-8 md:p-20 shadow-3xl flex flex-col items-center justify-center gap-10 min-h-[500px] text-center border-t-8 border-indigo-500/20">
+                    <div className="lg:col-span-3 bg-white border border-slate-200/60 rounded-2xl p-8 md:p-20 shadow-3xl flex flex-col items-center justify-center gap-10 min-h-[500px] text-center border-t-8 border-teal-500/20">
                         {!customBucket.isBuilding ? (
                             <div className="space-y-10">
-                                <div className="w-28 h-28 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-400 border border-indigo-100 shadow-inner mx-auto relative">
-                                    <div className="absolute -top-2 -right-2 w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-xl border-4 border-white">+</div>
+                                <div className="w-28 h-28 bg-teal-50 rounded-2xl flex items-center justify-center text-teal-500 border border-teal-100 shadow-inner mx-auto relative">
+                                    <div className="absolute -top-2 -right-2 w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-xl border-4 border-white">+</div>
                                     <Sparkles className="w-12 h-12" />
                                 </div>
                                 <div className="space-y-4 max-w-xl">
@@ -5294,7 +5549,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                         Architect your proprietary index. Choose up to 7 global assets, optimize weights, and execute a unified trade mission.
                                     </p>
                                 </div>
-                                <button onClick={() => setCustomBucket({ ...customBucket, isBuilding: true, tokens: [] })} className="px-16 py-6 bg-indigo-600 text-white rounded-[2rem] text-xs font-bold uppercase tracking-wider shadow-2xl shadow-indigo-600/30 hover:scale-105 active:scale-95 transition-all">
+                                <button onClick={() => setCustomBucket({ ...customBucket, isBuilding: true, tokens: [] })} className="px-16 py-6 bg-teal-600 text-white rounded-[2rem] text-xs font-bold uppercase tracking-wider shadow-2xl shadow-teal-200/30 hover:scale-105 active:scale-95 transition-all">
                                     Initialize Strategic Builder
                                 </button>
                             </div>
@@ -5302,11 +5557,11 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                             <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-16 animate-in fade-in slide-in-from-bottom-8 duration-700 text-left">
                                 <div className="space-y-8">
                                     <div className="flex items-center gap-5 border-b border-slate-200/60 pb-8">
-                                        <div className="w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-2xl shadow-indigo-500/30">
+                                        <div className="w-14 h-14 bg-teal-600 text-white rounded-2xl flex items-center justify-center shadow-2xl shadow-teal-200/30">
                                             <LayoutGrid className="w-6 h-6" />
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black text-indigo-500 uppercase tracking-widest leading-none">Strategic Mission Config</p>
+                                            <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest leading-none">Strategic Mission Config</p>
                                             <h4 className="text-2xl font-black text-slate-900 uppercase tracking-tighter mt-2 italic text-left">Custom Bucket Blueprint</h4>
                                         </div>
                                     </div>
@@ -5319,7 +5574,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                                 placeholder="e.g. ALPHA_TERMINAL_01"
                                                 value={customBucket.name}
                                                 onChange={e => setCustomBucket({ ...customBucket, name: e.target.value })}
-                                                className="w-full bg-slate-50 border border-gray-200 rounded-xl px-8 py-6 font-black text-sm outline-none focus:bg-white focus:border-indigo-500/30 transition-all shadow-sm"
+                                                className="w-full bg-slate-50 border border-gray-200 rounded-xl px-8 py-6 font-black text-sm outline-none focus:bg-white focus:border-teal-500/30 transition-all shadow-sm"
                                             />
                                         </div>
 
@@ -5330,7 +5585,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                                     <button 
                                                         key={net}
                                                         onClick={() => setCustomBucket({ ...customBucket, network: net, tokens: [] })}
-                                                        className={`px-5 py-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all ${customBucket.network === net ? 'bg-indigo-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:text-slate-900 border border-slate-200/60'}`}
+                                                        className={`px-5 py-3 rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all ${customBucket.network === net ? 'bg-teal-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400 hover:text-slate-900 border border-slate-200/60'}`}
                                                     >
                                                         {net}
                                                     </button>
@@ -5342,7 +5597,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                         <button 
                                             onClick={() => handleInvest(customBucket)}
                                             disabled={status === 'loading' || customBucket.tokens.length === 0}
-                                            className="w-full py-8 bg-indigo-600 text-white rounded-2xl text-[11px] font-bold uppercase tracking-wider shadow-lg shadow-indigo-500/20 hover:bg-indigo-700 transition-all flex items-center justify-center gap-4 disabled:opacity-50 h-[90px] mt-10 active:scale-95"
+                                            className="w-full py-8 bg-teal-600 text-white rounded-2xl text-[11px] font-bold uppercase tracking-wider shadow-lg shadow-teal-200/20 hover:bg-teal-700 transition-all flex items-center justify-center gap-4 disabled:opacity-50 h-[90px] mt-10 active:scale-95"
                                         >
                                             {status === 'loading' ? <Loader2 className="w-6 h-6 animate-spin" /> : <>Launch Trade Mission <Rocket className="w-5 h-5 ml-2 fill-white animate-bounce" /></>}
                                         </button>
@@ -5354,7 +5609,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                 <div className="space-y-6 bg-slate-50/50 p-10 rounded-[4rem] border border-slate-200/60 shadow-inner">
                                     <div className="flex items-center justify-between mb-4">
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selected Assets ({customBucket.tokens.length}/7)</p>
-                                        <div className="flex items-center gap-2 bg-indigo-50 px-4 py-1.5 rounded-full border border-indigo-100 font-black text-[9px] text-indigo-600 uppercase tracking-widest">
+                                        <div className="flex items-center gap-2 bg-teal-50 px-4 py-1.5 rounded-full border border-teal-100 font-black text-[9px] text-teal-600 uppercase tracking-widest">
                                             <Sparkles className="w-3 h-3" /> Equal Weighting
                                         </div>
                                     </div>
@@ -5369,7 +5624,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                             customBucket.tokens.map(t => (
                                                 <div key={t.symbol} className="flex items-center justify-between p-5 bg-white rounded-xl border border-slate-200/60 shadow-sm animate-in slide-in-from-right-8 transition-all hover:scale-[1.02]">
                                                     <div className="flex items-center gap-4">
-                                                        <div className="w-12 h-12 bg-slate-50 rounded-2xl p-2 border border-blue-50">
+                                                        <div className="w-12 h-12 bg-slate-50 rounded-2xl p-2 border border-teal-50">
                                                             {t.image ? <img src={t.image} className="w-full h-full object-contain" alt="" /> : null}
                                                         </div>
                                                         <div>
@@ -5392,11 +5647,11 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
 
                                     <div className="pt-8 border-t border-gray-200">
                                         <div className="relative group">
-                                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-indigo-500 transition-colors" />
+                                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-teal-600 transition-colors" />
                                             <input 
                                                 type="text" 
                                                 placeholder="Terminal Search (Symbol or Address)..."
-                                                className="w-full pl-16 pr-8 py-5 bg-white border border-slate-200/60 rounded-2xl font-black text-xs outline-none focus:border-indigo-500/50 shadow-sm"
+                                                className="w-full pl-16 pr-8 py-5 bg-white border border-slate-200/60 rounded-2xl font-black text-xs outline-none focus:border-teal-500/50 shadow-sm"
                                                 onKeyDown={async (e) => {
                                                     if (e.key === 'Enter') {
                                                         const query = e.target.value.toLowerCase();
@@ -5434,7 +5689,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                             />
                                         </div>
                                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-5 text-center flex items-center justify-center gap-2">
-                                            {searchLoading ? <Loader2 className="w-3 h-3 animate-spin text-indigo-500" /> : <Info className="w-3 h-3" />}
+                                            {searchLoading ? <Loader2 className="w-3 h-3 animate-spin text-teal-600" /> : <Info className="w-3 h-3" />}
                                             {searchLoading ? 'Executing Global Discovery Protocol...' : 'Press Enter to deploy asset to blueprint'}
                                         </p>
                                     </div>
@@ -5587,7 +5842,7 @@ const DiscoveryPopup = ({ isOpen, onClose, results, onSelect }) => {
                     <div className="flex items-center justify-between">
                          <div>
                             <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Global Discovery</h3>
-                            <p className="text-[9px] font-black text-indigo-500 uppercase tracking-wide mt-1">Multi-Node Search Results</p>
+                            <p className="text-[9px] font-black text-teal-600 uppercase tracking-wide mt-1">Multi-Node Search Results</p>
                          </div>
                         <button onClick={onClose} className="w-10 h-10 rounded-full hover:bg-white flex items-center justify-center transition-colors shadow-sm">
                             <X className="w-5 h-5 text-slate-400" />
@@ -5599,7 +5854,7 @@ const DiscoveryPopup = ({ isOpen, onClose, results, onSelect }) => {
                         <div 
                             key={coin.id}
                             onClick={() => onSelect(coin)}
-                            className="flex items-center justify-between p-5 hover:bg-indigo-50 rounded-2xl cursor-pointer transition-all border border-transparent hover:border-indigo-100 group"
+                            className="flex items-center justify-between p-5 hover:bg-teal-50 rounded-2xl cursor-pointer transition-all border border-transparent hover:border-teal-100 group"
                         >
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-white rounded-xl p-1 shadow-sm border border-gray-50 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -5656,12 +5911,12 @@ const TokenSelector = ({ isOpen, onClose, onSelect, tokens, searchTerm, setSearc
                             placeholder="Search by name or address..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-16 pr-8 py-5 bg-slate-50 rounded-2xl border border-slate-200/60 outline-none focus:border-indigo-500/50 transition-all font-bold text-sm"
+                            className="w-full pl-16 pr-8 py-5 bg-slate-50 rounded-2xl border border-slate-200/60 outline-none focus:border-teal-500/50 transition-all font-bold text-sm"
                         />
                     </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                    {tokens.filter(t => (t.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) || (t.symbol || '').toLowerCase().includes((searchTerm || '').toLowerCase())).map(t => (
+                    {tokens.filter(t => (t.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) || (t.symbol || '').toLowerCase().includes((searchTerm || '').toLowerCase())).map((t, i) => (
                         <div 
                             key={`${t.id || t.address}-${i}`}
                             onClick={() => { onSelect(t); onClose(); }}
@@ -5866,7 +6121,7 @@ const MemeTerminal = ({ setMode, setToToken }) => {
             {/* Header Section */}
             <div className="relative mb-12 p-12 bg-slate-900 rounded-[3rem] overflow-hidden shadow-2xl">
                 <div className="absolute top-0 right-0 w-[50%] h-full bg-gradient-to-l from-orange-500/20 to-transparent blur-3xl -z-10" />
-                <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl" />
+                <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl" />
                 
                 <div className="flex flex-col md:flex-row items-center justify-between gap-10">
                     <div className="flex-1 text-center md:text-left">
@@ -5906,7 +6161,7 @@ const MemeTerminal = ({ setMode, setToToken }) => {
             {/* Controls Bar - Redesigned for Professional Alpha */}
             <div className="flex flex-col gap-6 mb-12">
                 <div className="flex flex-col xl:flex-row items-center justify-between gap-6 bg-white/80 backdrop-blur-xl p-6 rounded-[3rem] border border-slate-200 shadow-2xl shadow-slate-200/40 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-indigo-500 to-fuchsia-500 opacity-30" />
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-teal-600 to-fuchsia-500 opacity-30" />
                     
                     {/* Network Selection with Logos */}
                     <div className="flex flex-wrap items-center justify-center gap-3">
@@ -5987,7 +6242,7 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                     <div className="col-span-2">Execution Price</div>
                     <div className="col-span-2">Dynamic (24H)</div>
                     <div className="col-span-2 text-right">Liquidity Pool</div>
-                    <div className="col-span-1 text-right italic text-indigo-500">Action</div>
+                    <div className="col-span-1 text-right italic text-teal-600">Action</div>
                 </div>
 
                 {isLoading ? (
@@ -6118,8 +6373,8 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                                                  <span className="text-white text-[9px] font-black uppercase tracking-widest">{selectedMeme.network}</span>
                                              </div>
                                              {selectedMeme.isMexapayCertified && (
-                                                 <div className="flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-lg shadow-lg shadow-indigo-500/30 border border-indigo-400/30">
-                                                     <ShieldCheck size={12} className="text-indigo-200" />
+                                                 <div className="flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-teal-600 to-teal-700 rounded-lg shadow-lg shadow-teal-200/30 border border-teal-400/30">
+                                                     <ShieldCheck size={12} className="text-teal-600" />
                                                      <span className="text-white text-[8px] font-black uppercase tracking-[0.2em]">Mexapay Certified</span>
                                                  </div>
                                              )}
@@ -6179,7 +6434,7 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                                      <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 blur-3xl rounded-full" />
                                      <div className="flex items-center justify-between mb-8">
                                          <h5 className="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em]">Security Audit</h5>
-                                         {selectedMeme.isMexapayCertified && <div className="px-2 py-1 bg-indigo-500 text-white text-[7px] font-black rounded-lg uppercase tracking-widest animate-pulse">Certified</div>}
+                                         {selectedMeme.isMexapayCertified && <div className="px-2 py-1 bg-teal-500 text-white text-[7px] font-black rounded-lg uppercase tracking-widest animate-pulse">Certified</div>}
                                      </div>
                                      <div className="space-y-6">
                                          <div className="flex justify-between items-center">
@@ -6227,7 +6482,7 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                                                      navigator.clipboard.writeText(addr.value);
                                                      alert(`${addr.label} Copied.`);
                                                  }}
-                                                 className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-slate-400 hover:text-indigo-600"
+                                                 className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-slate-400 hover:text-teal-600"
                                              >
                                                  <Copy size={14}/>
                                              </button>
@@ -6241,13 +6496,13 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                                                  <div key={i} className="flex items-center justify-between group/holder cursor-pointer" onClick={() => { navigator.clipboard.writeText(h.address); alert('Holder Address Copied'); }}>
                                                      <div className="flex items-center gap-3">
                                                          <span className="text-[9px] font-black text-slate-400">#{i+1}</span>
-                                                         <span className="text-[10px] font-black text-slate-900 font-mono group-hover/holder:text-indigo-600 transition-colors">
+                                                         <span className="text-[10px] font-black text-slate-900 font-mono group-hover/holder:text-teal-600 transition-colors">
                                                              {h.address.slice(0, 8)}...{h.address.slice(-6)}
                                                          </span>
                                                      </div>
                                                      <div className="flex items-center gap-3">
                                                          <div className="w-20 h-1 bg-slate-200 rounded-full overflow-hidden">
-                                                             <div className="h-full bg-indigo-500" style={{ width: `${h.weight}%` }} />
+                                                             <div className="h-full bg-teal-500" style={{ width: `${h.weight}%` }} />
                                                          </div>
                                                          <span className="text-[9px] font-black text-slate-600 w-10 text-right">{h.weight}%</span>
                                                      </div>
@@ -6568,7 +6823,7 @@ const MemeFuturesTerminal = ({ setMode }) => {
 
                         {/* Right: Execution Panel */}
                         <div className="lg:col-span-4 bg-slate-900 border border-white/5 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden h-[932px] flex flex-col">
-                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-500 via-indigo-500 to-rose-500 animate-gradient-x" />
+                            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-rose-500 via-teal-600 to-rose-500 animate-gradient-x" />
                             <div className="absolute -top-24 -right-24 w-64 h-64 bg-rose-500/10 rounded-full blur-3xl" />
                             
                             <div className="flex gap-2 p-1.5 bg-white/5 rounded-2xl mb-8 relative z-10 border border-white/5">
@@ -6643,7 +6898,7 @@ const MemeFuturesTerminal = ({ setMode }) => {
                                     </div>
                                     <div className="flex justify-between items-center px-2">
                                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">EXECUTION FEE (0.1%)</span>
-                                        <span className="text-xs font-black text-indigo-400 font-mono">0.00 USDT</span>
+                                        <span className="text-xs font-black text-teal-500 font-mono">0.00 USDT</span>
                                     </div>
                                     <div className="flex justify-between items-center px-2">
                                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">LIQ. PRICE (EST.)</span>
@@ -6806,9 +7061,9 @@ const NftTerminal = ({ setMode }) => {
         <div className="max-w-[1600px] mx-auto px-4 pb-32">
             {/* Header section */}
             <div className="mb-12 flex flex-col md:flex-row items-center justify-between gap-8 bg-white border border-slate-200 rounded-[3rem] p-10 shadow-xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-indigo-500/10 to-transparent blur-3xl" />
+                <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-teal-600/10 to-transparent blur-3xl" />
                 <div className="relative z-10">
-                    <h2 className="text-4xl font-black italic tracking-tighter uppercase text-slate-900">NFT <span className="text-indigo-600">Marketplace</span></h2>
+                    <h2 className="text-4xl font-black italic tracking-tighter uppercase text-slate-900">NFT <span className="text-teal-600">Marketplace</span></h2>
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mt-2">Institutional Secondary Markets · 0.1% Standard Fee</p>
                 </div>
                 <div className="flex flex-wrap items-center gap-4 relative z-10 w-full md:w-auto">
@@ -6817,7 +7072,7 @@ const NftTerminal = ({ setMode }) => {
                         <input 
                             type="text" value={search} onChange={(e) => setSearch(e.target.value)}
                             placeholder="Search collections..." 
-                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-xs font-black uppercase tracking-widest outline-none focus:border-indigo-500 transition-all"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-12 pr-4 text-xs font-black uppercase tracking-widest outline-none focus:border-teal-500 transition-all"
                         />
                     </div>
                     <select 
@@ -6937,19 +7192,19 @@ const NftTerminal = ({ setMode }) => {
                         onClick={() => setSelectedNft(nft)}
                         className="bg-white border border-slate-200 rounded-[2.5rem] p-4 cursor-pointer shadow-sm hover:shadow-2xl transition-all group overflow-hidden relative"
                     >
-                        <div className={`absolute top-6 left-6 z-10 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${nft.rarity === 'Legendary' ? 'bg-amber-500 text-white' : nft.rarity === 'Rare' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                        <div className={`absolute top-6 left-6 z-10 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${nft.rarity === 'Legendary' ? 'bg-amber-500 text-white' : nft.rarity === 'Rare' ? 'bg-teal-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
                             {nft.rarity}
                         </div>
                         <div className="aspect-square bg-slate-50 rounded-[2rem] mb-6 overflow-hidden border border-slate-100 flex items-center justify-center relative">
                             <img src={nft.image} alt={nft.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                            <div className="absolute inset-0 bg-indigo-600/0 group-hover:bg-indigo-600/20 transition-all flex items-center justify-center">
-                                <button className="px-6 py-2 bg-white text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all">View Asset</button>
+                            <div className="absolute inset-0 bg-teal-600/0 group-hover:bg-teal-600/20 transition-all flex items-center justify-center">
+                                <button className="px-6 py-2 bg-white text-teal-600 rounded-xl text-[10px] font-black uppercase tracking-widest opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all">View Asset</button>
                             </div>
                         </div>
                         <div className="px-2 space-y-4">
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-tighter truncate w-32 group-hover:text-indigo-600 transition-colors">{nft.name}</h4>
+                                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-tighter truncate w-32 group-hover:text-teal-600 transition-colors">{nft.name}</h4>
                                     <div className="flex items-center gap-2 mt-1">
                                         <span className="text-[8px] font-black text-slate-400 uppercase">RANK #{nft.rank}</span>
                                         <div className={`w-1 h-1 rounded-full ${nft.trustScore > 80 ? 'bg-emerald-500' : 'bg-amber-500'}`} />
@@ -6983,7 +7238,7 @@ const NftTerminal = ({ setMode }) => {
                                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                                     <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Protocol Audited</span>
                                 </div>
-                                <button className="text-[9px] font-black text-indigo-600 uppercase tracking-widest group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                                <button className="text-[9px] font-black text-teal-600 uppercase tracking-widest group-hover:translate-x-1 transition-transform flex items-center gap-1">
                                     Detail <ArrowUpRight size={10} />
                                 </button>
                             </div>
@@ -7005,7 +7260,7 @@ const NftTerminal = ({ setMode }) => {
                             <div className="w-full md:w-[380px] bg-slate-50 border-r border-slate-100 flex flex-col shrink-0 overflow-y-auto custom-scrollbar">
                                 <div className="p-8 space-y-8 flex-1">
                                     <div className="relative group">
-                                        <div className="absolute inset-0 bg-indigo-600/10 blur-3xl rounded-full scale-75 group-hover:scale-100 transition-transform duration-700" />
+                                        <div className="absolute inset-0 bg-teal-600/10 blur-3xl rounded-full scale-75 group-hover:scale-100 transition-transform duration-700" />
                                         <div className="relative bg-white p-3 rounded-[2.5rem] shadow-xl border border-slate-100 aspect-square overflow-hidden flex items-center justify-center">
                                             <img src={selectedNft.image} className="w-full h-full object-contain rounded-[1.8rem] transition-transform duration-700 group-hover:scale-110" />
                                         </div>
@@ -7028,15 +7283,15 @@ const NftTerminal = ({ setMode }) => {
                                         </div>
 
                                         <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm relative overflow-hidden group">
-                                            <div className="absolute top-0 right-0 w-16 h-16 bg-indigo-600/5 -mr-4 -mt-4 rounded-full blur-xl group-hover:scale-150 transition-transform" />
+                                            <div className="absolute top-0 right-0 w-16 h-16 bg-teal-600/5 -mr-4 -mt-4 rounded-full blur-xl group-hover:scale-150 transition-transform" />
                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                <Info size={12} className="text-indigo-600" /> Asset Intelligence
+                                                <Info size={12} className="text-teal-600" /> Asset Intelligence
                                             </p>
                                             <p className="text-[11px] font-bold text-slate-600 leading-relaxed italic line-clamp-4">"{selectedNft.description}"</p>
                                         </div>
 
                                         <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
-                                            <div className="absolute -top-10 -right-10 w-24 h-24 bg-indigo-500/20 rounded-full blur-2xl group-hover:scale-150 transition-transform" />
+                                            <div className="absolute -top-10 -right-10 w-24 h-24 bg-teal-500/20 rounded-full blur-2xl group-hover:scale-150 transition-transform" />
                                             <div className="flex justify-between items-center mb-4">
                                                 <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em]">Institutional Valuation</span>
                                                 <span className="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded text-[8px] font-black uppercase">Live</span>
@@ -7070,12 +7325,12 @@ const NftTerminal = ({ setMode }) => {
                                     <div className="flex justify-between items-start">
                                         <div className="space-y-2">
                                             <div className="flex items-center gap-3 mb-2">
-                                                <span className="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border border-indigo-100">{selectedNft.rarity} ASSET</span>
+                                                <span className="bg-teal-50 text-teal-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border border-teal-100">{selectedNft.rarity} ASSET</span>
                                                 <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">ID: {selectedNft.id}</span>
                                             </div>
                                             <h3 className="text-5xl font-black text-slate-900 italic tracking-tighter uppercase leading-none">{selectedNft.name}</h3>
                                             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                                Verified Provenance <span className="w-1 h-1 bg-slate-200 rounded-full" /> Owned by <span className="text-indigo-600 font-black">{selectedNft.owner}</span>
+                                                Verified Provenance <span className="w-1 h-1 bg-slate-200 rounded-full" /> Owned by <span className="text-teal-600 font-black">{selectedNft.owner}</span>
                                             </p>
                                         </div>
                                         <button onClick={() => setSelectedNft(null)} className="p-4 bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-900 rounded-2xl transition-all"><X size={24} /></button>
@@ -7089,21 +7344,21 @@ const NftTerminal = ({ setMode }) => {
                                             </div>
                                             <p className="text-[11px] font-black text-slate-900 font-mono break-all">{selectedNft.contract}</p>
                                             <a href={selectedNft.scanLink} target="_blank" rel="noopener noreferrer" className="absolute top-2 right-2 p-1.5 bg-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity border border-slate-100 shadow-sm">
-                                                <ExternalLink size={10} className="text-indigo-600" />
+                                                <ExternalLink size={10} className="text-teal-600" />
                                             </a>
                                         </div>
                                         <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Genesis Architecture</p>
                                             <div className="flex justify-between items-center">
                                                 <span className="text-sm font-black text-slate-900">{selectedNft.launchedDate}</span>
-                                                <span className="text-[9px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded uppercase tracking-widest border border-indigo-100">{selectedNft.age}Y OLD</span>
+                                                <span className="text-[9px] font-black text-teal-600 bg-teal-50 px-2 py-0.5 rounded uppercase tracking-widest border border-teal-100">{selectedNft.age}Y OLD</span>
                                             </div>
                                         </div>
                                     </div>
 
                                     <div>
                                         <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em] mb-6 flex items-center gap-2 px-2">
-                                            <Activity size={14} className="text-indigo-600" /> Secondary Market Intelligence
+                                            <Activity size={14} className="text-teal-600" /> Secondary Market Intelligence
                                         </h4>
                                         <div className="grid grid-cols-4 gap-4">
                                             <div className="bg-slate-900 p-6 rounded-3xl text-white">
@@ -7120,7 +7375,7 @@ const NftTerminal = ({ setMode }) => {
                                             </div>
                                             <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100">
                                                 <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Native Network</p>
-                                                <p className="text-[10px] font-black text-indigo-600 uppercase tracking-tight truncate">{selectedNft.network}</p>
+                                                <p className="text-[10px] font-black text-teal-600 uppercase tracking-tight truncate">{selectedNft.network}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -7129,7 +7384,7 @@ const NftTerminal = ({ setMode }) => {
                                         <div className="space-y-6">
                                             <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em] px-2 flex items-center justify-between">
                                                 <span>Multi-Platform Availability</span>
-                                                <Globe size={12} className="text-indigo-600" />
+                                                <Globe size={12} className="text-teal-600" />
                                             </h4>
                                             <div className="flex flex-wrap gap-2">
                                                 {selectedNft.platforms.map((p, idx) => (
@@ -7162,7 +7417,7 @@ const NftTerminal = ({ setMode }) => {
                                     <div className="space-y-6">
                                         <div className="flex items-center justify-between px-2">
                                             <h4 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em] flex items-center gap-2">
-                                                <Users size={14} className="text-indigo-600" /> Institutional Holder Ledger
+                                                <Users size={14} className="text-teal-600" /> Institutional Holder Ledger
                                             </h4>
                                             <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Snapshot: Real-time</span>
                                         </div>
@@ -7170,7 +7425,7 @@ const NftTerminal = ({ setMode }) => {
                                             {selectedNft.holders.map((h, idx) => (
                                                 <div key={idx} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 hover:bg-white hover:shadow-md transition-all text-center group">
                                                     <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Rank #{idx+1}</p>
-                                                    <p className="text-[10px] font-black text-indigo-600 font-mono mb-2 group-hover:text-indigo-700 transition-colors">{h.address}</p>
+                                                    <p className="text-[10px] font-black text-teal-600 font-mono mb-2 group-hover:text-teal-600 transition-colors">{h.address}</p>
                                                     <div className="text-[10px] font-black text-slate-900 bg-white py-1 rounded-lg border border-slate-100">{h.share}%</div>
                                                 </div>
                                             ))}
@@ -7218,7 +7473,7 @@ const MexMoneyTerminal = () => {
             riskMatrix: 'Impermanent Loss (IL), Volatility Exposure, Pool Depletion.',
             revSpeed: 'Real-time (Per Swap)',
             difficulty: 'Medium',
-            icon: <Layers className="text-indigo-500" />,
+            icon: <Layers className="text-teal-600" />,
             platforms: ['Uniswap', 'Curve Finance'],
             link: 'https://uniswap.org'
         },
@@ -7263,7 +7518,7 @@ const MexMoneyTerminal = () => {
             riskMatrix: 'API Failures, Execution Slippage, Bot Logic Errors.',
             revSpeed: 'Fast (Per Minute)',
             difficulty: 'Very High',
-            icon: <CandlestickChart className="text-blue-500" />,
+            icon: <CandlestickChart className="text-teal-600" />,
             platforms: ['Binance Pro', 'Mex Quant Hub'],
             link: 'https://binance.com'
         },
@@ -7331,11 +7586,11 @@ const MexMoneyTerminal = () => {
         <div className="max-w-[1600px] mx-auto px-4 pb-40">
             {/* Header section */}
             <div className="mb-16 flex flex-col items-center text-center space-y-6">
-                <div className="inline-flex items-center gap-3 px-6 py-2 bg-indigo-600/10 border border-indigo-600/20 rounded-full">
-                    <Sparkles size={14} className="text-indigo-600" />
-                    <span className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.3em]">Institutional Grade Yield</span>
+                <div className="inline-flex items-center gap-3 px-6 py-2 bg-teal-600/10 border border-teal-600/20 rounded-full">
+                    <Sparkles size={14} className="text-teal-600" />
+                    <span className="text-[10px] font-black text-teal-600 uppercase tracking-[0.3em]">Institutional Grade Yield</span>
                 </div>
-                <h2 className="text-6xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">MEX <span className="text-indigo-600">Money</span></h2>
+                <h2 className="text-6xl font-black italic tracking-tighter uppercase text-slate-900 leading-none">MEX <span className="text-teal-600">Money</span></h2>
                 <p className="max-w-2xl text-xs font-bold text-slate-400 uppercase tracking-widest leading-loose">
                     Go beyond basic staking. Access legitimate crypto income streams powered by cross-chain liquidity, validator rewards, and real-world asset tokenization.
                 </p>
@@ -7370,9 +7625,9 @@ const MexMoneyTerminal = () => {
                                 </div>
 
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-indigo-50/30 p-4 rounded-xl border border-indigo-100/30">
-                                        <p className="text-[8px] font-black text-indigo-400 uppercase mb-1">Rev Speed</p>
-                                        <p className="text-[10px] font-black text-indigo-600 uppercase">{option.revSpeed}</p>
+                                    <div className="bg-teal-50/30 p-4 rounded-xl border border-teal-100/30">
+                                        <p className="text-[8px] font-black text-teal-500 uppercase mb-1">Rev Speed</p>
+                                        <p className="text-[10px] font-black text-teal-600 uppercase">{option.revSpeed}</p>
                                     </div>
                                     <div className="bg-amber-50/30 p-4 rounded-xl border border-amber-100/30">
                                         <p className="text-[8px] font-black text-amber-500 uppercase mb-1">Difficulty</p>
@@ -7382,7 +7637,7 @@ const MexMoneyTerminal = () => {
 
                                 <div className="space-y-4">
                                     <div className="flex items-start gap-4">
-                                        <div className="w-1 h-1 bg-indigo-600 rounded-full mt-1.5 shrink-0" />
+                                        <div className="w-1 h-1 bg-teal-600 rounded-full mt-1.5 shrink-0" />
                                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
                                             <span className="text-slate-900 font-black">Institutional Work:</span> {option.work}
                                         </p>
@@ -7408,7 +7663,7 @@ const MexMoneyTerminal = () => {
                             <button 
                                 onClick={() => handleInvest(option)}
                                 disabled={investingId === option.id}
-                                className={`mt-10 w-full py-5 rounded-2xl font-black uppercase tracking-[0.4em] text-xs transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 ${investingId === option.id ? 'bg-slate-700' : 'bg-slate-900 hover:bg-indigo-600 shadow-indigo-600/20 text-white'}`}
+                                className={`mt-10 w-full py-5 rounded-2xl font-black uppercase tracking-[0.4em] text-xs transition-all shadow-xl active:scale-95 flex items-center justify-center gap-3 ${investingId === option.id ? 'bg-slate-700' : 'bg-slate-900 hover:bg-teal-600 shadow-teal-200/20 text-white'}`}
                             >
                                 {investingId === option.id ? (
                                     <>
@@ -7424,13 +7679,13 @@ const MexMoneyTerminal = () => {
                 ))}
             </div>
 
-            <div className="mt-20 p-12 bg-indigo-600 rounded-[3rem] text-center text-white relative overflow-hidden shadow-2xl shadow-indigo-900/40">
+            <div className="mt-20 p-12 bg-teal-600 rounded-[3rem] text-center text-white relative overflow-hidden shadow-2xl shadow-teal-200/40">
                 <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 blur-[100px] -mr-48 -mt-48" />
-                <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-400/20 blur-[100px] -ml-48 -mb-48" />
+                <div className="absolute bottom-0 left-0 w-96 h-96 bg-teal-400/20 blur-[100px] -ml-48 -mb-48" />
                 
                 <div className="relative z-10 space-y-6">
                     <h3 className="text-4xl font-black italic tracking-tighter uppercase leading-none">The Future of Institutional Yield</h3>
-                    <p className="max-w-2xl mx-auto text-xs font-black text-indigo-100 uppercase tracking-[0.2em] leading-relaxed">
+                    <p className="max-w-2xl mx-auto text-xs font-black text-teal-600 uppercase tracking-[0.2em] leading-relaxed">
                         Mex Money connects you to real-time blockchain earnings. A flat $2 service fee covers protocol auditing and direct treasury routing.
                     </p>
                     <div className="flex items-center justify-center gap-4">
@@ -7454,43 +7709,49 @@ const StocksTerminal = ({ setMode, setToToken }) => {
     const { account, signer, isConnected, walletProvider } = useWallet();
     const { open } = useWeb3Modal();
     const [selectedTicker, setSelectedTicker] = useState('AAPL');
-    const [tickerData, setTickerData] = useState(null);
+    const [tickerData, setTickerData] = useState({ price: 231.42, change: 1.2, change_percent: '+0.54%' });
     const [historyData, setHistoryData] = useState([]);
     const [fundamentals, setFundamentals] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [tradeQuantity, setTradeQuantity] = useState(1);
-
-    // Expanded Tickers List
-    const tickers = [
-        // Technology
-        { symbol: 'AAPL', name: 'Apple Inc.', sector: 'Tech' },
-        { symbol: 'TSLA', name: 'Tesla, Inc.', sector: 'Automotive' },
-        { symbol: 'MSFT', name: 'Microsoft', sector: 'Tech' },
-        { symbol: 'GOOGL', name: 'Alphabet (Google)', sector: 'Tech' },
-        { symbol: 'NVDA', name: 'NVIDIA Corp.', sector: 'Tech' },
-        { symbol: 'META', name: 'Meta Platforms', sector: 'Social' },
-        { symbol: 'NFLX', name: 'Netflix', sector: 'Entertainment' },
-        // E-commerce
-        { symbol: 'AMZN', name: 'Amazon.com', sector: 'Retail' },
-        { symbol: 'BABA', name: 'Alibaba Group', sector: 'Retail' },
-        // Metals & Energy
-        { symbol: 'XAU', name: 'Gold Spot', sector: 'Metal' },
-        { symbol: 'XAG', name: 'Silver Spot', sector: 'Metal' },
-        { symbol: 'WTI', name: 'Crude Oil WTI', sector: 'Energy' }
-    ];
-
+    const [leverage, setLeverage] = useState(1);
+    const [activeTab, setActiveTab] = useState('Overview');
+    const [isTickerDropdownOpen, setIsTickerDropdownOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
+    
     useEffect(() => {
-        console.log('[StockTerminal] Component Mounted & Ready.');
-        // Debugging listener to catch any "dead" clicks
-        const debugClick = (e) => {
-            if (e.target.innerText?.includes('Buy') || e.target.innerText?.includes('Sell')) {
-                console.log('[StockTerminal] Trade Button Click Detected via Global Listener');
-            }
-        };
-        window.addEventListener('click', debugClick);
-        return () => window.removeEventListener('click', debugClick);
+        setMounted(true);
     }, []);
+
+    // Deterministic blockchain data for "Tokenized" stocks
+    const blockchainData = useMemo(() => {
+        if (!selectedTicker) return null;
+        // Use a stable random generator based on the ticker name
+        const seed = selectedTicker.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+        return {
+            contractAddress: `0x${selectedTicker === 'AAPL' ? '8a5f' : '2c1a'}${Math.abs(seed).toString(16).padEnd(36, '0')}`,
+            totalSupply: '1,000,000,000',
+            circulatingSupply: '742,000,000',
+            totalLiquidity: '$242.5M',
+            launchDate: '2024-03-12',
+            sentiment: 84,
+            holders: 12450,
+            liquidityAddCount: 1420,
+            liquidityRemoveCount: 84
+        };
+    }, [selectedTicker]);
+
+    const tickers = [
+        { symbol: 'AAPL', name: 'Apple Inc.', sector: 'Tech', logo: 'https://cryptologos.cc/logos/apple-logo.png' },
+        { symbol: 'TSLA', name: 'Tesla Inc.', sector: 'Auto', logo: 'https://cryptologos.cc/logos/tesla-logo.png' },
+        { symbol: 'MSFT', name: 'Microsoft', sector: 'Tech', logo: 'https://cryptologos.cc/logos/microsoft-logo.png' },
+        { symbol: 'NVDA', name: 'NVIDIA', sector: 'AI', logo: 'https://cryptologos.cc/logos/nvidia-logo.png' },
+        { symbol: 'AMZN', name: 'Amazon', sector: 'Retail', logo: 'https://cryptologos.cc/logos/amazon-logo.png' },
+        { symbol: 'META', name: 'Meta', sector: 'Social', logo: 'https://cryptologos.cc/logos/meta-logo.png' },
+        { symbol: 'GOOGL', name: 'Alphabet', sector: 'Tech', logo: 'https://cryptologos.cc/logos/google-logo.png' },
+        { symbol: 'XAU', name: 'Gold Spot', sector: 'Metals', logo: 'https://assets.coingecko.com/coins/images/23301/small/gold.png' }
+    ];
 
     useEffect(() => {
         fetchStockData(selectedTicker);
@@ -7498,403 +7759,413 @@ const StocksTerminal = ({ setMode, setToToken }) => {
 
     const fetchStockData = async (ticker) => {
         setLoading(true);
-        setError(null);
-        console.log(`[StockTerminal] Fetching lifecycle for ${ticker}...`);
-        
         try {
-            // Institutional Strategy: Execute parallel requests but handle failures individually
-            // This prevents a "Fundamentals" failure from blocking the "Price" or "Chart"
             const results = await Promise.allSettled([
                 axios.get(`${API_URL}/stocks/price?ticker=${ticker}`),
                 axios.get(`${API_URL}/stocks/history?ticker=${ticker}`),
                 axios.get(`${API_URL}/stocks/fundamentals?ticker=${ticker}`)
             ]);
-
-            // 1. Price Logic (Critical for Execution)
-            if (results[0].status === 'fulfilled' && results[0].value.data.success) {
-                setTickerData(results[0].value.data.data);
-            } else {
-                console.warn('[StockTerminal] Price feed delayed or rate-limited.');
-            }
-
-            // 2. History Logic (Visual Chart)
-            if (results[1].status === 'fulfilled' && results[1].value.data.success) {
-                setHistoryData(results[1].value.data.data);
-            }
-
-            // 3. Fundamentals Logic (DNA Registry)
-            if (results[2].status === 'fulfilled' && results[2].value.data.success) {
-                setFundamentals(results[2].value.data.data);
-            }
-
-            // If we don't have price data after all attempts, show a soft error
-            if (!tickerData && results[0].status === 'rejected') {
-                setError("Market feed is temporarily congested. Retrying in background...");
-            }
-        } catch (err) {
-            console.error('[StockTerminal] Critical Data Error:', err.message);
-            setError("Platform synchronization delayed.");
-        } finally {
-            setLoading(false);
-        }
+            if (results[0].status === 'fulfilled' && results[0].value.data.success) setTickerData(results[0].value.data.data);
+            if (results[1].status === 'fulfilled' && results[1].value.data.success) setHistoryData(results[1].value.data.data);
+            if (results[2].status === 'fulfilled' && results[2].value.data.success) setFundamentals(results[2].value.data.data);
+        } catch (err) { console.error('Data Fetch Error:', err); }
+        finally { setLoading(false); }
     };
 
     const handleTrade = async (type) => {
-        console.log(`[StockTerminal] CRITICAL INITIATION: ${type.toUpperCase()} | Asset: ${selectedTicker}`);
-        alert(`Initiating ${type.toUpperCase()} order for ${tradeQuantity} units of ${selectedTicker}. Please check your wallet for the protocol fee approval.`);
-
+        if (!walletProvider) { open(); return; }
+        setLoading(true);
         try {
-            // 1. Session Validation
-            if (!walletProvider) {
-                console.warn('[StockTerminal] No wallet provider detected.');
-                const confirmConnect = confirm("Wallet not detected. Would you like to connect now?");
-                if (confirmConnect) await open();
-                return;
-            }
-
-            // 2. Direct Provider & Signer Acquisition (Bypassing State)
-            console.log('[StockTerminal] Acquiring fresh provider from session...');
             const browserProvider = new ethers.BrowserProvider(walletProvider);
-            
-            // 3. Network Enforcement: Ensure user is on BSC (Chain ID 56)
-            const network = await browserProvider.getNetwork();
-            if (Number(network.chainId) !== 56) {
-                console.log('[StockTerminal] Incorrect network detected. Requesting switch to BSC...');
-                try {
-                    await walletProvider.request({
-                        method: 'wallet_switchEthereumChain',
-                        params: [{ chainId: '0x38' }], // 56 in hex
-                    });
-                } catch (switchError) {
-                    // If chain hasn't been added, add it
-                    if (switchError.code === 4902) {
-                        await walletProvider.request({
-                            method: 'wallet_addEthereumChain',
-                            params: [{
-                                chainId: '0x38',
-                                chainName: 'BNB Smart Chain',
-                                nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 },
-                                rpcUrls: ['https://bsc-dataseed.binance.org'],
-                                blockExplorerUrls: ['https://bscscan.com']
-                            }],
-                        });
-                    } else {
-                        throw new Error("Please switch your wallet to BNB Smart Chain to execute trades.");
-                    }
-                }
-            }
-
             const activeSigner = await browserProvider.getSigner();
-            const currentAccount = await activeSigner.getAddress();
-            console.log('[StockTerminal] Execution Authorized for:', currentAccount);
-
-            if (tradeQuantity <= 0) {
-                alert("Institutional Error: Quantity must be 1 or greater.");
-                return;
-            }
-
-            // 4. Admin Whitelist Check
-            if (currentAccount.toLowerCase() === FEE_WALLET.toLowerCase()) {
-                console.log('[StockTerminal] Institutional Admin bypass.');
-                setLoading(true);
-                // Simulated settlement for admin
-                const tradePrice = tickerData?.price || 0;
-                const totalValue = tradePrice * tradeQuantity;
-                await axios.post(`${API_URL}/wallets/smart-money/invest`, {
-                    wallet_address: currentAccount,
-                    bucket_id: `STOCK_${selectedTicker}`,
-                    bucket_name: `${type.toUpperCase()} ${selectedTicker}`,
-                    invest_amount: totalValue, 
-                    tx_hash: 'ADMIN_BYPASS_' + Date.now(),
-                    bucket_json: { type: 'StockTrade', ticker: selectedTicker, action: type, quantity: tradeQuantity, price: tradePrice, total_usd: totalValue }
-                });
-                alert(`ADMIN SUCCESS: ${type.toUpperCase()} order for ${tradeQuantity} ${selectedTicker} settled without fee.`);
-                setLoading(false);
-                return;
-            }
-
-            setLoading(true);
-            console.log('[StockTerminal] Broadcasting protocol fee transaction...');
-            
-            // Institutional Execution Fee: $1.00 worth of BNB (~0.0015 BNB)
             const feeAmount = "0.0015"; 
-            
-            const tx = await activeSigner.sendTransaction({
-                to: FEE_WALLET,
-                value: ethers.parseEther(feeAmount),
-                gasLimit: 120000 // Slightly higher gas for complex wallet routing
-            });
-
-            console.log('[StockTerminal] TX Broadcast Success:', tx.hash);
-            alert(`ORDER BROADCASTED! \n\nTransaction: ${tx.hash.slice(0, 12)}... \n\nWaiting for BNB Smart Chain confirmation...`);
-            
-            const receipt = await tx.wait();
-            console.log('[StockTerminal] TX Confirmed on-chain.');
-
-            const tradePrice = tickerData?.price || 0;
-            const totalValue = tradePrice * tradeQuantity;
-
-            console.log('[StockTerminal] Finalizing synthetic settlement...');
+            const tx = await activeSigner.sendTransaction({ to: FEE_WALLET, value: ethers.parseEther(feeAmount) });
+            await tx.wait();
             await axios.post(`${API_URL}/wallets/smart-money/invest`, {
-                wallet_address: currentAccount,
+                wallet_address: await activeSigner.getAddress(),
                 bucket_id: `STOCK_${selectedTicker}`,
                 bucket_name: `${type.toUpperCase()} ${selectedTicker}`,
-                invest_amount: totalValue, 
+                invest_amount: tickerData.price * tradeQuantity,
                 tx_hash: tx.hash,
-                bucket_json: { 
-                    type: 'StockTrade', ticker: selectedTicker, action: type,
-                    quantity: tradeQuantity, price: tradePrice, total_usd: totalValue
-                }
+                bucket_json: { type: 'StockTrade', ticker: selectedTicker, action: type, quantity: tradeQuantity, leverage }
             });
-
-            console.log('[StockTerminal] Trade fully settled.');
-            alert(`TRADE SUCCESSFUL!\n\nSynthetic ${type.toUpperCase()} order for ${tradeQuantity} ${selectedTicker} settled at $${tradePrice.toFixed(2)}.\n\nTotal Value: $${totalValue.toLocaleString()}`);
-        } catch (e) {
-            console.error('[StockTerminal Fatal Error]', e);
-            const errorMsg = e.reason || e.message || 'Execution rejected by wallet or network.';
-            alert(`TRADE FAILED: ${errorMsg}\n\nTroubleshooting:\n1. Ensure you have ~0.002 BNB for fees.\n2. Ensure your wallet is on BNB Smart Chain.\n3. Refresh the page and try again.`);
-        } finally {
-            setLoading(false);
-        }
+            alert('Trade Executed Successfully');
+        } catch (e) { alert('Trade Failed: ' + e.message); }
+        finally { setLoading(false); }
     };
 
     return (
-        <div className="max-w-[1600px] mx-auto px-4 pb-40">
-            {/* Ticker Selector Sidebar/Top */}
-            <div className="mb-12 overflow-x-auto pb-4 scrollbar-hide">
-                <div className="flex gap-3 min-w-max px-2">
-                    {tickers.map(t => (
-                        <button 
-                            key={t.symbol}
-                            onClick={() => setSelectedTicker(t.symbol)}
-                            className={`px-8 py-4 rounded-3xl text-[11px] font-black uppercase tracking-widest transition-all flex items-center gap-4 ${selectedTicker === t.symbol ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-600/30 scale-105' : 'bg-white border border-slate-200 text-slate-500 hover:border-indigo-300'}`}
-                        >
-                            <span className="opacity-60">{t.symbol}</span>
-                            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                            {t.name.split(' ')[0]}
-                        </button>
+        <div className="max-w-[1700px] mx-auto px-4 pb-20 space-y-8">
+            {/* ── INSTITUTIONAL TICKER TAPE ── */}
+            <div className="bg-slate-900 border border-white/5 rounded-3xl p-2 overflow-hidden relative">
+                <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-slate-900 to-transparent z-10" />
+                <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-slate-900 to-transparent z-10" />
+                <motion.div animate={{ x: [0, -2000] }} transition={{ duration: 40, repeat: Infinity, ease: "linear" }} className="flex gap-10 whitespace-nowrap px-10">
+                    {tickers.concat(tickers).map((t, i) => (
+                        <div key={i} className="flex items-center gap-4 text-[11px] font-black uppercase tracking-widest cursor-pointer hover:text-teal-500 transition-colors" onClick={() => setSelectedTicker(t.symbol)}>
+                            <span className="text-white/40">{t.symbol}</span>
+                            <span className="text-white">${(231.42 + (mounted ? Math.random() * 10 : 5)).toFixed(2)}</span>
+                            <span className="text-emerald-500">+{ (0.5 + (mounted ? Math.random() * 2 : 1)).toFixed(2) }%</span>
+                        </div>
                     ))}
-                </div>
+                </motion.div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                {/* Chart & Analysis Section */}
+                {/* ── MAIN TERMINAL SECTION ── */}
                 <div className="lg:col-span-8 space-y-8">
-                    <div className="bg-white border border-slate-200 rounded-[3rem] p-10 shadow-sm relative overflow-hidden">
-                        {loading && (
-                            <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center">
-                                <Loader2 className="w-12 h-12 animate-spin text-indigo-600" />
-                            </div>
-                        )}
-
-                        <div className="flex justify-between items-start mb-12">
-                            <div>
-                                <h3 className="text-4xl font-black text-slate-900 uppercase italic tracking-tighter mb-3">{tickers.find(t => t.symbol === selectedTicker)?.name}</h3>
-                                <div className="flex items-center gap-6">
-                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                        <Building2 size={12} className="text-indigo-600" /> {fundamentals?.exchange || 'NASDAQ'} • {selectedTicker}
-                                    </p>
-                                    <span className="w-1 h-1 bg-slate-300 rounded-full" />
-                                    <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.2em]">{fundamentals?.sector || 'Institutional Equity'}</p>
-                                </div>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-5xl font-black text-slate-900 tracking-tighter mb-2">${tickerData?.price?.toLocaleString() || '---'}</p>
-                                <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest ${tickerData?.change >= 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
-                                    {tickerData?.change >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                                    {tickerData?.change_percent || '0.00%'}
-                                </div>
+                    {/* Primary Header & Data Center */}
+                    <div className="bg-white rounded-[2.5rem] border border-slate-200/60 p-8 shadow-xl relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-8">
+                            <div className="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 shadow-inner group-hover:scale-110 transition-transform">
+                                <img src={tickers.find(t => t.symbol === selectedTicker)?.logo} className="w-10 h-10 object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all" alt="" />
                             </div>
                         </div>
 
-                        <div className="h-[450px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={historyData}>
-                                    <defs>
-                                        <linearGradient id="stockGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#4f46e5" stopOpacity={0.2}/>
-                                            <stop offset="95%" stopColor="#4f46e5" stopOpacity={0}/>
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                    <XAxis dataKey="time" hide />
-                                    <YAxis domain={['auto', 'auto']} hide />
-                                    <Tooltip 
-                                        contentStyle={{ backgroundColor: '#fff', border: 'none', borderRadius: '24px', boxShadow: '0 20px 40px -10px rgba(0,0,0,0.1)', padding: '20px' }}
-                                        itemStyle={{ fontSize: '11px', fontWeight: '900', textTransform: 'uppercase' }}
-                                    />
-                                    <Area type="monotone" dataKey="close" stroke="#4f46e5" strokeWidth={4} fillOpacity={1} fill="url(#stockGradient)" animationDuration={1500} />
-                                </AreaChart>
-                            </ResponsiveContainer>
+                        <div className="space-y-8 relative z-10">
+                            <div className="relative inline-block text-left">
+                                <button 
+                                    onClick={() => setIsTickerDropdownOpen(!isTickerDropdownOpen)}
+                                    className="flex items-center gap-3 px-6 py-3 bg-slate-50 border border-slate-200/60 rounded-2xl hover:bg-white hover:border-teal-500/30 transition-all active:scale-95 group shadow-sm"
+                                >
+                                    <div className="w-8 h-8 bg-white rounded-lg p-1.5 shadow-inner border border-slate-100 group-hover:scale-110 transition-transform">
+                                        <img src={tickers.find(t => t.symbol === selectedTicker)?.logo} className="w-full h-full object-contain" alt="" />
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Active Terminal</p>
+                                        <p className="text-sm font-black text-slate-900 tracking-tighter uppercase">{tickers.find(t => t.symbol === selectedTicker)?.name}</p>
+                                    </div>
+                                    <ChevronDown className={`w-4 h-4 text-slate-400 group-hover:text-teal-600 transition-all ${isTickerDropdownOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                <AnimatePresence>
+                                    {isTickerDropdownOpen && (
+                                        <motion.div 
+                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            className="absolute top-full left-0 mt-3 w-80 bg-white/90 backdrop-blur-2xl border border-slate-200/60 rounded-3xl shadow-2xl z-[100] p-3 space-y-1"
+                                        >
+                                            {tickers.map(t => (
+                                                <button
+                                                    key={t.symbol}
+                                                    onClick={() => {
+                                                        setSelectedTicker(t.symbol);
+                                                        setIsTickerDropdownOpen(false);
+                                                    }}
+                                                    className={`w-full flex items-center gap-4 p-3 rounded-2xl transition-all group/item ${selectedTicker === t.symbol ? 'bg-teal-600 text-white shadow-xl shadow-teal-200/40' : 'hover:bg-slate-50 text-slate-600'}`}
+                                                >
+                                                    <div className={`w-10 h-10 rounded-xl p-2 transition-colors ${selectedTicker === t.symbol ? 'bg-white/20' : 'bg-slate-100 group-hover/item:bg-white'}`}>
+                                                        <img src={t.logo} className={`w-full h-full object-contain ${selectedTicker === t.symbol ? '' : 'grayscale group-hover/item:grayscale-0'}`} alt="" />
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <p className={`text-[10px] font-black uppercase tracking-widest leading-none mb-1 ${selectedTicker === t.symbol ? 'text-white/60' : 'text-slate-400'}`}>{t.symbol}</p>
+                                                        <p className={`text-sm font-black tracking-tight ${selectedTicker === t.symbol ? 'text-white' : 'text-slate-900'}`}>{t.name}</p>
+                                                    </div>
+                                                    {selectedTicker === t.symbol && <Check size={14} className="ml-auto" />}
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+
+                            <div>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <span className="px-2 py-0.5 bg-teal-600 text-white text-[8px] font-black uppercase tracking-widest rounded-md">Tier 1 Asset</span>
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Global Equity Index</span>
+                                </div>
+                                <h1 className="text-5xl font-black text-slate-900 tracking-tighter uppercase leading-none">{tickers.find(t => t.symbol === selectedTicker)?.name}</h1>
+                                <p className="text-xs font-bold text-slate-400 mt-2 tracking-widest uppercase">{selectedTicker} • {fundamentals?.exchange || 'NASDAQ'} • Institutional Liquidity</p>
+                            </div>
+
+                            <div className="flex items-end gap-10">
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Current Value</p>
+                                    <div className="flex items-baseline gap-3">
+                                        <span className="text-6xl font-black text-slate-900 tracking-tighter italic leading-none">${tickerData?.price?.toLocaleString() || '---'}</span>
+                                        <div className={`flex items-center gap-1.5 font-black text-sm ${tickerData?.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {tickerData?.change >= 0 ? <ArrowUpRight size={18} /> : <ArrowDownRight size={18} />}
+                                            {tickerData?.change_percent || '0.00%'}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="h-16 w-px bg-slate-100" />
+                                <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+                                    <div>
+                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Day High</p>
+                                        <p className="text-sm font-black text-slate-900 font-mono">${(tickerData.price * 1.02).toFixed(2)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Day Low</p>
+                                        <p className="text-sm font-black text-slate-900 font-mono">${(tickerData.price * 0.98).toFixed(2)}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Institutional Chart Terminal */}
+                            <div className="h-[400px] w-full pt-10 border-t border-slate-100 relative">
+                                <div className="absolute top-12 left-0 flex gap-4 z-10">
+                                    {['1H', '1D', '1W', '1M', '1Y', 'ALL'].map(time => (
+                                        <button key={time} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${time === '1D' ? 'bg-teal-600 text-white shadow-lg shadow-teal-200' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>{time}</button>
+                                    ))}
+                                </div>
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <AreaChart data={historyData.length > 0 ? historyData : (mounted ? [...Array(20)].map((_, i) => ({ time: i, close: 200 + Math.random() * 50 })) : [])}>
+                                        <defs>
+                                            <linearGradient id="stockArea" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="#009393" stopOpacity={0.2}/>
+                                                <stop offset="95%" stopColor="#009393" stopOpacity={0}/>
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="2 2" vertical={false} stroke="#f1f5f9" />
+                                        <XAxis dataKey="time" hide />
+                                        <YAxis domain={['auto', 'auto']} hide />
+                                        <Tooltip contentStyle={{ backgroundColor: '#fff', border: 'none', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', padding: '12px' }} />
+                                        <Area type="monotone" dataKey="close" stroke="#009393" strokeWidth={3} fillOpacity={1} fill="url(#stockArea)" animationDuration={2000} />
+                                    </AreaChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Asset Intelligence Panel */}
-                    <div className="bg-slate-900 text-white rounded-[3rem] p-10 shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-                        
-                        <div className="flex items-center gap-4 mb-10">
-                            <div className="p-3 bg-indigo-500 rounded-2xl">
-                                <ShieldCheck size={24} className="text-white" />
+                    {/* Advanced Metrics & Intelligence */}
+
+                    {/* ── INSTITUTIONAL ASSET INTELLIGENCE ── */}
+                    <div className="bg-white border border-slate-200/60 rounded-[2.5rem] p-10 shadow-xl space-y-10">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-8">
+                            <div className="space-y-1">
+                                <div className="flex items-center gap-2 text-teal-600">
+                                    <ShieldCheck size={16} />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Verified Asset Hub</span>
+                                </div>
+                                <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase">Institutional <span className="text-teal-600 italic">Intelligence</span></h2>
                             </div>
-                            <div>
-                                <h4 className="text-xl font-black uppercase tracking-tighter italic">Institutional Asset DNA</h4>
-                                <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Verified Synthetic Registry</p>
+                            <div className="flex items-center gap-3">
+                                <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse" />
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Real-time Node Sync</span>
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-                            <div className="space-y-6">
-                                <div>
-                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Synthetic Contract</p>
-                                    <p className="text-xs font-mono text-indigo-400 break-all bg-indigo-500/5 p-3 rounded-xl border border-indigo-500/10">0xS{selectedTicker}...Settlement_v4</p>
-                                </div>
-                                <div>
-                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Network</p>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full" />
-                                        <p className="text-xs font-black uppercase tracking-widest">B20 Synthetic L2 (BSC)</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-6 text-center md:text-left">
-                                <div>
-                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">52-Week Range</p>
-                                    <div className="flex items-center justify-between gap-4">
-                                        <span className="text-xs font-black text-rose-400">${fundamentals?.low52 || '---'}</span>
-                                        <div className="flex-grow h-1.5 bg-slate-800 rounded-full relative overflow-hidden">
-                                            <div className="absolute inset-y-0 left-1/4 right-1/4 bg-indigo-500 rounded-full" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                            {/* Column 1: Blockchain Infrastructure */}
+                            <div className="space-y-8">
+                                <div className="space-y-4">
+                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <Layers size={12} className="text-teal-600" /> Infrastructure
+                                    </h4>
+                                    <div className="space-y-6">
+                                        <div className="group">
+                                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 group-hover:text-teal-600 transition-colors">Contract Address</p>
+                                            <div className="flex items-center gap-2">
+                                                <code className="text-xs font-mono font-bold text-slate-900 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 flex-1 truncate">{blockchainData?.contractAddress}</code>
+                                                <div className="flex gap-1">
+                                                    <CopyButton text={blockchainData?.contractAddress} />
+                                                </div>
+                                            </div>
                                         </div>
-                                        <span className="text-xs font-black text-emerald-400">${fundamentals?.high52 || '---'}</span>
+                                        <div className="flex justify-between items-center py-4 border-b border-slate-50 group">
+                                            <div className="flex items-center gap-2">
+                                                <History size={12} className="text-slate-300 group-hover:text-teal-600 transition-colors" />
+                                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Asset Launched</span>
+                                            </div>
+                                            <span className="text-xs font-black text-slate-900 uppercase">{blockchainData?.launchDate}</span>
+                                        </div>
                                     </div>
-                                </div>
-                                <div>
-                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Launched Date</p>
-                                    <p className="text-xs font-black uppercase tracking-widest flex items-center gap-2 justify-center md:justify-start">
-                                        <Calendar size={14} className="text-indigo-400" /> {fundamentals?.fiscalYearEnd || 'Historical Public Listing'}
-                                    </p>
                                 </div>
                             </div>
 
-                            <div className="space-y-6">
-                                <div>
-                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Who Launched This?</p>
-                                    <p className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                                        <Building2 size={14} className="text-indigo-400" /> {tickers.find(t => t.symbol === selectedTicker)?.name}
-                                    </p>
+                            {/* Column 2: Supply & Liquidity Dynamics */}
+                            <div className="space-y-8">
+                                <div className="space-y-4">
+                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <Droplets size={12} className="text-teal-600" /> Capital Flow
+                                    </h4>
+                                    <div className="space-y-4">
+                                        <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 group hover:border-teal-500/20 transition-all">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Total Liquidity</span>
+                                                <Activity size={10} className="text-teal-600 animate-pulse" />
+                                            </div>
+                                            <p className="text-2xl font-black text-slate-900 tracking-tighter">{blockchainData?.totalLiquidity}</p>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10">
+                                                <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-1">Liquidity Add</p>
+                                                <p className="text-lg font-black text-emerald-700">{blockchainData?.liquidityAddCount}</p>
+                                            </div>
+                                            <div className="p-4 bg-rose-500/5 rounded-2xl border border-rose-500/10">
+                                                <p className="text-[8px] font-black text-rose-600 uppercase tracking-widest mb-1">Liquidity Rem</p>
+                                                <p className="text-lg font-black text-rose-700">{blockchainData?.liquidityRemoveCount}</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-2">Institutional Status</p>
-                                    <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-full border border-emerald-500/30">Verified Alpha</span>
+                            </div>
+
+                            {/* Column 3: Institutional Distribution */}
+                            <div className="space-y-8">
+                                <div className="space-y-4">
+                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <Users size={12} className="text-teal-600" /> Distribution
+                                    </h4>
+                                    <div className="space-y-4">
+                                        <div className="space-y-3">
+                                            <div className="flex justify-between text-[9px] font-black uppercase tracking-widest">
+                                                <span className="text-slate-400">Total Supply</span>
+                                                <span className="text-slate-900">{blockchainData?.totalSupply}</span>
+                                            </div>
+                                            <div className="flex justify-between text-[9px] font-black uppercase tracking-widest">
+                                                <span className="text-slate-400">Circulating</span>
+                                                <span className="text-teal-600">{blockchainData?.circulatingSupply}</span>
+                                            </div>
+                                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                                                <div className="h-full bg-teal-600 w-[74.2%]" />
+                                            </div>
+                                        </div>
+                                        <button className="w-full py-3 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-black transition-all flex items-center justify-center gap-2">
+                                            <Users size={12} /> View Top 10 Holders
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Top 10 Holders Section */}
-                        <div className="mt-12 pt-12 border-t border-slate-800">
-                            <h5 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-6 flex items-center gap-2">
-                                <Users size={14} className="text-indigo-400" /> Top Institutional Registry (Holders)
-                            </h5>
-                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                                {[
-                                    { name: 'Vanguard Group', share: '8.2%' },
-                                    { name: 'BlackRock Inc.', share: '7.5%' },
-                                    { name: 'State Street', share: '4.1%' },
-                                    { name: 'Fidelity Inv.', share: '3.8%' },
-                                    { name: 'B20 Treasury', share: '2.5%' }
-                                ].map((h, i) => (
-                                    <div key={i} className="bg-slate-800/50 p-4 rounded-2xl border border-slate-700/50">
-                                        <p className="text-[9px] font-black text-slate-300 truncate mb-1">{h.name}</p>
-                                        <p className="text-xs font-black text-indigo-400">{h.share}</p>
+                        {/* Description & 52-Week Data */}
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 pt-10 border-t border-slate-100">
+                            <div className="lg:col-span-8 space-y-4">
+                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                    <FileText size={12} className="text-teal-600" /> Asset Description
+                                </h4>
+                                <p className="text-xs font-bold text-slate-500 leading-relaxed uppercase">
+                                    {fundamentals?.description || "Description pending institutional audit. This asset represents a tokenized global equity index within the Tez Exchange ecosystem, maintained via high-frequency oracles and liquidity pools."}
+                                </p>
+                            </div>
+                            <div className="lg:col-span-4 bg-slate-50 rounded-3xl p-6 border border-slate-100">
+                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">52-Week Trading Range</h4>
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[9px] font-black text-rose-500 uppercase">52W Low</span>
+                                        <span className="text-[13px] font-black text-slate-900 font-mono">${fundamentals?.low52 || (tickerData.price * 0.7).toFixed(2)}</span>
                                     </div>
-                                ))}
+                                    <div className="h-1.5 w-full bg-slate-200 rounded-full relative">
+                                        <div className="absolute top-0 bottom-0 left-[30%] right-[20%] bg-teal-500/30 rounded-full" />
+                                        <div className="absolute top-1/2 left-[60%] w-3 h-3 bg-teal-600 rounded-full border-2 border-white -translate-y-1/2 -translate-x-1/2 shadow-lg" />
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-[9px] font-black text-emerald-500 uppercase">52W High</span>
+                                        <span className="text-[13px] font-black text-slate-900 font-mono">${fundamentals?.high52 || (tickerData.price * 1.3).toFixed(2)}</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Execution & Compliance Panel */}
+                {/* ── EXECUTION HUB (SIDEBAR) ── */}
                 <div className="lg:col-span-4 space-y-8">
-                    {/* Trade Panel */}
-                    <div className="bg-white border-2 border-slate-900 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-slate-900 rounded-bl-[4rem] transition-all group-hover:scale-110" />
-                        <Landmark size={24} className="text-white absolute top-8 right-8 z-10" />
+                    <div className="bg-slate-900 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden border border-white/5 sticky top-8">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-teal-600/10 blur-3xl -mr-16 -mt-16" />
+                        <div className="absolute bottom-0 left-0 w-32 h-32 bg-teal-600/10 blur-3xl -ml-16 -mb-16" />
 
-                        <h4 className="text-2xl font-black italic tracking-tighter uppercase mb-8 pr-12">Execution Terminal</h4>
-                        
-                        <div className="space-y-6 relative z-10">
-                            {/* Quantity Input */}
-                            <div className="bg-slate-50 p-8 rounded-[2rem] border-2 border-slate-100 focus-within:border-indigo-500 transition-all">
-                                <div className="flex justify-between text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">
-                                    <span>Enter Quantity</span>
-                                    <span>Units</span>
+                        <div className="relative z-10 space-y-8">
+                            <div className="flex items-center justify-between">
+                                <h4 className="text-xl font-black uppercase tracking-tighter italic text-white/90">Trade Terminal</h4>
+                                <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl">
+                                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                    <span className="text-[8px] font-black text-white uppercase tracking-widest">Market Open</span>
+                                </div>
+                            </div>
+
+                            {/* Quantity Control */}
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-end">
+                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Execution Quantity</p>
+                                    <p className="text-[9px] font-black text-teal-500 uppercase tracking-widest">Balance: 12.4 BNB</p>
+                                </div>
+                                <div className="relative group">
+                                    <input 
+                                        type="number" 
+                                        value={tradeQuantity}
+                                        onChange={(e) => setTradeQuantity(e.target.value)}
+                                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-6 px-8 text-2xl font-black text-white tracking-tighter focus:bg-white/10 focus:border-teal-500/50 transition-all outline-none" 
+                                        placeholder="0.00"
+                                    />
+                                    <span className="absolute right-8 top-1/2 -translate-y-1/2 text-sm font-black text-slate-500 group-focus-within:text-teal-500">UNITS</span>
+                                </div>
+                            </div>
+
+                            {/* Leverage Exposure */}
+                            <div className="space-y-4">
+                                <div className="flex justify-between">
+                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Synthetic Leverage</p>
+                                    <p className="text-[9px] font-black text-teal-500 uppercase tracking-widest">{leverage}x Exposure</p>
                                 </div>
                                 <input 
-                                    type="number"
-                                    value={tradeQuantity}
-                                    onChange={(e) => setTradeQuantity(Number(e.target.value))}
-                                    className="w-full bg-transparent text-4xl font-black text-slate-900 outline-none placeholder:text-slate-200"
-                                    placeholder="0"
-                                    min="1"
+                                    type="range" min="1" max="50" step="1"
+                                    value={leverage}
+                                    onChange={(e) => setLeverage(e.target.value)}
+                                    className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-teal-500"
                                 />
-                                <div className="mt-6 pt-6 border-t border-slate-200 flex justify-between items-center">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase">Estimated Value</span>
-                                    <span className="text-xl font-black text-indigo-600">${(tickerData?.price * tradeQuantity || 0).toLocaleString()}</span>
+                                <div className="flex justify-between text-[8px] font-black text-slate-600 uppercase tracking-widest">
+                                    <span>Spot (1x)</span>
+                                    <span>Pro (50x)</span>
                                 </div>
                             </div>
 
-                            <div className="flex gap-4">
-                                <button 
-                                    onClick={() => {
-                                        console.log('[StockTerminal] Manual BUY click');
-                                        handleTrade('buy');
-                                    }}
-                                    className="flex-1 py-8 bg-emerald-500 text-white rounded-[2rem] font-black uppercase tracking-[0.3em] text-xs hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/20 active:scale-95 flex flex-col items-center gap-2"
-                                >
-                                    <ArrowUpRight size={20} />
-                                    Buy {selectedTicker}
+                            <div className="p-6 bg-white/5 rounded-2xl border border-white/10 space-y-4">
+                                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                    <span className="text-slate-500">Execution Cost</span>
+                                    <span className="text-white">${(tickerData.price * tradeQuantity).toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                    <span className="text-slate-500">Leverage Requirement</span>
+                                    <span className="text-teal-500">${((tickerData.price * tradeQuantity) / leverage).toLocaleString()}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest border-t border-white/5 pt-4">
+                                    <span className="text-slate-500">Protocol Fee</span>
+                                    <span className="text-emerald-500">0.0015 BNB</span>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 pt-4">
+                                <button onClick={() => handleTrade('buy')} className="w-full py-5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-3">
+                                    <ArrowUpRight size={16} /> Bull Position
                                 </button>
-                                <button 
-                                    onClick={() => {
-                                        console.log('[StockTerminal] Manual SELL click');
-                                        handleTrade('sell');
-                                    }}
-                                    className="flex-1 py-8 bg-rose-500 text-white rounded-[2rem] font-black uppercase tracking-[0.3em] text-xs hover:bg-rose-600 transition-all shadow-xl shadow-rose-500/20 active:scale-95 flex flex-col items-center gap-2"
-                                >
-                                    <ArrowDownLeft size={20} />
-                                    Sell {selectedTicker}
+                                <button onClick={() => handleTrade('sell')} className="w-full py-5 bg-rose-500 hover:bg-rose-600 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-rose-500/20 active:scale-95 flex items-center justify-center gap-3">
+                                    <ArrowDownRight size={16} /> Bear Position
                                 </button>
                             </div>
 
-                            <div className="pt-6 border-t border-slate-100">
-                                <div className="flex justify-between items-center mb-4">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase">Execution Protocol</span>
-                                    <span className="text-[10px] font-black text-indigo-600 uppercase bg-indigo-50 px-4 py-1.5 rounded-full border border-indigo-100">B20 SYNTHETIC v4</span>
-                                </div>
-                                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center leading-relaxed italic">
-                                    "Trade execution is instantaneous upon platform protocol fee verification."
-                                </p>
+                            <div className="pt-4 flex items-center gap-4 text-white/30">
+                                <div className="h-px flex-1 bg-white/5" />
+                                <span className="text-[8px] font-black uppercase tracking-widest">Institutional Settlement Engine</span>
+                                <div className="h-px flex-1 bg-white/5" />
                             </div>
                         </div>
                     </div>
 
-                    {/* Expanded Compliance */}
-                    <div className="bg-rose-50 border border-rose-100 rounded-[3rem] p-10 space-y-6">
-                        <div className="flex items-center gap-3 px-4 py-2 bg-white border border-rose-200 rounded-xl mb-2">
-                            <ShieldAlert size={16} className="text-rose-600" />
-                            <span className="text-[10px] font-black text-rose-600 uppercase tracking-widest">Institutional Compliance</span>
-                        </div>
-                        <div className="space-y-4">
-                            <p className="text-[10px] font-bold text-rose-800 uppercase tracking-widest leading-loose">
-                                1. This terminal uses Alpha Vantage institutional feeds for visualization only.
-                            </p>
-                            <p className="text-[10px] font-bold text-rose-800 uppercase tracking-widest leading-loose">
-                                2. All trades are synthetic contracts settled in B20 liquidity.
-                            </p>
-                            <p className="text-[10px] font-bold text-rose-800 uppercase tracking-widest leading-loose">
-                                3. Users do not acquire legal title to physical equity certificates.
-                            </p>
+                    {/* Asset DNA Registry */}
+                    <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                        <div className="relative z-10 space-y-6">
+                            <div className="flex items-center gap-3">
+                                <ShieldCheck className="text-teal-600 w-6 h-6" />
+                                <h4 className="text-lg font-black uppercase tracking-tighter italic text-slate-900">Asset DNA Registry</h4>
+                            </div>
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl">
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Synthetic Contract</span>
+                                    <span className="text-[10px] font-mono font-black text-teal-600">0xS{selectedTicker}_SETTLE_v4</span>
+                                </div>
+                                <div className="flex justify-between items-center p-4 bg-slate-50 rounded-2xl">
+                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Oracle Sync Status</span>
+                                    <div className="flex items-center gap-2 text-emerald-500">
+                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                        <span className="text-[10px] font-black uppercase">Ultra-Low Latency</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -7907,7 +8178,7 @@ export default function B20Exchange() {
     return (
         <Suspense fallback={
             <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+                <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
             </div>
         }>
             <ExchangeContent />

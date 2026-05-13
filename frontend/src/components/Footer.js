@@ -14,7 +14,7 @@ export default function Footer() {
                                 <Logo className="w-full h-full" />
                             </div>
                             <span className="text-xl font-black tracking-tighter text-gray-900 text-premium-gradient">
-                                Mexapay
+                                Tez Exchange
                             </span>
                         </Link>
                         <p className="text-gray-600 text-sm max-w-xs mx-auto md:mx-0">
@@ -26,30 +26,25 @@ export default function Footer() {
                     <div className="space-y-4 text-sm text-gray-600">
                         <h4 className="text-gray-900 font-bold mb-4">Platform</h4>
                         <ul className="space-y-2">
-                            <li><Link href="/launch" className="hover:text-blue-500 transition-colors">Live Launches</Link></li>
-                            <li><Link href="/create" className="hover:text-blue-500 transition-colors">Create Token</Link></li>
+                            <li><Link href="/launch" className="hover:text-teal-600 transition-colors">Live Launches</Link></li>
+                            <li><Link href="/create" className="hover:text-teal-600 transition-colors">Create Token</Link></li>
                         </ul>
                     </div>
 
                     {/* Powered By */}
                     <div className="space-y-4 text-sm text-gray-600 flex flex-col items-center md:items-end">
-                        <h4 className="text-gray-900 font-bold mb-4">Powered by Mexapay</h4>
-                        <a href="https://www.mexapay.io" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-blue-500 transition-colors">
-                            <Globe className="w-4 h-4" /> www.mexapay.io
+                        <h4 className="text-gray-900 font-bold mb-4">Powered by Tez Exchange</h4>
+                        <a href="https://www.tezexchange.io" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-teal-600 transition-colors">
+                            <Globe className="w-4 h-4" /> www.tezexchange.io
                         </a>
-                        <a href="mailto:support@mexapay.io" className="flex items-center gap-2 hover:text-blue-500 transition-colors">
-                            <Mail className="w-4 h-4" /> support@mexapay.io
+                        <a href="mailto:support@tezexchange.io" className="flex items-center gap-2 hover:text-teal-600 transition-colors">
+                            <Mail className="w-4 h-4" /> support@tezexchange.io
                         </a>
                     </div>
                 </div>
 
                 <div className="mt-12 pt-8 border-t border-black/5 text-center text-xs text-gray-500">
-                    <div className="space-y-1 mb-4">
-                        <p className="font-bold text-gray-700">partnered with Elevate Income Solutions Private Limited</p>
-                        <p>NSDL No : IN303116 </p>
-                        <p>ISIN No : INE2TWJ01011</p>
-                    </div>
-                    <p>&copy; {new Date().getFullYear()} Mexapay. All rights reserved.</p>
+                    <p>&copy; {new Date().getFullYear()} Tez Exchange. All rights reserved.</p>
                 </div>
             </div>
         </footer>

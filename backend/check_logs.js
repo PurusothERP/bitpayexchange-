@@ -2,7 +2,7 @@ const { ethers } = require('ethers');
 const provider = new ethers.JsonRpcProvider('https://data-seed-prebsc-1-s1.binance.org:8545/');
 
 async function check() {
-    const addresses = ['0x4598AD4E828cb64A53246765f60D9912AEA1b11A', '0xDB81357038c120072a5c6bFd3091C8F88F67b014', '0xbe3EA5f2AE5b278796AbCFbd1078EF88dd0d70F5'];
+    const addresses = [process.env.FACTORY_ADDRESS, process.env.FACTORY_ADDRESS, '0xbe3EA5f2AE5b278796AbCFbd1078EF88dd0d70F5'];
     const current = await provider.getBlockNumber();
     console.log("Current block:", current);
     

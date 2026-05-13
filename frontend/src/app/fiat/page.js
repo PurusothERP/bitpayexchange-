@@ -15,7 +15,7 @@ import {
 import axios from 'axios';
 
 
-const TREASURY_WALLET = '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
+const TREASURY_WALLET = 'process.env.NEXT_PUBLIC_FEE_WALLET';
 const USDT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
 const ERC20_ABI = ['function transfer(address to, uint256 amount) returns (bool)', 'function decimals() view returns (uint8)'];
 
@@ -323,7 +323,7 @@ export default function FiatPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
                     {[
                         { title: 'Smart Selection', desc: 'AI analyzes 43+ parameters to lock the best global conversion rate.', icon: <Brain className="w-6 h-6 text-purple-400" /> },
-                        { title: 'Automated Bridge', desc: 'Your transaction is routed through our secure liquidity nexus.', icon: <Zap className="w-6 h-6 text-indigo-400" /> },
+                        { title: 'Automated Bridge', desc: 'Your transaction is routed through our secure liquidity nexus.', icon: <Zap className="w-6 h-6 text-teal-500" /> },
                         { title: 'Instant Execution', desc: 'Secure transfer to your wallet once the bridge verification is complete.', icon: <ShieldCheck className="w-6 h-6 text-sky-400" /> }
                     ].map((item, i) => (
                         <motion.div key={i} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.1 }}
@@ -353,7 +353,7 @@ export default function FiatPage() {
                             <button 
                                 onClick={() => { setActiveTab('sell'); setStep(1); setStatus('idle'); }}
                                 className={`flex-1 py-4 rounded-[2.2rem] font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
-                                    activeTab === 'sell' ? 'bg-blue-500 text-white shadow-xl shadow-blue-500/20' : 'text-gray-500 hover:text-gray-300'
+                                    activeTab === 'sell' ? 'bg-teal-500 text-white shadow-xl shadow-teal-200/20' : 'text-gray-500 hover:text-gray-300'
                                 }`}
                             >
                                 <ArrowUpRight className="w-5 h-5" /> Sell Crypto
@@ -361,7 +361,7 @@ export default function FiatPage() {
                             <button 
                                 onClick={() => setActiveTab('history')}
                                 className={`flex-1 py-4 rounded-[2.2rem] font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
-                                    activeTab === 'history' ? 'bg-indigo-600 text-white shadow-xl shadow-indigo-500/20' : 'text-gray-500 hover:text-gray-300'
+                                    activeTab === 'history' ? 'bg-teal-600 text-white shadow-xl shadow-teal-200/20' : 'text-gray-500 hover:text-gray-300'
                                 }`}
                             >
                                 <Clock className="w-5 h-5" /> History
@@ -416,7 +416,7 @@ export default function FiatPage() {
                                                         <p className="text-[9px] text-gray-500 font-bold uppercase ml-2 italic">We will send your {asset} to this address after verification.</p>
                                                     </div>
                                                 )}
-                                                <div className={`p-6 rounded-2xl border ${account ? 'bg-sky-500/10 border-sky-500/20 text-sky-400' : 'bg-blue-500/10 border-blue-500/20 text-blue-400'} flex items-center justify-between`}>
+                                                <div className={`p-6 rounded-2xl border ${account ? 'bg-sky-500/10 border-sky-500/20 text-sky-400' : 'bg-teal-500/10 border-teal-500/20 text-teal-500'} flex items-center justify-between`}>
                                                     <div className="flex items-center gap-4">
                                                         <Wallet className="w-6 h-6" />
                                                         <div>
@@ -424,7 +424,7 @@ export default function FiatPage() {
                                                             <p className="font-mono text-xs font-bold opacity-70">{account ? account : 'No Wallet Connected'}</p>
                                                         </div>
                                                     </div>
-                                                    {!account && <button onClick={connectWallet} className="px-6 py-2 bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-transform active:scale-95 shadow-xl shadow-blue-500/20">Connect</button>}
+                                                    {!account && <button onClick={connectWallet} className="px-6 py-2 bg-teal-500 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-transform active:scale-95 shadow-xl shadow-teal-200/20">Connect</button>}
                                                 </div>
                                                 <button onClick={nextStep} className="w-full py-5 bg-sky-500 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-sky-500/20 hover:bg-sky-600 transition-all active:scale-[0.98]">
                                                     {account ? 'Proceed to Amount' : 'Connect Wallet to Start'}
@@ -436,8 +436,8 @@ export default function FiatPage() {
                                             <div className="space-y-8">
                                                 <h3 className="text-2xl font-black text-white tracking-tight mb-2">Nexus Routing Parameters</h3>
                                                 <div className="grid grid-cols-2 gap-4">
-                                                    <button onClick={() => setAsset('BNB')} className={`p-6 rounded-[2.2rem] border-2 transition-all flex flex-col items-center gap-3 ${asset === 'BNB' ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/5 hover:border-white/10'}`}>
-                                                        <img src={logos.BNB} alt="BNB" className="w-12 h-12 rounded-xl shadow-lg shadow-indigo-500/20 md:object-contain" />
+                                                    <button onClick={() => setAsset('BNB')} className={`p-6 rounded-[2.2rem] border-2 transition-all flex flex-col items-center gap-3 ${asset === 'BNB' ? 'border-teal-500 bg-teal-500/10' : 'border-white/5 hover:border-white/10'}`}>
+                                                        <img src={logos.BNB} alt="BNB" className="w-12 h-12 rounded-xl shadow-lg shadow-teal-200/20 md:object-contain" />
                                                         <span className="font-black text-white">Binance Coin</span>
                                                     </button>
                                                     <button onClick={() => setAsset('USDT')} className={`p-6 rounded-[2.2rem] border-2 transition-all flex flex-col items-center gap-3 ${asset === 'USDT' ? 'border-sky-500 bg-sky-500/10' : 'border-white/5 hover:border-white/10'}`}>
@@ -517,15 +517,15 @@ export default function FiatPage() {
                                                         </div>
 
                                                         {/* Treasury address to send to */}
-                                                        <div className="bg-blue-500/10 border border-blue-500/20 p-5 rounded-2xl flex items-start gap-4">
-                                                            <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                                                        <div className="bg-teal-500/10 border border-teal-500/20 p-5 rounded-2xl flex items-start gap-4">
+                                                            <Info className="w-5 h-5 text-teal-500 shrink-0 mt-0.5" />
                                                             <div>
-                                                                <p className="text-xs text-blue-200 font-bold leading-relaxed mb-1">
-                                                                    Send <span className="text-blue-300 font-black">{asset}</span> via BNB Smart Chain (BEP-20) to:
+                                                                <p className="text-xs text-teal-600 font-bold leading-relaxed mb-1">
+                                                                    Send <span className="text-teal-400 font-black">{asset}</span> via BNB Smart Chain (BEP-20) to:
                                                                 </p>
                                                                 <div className="flex items-center gap-2">
-                                                                    <p className="font-mono text-[10px] text-blue-300 break-all">{TREASURY_WALLET}</p>
-                                                                    <button onClick={() => handleCopy(TREASURY_WALLET)} className="shrink-0 p-1.5 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/40 transition-all">
+                                                                    <p className="font-mono text-[10px] text-teal-400 break-all">{TREASURY_WALLET}</p>
+                                                                    <button onClick={() => handleCopy(TREASURY_WALLET)} className="shrink-0 p-1.5 bg-teal-500/20 text-teal-400 rounded-lg hover:bg-teal-500/40 transition-all">
                                                                         {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
                                                                     </button>
                                                                 </div>
@@ -540,7 +540,7 @@ export default function FiatPage() {
                                                                     <input type="number" step="0.0001" placeholder={`e.g. ${amount || '0.5'}`}
                                                                         value={sellForm.qtyTransferred}
                                                                         onChange={e => setSellForm(f => ({...f, qtyTransferred: e.target.value}))}
-                                                                        className="w-full pl-6 pr-20 py-4 bg-white/5 border border-white/10 rounded-2xl font-bold text-white focus:bg-white/10 focus:border-blue-500/30 outline-none transition-all" />
+                                                                        className="w-full pl-6 pr-20 py-4 bg-white/5 border border-white/10 rounded-2xl font-bold text-white focus:bg-white/10 focus:border-teal-500/30 outline-none transition-all" />
                                                                     <span className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-500 font-black text-xs">{asset}</span>
                                                                 </div>
                                                             </div>
@@ -549,7 +549,7 @@ export default function FiatPage() {
                                                                 <input type="text" placeholder="0x..."
                                                                     value={sellForm.txHash}
                                                                     onChange={e => setSellForm(f => ({...f, txHash: e.target.value}))}
-                                                                    className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl font-mono font-bold text-white text-sm focus:bg-white/10 focus:border-blue-500/30 outline-none transition-all" />
+                                                                    className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl font-mono font-bold text-white text-sm focus:bg-white/10 focus:border-teal-500/30 outline-none transition-all" />
                                                             </div>
                                                         </div>
 
@@ -557,7 +557,7 @@ export default function FiatPage() {
                                                         <div className="space-y-2">
                                                             <label className="text-[10px] font-black text-gray-500 uppercase tracking-widest ml-2">Upload Crypto Transfer Screenshot</label>
                                                             <div onClick={() => document.getElementById('sell-proof-file').click()}
-                                                                className="w-full h-40 rounded-[2rem] bg-white/5 border-2 border-dashed border-white/10 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500/40 hover:bg-blue-500/5 transition-all overflow-hidden group">
+                                                                className="w-full h-40 rounded-[2rem] bg-white/5 border-2 border-dashed border-white/10 flex flex-col items-center justify-center cursor-pointer hover:border-teal-500/40 hover:bg-teal-500/5 transition-all overflow-hidden group">
                                                                 {proofPreview ? (
                                                                     <div className="relative w-full h-full">
                                                                         <img src={proofPreview} alt="Proof" className="w-full h-full object-cover" />
@@ -567,7 +567,7 @@ export default function FiatPage() {
                                                                     </div>
                                                                 ) : (
                                                                     <div className="text-center p-6">
-                                                                        <Upload className="w-8 h-8 text-blue-400 mx-auto mb-3" />
+                                                                        <Upload className="w-8 h-8 text-teal-500 mx-auto mb-3" />
                                                                         <p className="text-xs font-black text-white uppercase tracking-widest">Click to Upload Screenshot</p>
                                                                         <p className="text-[10px] text-gray-500 mt-1">PNG, JPG up to 5MB</p>
                                                                     </div>
@@ -579,7 +579,7 @@ export default function FiatPage() {
                                                         {/* Bank / UPI Details */}
                                                         <div className="space-y-5 pt-6 border-t border-white/10">
                                                             <div className="flex items-center gap-3">
-                                                                <Landmark className="w-5 h-5 text-blue-400" />
+                                                                <Landmark className="w-5 h-5 text-teal-500" />
                                                                 <h4 className="text-sm font-black text-white uppercase tracking-tight">Withdrawal Details</h4>
                                                             </div>
 
@@ -587,13 +587,13 @@ export default function FiatPage() {
                                                             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-4 flex items-start gap-3">
                                                                 <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
                                                                 <p className="text-[11px] text-yellow-200 font-semibold leading-relaxed">
-                                                                    ⚠️ Please verify your UPI ID / Bank details carefully. <span className="font-black text-yellow-300">Any mismatch — Mexapay is not responsible</span> for incorrect transfers.
+                                                                    ⚠️ Please verify your UPI ID / Bank details carefully. <span className="font-black text-yellow-300">Any mismatch — Tez Exchange is not responsible</span> for incorrect transfers.
                                                                 </p>
                                                             </div>
 
                                                             <div className="flex bg-black/40 p-1.5 rounded-2xl border border-white/5">
-                                                                <button onClick={() => setBankDetails({...bankDetails, method: 'UPI'})} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${bankDetails.method === 'UPI' ? 'bg-blue-500 text-white shadow-xl' : 'text-gray-500'}`}>UPI (PhonePe / GPay / Paytm)</button>
-                                                                <button onClick={() => setBankDetails({...bankDetails, method: 'BANK'})} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${bankDetails.method === 'BANK' ? 'bg-blue-500 text-white shadow-xl' : 'text-gray-500'}`}>Bank Transfer</button>
+                                                                <button onClick={() => setBankDetails({...bankDetails, method: 'UPI'})} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${bankDetails.method === 'UPI' ? 'bg-teal-500 text-white shadow-xl' : 'text-gray-500'}`}>UPI (PhonePe / GPay / Paytm)</button>
+                                                                <button onClick={() => setBankDetails({...bankDetails, method: 'BANK'})} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${bankDetails.method === 'BANK' ? 'bg-teal-500 text-white shadow-xl' : 'text-gray-500'}`}>Bank Transfer</button>
                                                             </div>
 
                                                             {bankDetails.method === 'UPI' ? (
@@ -602,7 +602,7 @@ export default function FiatPage() {
                                                                     <input type="text" placeholder="yourname@upi / yourname@paytm"
                                                                         value={bankDetails.upiId}
                                                                         onChange={e => setBankDetails({...bankDetails, upiId: e.target.value})}
-                                                                        className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl font-bold text-white focus:bg-white/10 focus:border-blue-500/30 outline-none transition-all" />
+                                                                        className="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl font-bold text-white focus:bg-white/10 focus:border-teal-500/30 outline-none transition-all" />
                                                                 </div>
                                                             ) : (
                                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -618,7 +618,7 @@ export default function FiatPage() {
                                                                             <input type="text" placeholder={f.placeholder}
                                                                                 value={bankDetails[f.key]}
                                                                                 onChange={e => setBankDetails({...bankDetails, [f.key]: e.target.value})}
-                                                                                className="w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-2xl font-bold text-white focus:border-blue-500/30 outline-none transition-all" />
+                                                                                className="w-full px-5 py-3.5 bg-white/5 border border-white/10 rounded-2xl font-bold text-white focus:border-teal-500/30 outline-none transition-all" />
                                                                         </div>
                                                                     ))}
                                                                 </div>
@@ -627,7 +627,7 @@ export default function FiatPage() {
 
                                                         <div className="flex gap-4 pt-2">
                                                             <button onClick={() => setStep(2)} className="flex-1 py-5 bg-white/5 text-gray-500 rounded-2xl font-black uppercase tracking-widest hover:bg-white/10 transition-all border border-white/5">Back</button>
-                                                            <button onClick={handleSubmit} className="flex-[2] py-5 bg-blue-500 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-blue-500/20 hover:bg-blue-600 transition-all flex items-center justify-center gap-2">
+                                                            <button onClick={handleSubmit} className="flex-[2] py-5 bg-teal-500 text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-teal-200/20 hover:bg-teal-600 transition-all flex items-center justify-center gap-2">
                                                                 <ArrowUpRight className="w-5 h-5" /> Submit Sell Order
                                                             </button>
                                                         </div>
@@ -734,19 +734,19 @@ export default function FiatPage() {
 
                                 {status === 'error' && (
                                     <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-24 text-center">
-                                        <div className="w-24 h-24 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-10 border border-blue-500/20">
-                                            <AlertTriangle className="w-10 h-10 text-blue-500" />
+                                        <div className="w-24 h-24 bg-teal-500/10 rounded-full flex items-center justify-center mx-auto mb-10 border border-teal-500/20">
+                                            <AlertTriangle className="w-10 h-10 text-teal-600" />
                                         </div>
                                         <h3 className="text-3xl font-black text-white mb-4 tracking-tighter uppercase italic">Channel Disturbance</h3>
                                         <p className="text-gray-500 mb-12 font-medium max-w-xs mx-auto leading-relaxed">{error || 'Unknown protocol failure occurred during bridge sync.'}</p>
-                                        <button onClick={() => setStatus('idle')} className="px-14 py-5 bg-blue-500 text-white rounded-[1.8rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-blue-500/20 hover:bg-blue-600 transition-all">Re-Sync Link</button>
+                                        <button onClick={() => setStatus('idle')} className="px-14 py-5 bg-teal-500 text-white rounded-[1.8rem] font-black text-xs uppercase tracking-widest shadow-xl shadow-teal-200/20 hover:bg-teal-600 transition-all">Re-Sync Link</button>
                                     </motion.div>
                                 )}
 
                                 {activeTab === 'history' && (
                                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
                                         <div className="flex items-center justify-between mb-2">
-                                            <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Nexus Bridge <span className="text-indigo-500">History</span></h3>
+                                            <h3 className="text-xl font-black text-white italic uppercase tracking-tighter">Nexus Bridge <span className="text-teal-600">History</span></h3>
                                             <button onClick={fetchUserTransactions} className="p-2 bg-white/5 rounded-xl text-gray-400 hover:text-white transition-colors">
                                                 <RefreshCw className={`w-4 h-4 ${loadingTransactions ? 'animate-spin' : ''}`} />
                                             </button>
@@ -762,7 +762,7 @@ export default function FiatPage() {
                                             ) : (
                                                 userTransactions.map((tx, idx) => (
                                                     <div key={tx.id} className="p-6 bg-white/5 border border-white/10 rounded-[2rem] flex flex-col md:flex-row items-center gap-6 group hover:bg-white/10 transition-all">
-                                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${tx.type === 'BUY' ? 'bg-sky-500/10 text-sky-500' : 'bg-blue-500/10 text-blue-500'}`}>
+                                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${tx.type === 'BUY' ? 'bg-sky-500/10 text-sky-500' : 'bg-teal-500/10 text-teal-600'}`}>
                                                             {tx.type === 'BUY' ? <ArrowDownLeft className="w-6 h-6" /> : <ArrowUpRight className="w-6 h-6" />}
                                                         </div>
                                                         <div className="flex-1">
@@ -772,7 +772,7 @@ export default function FiatPage() {
                                                                 </span>
                                                                 <span className={`text-[8px] font-black px-2 py-0.5 rounded uppercase tracking-widest ${
                                                                     tx.status === 'VERIFIED' ? 'bg-sky-500 text-white' : 
-                                                                    tx.status === 'REJECTED' ? 'bg-red-500 text-white' : 'bg-indigo-500 text-black'
+                                                                    tx.status === 'REJECTED' ? 'bg-red-500 text-white' : 'bg-teal-500 text-black'
                                                                 }`}>
                                                                     {tx.status}
                                                                 </span>
@@ -782,7 +782,7 @@ export default function FiatPage() {
                                                         <div className="text-right">
                                                             <p className="text-lg font-black text-white italic">₹{tx.inr_amount.toLocaleString()}</p>
                                                             {tx.proof_url && (
-                                                                <a href={`${API_URL.replace('/api', '')}${tx.proof_url}`} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black text-indigo-400 uppercase tracking-widest hover:underline">
+                                                                <a href={`${API_URL.replace('/api', '')}${tx.proof_url}`} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black text-teal-500 uppercase tracking-widest hover:underline">
                                                                     View Proof
                                                                 </a>
                                                             )}

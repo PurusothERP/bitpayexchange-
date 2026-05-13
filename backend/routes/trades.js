@@ -152,7 +152,7 @@ router.post('/sync', async (req, res) => {
             await db.query(`
                 INSERT INTO treasury_transfers (amount_bnb, asset, amount_usd, source_contract, destination_address, tx_hash, transfer_type)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
-            `, [fee, 'BNB', 0, tokenAddress, process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935', txHash, tradeType === 'futures' ? 'futures_fee' : 'trading_fee']);
+            `, [fee, 'BNB', 0, tokenAddress, process.env.FEE_WALLET, txHash, tradeType === 'futures' ? 'futures_fee' : 'trading_fee']);
         }
 
         // 3. Update token's last trade activity

@@ -15,7 +15,7 @@
 import { ethers } from 'ethers';
 
 // ── Contracts ─────────────────────────────────────────────────────────────
-export const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0x4598AD4E828cb64A53246765f60D9912AEA1b11A';
+export const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '';
 export const WBNB_ADDRESS    = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
 export const USDT_ADDRESS    = '0x55d398326f99059fF775485246999027B3197955'; // BSC USDT (18 dec)
 

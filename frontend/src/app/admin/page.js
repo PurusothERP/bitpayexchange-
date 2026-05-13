@@ -20,8 +20,8 @@ import {
     AreaChart, Area, PieChart as RePieChart, Pie, Cell 
 } from 'recharts';
 
-const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0x4598AD4E828cb64A53246765f60D9912AEA1b11A';
-const ADMIN_WALLET = (process.env.NEXT_PUBLIC_FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '';
+const ADMIN_WALLET = (process.env.NEXT_PUBLIC_FEE_WALLET || 'process.env.NEXT_PUBLIC_FEE_WALLET').toLowerCase();
 
 export default function NueraAdminPortal() {
     const { account, isConnected } = useWallet();
@@ -31,18 +31,18 @@ export default function NueraAdminPortal() {
     const [unauthorized, setUnauthorized] = useState(false);
 
     const menuItems = [
-        { id: 'dashboard', label: 'Overview', icon: <LayoutDashboard size={18} />, color: 'text-indigo-600' },
+        { id: 'dashboard', label: 'Overview', icon: <LayoutDashboard size={18} />, color: 'text-teal-600' },
         { id: 'revenue', label: 'Financial Ledger', icon: <PieChart size={18} />, color: 'text-sky-600' },
-        { id: 'exchange', label: 'Exchange Mirror', icon: <Box size={18} />, color: 'text-blue-600' },
-        { id: 'wallets', label: 'Active Sessions', icon: <Users size={18} />, color: 'text-blue-600' },
-        { id: 'listings', label: 'Listing Hub', icon: <ListChecks size={18} />, color: 'text-indigo-600' },
+        { id: 'exchange', label: 'Exchange Mirror', icon: <Box size={18} />, color: 'text-teal-600' },
+        { id: 'wallets', label: 'Active Sessions', icon: <Users size={18} />, color: 'text-teal-600' },
+        { id: 'listings', label: 'Listing Hub', icon: <ListChecks size={18} />, color: 'text-teal-600' },
         { id: 'launchpad', label: 'Launchpad Guard', icon: <Rocket size={18} />, color: 'text-violet-600' },
         { id: 'fiat', label: 'Express Fiat', icon: <CreditCard size={18} />, color: 'text-teal-600' },
         { id: 'meme-governance', label: 'Meme Governance', icon: <Flame size={18} />, color: 'text-orange-600' },
-        { id: 'governance', label: 'Protocol Settings', icon: <Settings size={18} />, color: 'text-indigo-900' },
+        { id: 'governance', label: 'Protocol Settings', icon: <Settings size={18} />, color: 'text-teal-600' },
         { id: 'community', label: 'Social Mod', icon: <MessageSquare size={18} />, color: 'text-cyan-600' },
         { id: 'bulletin', label: 'Bulletin CMS', icon: <Megaphone size={18} />, color: 'text-slate-600' },
-        { id: 'smart-money-hub', label: 'Smart Money Hub', icon: <TrendingUp size={18} />, color: 'text-indigo-600' },
+        { id: 'smart-money-hub', label: 'Smart Money Hub', icon: <TrendingUp size={18} />, color: 'text-teal-600' },
         { id: 'yield-ledger', label: 'Yield Intelligence', icon: <Leaf size={18} />, color: 'text-sky-600' },
         { id: 'institutional-futures', label: 'Futures Guard', icon: <Activity size={18} />, color: 'text-sky-600' },
         { id: 'api-panel', label: 'API & Architecture', icon: <Database size={18} />, color: 'text-rose-600' },
@@ -72,12 +72,12 @@ export default function NueraAdminPortal() {
     if (unauthorized) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-                <div className="max-w-md w-full bg-white border border-blue-100 rounded-[3rem] p-12 text-center shadow-2xl">
-                    <div className="w-20 h-20 bg-blue-50 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-blue-100">
-                        <Shield className="w-10 h-10 text-blue-500" />
+                <div className="max-w-md w-full bg-white border border-teal-100 rounded-[3rem] p-12 text-center shadow-2xl">
+                    <div className="w-20 h-20 bg-teal-50 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-teal-100">
+                        <Shield className="w-10 h-10 text-teal-600" />
                     </div>
                     <h1 className="text-2xl font-black text-gray-900 mb-4 uppercase tracking-tight">Nuera Lockdown</h1>
-                    <p className="text-[10px] font-black text-blue-600 bg-blue-50 px-4 py-1.5 rounded-full inline-block mb-4 uppercase tracking-widest">{account?.slice(0,10)}...{account?.slice(-8)}</p>
+                    <p className="text-[10px] font-black text-teal-600 bg-teal-50 px-4 py-1.5 rounded-full inline-block mb-4 uppercase tracking-widest">{account?.slice(0,10)}...{account?.slice(-8)}</p>
                     <p className="text-gray-500 font-bold text-xs leading-relaxed mb-8 uppercase tracking-wide">Unauthorized entity detected. Access to Nexus Nuera restricted.</p>
                     <button onClick={() => window.location.href = '/'} className="px-8 py-4 bg-gray-900 text-white font-black rounded-2xl text-xs uppercase tracking-widest hover:bg-black transition-all">Return to Hub</button>
                 </div>
@@ -86,7 +86,7 @@ export default function NueraAdminPortal() {
     }
 
     return (
-        <div className="min-h-screen bg-[#F8FAFC] flex text-slate-800 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+        <div className="min-h-screen bg-[#F8FAFC] flex text-slate-800 font-sans selection:bg-teal-100 selection:text-teal-600">
             <aside className="w-72 bg-white border-r border-slate-200/60 flex flex-col sticky top-0 h-screen z-40">
                 <div className="p-8 pb-10">
                     <div className="flex items-center gap-3 mb-2">
@@ -94,17 +94,17 @@ export default function NueraAdminPortal() {
                             <Sparkles className="text-white w-6 h-6" />
                         </div>
                         <div>
-                            <h1 className="font-black text-xl tracking-tighter text-slate-900 uppercase italic">Nexus<span className="text-indigo-600">Nuera</span></h1>
+                            <h1 className="font-black text-xl tracking-tighter text-slate-900 uppercase italic">Nexus<span className="text-teal-600">Nuera</span></h1>
                             <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] -mt-1">Admin Command v2.5</p>
                         </div>
                     </div>
                 </div>
                 <nav className="flex-1 px-4 space-y-1 overflow-y-auto custom-scrollbar pb-10">
                     {menuItems.map((item) => (
-                        <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-sm font-black transition-all duration-300 group ${activeTab === item.id ? 'bg-indigo-50/80 text-indigo-700 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}>
+                        <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-sm font-black transition-all duration-300 group ${activeTab === item.id ? 'bg-teal-50/80 text-teal-600 shadow-sm' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}>
                             <span className={`${activeTab === item.id ? item.color : 'text-slate-400 group-hover:text-slate-600'} transition-colors`}>{item.icon}</span>
                             <span className="tracking-tight uppercase">{item.label}</span>
-                            {activeTab === item.id && <motion.div layoutId="active-indicator" className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-500" />}
+                            {activeTab === item.id && <motion.div layoutId="active-indicator" className="ml-auto w-1.5 h-1.5 rounded-full bg-teal-500" />}
                         </button>
                     ))}
                 </nav>
@@ -117,20 +117,20 @@ export default function NueraAdminPortal() {
                     </div>
                     <div className="flex items-center gap-3">
                         <div className="hidden lg:flex items-center gap-2 px-4 py-2 bg-slate-50 rounded-xl border border-slate-100">
-                            <RefreshCw className={`w-3 h-3 text-indigo-500 ${loading ? 'animate-spin' : ''}`} />
+                            <RefreshCw className={`w-3 h-3 text-teal-600 ${loading ? 'animate-spin' : ''}`} />
                             <span className="text-[10px] font-black text-slate-600 uppercase tracking-tight">Nuera Synchronized</span>
                         </div>
                         <a
                             href="/exchange"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-sm shadow-indigo-500/20"
-                            title="Open Mexapay"
+                            className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-sm shadow-teal-200/20"
+                            title="Open Tez Exchange"
                         >
                             <ArrowRightLeft size={13} />
                             Exchange
                         </a>
-                        <button onClick={fetchStats} className="p-2.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all">
+                        <button onClick={fetchStats} className="p-2.5 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-all">
                             <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
                         </button>
                     </div>
@@ -163,15 +163,15 @@ export default function NueraAdminPortal() {
 }
 
 function AdminDashboard({ stats, loading, account, setActiveTab }) {
-    if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-indigo-500" /></div>;
+    if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="animate-spin text-teal-600" /></div>;
  
     const cards = [
-        { id: 'listings', label: 'Launched Coins', value: stats?.total_tokens || 0, sub: `${stats?.launchpad_tokens} LP / ${stats?.standard_tokens} Std`, icon: <Rocket />, color: 'bg-indigo-50 text-indigo-600' },
+        { id: 'listings', label: 'Launched Coins', value: stats?.total_tokens || 0, sub: `${stats?.launchpad_tokens} LP / ${stats?.standard_tokens} Std`, icon: <Rocket />, color: 'bg-teal-50 text-teal-600' },
         { id: 'exchange', label: 'Asset Inventory', value: stats?.market_inventory?.toLocaleString() || '6,140', sub: 'Verified External Proxies', icon: <Box />, color: 'bg-sky-50 text-sky-600' },
         { id: 'yield-ledger', label: 'Yield Investments', value: `$${(stats?.yield_stats?.total_invested || 0).toLocaleString()}`, sub: `${stats?.yield_stats?.total_users || 0} Total / ${stats?.yield_stats?.unique_investors || 0} Investors`, icon: <Leaf />, color: 'bg-emerald-50 text-emerald-600' },
         { id: 'institutional-futures', label: 'Staking Protocol', value: (stats?.staking_stats?.total_staked || 0).toLocaleString(), sub: `${stats?.staking_stats?.total_stakes || 0} Stakes / ${stats?.staking_stats?.unique_stakers || 0} Stakers`, icon: <Activity />, color: 'bg-violet-50 text-violet-600' },
-        { id: 'revenue', label: 'Realized Revenue', value: `${Number(stats?.total_revenue_bnb || 0).toFixed(4)} BNB`, sub: 'Combined Protocol Fees', icon: <DollarSign />, color: 'bg-indigo-50 text-indigo-600' },
-        { id: 'governance', label: 'Delisted Items', value: stats?.delisted_count || 0, sub: 'Inactive Registry Overrides', icon: <AlertCircle />, color: 'bg-blue-50 text-blue-600' },
+        { id: 'revenue', label: 'Realized Revenue', value: `${Number(stats?.total_revenue_bnb || 0).toFixed(4)} BNB`, sub: 'Combined Protocol Fees', icon: <DollarSign />, color: 'bg-teal-50 text-teal-600' },
+        { id: 'governance', label: 'Delisted Items', value: stats?.delisted_count || 0, sub: 'Inactive Registry Overrides', icon: <AlertCircle />, color: 'bg-teal-50 text-teal-600' },
     ];
  
     const chartData = [
@@ -200,7 +200,7 @@ function AdminDashboard({ stats, loading, account, setActiveTab }) {
                     <div 
                         key={i} 
                         onClick={() => c.id && setActiveTab(c.id)}
-                        className="bg-white p-8 rounded-[2.5rem] border border-slate-200/60 shadow-sm hover:shadow-xl hover:border-indigo-500/20 transition-all group cursor-pointer"
+                        className="bg-white p-8 rounded-[2.5rem] border border-slate-200/60 shadow-sm hover:shadow-xl hover:border-teal-500/20 transition-all group cursor-pointer"
                     >
                         <div className={`w-14 h-14 ${c.color} rounded-2xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform`}>{React.cloneElement(c.icon, { size: 24 })}</div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">{c.label}</p>
@@ -214,7 +214,7 @@ function AdminDashboard({ stats, loading, account, setActiveTab }) {
                 <div className="lg:col-span-2 bg-white rounded-[3rem] border border-slate-200/60 p-10 shadow-sm">
                     <div className="flex items-center justify-between mb-10">
                         <div>
-                            <h3 className="text-lg font-black text-slate-900 uppercase italic">Financial <span className="text-indigo-600">Trajectory</span></h3>
+                            <h3 className="text-lg font-black text-slate-900 uppercase italic">Financial <span className="text-teal-600">Trajectory</span></h3>
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">7-Day Nuera Analytics</p>
                         </div>
                     </div>
@@ -242,12 +242,12 @@ function AdminDashboard({ stats, loading, account, setActiveTab }) {
                 </div>
 
                 <div className="bg-white rounded-[3rem] border border-slate-200/60 p-10 shadow-sm">
-                    <h3 className="text-lg font-black text-slate-900 uppercase italic mb-8">Service <span className="text-blue-600">Continuity</span></h3>
+                    <h3 className="text-lg font-black text-slate-900 uppercase italic mb-8">Service <span className="text-teal-600">Continuity</span></h3>
                     <div className="space-y-6">
                         {connections.map((c, i) => (
                             <div key={i} className="flex items-center justify-between">
                                 <div className="flex items-center gap-4">
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${c.status === 'connected' ? 'bg-sky-50 border-sky-100 text-sky-600' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
+                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${c.status === 'connected' ? 'bg-sky-50 border-sky-100 text-sky-600' : 'bg-teal-50 border-teal-100 text-teal-600'}`}>
                                         {c.status === 'connected' ? <Globe size={18} /> : <AlertCircle size={18} />}
                                     </div>
                                     <div>
@@ -257,8 +257,8 @@ function AdminDashboard({ stats, loading, account, setActiveTab }) {
                                 </div>
                                 <div className="text-right">
                                     <div className="flex items-center gap-2 justify-end">
-                                        <div className={`w-1.5 h-1.5 rounded-full ${c.status === 'connected' ? 'bg-sky-500 shadow-lg shadow-sky-200' : 'bg-blue-500 animate-pulse'}`} />
-                                        <span className={`text-[9px] font-black uppercase ${c.status === 'connected' ? 'text-sky-600' : 'text-blue-600'}`}>
+                                        <div className={`w-1.5 h-1.5 rounded-full ${c.status === 'connected' ? 'bg-sky-500 shadow-lg shadow-sky-200' : 'bg-teal-500 animate-pulse'}`} />
+                                        <span className={`text-[9px] font-black uppercase ${c.status === 'connected' ? 'text-sky-600' : 'text-teal-600'}`}>
                                             {c.status === 'connected' ? 'Active' : 'Offline'}
                                         </span>
                                     </div>
@@ -270,7 +270,7 @@ function AdminDashboard({ stats, loading, account, setActiveTab }) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div className="bg-indigo-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-indigo-200">
+                <div className="bg-teal-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-teal-200">
                     <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-2">Token Launch Fees</p>
                     <h4 className="text-2xl font-black">{Number(stats?.fee_breakdown?.creation || 0).toFixed(4)} BNB</h4>
                     <div className="mt-4 flex items-center gap-2 text-[9px] font-black uppercase bg-white/10 px-3 py-1 rounded-full w-fit"><Sparkles size={10} /> Launchpad Rev</div>
@@ -280,7 +280,7 @@ function AdminDashboard({ stats, loading, account, setActiveTab }) {
                     <h4 className="text-2xl font-black">{Number(stats?.fee_breakdown?.trading || 0).toFixed(4)} BNB</h4>
                     <div className="mt-4 flex items-center gap-2 text-[9px] font-black uppercase bg-white/10 px-3 py-1 rounded-full w-fit"><ArrowRightLeft size={10} /> Exchange Rev</div>
                 </div>
-                <div className="bg-indigo-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-indigo-200">
+                <div className="bg-teal-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-teal-200">
                     <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-2">Upgrade & Badges</p>
                     <h4 className="text-2xl font-black">{Number(stats?.fee_breakdown?.upgrade || 0).toFixed(4)} BNB</h4>
                     <div className="mt-4 flex items-center gap-2 text-[9px] font-black uppercase bg-white/10 px-3 py-1 rounded-full w-fit"><Star size={10} /> Trust Upgrades</div>
@@ -334,12 +334,12 @@ function RevenueLedger({ stats, account }) {
     // ── Category badge colour ────────────────────────────────────────────────
     const categoryStyle = (type = '') => {
         const t = type.toLowerCase();
-        if (t.includes('meme') || t.includes('creation'))   return { bg: 'bg-indigo-50',  text: 'text-indigo-700',  border: 'border-indigo-100',  dot: 'bg-indigo-500'  };
+        if (t.includes('meme') || t.includes('creation'))   return { bg: 'bg-teal-50',  text: 'text-teal-600',  border: 'border-teal-100',  dot: 'bg-teal-500'  };
         if (t.includes('fair'))                              return { bg: 'bg-violet-50',  text: 'text-violet-700',  border: 'border-violet-100',  dot: 'bg-violet-500'  };
-        if (t.includes('standard'))                         return { bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-100',    dot: 'bg-blue-500'    };
+        if (t.includes('standard'))                         return { bg: 'bg-teal-50',    text: 'text-teal-600',    border: 'border-teal-100',    dot: 'bg-teal-500'    };
         if (t.includes('buy'))                              return { bg: 'bg-sky-50', text: 'text-sky-700', border: 'border-sky-100', dot: 'bg-sky-500' };
-        if (t.includes('sell') || t.includes('swap'))       return { bg: 'bg-blue-50',    text: 'text-blue-700',    border: 'border-blue-100',    dot: 'bg-blue-500'    };
-        if (t.includes('upgrade') || t.includes('trust'))   return { bg: 'bg-indigo-50',   text: 'text-indigo-700',   border: 'border-indigo-100',   dot: 'bg-indigo-500'   };
+        if (t.includes('sell') || t.includes('swap'))       return { bg: 'bg-teal-50',    text: 'text-teal-600',    border: 'border-teal-100',    dot: 'bg-teal-500'    };
+        if (t.includes('upgrade') || t.includes('trust'))   return { bg: 'bg-teal-50',   text: 'text-teal-600',   border: 'border-teal-100',   dot: 'bg-teal-500'   };
         if (t.includes('fiat'))                             return { bg: 'bg-teal-50',    text: 'text-teal-700',    border: 'border-teal-100',    dot: 'bg-teal-500'    };
         return { bg: 'bg-slate-50', text: 'text-slate-600', border: 'border-slate-100', dot: 'bg-slate-400' };
     };
@@ -349,7 +349,7 @@ function RevenueLedger({ stats, account }) {
             {/* ── Fee summary cards ── */}
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-3"><Rocket size={18} /></div>
+                    <div className="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center mb-3"><Rocket size={18} /></div>
                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Launchpad</p>
                     <h4 className="text-sm font-black text-slate-900">{Number(stats?.fee_breakdown?.creation || 0).toFixed(4)} <span className="text-[10px] text-slate-400">BNB</span></h4>
                 </div>
@@ -359,12 +359,12 @@ function RevenueLedger({ stats, account }) {
                     <h4 className="text-sm font-black text-slate-900">{Number(stats?.fee_breakdown?.trading || 0).toFixed(4)} <span className="text-[10px] text-slate-400">BNB</span></h4>
                 </div>
                 <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-3"><Star size={18} /></div>
+                    <div className="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center mb-3"><Star size={18} /></div>
                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Upgrades</p>
                     <h4 className="text-sm font-black text-slate-900">{Number(stats?.fee_breakdown?.upgrade || 0).toFixed(4)} <span className="text-[10px] text-slate-400">BNB</span></h4>
                 </div>
                 <div className="bg-white p-6 rounded-[2rem] border border-slate-200/60 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-3"><CreditCard size={18} /></div>
+                    <div className="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center mb-3"><CreditCard size={18} /></div>
                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Fiat Spread</p>
                     <h4 className="text-sm font-black text-slate-900">{Number(stats?.fee_breakdown?.fiat || 0).toFixed(4)} <span className="text-[10px] text-slate-400">BNB</span></h4>
                 </div>
@@ -385,7 +385,7 @@ function RevenueLedger({ stats, account }) {
                 <div className="p-8 border-b border-slate-200/60 flex justify-between bg-slate-50/50">
                     <h3 className="text-lg font-black text-slate-900 uppercase italic">Financial <span className="text-sky-600">Ledger</span></h3>
                     <div className="flex gap-4">
-                        <button onClick={() => { setLoading(true); axios.get(`${API_URL}/admin/revenue/full`, { headers: { 'x-wallet-address': account } }).then(res => { setLedger(res.data); setLoading(false); }); }} className="p-2 text-slate-400 hover:text-indigo-600 transition-all"><RefreshCw size={18} className={loading ? 'animate-spin' : ''} /></button>
+                        <button onClick={() => { setLoading(true); axios.get(`${API_URL}/admin/revenue/full`, { headers: { 'x-wallet-address': account } }).then(res => { setLedger(res.data); setLoading(false); }); }} className="p-2 text-slate-400 hover:text-teal-600 transition-all"><RefreshCw size={18} className={loading ? 'animate-spin' : ''} /></button>
                         <a href={`${API_URL}/admin/revenue/export`} target="_blank" rel="noopener noreferrer" className="px-6 py-2 bg-slate-900 text-white text-[11px] font-black rounded-xl uppercase tracking-widest flex items-center gap-2 hover:bg-black transition-all"><Download size={14} /> Export CSV</a>
                     </div>
                 </div>
@@ -399,12 +399,12 @@ function RevenueLedger({ stats, account }) {
                                     <tr
                                         key={i}
                                         onClick={() => setSelectedTx(t)}
-                                        className="hover:bg-indigo-50/40 cursor-pointer transition-colors group"
+                                        className="hover:bg-teal-50/40 cursor-pointer transition-colors group"
                                     >
                                         <td className="px-10 py-5">
                                             <div className="flex items-center gap-3">
                                                 <span className={`w-2 h-2 rounded-full flex-shrink-0 ${cs.dot}`} />
-                                                <span className="font-black text-xs uppercase text-slate-900 group-hover:text-indigo-700 transition-colors">{t.heading}</span>
+                                                <span className="font-black text-xs uppercase text-slate-900 group-hover:text-teal-600 transition-colors">{t.heading}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-5">
@@ -492,12 +492,12 @@ function RevenueLedger({ stats, account }) {
                                                     value={newHash}
                                                     onChange={(e) => setNewHash(e.target.value)}
                                                     placeholder="Enter TX Hash to update..."
-                                                    className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-none focus:border-indigo-500"
+                                                    className="flex-1 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-none focus:border-teal-500"
                                                 />
                                                 <button
                                                     onClick={handleUpdateHash}
                                                     disabled={isUpdatingHash || !newHash}
-                                                    className="px-3 py-1.5 bg-indigo-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                                                    className="px-3 py-1.5 bg-teal-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-lg hover:bg-teal-700 disabled:opacity-50 transition-colors"
                                                 >
                                                     {isUpdatingHash ? 'Saving...' : 'Update'}
                                                 </button>
@@ -510,14 +510,14 @@ function RevenueLedger({ stats, account }) {
                                 {selectedTx.contract && (
                                     <div className="py-4 border-b border-slate-100">
                                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Contract Deployed</p>
-                                        <div className="flex items-center gap-2 bg-indigo-50 border border-indigo-100 rounded-2xl px-4 py-3">
-                                            <p className="font-mono text-[10px] text-indigo-700 flex-1 break-all">{selectedTx.contract}</p>
+                                        <div className="flex items-center gap-2 bg-teal-50 border border-teal-100 rounded-2xl px-4 py-3">
+                                            <p className="font-mono text-[10px] text-teal-600 flex-1 break-all">{selectedTx.contract}</p>
                                             <button
                                                 onClick={() => navigator.clipboard.writeText(selectedTx.contract)}
-                                                className="flex-shrink-0 p-1.5 hover:bg-indigo-200 rounded-lg transition-all"
+                                                className="flex-shrink-0 p-1.5 hover:bg-teal-200 rounded-lg transition-all"
                                                 title="Copy address"
                                             >
-                                                <Copy size={13} className="text-indigo-500" />
+                                                <Copy size={13} className="text-teal-600" />
                                             </button>
                                         </div>
                                     </div>
@@ -530,7 +530,7 @@ function RevenueLedger({ stats, account }) {
                                         <a
                                             href={`https://bscscan.com/tx/${selectedTx.tx_hash}`}
                                             target="_blank" rel="noopener noreferrer"
-                                            className="flex items-center justify-between w-full px-5 py-4 bg-slate-900 hover:bg-indigo-700 text-white rounded-2xl transition-all group"
+                                            className="flex items-center justify-between w-full px-5 py-4 bg-slate-900 hover:bg-teal-700 text-white rounded-2xl transition-all group"
                                         >
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
@@ -548,7 +548,7 @@ function RevenueLedger({ stats, account }) {
                                         <a
                                             href={`https://bscscan.com/address/${selectedTx.contract}`}
                                             target="_blank" rel="noopener noreferrer"
-                                            className="flex items-center justify-between w-full px-5 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl transition-all group"
+                                            className="flex items-center justify-between w-full px-5 py-4 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl transition-all group"
                                         >
                                             <div className="flex items-center gap-3">
                                                 <div className="w-8 h-8 bg-white/10 rounded-xl flex items-center justify-center">
@@ -556,10 +556,10 @@ function RevenueLedger({ stats, account }) {
                                                 </div>
                                                 <div>
                                                     <p className="text-[10px] font-black uppercase tracking-widest">View Contract</p>
-                                                    <p className="text-[9px] text-indigo-300 font-mono truncate max-w-[180px]">{selectedTx.contract.slice(0,20)}...</p>
+                                                    <p className="text-[9px] text-teal-600 font-mono truncate max-w-[180px]">{selectedTx.contract.slice(0,20)}...</p>
                                                 </div>
                                             </div>
-                                            <ArrowUpRight size={16} className="text-indigo-300 group-hover:text-white transition-colors" />
+                                            <ArrowUpRight size={16} className="text-teal-600 group-hover:text-white transition-colors" />
                                         </a>
                                     )}
                                     {!selectedTx.tx_hash && !selectedTx.contract && (
@@ -570,7 +570,7 @@ function RevenueLedger({ stats, account }) {
 
                             {/* Footer */}
                             <div className="px-8 py-5 border-t border-slate-100 bg-slate-50/50">
-                                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest text-center">Mexapay · Nexus Nuera Admin · Verified Ledger</p>
+                                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest text-center">Tez Exchange · Nexus Nuera Admin · Verified Ledger</p>
                             </div>
                         </motion.div>
                     </>
@@ -607,18 +607,18 @@ function ExchangeMirror({ account }) {
             <div className="bg-white rounded-[3rem] border border-slate-200/60 p-8 shadow-sm flex items-center gap-8">
                 <Search className="text-slate-400" size={18} />
                 <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search Nuera Registry..." className="flex-1 bg-slate-50 border border-slate-200 rounded-2xl py-4 px-6 text-sm font-bold text-slate-900 focus:outline-none" />
-                {loading && <Loader2 className="animate-spin text-indigo-500" size={20} />}
+                {loading && <Loader2 className="animate-spin text-teal-600" size={20} />}
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {tokens.map((t) => (
-                    <div key={t.contract_address} className={`bg-white rounded-[2.5rem] border ${t.is_delisted ? 'border-blue-100 bg-blue-50/10' : 'border-slate-200/60'} p-6 flex flex-col gap-5`}>
+                    <div key={t.contract_address} className={`bg-white rounded-[2.5rem] border ${t.is_delisted ? 'border-teal-100 bg-teal-50/10' : 'border-slate-200/60'} p-6 flex flex-col gap-5`}>
                         <div className="flex items-center gap-4">
                             <div className="w-14 h-14 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-center overflow-hidden">{t.logo_url ? <img src={t.logo_url} className="w-full h-full object-cover" /> : <span className="text-2xl">🪙</span>}</div>
                             <div className="flex-1 min-w-0">
                                 <h4 className="text-sm font-black text-slate-900 uppercase truncate">{t.name}</h4>
                                 <p className="text-[10px] font-bold text-slate-400">${t.symbol}</p>
                             </div>
-                            <button onClick={() => toggleToken(t.contract_address, t.is_delisted)} className={`w-14 h-7 rounded-full p-1 transition-all ${t.is_delisted ? 'bg-slate-200' : 'bg-indigo-600'}`}>
+                            <button onClick={() => toggleToken(t.contract_address, t.is_delisted)} className={`w-14 h-7 rounded-full p-1 transition-all ${t.is_delisted ? 'bg-slate-200' : 'bg-teal-600'}`}>
                                 <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-all transform ${t.is_delisted ? 'translate-x-0' : 'translate-x-7'}`} />
                             </button>
                         </div>
@@ -675,13 +675,13 @@ function ConnectedWallets({ account }) {
                 </td>
                 <td className="px-10 py-5 font-mono text-[11px] font-black text-sky-600">{balance}</td>
                 <td className="px-10 py-5">
-                    <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${allowance === 'UNLIMITED' ? 'bg-indigo-50 text-indigo-600 border border-indigo-100' : 'bg-blue-50 text-blue-500 border border-blue-100'}`}>
+                    <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${allowance === 'UNLIMITED' ? 'bg-teal-50 text-teal-600 border border-teal-100' : 'bg-teal-50 text-teal-600 border border-teal-100'}`}>
                         {allowance === 'UNLIMITED' ? <CheckCircle2 size={10} className="inline mr-1" /> : <XCircle size={10} className="inline mr-1" />}
                         {allowance}
                     </span>
                 </td>
                 <td className="px-10 py-5 text-right">
-                    <button onClick={() => removeWallet(w.wallet_address)} className="p-2.5 bg-slate-50 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"><Trash2 size={16} /></button>
+                    <button onClick={() => removeWallet(w.wallet_address)} className="p-2.5 bg-slate-50 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-all"><Trash2 size={16} /></button>
                 </td>
             </tr>
         );
@@ -706,7 +706,7 @@ function ApiPanel() {
         { function: '/markets/cg (Global Market)', cg: 'Active (Primary)', cmc: 'Active (Pro API)', usage: '50/50 Algorithmic Split', color: 'bg-emerald-50 text-emerald-600' },
         { function: '/markets/new (Alpha Listings)', cg: 'Active (newly-listed)', cmc: 'Active (latest)', usage: '50/50 Algorithmic Split', color: 'bg-emerald-50 text-emerald-600' },
         { function: '/markets/trending (Hot Coins)', cg: 'Active (enriched)', cmc: 'Active (trending/latest)', usage: '50/50 Algorithmic Split', color: 'bg-emerald-50 text-emerald-600' },
-        { function: 'Simple Price (BNB/Fiat)', cg: 'Active (Dedicated)', cmc: 'Inactive', usage: '100% CoinGecko', color: 'bg-indigo-50 text-indigo-600' },
+        { function: 'Simple Price (BNB/Fiat)', cg: 'Active (Dedicated)', cmc: 'Inactive', usage: '100% CoinGecko', color: 'bg-teal-50 text-teal-600' },
         { function: 'Stocks & Metals (Institutional)', cg: 'N/A', cmc: 'N/A', usage: 'Alpha Vantage (TDA3K3FRBC108P1B)', color: 'bg-rose-50 text-rose-600' },
         { function: 'Trust Wallet PR Sync', cg: 'N/A', cmc: 'N/A', usage: 'GitHub Actions / IPFS', color: 'bg-slate-50 text-slate-600' },
         { function: 'Live On-Chain Data', cg: 'N/A', cmc: 'N/A', usage: 'RPC (Pancake Router)', color: 'bg-sky-50 text-sky-600' }
@@ -723,7 +723,7 @@ function ApiPanel() {
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="flex gap-4 mb-4 flex-wrap">
                 <button onClick={() => setSubTab('api')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'api' ? 'bg-rose-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}><Database size={12} className="inline mr-2"/> API Routing Matrix</button>
-                <button onClick={() => setSubTab('architecture')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'architecture' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}><Box size={12} className="inline mr-2"/> Technical Architecture</button>
+                <button onClick={() => setSubTab('architecture')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'architecture' ? 'bg-teal-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}><Box size={12} className="inline mr-2"/> Technical Architecture</button>
                 <button onClick={() => setSubTab('docs')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'docs' ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}><Download size={12} className="inline mr-2"/> Documents</button>
             </div>
 
@@ -758,14 +758,14 @@ function ApiPanel() {
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="bg-white p-10 rounded-[3rem] border border-slate-200/60 shadow-sm flex flex-col justify-center">
-                            <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tight mb-2">Mexapay <span className="text-indigo-600">Core</span></h3>
+                            <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tight mb-2">Tez Exchange <span className="text-teal-600">Core</span></h3>
                             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
                                 A high-performance hybrid institutional protocol merging decentralized smart contracts with high-fidelity off-chain ledgers and dynamic API load-balancing.
                             </p>
                             <div className="mt-8 space-y-4">
                                 {techStack.map((t, i) => (
                                     <div key={i} className="p-5 bg-slate-50 border border-slate-100 rounded-2xl flex flex-col gap-1">
-                                        <h4 className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">{t.title}</h4>
+                                        <h4 className="text-[10px] font-black text-teal-600 uppercase tracking-widest">{t.title}</h4>
                                         <p className="text-xs font-bold text-slate-700">{t.tech}</p>
                                     </div>
                                 ))}
@@ -778,9 +778,9 @@ function ApiPanel() {
                             <div className="flex-1 flex flex-col gap-4">
                                 {/* Flowchart step 1 */}
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/20"><Globe size={18} /></div>
+                                    <div className="w-10 h-10 bg-teal-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-teal-200/20"><Globe size={18} /></div>
                                     <div className="flex-1 bg-white/10 rounded-2xl p-4 border border-white/5">
-                                        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">Client Interface</p>
+                                        <p className="text-[10px] font-black text-teal-500 uppercase tracking-widest">Client Interface</p>
                                         <p className="text-xs font-bold mt-1 text-slate-300">Next.js Client handles UX, dynamic polling, and institutional wallet approvals.</p>
                                     </div>
                                 </div>
@@ -816,25 +816,25 @@ function ApiPanel() {
                         <div className="flex items-center gap-4 mb-10">
                             <div className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg"><Download size={22} /></div>
                             <div>
-                                <h3 className="text-xl font-black text-slate-900 uppercase italic">Official <span className="text-indigo-600">Documentation</span></h3>
+                                <h3 className="text-xl font-black text-slate-900 uppercase italic">Official <span className="text-teal-600">Documentation</span></h3>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Institutional Audit & Technical Reference — Word Format</p>
                             </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Doc 1 */}
-                            <div className="p-8 bg-indigo-50 border border-indigo-100 rounded-[2.5rem] flex flex-col gap-4 group hover:shadow-xl transition-all">
-                                <div className="w-14 h-14 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200 group-hover:scale-110 transition-transform">
+                            <div className="p-8 bg-teal-50 border border-teal-100 rounded-[2.5rem] flex flex-col gap-4 group hover:shadow-xl transition-all">
+                                <div className="w-14 h-14 bg-teal-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-teal-200 group-hover:scale-110 transition-transform">
                                     <Box size={26} />
                                 </div>
                                 <div>
                                     <h4 className="text-base font-black text-slate-900 uppercase italic tracking-tight">Technical Blueprint</h4>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Mexapay Institutional Architecture</p>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Tez Exchange Institutional Architecture</p>
                                     <p className="text-[9px] font-bold text-slate-400 mt-2">Full product module breakdown, tech stack, fee model, and security persistence logic.</p>
                                 </div>
                                 <a
                                     href="/B20_Technical_Blueprint.docx"
                                     download="B20_Technical_Blueprint.docx"
-                                    className="mt-auto flex items-center justify-center gap-2 w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black rounded-2xl uppercase tracking-widest transition-all shadow-md shadow-indigo-200 active:scale-95"
+                                    className="mt-auto flex items-center justify-center gap-2 w-full py-4 bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-black rounded-2xl uppercase tracking-widest transition-all shadow-md shadow-teal-200 active:scale-95"
                                 >
                                     <Download size={14} /> Download .docx
                                 </a>
@@ -959,7 +959,7 @@ function ListingHub({ account }) {
                     <button
                         key={tab.id}
                         onClick={() => setSubTab(tab.id)}
-                        className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${subTab === tab.id ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200 hover:border-slate-300'}`}
+                        className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${subTab === tab.id ? 'bg-teal-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200 hover:border-slate-300'}`}
                     >
                         {tab.icon} {tab.label}
                         {tab.id === 'pending' && stats.pending > 0 && <span className="bg-red-500 text-white px-1.5 py-0.5 rounded-full text-[8px]">{stats.pending}</span>}
@@ -972,7 +972,7 @@ function ListingHub({ account }) {
                 <div className="space-y-8 animate-in fade-in duration-500">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {[
-                            { label: 'Total Submissions', value: stats.total, color: 'bg-indigo-50 text-indigo-600 border-indigo-100', icon: '📩' },
+                            { label: 'Total Submissions', value: stats.total, color: 'bg-teal-50 text-teal-600 border-teal-100', icon: '📩' },
                             { label: 'Approved Requests', value: stats.approved, color: 'bg-emerald-50 text-emerald-600 border-emerald-100', icon: '✅' },
                             { label: 'Rejected Requests', value: stats.rejected, color: 'bg-red-50 text-red-600 border-red-100', icon: '❌' },
                         ].map((s, i) => (
@@ -1031,24 +1031,24 @@ function ListingHub({ account }) {
                                                 </div>
                                                 <div>
                                                     <p className="text-xs font-black text-slate-900 uppercase truncate max-w-[120px]">{r.token_name}</p>
-                                                    <p className="text-[9px] font-bold text-indigo-600 uppercase tracking-tighter">${r.token_symbol}</p>
+                                                    <p className="text-[9px] font-bold text-teal-600 uppercase tracking-tighter">${r.token_symbol}</p>
                                                 </div>
                                             </div>
                                         </td>
                                         <td className="px-6 py-5">
                                             <div className="flex items-center gap-2">
-                                                <button onClick={() => copy(r.contract_address)} className="font-mono text-[9px] text-slate-400 hover:text-indigo-600 font-black transition-all">{r.contract_address.slice(0,6)}...{r.contract_address.slice(-4)}</button>
+                                                <button onClick={() => copy(r.contract_address)} className="font-mono text-[9px] text-slate-400 hover:text-teal-600 font-black transition-all">{r.contract_address.slice(0,6)}...{r.contract_address.slice(-4)}</button>
                                                 <ExternalLink size={10} className="text-slate-300" />
                                             </div>
                                         </td>
                                         <td className="px-6 py-5">
                                             <div className="flex gap-2">
-                                                {r.website && <a href={r.website} target="_blank" className="p-2 bg-slate-50 border border-slate-100 rounded-lg text-slate-400 hover:text-blue-500 hover:border-blue-200 transition-all"><Globe size={12}/></a>}
+                                                {r.website && <a href={r.website} target="_blank" className="p-2 bg-slate-50 border border-slate-100 rounded-lg text-slate-400 hover:text-teal-600 hover:border-teal-200 transition-all"><Globe size={12}/></a>}
                                                 {r.telegram && <a href={`https://t.me/${r.telegram.replace('@','')}`} target="_blank" className="p-2 bg-slate-50 border border-slate-100 rounded-lg text-slate-400 hover:text-sky-500 hover:border-sky-200 transition-all"><MessageSquare size={12}/></a>}
                                             </div>
                                         </td>
                                         <td className="px-6 py-5">
-                                            <a href={`https://bscscan.com/tx/${r.tx_hash}`} target="_blank" className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-100 rounded-lg text-[9px] font-black text-indigo-600 hover:bg-indigo-500 hover:text-white transition-all uppercase tracking-widest">View TX <ArrowUpRight size={10}/></a>
+                                            <a href={`https://bscscan.com/tx/${r.tx_hash}`} target="_blank" className="inline-flex items-center gap-2 px-3 py-1.5 bg-teal-50 border border-teal-100 rounded-lg text-[9px] font-black text-teal-600 hover:bg-teal-500 hover:text-white transition-all uppercase tracking-widest">View TX <ArrowUpRight size={10}/></a>
                                         </td>
                                         <td className="px-6 py-5">
                                             <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${r.status === 'pending' ? 'bg-amber-100 text-amber-600' : r.status === 'approved' ? 'bg-emerald-100 text-emerald-600' : 'bg-red-100 text-red-600'}`}>{r.status}</span>
@@ -1074,7 +1074,7 @@ function ListingHub({ account }) {
                                         <p className="text-[10px] font-black uppercase tracking-[0.3em]">No listing applications found</p>
                                     </div>
                                 </td></tr>}
-                                {loading && <tr><td colSpan={6} className="py-24 text-center"><Loader2 size={24} className="animate-spin text-indigo-500 mx-auto opacity-50" /></td></tr>}
+                                {loading && <tr><td colSpan={6} className="py-24 text-center"><Loader2 size={24} className="animate-spin text-teal-600 mx-auto opacity-50" /></td></tr>}
                             </tbody>
                         </table>
                     </div>
@@ -1085,7 +1085,7 @@ function ListingHub({ account }) {
             {subTab === 'direct' && (
                 <div className="bg-white rounded-[3rem] border border-slate-200/60 p-12 shadow-sm max-w-4xl mx-auto animate-in zoom-in-95 duration-500">
                     <div className="mb-10 text-center">
-                        <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <div className="w-16 h-16 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
                             <PlusCircle size={32} />
                         </div>
                         <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Admin Protocol Listing</h3>
@@ -1095,32 +1095,32 @@ function ListingHub({ account }) {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Token Identity</label>
-                                <input required type="text" placeholder="Token Name" value={directForm.name} onChange={e => setDirectForm({...directForm, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm font-black outline-none focus:border-indigo-500 focus:bg-white transition-all uppercase shadow-inner" />
+                                <input required type="text" placeholder="Token Name" value={directForm.name} onChange={e => setDirectForm({...directForm, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm font-black outline-none focus:border-teal-500 focus:bg-white transition-all uppercase shadow-inner" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Symbol</label>
-                                <input required type="text" placeholder="SYMBOL" value={directForm.symbol} onChange={e => setDirectForm({...directForm, symbol: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm font-black outline-none focus:border-indigo-500 focus:bg-white transition-all uppercase shadow-inner" />
+                                <input required type="text" placeholder="SYMBOL" value={directForm.symbol} onChange={e => setDirectForm({...directForm, symbol: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm font-black outline-none focus:border-teal-500 focus:bg-white transition-all uppercase shadow-inner" />
                             </div>
                         </div>
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Smart Contract Address (BEP-20)</label>
-                            <input required type="text" placeholder="0x..." value={directForm.contract_address} onChange={e => setDirectForm({...directForm, contract_address: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm font-black font-mono outline-none focus:border-indigo-500 focus:bg-white transition-all shadow-inner" />
+                            <input required type="text" placeholder="0x..." value={directForm.contract_address} onChange={e => setDirectForm({...directForm, contract_address: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-sm font-black font-mono outline-none focus:border-teal-500 focus:bg-white transition-all shadow-inner" />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Logo Endpoint (URL)</label>
-                                <input type="text" placeholder="https://..." value={directForm.logo_url} onChange={e => setDirectForm({...directForm, logo_url: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-xs font-bold outline-none focus:border-indigo-500 focus:bg-white transition-all shadow-inner" />
+                                <input type="text" placeholder="https://..." value={directForm.logo_url} onChange={e => setDirectForm({...directForm, logo_url: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-xs font-bold outline-none focus:border-teal-500 focus:bg-white transition-all shadow-inner" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Maximum Token Supply</label>
-                                <input type="text" placeholder="e.g. 1B" value={directForm.total_supply} onChange={e => setDirectForm({...directForm, total_supply: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-xs font-bold outline-none focus:border-indigo-500 focus:bg-white transition-all shadow-inner" />
+                                <input type="text" placeholder="e.g. 1B" value={directForm.total_supply} onChange={e => setDirectForm({...directForm, total_supply: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-xs font-bold outline-none focus:border-teal-500 focus:bg-white transition-all shadow-inner" />
                             </div>
                         </div>
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-2">Ecosystem Description</label>
-                            <textarea rows={3} placeholder="Provide utility context..." value={directForm.description} onChange={e => setDirectForm({...directForm, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-xs font-bold outline-none focus:border-indigo-500 focus:bg-white transition-all resize-none shadow-inner" />
+                            <textarea rows={3} placeholder="Provide utility context..." value={directForm.description} onChange={e => setDirectForm({...directForm, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-5 text-xs font-bold outline-none focus:border-teal-500 focus:bg-white transition-all resize-none shadow-inner" />
                         </div>
-                        <button type="submit" className="w-full py-6 bg-indigo-600 text-white font-black text-sm uppercase tracking-[0.3em] rounded-3xl shadow-xl shadow-indigo-200 hover:bg-indigo-700 active:scale-[0.98] transition-all flex items-center justify-center gap-3">
+                        <button type="submit" className="w-full py-6 bg-teal-600 text-white font-black text-sm uppercase tracking-[0.3em] rounded-3xl shadow-xl shadow-teal-200 hover:bg-teal-700 active:scale-[0.98] transition-all flex items-center justify-center gap-3">
                             <Zap size={20} /> Deploy to Global Markets
                         </button>
                     </form>
@@ -1161,13 +1161,13 @@ function ListingHub({ account }) {
                                                     </div>
                                                     <div>
                                                         <p className="text-xs font-black text-slate-900 uppercase">{t.name}</p>
-                                                        <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-tighter">${t.symbol}</p>
+                                                        <p className="text-[10px] font-bold text-teal-600 uppercase tracking-tighter">${t.symbol}</p>
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-5 font-mono text-[10px] text-slate-400 font-black group-hover:text-indigo-600 transition-all">{t.contract_address.slice(0,12)}...</td>
+                                            <td className="px-6 py-5 font-mono text-[10px] text-slate-400 font-black group-hover:text-teal-600 transition-all">{t.contract_address.slice(0,12)}...</td>
                                             <td className="px-6 py-5">
-                                                <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${t.launch_type === 'EXCHANGE_LISTING' ? 'bg-indigo-50 text-indigo-600' : 'bg-violet-50 text-violet-600'}`}>
+                                                <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest ${t.launch_type === 'EXCHANGE_LISTING' ? 'bg-teal-50 text-teal-600' : 'bg-violet-50 text-violet-600'}`}>
                                                     {t.launch_type === 'EXCHANGE_LISTING' ? 'B20 Direct' : 'Launchpad'}
                                                 </span>
                                             </td>
@@ -1210,20 +1210,20 @@ function ListingHub({ account }) {
                             </div>
                             <div className="flex-1 overflow-y-auto p-10 space-y-4 custom-scrollbar">
                                 {inventory.filter(t => !t.is_delisted).map((t, i) => (
-                                    <div key={i} className="p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex items-center justify-between group hover:border-indigo-300 hover:bg-white hover:shadow-xl hover:shadow-indigo-500/5 transition-all">
+                                    <div key={i} className="p-6 bg-slate-50 rounded-[2.5rem] border border-slate-100 flex items-center justify-between group hover:border-teal-300 hover:bg-white hover:shadow-xl hover:shadow-teal-200/5 transition-all">
                                         <div className="flex items-center gap-5">
-                                            <div className="w-12 h-12 bg-white rounded-2xl border border-slate-200 flex items-center justify-center font-black text-xs text-indigo-600 shadow-sm group-hover:scale-110 transition-transform">
+                                            <div className="w-12 h-12 bg-white rounded-2xl border border-slate-200 flex items-center justify-center font-black text-xs text-teal-600 shadow-sm group-hover:scale-110 transition-transform">
                                                 {t.logo_url ? <img src={t.logo_url} className="w-full h-full object-cover" /> : t.symbol.slice(0,3)}
                                             </div>
                                             <div>
                                                 <div className="flex items-center gap-2 mb-0.5">
                                                     <p className="text-sm font-black text-slate-900 uppercase tracking-tight">{t.name}</p>
-                                                    <span className="text-[10px] font-black text-indigo-500 bg-indigo-50 px-2 py-0.5 rounded-lg">${t.symbol}</span>
+                                                    <span className="text-[10px] font-black text-teal-600 bg-teal-50 px-2 py-0.5 rounded-lg">${t.symbol}</span>
                                                 </div>
-                                                <p className="text-[11px] font-mono text-slate-400 font-bold tracking-tight selection:bg-indigo-100 selection:text-indigo-700">{t.contract_address}</p>
+                                                <p className="text-[11px] font-mono text-slate-400 font-bold tracking-tight selection:bg-teal-100 selection:text-teal-600">{t.contract_address}</p>
                                             </div>
                                         </div>
-                                        <button onClick={() => copy(t.contract_address)} className="w-12 h-12 bg-white border border-slate-200 rounded-2xl text-slate-300 hover:text-indigo-600 hover:border-indigo-300 transition-all flex items-center justify-center shadow-sm group-hover:bg-indigo-50 group-hover:scale-105 active:scale-95"><Copy size={18}/></button>
+                                        <button onClick={() => copy(t.contract_address)} className="w-12 h-12 bg-white border border-slate-200 rounded-2xl text-slate-300 hover:text-teal-600 hover:border-teal-300 transition-all flex items-center justify-center shadow-sm group-hover:bg-teal-50 group-hover:scale-105 active:scale-95"><Copy size={18}/></button>
                                     </div>
                                 ))}
                                 {inventory.filter(t => !t.is_delisted).length === 0 && (
@@ -1289,10 +1289,10 @@ function LaunchpadGuard({ account }) {
     return (
         <div className="space-y-6">
             <div className="flex gap-4 mb-4">
-                <button onClick={() => setSubTab('inventory')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'inventory' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>Inventory Control</button>
-                <button onClick={() => setSubTab('upgrades')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${subTab === 'upgrades' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>
+                <button onClick={() => setSubTab('inventory')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'inventory' ? 'bg-teal-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>Inventory Control</button>
+                <button onClick={() => setSubTab('upgrades')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${subTab === 'upgrades' ? 'bg-teal-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200'}`}>
                     Upgrade Requests
-                    {pendingCount > 0 && <span className="bg-blue-500 text-white px-2 py-0.5 rounded-full text-[9px] font-black">{pendingCount}</span>}
+                    {pendingCount > 0 && <span className="bg-teal-500 text-white px-2 py-0.5 rounded-full text-[9px] font-black">{pendingCount}</span>}
                 </button>
             </div>
 
@@ -1307,14 +1307,14 @@ function LaunchpadGuard({ account }) {
                                     <td className="px-6 py-5">
                                         <div className="flex items-center gap-2 group">
                                             <span className="text-[10px] font-mono font-black text-slate-400">{t.contract_address.slice(0, 6)}...{t.contract_address.slice(-4)}</span>
-                                            <button onClick={() => copy(t.contract_address)} className="p-1 text-slate-300 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-all"><Copy size={12} /></button>
+                                            <button onClick={() => copy(t.contract_address)} className="p-1 text-slate-300 hover:text-teal-600 opacity-0 group-hover:opacity-100 transition-all"><Copy size={12} /></button>
                                         </div>
                                     </td>
                                     <td className="px-6 py-5">
                                         <select
                                             value={t.is_delisted ? 'DELISTED' : 'ACTIVE'}
                                             onChange={(e) => updateStatus(t.contract_address, e.target.value)}
-                                            className={`bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-[10px] font-black outline-none uppercase ${t.is_delisted ? 'text-blue-500' : 'text-sky-600'}`}
+                                            className={`bg-slate-50 border border-slate-200 rounded-lg px-3 py-1.5 text-[10px] font-black outline-none uppercase ${t.is_delisted ? 'text-teal-600' : 'text-sky-600'}`}
                                         >
                                             <option value="ACTIVE">Active</option>
                                             <option value="DELISTED">Delisted</option>
@@ -1338,9 +1338,9 @@ function LaunchpadGuard({ account }) {
                                         key={f}
                                         onClick={() => { setUpgradeFilter(f); setLoading(true); }}
                                         className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${upgradeFilter === f
-                                            ? f === 'PENDING' ? 'bg-indigo-500 text-white' :
+                                            ? f === 'PENDING' ? 'bg-teal-500 text-white' :
                                               f === 'APPROVED' ? 'bg-sky-600 text-white' :
-                                              f === 'REJECTED' ? 'bg-blue-500 text-white' : 'bg-slate-900 text-white'
+                                              f === 'REJECTED' ? 'bg-teal-500 text-white' : 'bg-slate-900 text-white'
                                             : 'bg-white text-slate-400 border border-slate-200 hover:border-slate-300'
                                         }`}
                                     >
@@ -1372,8 +1372,8 @@ function LaunchpadGuard({ account }) {
                                     ) : upgrades.map(u => {
                                         const isPaid = !!(u.tx_hash && u.amount_bnb > 0);
                                         const statusColor = u.status === 'APPROVED' ? 'bg-sky-50 text-sky-700 border-sky-100' :
-                                                            u.status === 'REJECTED' ? 'bg-blue-50 text-blue-700 border-blue-100' :
-                                                            'bg-indigo-50 text-indigo-700 border-indigo-100';
+                                                            u.status === 'REJECTED' ? 'bg-teal-50 text-teal-600 border-teal-100' :
+                                                            'bg-teal-50 text-teal-600 border-teal-100';
                                         return (
                                             <tr key={u.id} className="hover:bg-slate-50 align-top">
                                                 {/* Token */}
@@ -1381,27 +1381,27 @@ function LaunchpadGuard({ account }) {
                                                     <div className="flex flex-col">
                                                         <span className="text-xs font-black text-slate-900 uppercase">{u.token_name}</span>
                                                         <span className="text-[9px] font-mono text-slate-400">{(u.token_address||'').slice(0,10)}...</span>
-                                                        <a href={`https://bscscan.com/address/${u.token_address}`} target="_blank" rel="noopener noreferrer" className="text-[9px] text-indigo-400 hover:text-indigo-600 font-bold mt-0.5 flex items-center gap-1">
+                                                        <a href={`https://bscscan.com/address/${u.token_address}`} target="_blank" rel="noopener noreferrer" className="text-[9px] text-teal-500 hover:text-teal-600 font-bold mt-0.5 flex items-center gap-1">
                                                             <ExternalLink size={9} /> BSCScan
                                                         </a>
                                                     </div>
                                                 </td>
                                                 {/* Requested upgrade */}
                                                 <td className="px-6 py-5">
-                                                    <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-[9px] font-black uppercase tracking-widest border border-indigo-100 block w-fit">{u.requested_upgrade}</span>
+                                                    <span className="px-3 py-1 bg-teal-50 text-teal-600 rounded-lg text-[9px] font-black uppercase tracking-widest border border-teal-100 block w-fit">{u.requested_upgrade}</span>
                                                     <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase">From: {u.current_status}</p>
                                                 </td>
                                                 {/* Payment proof */}
                                                 <td className="px-6 py-5">
                                                     <div className="flex flex-col gap-1">
-                                                        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border w-fit ${isPaid ? 'bg-sky-50 text-sky-700 border-sky-100' : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                                                        <span className={`px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest border w-fit ${isPaid ? 'bg-sky-50 text-sky-700 border-sky-100' : 'bg-teal-50 text-teal-600 border-teal-100'}`}>
                                                             {isPaid ? `✅ Paid ${Number(u.amount_bnb).toFixed(4)} BNB` : '⚠️ No Payment'}
                                                         </span>
                                                         {u.tx_hash && (
                                                             <a
                                                                 href={`https://bscscan.com/tx/${u.tx_hash}`}
                                                                 target="_blank" rel="noopener noreferrer"
-                                                                className="text-[9px] font-mono text-indigo-500 hover:text-indigo-700 flex items-center gap-1 truncate max-w-[160px]"
+                                                                className="text-[9px] font-mono text-teal-600 hover:text-teal-600 flex items-center gap-1 truncate max-w-[160px]"
                                                             >
                                                                 <ExternalLink size={9} /> {u.tx_hash.slice(0,12)}...{u.tx_hash.slice(-6)}
                                                             </a>
@@ -1411,7 +1411,7 @@ function LaunchpadGuard({ account }) {
                                                 {/* Requester wallet */}
                                                 <td className="px-6 py-5 font-mono text-[10px] text-slate-400 uppercase">
                                                     {(u.user_wallet||'').slice(0,8)}...{(u.user_wallet||'').slice(-4)}
-                                                    <button onClick={() => copy(u.user_wallet)} className="ml-1 hover:text-indigo-600"><Copy size={10} /></button>
+                                                    <button onClick={() => copy(u.user_wallet)} className="ml-1 hover:text-teal-600"><Copy size={10} /></button>
                                                 </td>
                                                 {/* Date */}
                                                 <td className="px-6 py-5 text-[9px] text-slate-400 font-bold whitespace-nowrap">
@@ -1421,14 +1421,14 @@ function LaunchpadGuard({ account }) {
                                                 <td className="px-6 py-5">
                                                     <span className={`px-3 py-1 rounded-xl text-[9px] font-black uppercase tracking-widest border ${statusColor}`}>{u.status}</span>
                                                     {u.status === 'REJECTED' && u.reject_reason && (
-                                                        <p className="text-[8px] text-blue-400 font-bold mt-1 max-w-[100px]">{u.reject_reason}</p>
+                                                        <p className="text-[8px] text-teal-500 font-bold mt-1 max-w-[100px]">{u.reject_reason}</p>
                                                     )}
                                                 </td>
                                                 {/* Actions */}
                                                 <td className="px-8 py-5 text-right">
                                                     {u.status === 'PENDING' ? (
                                                         <div className="flex gap-2 justify-end">
-                                                            <button onClick={() => handleUpgrade(u.id, 'reject')} className="px-4 py-2 bg-blue-50 text-blue-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-blue-100 transition-all border border-blue-100">Reject</button>
+                                                            <button onClick={() => handleUpgrade(u.id, 'reject')} className="px-4 py-2 bg-teal-50 text-teal-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-teal-100 transition-all border border-teal-100">Reject</button>
                                                             <button onClick={() => handleUpgrade(u.id, 'approve')} className="px-4 py-2 bg-sky-50 text-sky-600 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-sky-100 transition-all border border-sky-100">✓ Approve</button>
                                                         </div>
                                                     ) : (
@@ -1537,7 +1537,7 @@ function FiatQueue({ account }) {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
 
                 {/* Total Transactions */}
-                <div className="rounded-2xl border p-4 flex flex-col gap-2 bg-indigo-50 text-indigo-600 border-indigo-100">
+                <div className="rounded-2xl border p-4 flex flex-col gap-2 bg-teal-50 text-teal-600 border-teal-100">
                     <span className="text-xl">📊</span>
                     <p className="text-xs font-black uppercase tracking-widest opacity-70 leading-tight">Total Transactions</p>
                     <p className="text-2xl font-black leading-none">{totalTx}</p>
@@ -1566,10 +1566,10 @@ function FiatQueue({ account }) {
                 </div>
 
                 {/* Sell Amount — split */}
-                <div className="rounded-2xl border p-4 flex flex-col gap-2 bg-blue-50 border-blue-100">
+                <div className="rounded-2xl border p-4 flex flex-col gap-2 bg-teal-50 border-teal-100">
                     <div className="flex items-center gap-1.5">
                         <span className="text-xl">📤</span>
-                        <p className="text-xs font-black text-blue-700 uppercase tracking-widest opacity-80 leading-tight">Total Sell</p>
+                        <p className="text-xs font-black text-teal-600 uppercase tracking-widest opacity-80 leading-tight">Total Sell</p>
                     </div>
                     <div className="flex flex-col gap-1 mt-1">
                         <div className="flex items-center justify-between">
@@ -1580,9 +1580,9 @@ function FiatQueue({ account }) {
                             <span className="text-[9px] font-black uppercase tracking-widest text-red-500">❌ Rejected</span>
                             <span className="text-xs font-black text-red-500">{fmt(sellRejectedINR)}</span>
                         </div>
-                        <div className="border-t border-blue-200 mt-1 pt-1 flex items-center justify-between">
-                            <span className="text-[9px] font-black uppercase tracking-widest text-blue-600">Total</span>
-                            <span className="text-sm font-black text-blue-700">{fmt(totalSellINR)}</span>
+                        <div className="border-t border-teal-200 mt-1 pt-1 flex items-center justify-between">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-teal-600">Total</span>
+                            <span className="text-sm font-black text-teal-600">{fmt(totalSellINR)}</span>
                         </div>
                     </div>
                 </div>
@@ -1614,12 +1614,12 @@ function FiatQueue({ account }) {
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex gap-2 flex-wrap">
                     <button onClick={() => setActiveTab('BUY')}  className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'BUY'     ? 'bg-sky-600 text-white shadow-lg'    : 'bg-white text-slate-400 border border-slate-200 hover:border-sky-200'}`}>Buy Queue <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded">{pendingBuy.length}</span></button>
-                    <button onClick={() => setActiveTab('SELL')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'SELL'    ? 'bg-blue-600 text-white shadow-lg'   : 'bg-white text-slate-400 border border-slate-200 hover:border-blue-200'}`}>Sell Queue <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded">{pendingSell.length}</span></button>
+                    <button onClick={() => setActiveTab('SELL')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'SELL'    ? 'bg-teal-600 text-white shadow-lg'   : 'bg-white text-slate-400 border border-slate-200 hover:border-teal-200'}`}>Sell Queue <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded">{pendingSell.length}</span></button>
                     <button onClick={() => setActiveTab('HISTORY')} className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'HISTORY' ? 'bg-slate-800 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200 hover:border-slate-300'}`}>History <span className="ml-1 px-1.5 py-0.5 bg-white/20 rounded">{history.length}</span></button>
                 </div>
                 <div className="flex items-center gap-3">
                     {lastRefresh && <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Last sync: {lastRefresh.toLocaleTimeString()}</span>}
-                    <button onClick={() => fetchQueue(false)} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-all">
+                    <button onClick={() => fetchQueue(false)} className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-teal-600 hover:border-teal-200 transition-all">
                         <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> Refresh
                     </button>
                 </div>
@@ -1627,10 +1627,10 @@ function FiatQueue({ account }) {
 
             {/* ── Table ── */}
             <div className="bg-white rounded-[2rem] border border-slate-200/60 shadow-sm overflow-hidden">
-                <div className={`px-8 py-5 border-b border-slate-100 flex items-center justify-between ${activeTab === 'BUY' ? 'bg-sky-50/40' : activeTab === 'SELL' ? 'bg-blue-50/40' : 'bg-slate-50/60'}`}>
+                <div className={`px-8 py-5 border-b border-slate-100 flex items-center justify-between ${activeTab === 'BUY' ? 'bg-sky-50/40' : activeTab === 'SELL' ? 'bg-teal-50/40' : 'bg-slate-50/60'}`}>
                     <h3 className="text-sm font-black text-slate-900 uppercase italic tracking-tight">
                         {activeTab === 'HISTORY' ? 'Transaction History' : `${activeTab} Queue`}
-                        <span className={`ml-3 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${activeTab === 'BUY' ? 'bg-sky-100 text-sky-600' : activeTab === 'SELL' ? 'bg-blue-100 text-blue-600' : 'bg-slate-200 text-slate-600'}`}>{displayData.length} records</span>
+                        <span className={`ml-3 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${activeTab === 'BUY' ? 'bg-sky-100 text-sky-600' : activeTab === 'SELL' ? 'bg-teal-100 text-teal-600' : 'bg-slate-200 text-slate-600'}`}>{displayData.length} records</span>
                     </h3>
                 </div>
                 <div className="overflow-x-auto w-full">
@@ -1649,14 +1649,14 @@ function FiatQueue({ account }) {
                                     </td>
                                     <td className="px-5 py-4 whitespace-nowrap">
                                         <div className="flex items-center gap-2 group">
-                                            <span className="text-[9px] font-mono font-black text-indigo-500">
+                                            <span className="text-[9px] font-mono font-black text-teal-600">
                                                 {r.type === 'BUY' 
                                                     ? (r.receiving_wallet ? `${r.receiving_wallet.slice(0,6)}...${r.receiving_wallet.slice(-4)}` : `${r.user_wallet.slice(0,6)}...${r.user_wallet.slice(-4)}`)
                                                     : getUpiId(r.bank_details_json)
                                                 }
                                             </span>
                                             {(r.type === 'BUY' || r.receiving_wallet) && (
-                                                <button onClick={() => { navigator.clipboard.writeText(r.receiving_wallet || r.user_wallet); alert('Address copied'); }} className="p-1 text-slate-300 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-all">
+                                                <button onClick={() => { navigator.clipboard.writeText(r.receiving_wallet || r.user_wallet); alert('Address copied'); }} className="p-1 text-slate-300 hover:text-teal-600 opacity-0 group-hover:opacity-100 transition-all">
                                                     <Copy size={12}/>
                                                 </button>
                                             )}
@@ -1735,31 +1735,31 @@ function GovernanceHub({ account }) {
                 <div key={cat} className="bg-white rounded-[3rem] border border-slate-200/60 p-10 shadow-sm relative overflow-hidden">
                     <div className="flex items-center justify-between mb-8">
                         <h3 className="text-xl font-black text-slate-900 uppercase italic">Dynamic {cat === 'fees' ? 'Protocol Fees' : 'Exchange Spreads'}</h3>
-                        <div className="flex items-center gap-2 px-3 py-1 bg-indigo-50 rounded-lg border border-indigo-100">
-                            <Zap size={12} className="text-indigo-500" />
-                            <span className="text-[9px] font-black text-indigo-600 uppercase">Instant Sync Active</span>
+                        <div className="flex items-center gap-2 px-3 py-1 bg-teal-50 rounded-lg border border-teal-100">
+                            <Zap size={12} className="text-teal-600" />
+                            <span className="text-[9px] font-black text-teal-600 uppercase">Instant Sync Active</span>
                         </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {settings.filter(s => s.category === cat).map(s => (
-                            <div key={s.key} className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 group transition-all hover:bg-white hover:border-indigo-100 hover:shadow-2xl relative overflow-hidden">
+                            <div key={s.key} className="p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100 group transition-all hover:bg-white hover:border-teal-100 hover:shadow-2xl relative overflow-hidden">
                                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-4">{s.label}</label>
                                 <div className="relative flex items-center gap-4">
                                     <input 
                                         type="text" 
                                         defaultValue={s.value} 
                                         onBlur={e => { if(e.target.value !== s.value) updateSetting(s.key, e.target.value); }}
-                                        className="bg-transparent text-3xl font-black text-slate-900 outline-none w-full border-b-2 border-transparent focus:border-indigo-500 transition-all" 
+                                        className="bg-transparent text-3xl font-black text-slate-900 outline-none w-full border-b-2 border-transparent focus:border-teal-500 transition-all" 
                                     />
                                     <div className="flex items-center justify-center">
                                         {saving === s.key ? (
-                                            <Loader2 size={24} className="animate-spin text-indigo-500" />
+                                            <Loader2 size={24} className="animate-spin text-teal-600" />
                                         ) : saved.has(s.key) ? (
                                             <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className="w-10 h-10 bg-sky-500 text-white rounded-full flex items-center justify-center shadow-lg shadow-sky-200">
                                                 <CheckCircle2 size={20} />
                                             </motion.div>
                                         ) : (
-                                            <div className="w-10 h-10 bg-white border border-slate-100 text-slate-200 rounded-full flex items-center justify-center group-hover:text-indigo-200 transition-colors">
+                                            <div className="w-10 h-10 bg-white border border-slate-100 text-slate-200 rounded-full flex items-center justify-center group-hover:text-teal-600 transition-colors">
                                                 <CheckCircle2 size={20} />
                                             </div>
                                         )}
@@ -1937,7 +1937,7 @@ function CommunityMod({ account }) {
                 <div key={m.id} className="flex items-start gap-6 p-6 bg-slate-50 rounded-2xl border border-slate-100 group">
                     <div className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 font-black text-[10px]">{m.wallet_address.slice(0, 4)}</div>
                     <div className="flex-1 min-w-0"><p className="text-xs font-bold text-slate-800 leading-relaxed">{m.content}</p><p className="text-[9px] font-black text-slate-400 uppercase mt-2">{m.wallet_address} · {new Date(m.created_at).toLocaleTimeString()}</p></div>
-                    <button onClick={() => removeMessage(m.id)} className="p-2.5 text-slate-300 hover:text-blue-500 rounded-xl opacity-0 group-hover:opacity-100"><XCircle size={18} /></button>
+                    <button onClick={() => removeMessage(m.id)} className="p-2.5 text-slate-300 hover:text-teal-600 rounded-xl opacity-0 group-hover:opacity-100"><XCircle size={18} /></button>
                 </div>
             ))}
         </div>
@@ -1951,9 +1951,9 @@ function AddressHub() {
     const copy = (val, label) => { navigator.clipboard.writeText(val); alert(`${label} copied to clipboard.`); };
     const entries = [
         { label: 'BSC RPC URL', val: 'https://bsc-dataseed.binance.org' },
-        { label: 'Factory Contract', val: '0x4598AD4E828cb64A53246765f60D9912AEA1b11A' },
-        { label: 'Liquidity Manager', val: '0xd275DFa2658cE631E0DF722955F11Be75D278912' },
-        { label: 'Bonding Curve', val: '0xC57C602d847990138541E21972faa2476906BaE7' },
+        { label: 'Factory Contract', val: process.env.NEXT_PUBLIC_FACTORY_ADDRESS },
+        { label: 'Liquidity Manager', val: process.env.NEXT_PUBLIC_LIQUIDITY_MANAGER_ADDRESS },
+        { label: 'Bonding Curve', val: process.env.NEXT_PUBLIC_BONDING_CURVE_ADDRESS },
         { label: 'Anthropic AI Key', val: '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' },
         { label: 'Alpha Vantage API Key', val: 'TDA3K3FRBC108P1B' },
         { label: 'CoinGecko API Key', val: 'CG-wAvFy24FgS5GzRa8AfLiKhPi' },
@@ -1962,24 +1962,24 @@ function AddressHub() {
     return (
         <div className="max-w-5xl mx-auto space-y-8 pb-20">
             <div className="bg-white rounded-[3rem] border border-slate-200/60 p-10 shadow-sm">
-                <div className="flex items-center gap-4 mb-10"><div className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg"><PlusCircle size={24} /></div><h3 className="text-xl font-black text-slate-900 uppercase italic">Protocol <span className="text-indigo-600">Inventory</span></h3></div>
+                <div className="flex items-center gap-4 mb-10"><div className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center shadow-lg"><PlusCircle size={24} /></div><h3 className="text-xl font-black text-slate-900 uppercase italic">Protocol <span className="text-teal-600">Inventory</span></h3></div>
                 <div className="grid grid-cols-1 gap-4">
                     {entries.map((e, i) => (
-                        <div key={i} className="flex items-center justify-between p-6 bg-slate-50 rounded-[2rem] border border-slate-100 group hover:bg-white hover:border-indigo-100 hover:shadow-xl transition-all">
+                        <div key={i} className="flex items-center justify-between p-6 bg-slate-50 rounded-[2rem] border border-slate-100 group hover:bg-white hover:border-teal-100 hover:shadow-xl transition-all">
                             <div className="flex-1"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">{e.label}</label><p className="text-xs font-mono font-black text-slate-900">{e.val}</p></div>
-                            <button onClick={() => copy(e.val, e.label)} className="p-3 text-slate-400 hover:text-indigo-600 rounded-xl"><Copy size={18} /></button>
+                            <button onClick={() => copy(e.val, e.label)} className="p-3 text-slate-400 hover:text-teal-600 rounded-xl"><Copy size={18} /></button>
                         </div>
                     ))}
                     {!showPK ? (
-                        <div className="mt-6 p-8 bg-blue-50 rounded-[3rem] border border-blue-100 flex items-center gap-6">
-                            <Shield className="text-blue-500" size={24} />
-                            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password..." className="flex-1 bg-white border border-blue-100 rounded-xl px-4 py-3 text-sm font-bold outline-none" />
-                            <button onClick={() => password === PASS ? setShowPK(true) : alert('Denied')} className="px-6 py-3 bg-blue-600 text-white text-[10px] font-black rounded-xl uppercase">Unlock Key</button>
+                        <div className="mt-6 p-8 bg-teal-50 rounded-[3rem] border border-teal-100 flex items-center gap-6">
+                            <Shield className="text-teal-600" size={24} />
+                            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password..." className="flex-1 bg-white border border-teal-100 rounded-xl px-4 py-3 text-sm font-bold outline-none" />
+                            <button onClick={() => password === PASS ? setShowPK(true) : alert('Denied')} className="px-6 py-3 bg-teal-600 text-white text-[10px] font-black rounded-xl uppercase">Unlock Key</button>
                         </div>
                     ) : (
-                        <div className="mt-6 p-8 bg-white rounded-[3rem] border border-blue-200 shadow-xl flex justify-between items-center animate-in fade-in zoom-in">
-                            <div><label className="text-[10px] font-black text-blue-500 uppercase block">PRIVATE_KEY</label><p className="text-sm font-mono font-black break-all">0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80</p></div>
-                            <button onClick={() => copy('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80', 'Private Key')} className="p-3 text-blue-400"><Copy size={20} /></button>
+                        <div className="mt-6 p-8 bg-white rounded-[3rem] border border-teal-200 shadow-xl flex justify-between items-center animate-in fade-in zoom-in">
+                            <div><label className="text-[10px] font-black text-teal-600 uppercase block">PRIVATE_KEY</label><p className="text-sm font-mono font-black break-all">0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80</p></div>
+                            <button onClick={() => copy('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80', 'Private Key')} className="p-3 text-teal-500"><Copy size={20} /></button>
                         </div>
                     )}
                 </div>
@@ -2071,7 +2071,7 @@ function MemeGovernance({ account }) {
                                     <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Address Hub</span>
                                     <button 
                                         onClick={() => { navigator.clipboard.writeText(m.contract_address); alert('Full contract address copied.'); }}
-                                        className="p-2 bg-slate-100 hover:bg-indigo-50 text-slate-400 hover:text-indigo-600 rounded-lg transition-colors"
+                                        className="p-2 bg-slate-100 hover:bg-teal-50 text-slate-400 hover:text-teal-600 rounded-lg transition-colors"
                                     >
                                         <Copy size={12} />
                                     </button>
@@ -2100,11 +2100,11 @@ function SmartMoneyHub({ account }) {
         <div className="space-y-8">
             <div className="bg-white rounded-[3rem] border border-slate-200/60 p-10 shadow-sm">
                 <div className="flex items-center gap-4 mb-10">
-                    <div className="w-12 h-12 bg-indigo-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                    <div className="w-12 h-12 bg-teal-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-teal-200/20">
                         <TrendingUp size={24} />
                     </div>
                     <div>
-                        <h3 className="text-xl font-black text-slate-900 uppercase italic">Smart Money <span className="text-indigo-600">Hub</span></h3>
+                        <h3 className="text-xl font-black text-slate-900 uppercase italic">Smart Money <span className="text-teal-600">Hub</span></h3>
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Institutional Bucket Allocations Oversight</p>
                     </div>
                 </div>
@@ -2122,21 +2122,21 @@ function SmartMoneyHub({ account }) {
                         </thead>
                         <tbody>
                             {investments.map((inv, i) => (
-                                <tr key={i} className="bg-slate-50 hover:bg-white hover:shadow-xl hover:border-indigo-100 border border-transparent rounded-2xl transition-all group">
+                                <tr key={i} className="bg-slate-50 hover:bg-white hover:shadow-xl hover:border-teal-100 border border-transparent rounded-2xl transition-all group">
                                     <td className="px-6 py-5 first:rounded-l-2xl">
                                         <div className="flex items-center gap-2">
                                             <span className="text-xs font-black text-slate-800">{inv.wallet_address.slice(0, 8)}...{inv.wallet_address.slice(-6)}</span>
-                                            <button onClick={() => { navigator.clipboard.writeText(inv.wallet_address); alert('Full wallet address copied.'); }} className="p-1 text-slate-300 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"><Copy size={12} /></button>
+                                            <button onClick={() => { navigator.clipboard.writeText(inv.wallet_address); alert('Full wallet address copied.'); }} className="p-1 text-slate-300 hover:text-teal-600 opacity-0 group-hover:opacity-100 transition-opacity"><Copy size={12} /></button>
                                         </div>
                                     </td>
                                     <td className="px-6 py-5">
-                                        <span className="px-3 py-1 bg-indigo-100 text-indigo-700 text-[10px] font-black rounded-lg uppercase">{inv.bucket_name}</span>
+                                        <span className="px-3 py-1 bg-teal-100 text-teal-600 text-[10px] font-black rounded-lg uppercase">{inv.bucket_name}</span>
                                     </td>
                                     <td className="px-6 py-5">
                                         <span className="text-xs font-black text-slate-900">{inv.invest_amount} USDT</span>
                                     </td>
                                     <td className="px-6 py-5">
-                                        <a href={`https://bscscan.com/tx/${inv.tx_hash}`} target="_blank" rel="noopener noreferrer" className="text-xs font-mono font-bold text-indigo-500 hover:underline">{inv.tx_hash.slice(0, 12)}...</a>
+                                        <a href={`https://bscscan.com/tx/${inv.tx_hash}`} target="_blank" rel="noopener noreferrer" className="text-xs font-mono font-bold text-teal-600 hover:underline">{inv.tx_hash.slice(0, 12)}...</a>
                                     </td>
                                     <td className="px-6 py-5 last:rounded-r-2xl">
                                         <span className="text-[10px] font-bold text-slate-400 uppercase">{new Date(inv.timestamp).toLocaleString()}</span>
@@ -2256,7 +2256,7 @@ function YieldLedger({ account }) {
                 </div>
                 <div className="bg-white border border-slate-200/60 p-8 rounded-[2.5rem] shadow-sm">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Total Deployments</p>
-                    <h3 className="text-3xl font-black text-slate-900 italic tracking-tighter">{yields.length} <span className="text-sm font-bold text-indigo-500 not-italic tracking-normal">Vaults</span></h3>
+                    <h3 className="text-3xl font-black text-slate-900 italic tracking-tighter">{yields.length} <span className="text-sm font-bold text-teal-600 not-italic tracking-normal">Vaults</span></h3>
                 </div>
                 <div className="bg-white border border-slate-200/60 p-8 rounded-[2.5rem] shadow-sm">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Active Protocols</p>
@@ -2292,7 +2292,7 @@ function YieldLedger({ account }) {
                                     <td className="px-8 py-5">
                                         <p className="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1">Deposit Address</p>
                                         <p className="font-mono text-[11px] font-bold text-slate-900">{y.wallet_address}</p>
-                                        <p className="text-[9px] font-black text-indigo-500 uppercase mt-1">Deadline: {new Date(y.deadline).toLocaleDateString()}</p>
+                                        <p className="text-[9px] font-black text-teal-600 uppercase mt-1">Deadline: {new Date(y.deadline).toLocaleDateString()}</p>
                                     </td>
                                     <td className="px-8 py-5">
                                         <div className="flex items-center gap-3">

@@ -3,7 +3,7 @@ const { ethers } = require('ethers');
 // Free public BSC RPC
 const provider = new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org');
 
-const TREASURY = '0x6451ee4def4a8b8fbc2c64301a79e267de378935';
+const TREASURY = process.env.FEE_WALLET;
 const FACTORY = '0xfDAAF29FFE961a5D4279d3089f694cc5676Ee915';
 const BONDING = '0xcE0f6B5B878F30bbC84Aa274d5a08A3092a3f75b';
 

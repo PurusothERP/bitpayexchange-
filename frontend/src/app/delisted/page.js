@@ -24,7 +24,7 @@ export default function DelistedPage() {
     }, []);
 
     return (
-        <main className="min-h-screen bg-[#0A0A0B] selection:bg-blue-500 selection:text-white pb-32">
+        <main className="min-h-screen bg-[#0A0A0B] selection:bg-teal-500 selection:text-white pb-32">
             <Navbar />
             
             <header className="pt-32 pb-16 px-4 max-w-7xl mx-auto text-center">

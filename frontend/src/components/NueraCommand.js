@@ -113,7 +113,7 @@ export default function NueraCommand({ onCommand }) {
                         {/* Header */}
                         <div className="p-6 bg-slate-900 text-white flex items-center justify-between">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-indigo-500 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 animate-pulse">
+                                <div className="w-10 h-10 bg-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-teal-200/20 animate-pulse">
                                     <Brain size={20} />
                                 </div>
                                 <div>
@@ -139,12 +139,12 @@ export default function NueraCommand({ onCommand }) {
                                     className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                                 >
                                     <div className={`max-w-[85%] flex items-start gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                                        <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${msg.role === 'user' ? 'bg-indigo-600' : 'bg-slate-200'}`}>
+                                        <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center ${msg.role === 'user' ? 'bg-teal-600' : 'bg-slate-200'}`}>
                                             {msg.role === 'user' ? <User size={14} className="text-white" /> : <Cpu size={14} className="text-slate-600" />}
                                         </div>
                                         <div className={`p-4 rounded-2xl text-sm font-medium leading-relaxed shadow-sm ${
                                             msg.role === 'user' 
-                                            ? 'bg-indigo-600 text-white rounded-tr-none' 
+                                            ? 'bg-teal-600 text-white rounded-tr-none' 
                                             : 'bg-white border border-slate-200 text-slate-700 rounded-tl-none'
                                         }`}>
                                             {msg.content}
@@ -176,12 +176,12 @@ export default function NueraCommand({ onCommand }) {
                                         value={input}
                                         onChange={(e) => setInput(e.target.value)}
                                         placeholder={isListening ? "Listening..." : "Ask Nuera anything..."}
-                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-6 pr-14 text-sm font-medium outline-none focus:border-indigo-500/50 transition-all placeholder:text-slate-400"
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 pl-6 pr-14 text-sm font-medium outline-none focus:border-teal-500/50 transition-all placeholder:text-slate-400"
                                     />
                                     <button 
                                         type="button"
                                         onClick={handleVoiceToggle}
-                                        className={`absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-xl transition-all ${isListening ? 'bg-rose-500 text-white animate-pulse' : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50'}`}
+                                        className={`absolute right-3 top-1/2 -translate-y-1/2 p-2.5 rounded-xl transition-all ${isListening ? 'bg-rose-500 text-white animate-pulse' : 'text-slate-400 hover:text-teal-600 hover:bg-teal-50'}`}
                                     >
                                         {isListening ? <MicOff size={18} /> : <Mic size={18} />}
                                     </button>
@@ -193,7 +193,7 @@ export default function NueraCommand({ onCommand }) {
                                     <button 
                                         type="submit"
                                         disabled={!input.trim() || isTyping}
-                                        className="px-6 py-3 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-600 transition-all disabled:opacity-50 shadow-lg shadow-slate-900/10"
+                                        className="px-6 py-3 bg-slate-900 text-white rounded-xl font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-teal-600 transition-all disabled:opacity-50 shadow-lg shadow-slate-900/10"
                                     >
                                         Send Transmission <ArrowRight size={14} />
                                     </button>
@@ -208,11 +208,11 @@ export default function NueraCommand({ onCommand }) {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsOpen(!isOpen)}
-                className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-2xl transition-all ${isOpen ? 'bg-slate-900 text-white' : 'bg-white text-slate-900 border border-slate-200 hover:border-indigo-500/50'}`}
+                className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center shadow-2xl transition-all ${isOpen ? 'bg-slate-900 text-white' : 'bg-white text-slate-900 border border-slate-200 hover:border-teal-500/50'}`}
             >
                 {isOpen ? <X size={28} /> : (
                     <div className="relative">
-                        <Sparkles size={28} className="text-indigo-600" />
+                        <Sparkles size={28} className="text-teal-600" />
                         <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white animate-pulse" />
                     </div>
                 )}

@@ -13,8 +13,8 @@ const NETWORKS = [
         symbol: 'BNB',
         logo: 'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png',
         tagline: 'Binance Smart Chain',
-        gradient: 'from-yellow-400 to-indigo-500',
-        lightGradient: 'from-yellow-500/10 to-indigo-500/5',
+        gradient: 'from-yellow-400 to-teal-700',
+        lightGradient: 'from-yellow-500/10 to-teal-700/5',
         border: 'border-yellow-400/30',
         glow: 'shadow-yellow-500/20',
         dexes: [
@@ -25,7 +25,7 @@ const NETWORKS = [
                 tvl: '$1.8B',
                 volume24h: '$420M',
                 tag: 'Leading DEX',
-                tagColor: 'bg-indigo-500/10 text-indigo-600',
+                tagColor: 'bg-teal-500/10 text-teal-600',
                 desc: 'The #1 decentralized exchange on BNB Chain. Swap, earn, and win with the most popular AMM on BSC.',
                 features: ['AMM Pools', 'Yield Farms', 'IFO Launchpad', 'Lottery'],
                 badge: '🥞',
@@ -50,8 +50,8 @@ const NETWORKS = [
         symbol: 'TRX',
         logo: 'https://assets.coingecko.com/coins/images/1094/small/tron-logo.png',
         tagline: 'TRON Ecosystem',
-        gradient: 'from-red-500 to-blue-600',
-        lightGradient: 'from-red-500/10 to-blue-600/5',
+        gradient: 'from-red-500 to-teal-700',
+        lightGradient: 'from-red-500/10 to-teal-700/5',
         border: 'border-red-400/30',
         glow: 'shadow-red-500/20',
         dexes: [
@@ -167,7 +167,7 @@ function DexCard({ dex, network }) {
                 <div className="grid grid-cols-2 gap-3 mb-5">
                     <div className="bg-white/60 backdrop-blur-sm rounded-xl p-3 text-center border border-white/50">
                         <div className="flex items-center justify-center gap-1 mb-1">
-                            <Droplets className="w-3 h-3 text-blue-500" />
+                            <Droplets className="w-3 h-3 text-teal-600" />
                             <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">TVL</span>
                         </div>
                         <div className="text-base font-black text-gray-900">{dex.tvl}</div>
@@ -223,11 +223,11 @@ export default function DexPage() {
             {/* Hero */}
             <section className="pt-32 pb-12 px-4 md:px-8 text-center relative overflow-hidden">
                 <div className="absolute inset-0 pointer-events-none">
-                    <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-indigo-400/10 blur-[100px] rounded-full" />
+                    <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-teal-400/10 blur-[100px] rounded-full" />
                 </div>
                 <div className="relative z-10 max-w-3xl mx-auto">
                     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                        <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 text-sm font-bold mb-6">
+                        <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-600 text-sm font-bold mb-6">
                             🌐 Multi-Chain DEX Hub
                         </span>
                         <h1 className="text-5xl md:text-6xl font-black mb-4 tracking-tight">
@@ -326,9 +326,9 @@ export default function DexPage() {
 
             {/* Safety note */}
             <section className="px-4 md:px-8 pb-16 max-w-7xl mx-auto">
-                <div className="glass-card bg-indigo-500/5 border-indigo-500/20 flex flex-col md:flex-row items-center gap-4 p-6">
-                    <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center shrink-0">
-                        <Shield className="w-6 h-6 text-indigo-600" />
+                <div className="glass-card bg-teal-500/5 border-teal-500/20 flex flex-col md:flex-row items-center gap-4 p-6">
+                    <div className="w-12 h-12 rounded-2xl bg-teal-500/10 flex items-center justify-center shrink-0">
+                        <Shield className="w-6 h-6 text-teal-600" />
                     </div>
                     <div>
                         <h3 className="font-bold text-gray-900 mb-1">Safety Notice</h3>

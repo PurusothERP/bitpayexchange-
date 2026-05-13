@@ -12,7 +12,7 @@
 
 const db = require('../config/db');
 
-const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+const TREASURY = (process.env.FEE_WALLET || '').toLowerCase();
 const ADMIN_SECRET = process.env.ADMIN_SECRET || null;
 
 /**

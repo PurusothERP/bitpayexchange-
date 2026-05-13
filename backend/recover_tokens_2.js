@@ -15,8 +15,8 @@ const TESTNET_RPC = 'https://data-seed-prebsc-1-s1.binance.org:8545/';
 async function run() {
     const provider = new ethers.JsonRpcProvider(TESTNET_RPC);
     const factories = [
-        '0x4598AD4E828cb64A53246765f60D9912AEA1b11A', // Backend configured
-        '0xDB81357038c120072a5c6bFd3091C8F88F67b014', // Frontend configured
+        process.env.FACTORY_ADDRESS, // Backend configured
+        process.env.FACTORY_ADDRESS, // Frontend configured
     ];
     let count = 0;
     

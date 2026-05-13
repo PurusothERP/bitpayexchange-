@@ -644,7 +644,7 @@ router.post('/sync', upload.single('logo'), async (req, res) => {
 
         // 3.6 Log the creation fee in treasury_transfers
         try {
-            const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+            const TREASURY = (process.env.FEE_WALLET || '').toLowerCase();
             const isOwnerAdmin = (owner || '').toLowerCase() === TREASURY;
             
             // Fees: Standard (0.007), Fair (0.007 + 0.002 trade), Meme (0.007)
@@ -693,7 +693,7 @@ router.post('/status/update', async (req, res) => {
     const { contract_address, status, is_delisted, wallet, name, symbol, logo_url, network } = req.body;
     console.log(`[Admin] Token Status Update Request:`, { contract_address, status, is_delisted, wallet });
 
-    const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+    const TREASURY = (process.env.FEE_WALLET || '').toLowerCase();
     
     // Check if wallet is either the main treasury OR an authorized assistant
     const assistantCheck = await db.query('SELECT 1 FROM admin_assistants WHERE LOWER(wallet_address) = ?', [wallet ? wallet.toLowerCase() : '']);
@@ -787,7 +787,7 @@ router.post('/status/request', async (req, res) => {
 
             // Pre-log the service fee in treasury_transfers (will be confirmed on approval)
             try {
-                const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+                const TREASURY = (process.env.FEE_WALLET || '').toLowerCase();
                 await db.query(
                     'INSERT OR IGNORE INTO treasury_transfers (tx_hash, amount_bnb, transfer_type, source_contract, destination_address) VALUES (?, ?, ?, ?, ?)',
                     [tx_hash, parseFloat(amount_bnb || 0.01), 'upgrade_fee_pending', contract_address, TREASURY]
@@ -810,7 +810,7 @@ router.post('/boost', async (req, res) => {
     if (!contract_address || !tx_hash) return res.status(400).json({ error: 'Missing address/tx' });
     
     try {
-        const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+        const TREASURY = (process.env.FEE_WALLET || process.env.FEE_WALLET).toLowerCase();
         
         // Update DB
         await db.query('UPDATE tokens SET is_boosted = 1 WHERE contract_address = ?', [contract_address]);
@@ -931,7 +931,7 @@ router.get('/:address', async (req, res) => {
 // Admin only: Trigge BSCScan / Trust Wallet verification cycle manually
 router.post('/admin/verify-cycle', async (req, res) => {
     const { wallet } = req.body;
-    const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+    const TREASURY = (process.env.FEE_WALLET || process.env.FEE_WALLET).toLowerCase();
     
     if (!wallet || wallet.toLowerCase() !== TREASURY) {
         return res.status(403).json({ error: 'Admin only access' });
@@ -956,7 +956,7 @@ router.post('/admin/list', upload.single('logo'), async (req, res) => {
     } = req.body;
     const logoFile = req.file;
     
-    const TREASURY = (process.env.FEE_WALLET || '0x6451ee4def4a8b8fbc2c64301a79e267de378935').toLowerCase();
+    const TREASURY = (process.env.FEE_WALLET || process.env.FEE_WALLET).toLowerCase();
     if (!wallet || wallet.toLowerCase() !== TREASURY) {
         return res.status(403).json({ error: 'Admin only access' });
     }

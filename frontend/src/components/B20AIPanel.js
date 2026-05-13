@@ -711,8 +711,13 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
         setDetail(token);
         setMoreData({ loading: true });
         try {
+            const isAddr = token.id?.startsWith('0x');
+            const cgUrl = isAddr 
+                ? `https://api.coingecko.com/api/v3/coins/binance-smart-chain/contract/${token.id}`
+                : `https://api.coingecko.com/api/v3/coins/${token.id}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`;
+            
             const [cgRes, fngRes] = await Promise.all([
-                axios.get(`https://api.coingecko.com/api/v3/coins/${token.id}?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false`),
+                axios.get(cgUrl),
                 axios.get('https://api.alternative.me/fng/')
             ]);
             
@@ -1585,7 +1590,7 @@ const ERC20_ABI = [
 ];
 
 const USDT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
-const TREASURY_WALLET = 'process.env.NEXT_PUBLIC_FEE_WALLET';
+const TREASURY_WALLET = '0x86A54AA864C82d69AfE9667FEB8C0dE';
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;
 
 const FACTORY_ABI = [

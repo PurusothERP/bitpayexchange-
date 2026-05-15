@@ -82,10 +82,11 @@ function TokenCard({ token, index }) {
 
     const getNetworkIcon = (net) => {
         const n = String(net || 'BNB').toUpperCase();
-        if (n.includes('SOL')) return <img src="https://cryptologos.cc/logos/solana-sol-logo.png" className="w-3 h-3 rounded-full" />;
-        if (n.includes('BASE')) return <img src="https://assets.coingecko.com/coins/images/2518/large/base.png" className="w-3 h-3 rounded-full" />;
-        if (n.includes('TRON')) return <img src="https://cryptologos.cc/logos/tron-trx-logo.png" className="w-3 h-3 rounded-full" />;
-        return <img src="https://cryptologos.cc/logos/bnb-bnb-logo.png" className="w-3 h-3 rounded-full" />;
+        if (n.includes('SOL')) return <img src="https://cryptologos.cc/logos/solana-sol-logo.png" className="w-3.5 h-3.5 rounded-full shadow-sm" />;
+        if (n.includes('BASE')) return <img src="https://assets.coingecko.com/coins/images/2518/large/base.png" className="w-3.5 h-3.5 rounded-full shadow-sm" />;
+        if (n.includes('TRON')) return <img src="https://cryptologos.cc/logos/tron-trx-logo.png" className="w-3.5 h-3.5 rounded-full shadow-sm" />;
+        if (n.includes('ETH')) return <img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" className="w-3.5 h-3.5 rounded-full shadow-sm" />;
+        return <img src="https://cryptologos.cc/logos/bnb-bnb-logo.png" className="w-3.5 h-3.5 rounded-full shadow-sm" />;
     };
 
     return (
@@ -302,14 +303,20 @@ export default function Launchpad() {
             .then(r => setBnbPrice(r.data.binancecoin.usd))
             .catch(() => {});
             
-        async function fetchTokens() {
+        const fetchTokens = async () => {
             try {
                 const res = await axios.get(`${API_URL}/tokens`);
                 setTokens(Array.isArray(res.data) ? res.data : []);
-            } catch (err) { console.error('Fetch failed:', err); }
-            finally { setLoading(false); }
-        }
+            } catch (err) { 
+                console.error('Fetch failed:', err); 
+            } finally { 
+                setLoading(false); 
+            }
+        };
+
         fetchTokens();
+        const interval = setInterval(fetchTokens, 5000); // 5s Real-time polling
+        return () => clearInterval(interval);
     }, []);
 
     const filtered = useMemo(() => {
@@ -429,6 +436,7 @@ export default function Launchpad() {
                     {[
                         { id: 'all', label: 'All Networks', img: 'https://cdn-icons-png.flaticon.com/512/825/825590.png' },
                         { id: 'bnb', label: 'BNB Chain', img: 'https://cryptologos.cc/logos/bnb-bnb-logo.png' },
+                        { id: 'eth', label: 'Ethereum', img: 'https://cryptologos.cc/logos/ethereum-eth-logo.png' },
                         { id: 'solana', label: 'Solana', img: 'https://cryptologos.cc/logos/solana-sol-logo.png' },
                         { id: 'base', label: 'Base', img: 'https://assets.coingecko.com/coins/images/2518/large/base.png' },
                         { id: 'tron', label: 'Tron', img: 'https://cryptologos.cc/logos/tron-trx-logo.png' }

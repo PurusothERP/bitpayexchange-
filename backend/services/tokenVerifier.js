@@ -17,7 +17,7 @@ const db     = require('../config/db');
 
 const BSCSCAN_API = 'https://api.etherscan.io/v2/api';
 const BSCSCAN_KEY = process.env.BSCSCAN_API_KEY || '2X6VV2BKDA4YPFPBZC56X2RIQSWM4M58YW';
-const ONE_HOUR_MS = 60 * 60 * 1000;
+const VERIFY_INTERVAL = 10 * 60 * 1000; // 10 Minutes
 
 // Read Solidity source for verification submission
 function readContract(filename) {
@@ -419,7 +419,7 @@ function startTokenVerifier() {
         setInterval(async () => {
             try { await runVerificationCycle(); }
             catch (err) { console.error('[Verifier] Scheduled cycle error:', err.message); }
-        }, ONE_HOUR_MS);
+        }, VERIFY_INTERVAL);
     }, 60000);
 }
 

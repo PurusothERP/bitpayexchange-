@@ -15,9 +15,9 @@ const upload = multer({ storage: multer.memoryStorage() });
 // Returns the best available logo URL for a token.
 // Priority: stored_url → local file → Trust Wallet CDN → backend proxy (SVG placeholder)
 const path = require('path');
-const fs   = require('fs');
-const LOGOS_DIR    = path.join(__dirname, '../public/logos');
-const BACKEND_URL  = process.env.BACKEND_URL || 'http://localhost:3001';
+const fs = require('fs');
+const LOGOS_DIR = path.join(__dirname, '../public/logos');
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
 
 function normalizeLogo(url, contractAddress) {
     // 1. If there's already a working local URL, pass it through unchanged
@@ -56,7 +56,7 @@ function normalizeToken(t) {
     const price = parseFloat(t.price_bnb || 0) || 0.00000001; // baseline if 0
     const supply = parseFloat(t.total_supply || 1000000000);
     const marketCap = price * supply;
-    
+
     let status = t.trust_status || 'Newly Launched Token';
     if (status === 'Newly Launched Token') {
         if (totalSold > 0.5) status = 'Highly Trusted';
@@ -73,20 +73,27 @@ function normalizeToken(t) {
     let progress = Math.min(100, (collateral / 10) * 100);
     if (t.launch_type === 'FAIR' || t.launch_type === 'STANDARD') progress = 100;
 
-    return { 
-        ...t, 
-        logo_url:             normalizeLogo(t.logo_url, t.contract_address),
-        ipfs_logo_url:        t.ipfs_logo_url || null,
-        trust_status:         status,
-        price_bnb:            price, // <-- ensures frontend has a price
-        market_cap:           marketCap,
-        bonding_progress:     progress,
-        is_delisted:          isDelisted,
-        delisting_soon:       delistingSoon,
-        bscscan_verified:     t.bscscan_verified === 1,
-        verification_status:  t.verification_status || 'pending',
-        tw_pr_url:            t.tw_pr_url || null,
-        tw_pr_status:         t.tw_pr_status || 'pending',
+    return {
+        ...t,
+        logo_url: normalizeLogo(t.logo_url, t.contract_address),
+        ipfs_logo_url: t.ipfs_logo_url || null,
+        trust_status: status,
+        price_bnb: price, 
+        market_cap: marketCap,
+        bonding_progress: progress,
+        is_delisted: isDelisted,
+        delisting_soon: delistingSoon,
+        bscscan_verified: t.bscscan_verified === 1,
+        verification_status: t.verification_status || 'pending',
+        tw_pr_url: t.tw_pr_url || null,
+        tw_pr_status: t.tw_pr_status || 'pending',
+        // Institutional Details for User Reference
+        launch_date: t.created_at,
+        total_accumulated_bnb: collateral,
+        target_balance_bnb: 10.0,
+        launch_tx_hash: t.tx_hash,
+        bsc_verification_link: `https://bscscan.com/token/${t.contract_address}`,
+        time_since_launch: diffDays < 1 ? 'Today' : `${Math.floor(diffDays)} days ago`
     };
 }
 
@@ -117,13 +124,13 @@ router.get('/stats', async (req, res) => {
 router.get('/', async (req, res) => {
     const { include_delisted } = req.query;
     try {
-        const query = include_delisted === 'true' 
+        const query = include_delisted === 'true'
             ? `SELECT *, COALESCE(launch_type, 'MEME') as launch_type FROM tokens ORDER BY created_at DESC`
             : `SELECT *, COALESCE(launch_type, 'MEME') as launch_type FROM tokens WHERE is_delisted = 0 ORDER BY created_at DESC`;
-            
+
         const result = await db.query(query);
         const tokens = result.rows.map(normalizeToken);
-        
+
         if (include_delisted === 'true') {
             res.json(tokens);
         } else {
@@ -152,14 +159,14 @@ async function cachedFetch(key, url, ttlMs = 10 * 60 * 1000) {
 // Cached for 10 minutes to avoid rate limits. Used by the exchange Markets tab.
 router.get('/markets/bsclist', async (req, res) => {
     try {
-        const PANCAKE_URL    = 'https://tokens.pancakeswap.finance/pancakeswap-extended.json';
-        const CG_BSC_URL     = 'https://tokens.coingecko.com/binance-smart-chain/all.json';
-        const ONE_INCH_URL   = 'https://tokens.1inch.io/v1.2/56'; // 1inch BSC list
+        const PANCAKE_URL = 'https://tokens.pancakeswap.finance/pancakeswap-extended.json';
+        const CG_BSC_URL = 'https://tokens.coingecko.com/binance-smart-chain/all.json';
+        const ONE_INCH_URL = 'https://tokens.1inch.io/v1.2/56'; // 1inch BSC list
 
         const [cgBsc, pancake, oneInch] = await Promise.allSettled([
-            cachedFetch('cg_bsc',   CG_BSC_URL,   10 * 60 * 1000),
-            cachedFetch('pancake',  PANCAKE_URL,  10 * 60 * 1000),
-            cachedFetch('1inch56',  ONE_INCH_URL, 10 * 60 * 1000),
+            cachedFetch('cg_bsc', CG_BSC_URL, 10 * 60 * 1000),
+            cachedFetch('pancake', PANCAKE_URL, 10 * 60 * 1000),
+            cachedFetch('1inch56', ONE_INCH_URL, 10 * 60 * 1000),
         ]);
 
         const safe = (r) => r.status === 'fulfilled' ? r.value : null;
@@ -176,8 +183,8 @@ router.get('/markets/bsclist', async (req, res) => {
             seenAddresses.add(addr);
             merged.push({
                 address: t.address,
-                symbol:  (t.symbol || '').toUpperCase(),
-                name:    t.name,
+                symbol: (t.symbol || '').toUpperCase(),
+                name: t.name,
                 decimals: t.decimals || 18,
                 logoURI: t.logoURI || t.image || '',
                 chainId: 56,
@@ -193,8 +200,8 @@ router.get('/markets/bsclist', async (req, res) => {
             seenAddresses.add(addr);
             merged.push({
                 address: t.address,
-                symbol:  (t.symbol || '').toUpperCase(),
-                name:    t.name,
+                symbol: (t.symbol || '').toUpperCase(),
+                name: t.name,
                 decimals: t.decimals || 18,
                 logoURI: t.logoURI || '',
                 chainId: 56,
@@ -211,8 +218,8 @@ router.get('/markets/bsclist', async (req, res) => {
                 seenAddresses.add(lAddr);
                 merged.push({
                     address: addr,
-                    symbol:  (t.symbol || '').toUpperCase(),
-                    name:    t.name,
+                    symbol: (t.symbol || '').toUpperCase(),
+                    name: t.name,
                     decimals: t.decimals || 18,
                     logoURI: t.logoURI || t.logoUrl || '',
                     chainId: 56,
@@ -271,17 +278,17 @@ router.get('/markets/cg', async (req, res) => {
         const p = parseInt(page) || 1;
         const pp = parseInt(per_page) || 250;
         const tokens = tokenRegistry.getMarkets(p, pp);
-        
+
         console.log(`[CG Route] Page: ${p}, Registry count: ${tokens.length}`);
-        
+
         if (tokens.length > 0) {
             return res.json(tokens);
         }
 
         // If registry is empty for this page, check if we have ANY tokens at all
         if (tokenRegistry.tokens.markets.length > 0) {
-             console.warn(`[CG Route] Page ${p} out of bounds, returning empty.`);
-             return res.json([]);
+            console.warn(`[CG Route] Page ${p} out of bounds, returning empty.`);
+            return res.json([]);
         }
 
         // Fallback to live fetcher only if registry is completely empty
@@ -416,7 +423,7 @@ router.get('/list', async (req, res) => {
     try {
         const query = 'SELECT * FROM tokens ORDER BY created_at DESC';
         const result = await db.query(query);
-        
+
         const tokenList = {
             name: "B20-LAB Launchpad Tokens",
             timestamp: new Date().toISOString(),
@@ -430,7 +437,7 @@ router.get('/list', async (req, res) => {
                 if (logoIpfs && logoIpfs.includes('gateway.pinata.cloud/ipfs/')) {
                     logoIpfs = logoIpfs.replace('https://gateway.pinata.cloud/ipfs/', 'ipfs://');
                 }
-                
+
                 return {
                     name: t.name,
                     symbol: t.symbol,
@@ -442,7 +449,7 @@ router.get('/list', async (req, res) => {
                 };
             })
         };
-        
+
         res.json(tokenList);
     } catch (error) {
         console.error('Error fetching token list:', error);
@@ -514,7 +521,7 @@ router.get('/:address/logo', async (req, res) => {
   <defs>
     <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="hsl(${hue},70%,55%)"/>
-      <stop offset="100%" stop-color="hsl(${(hue+60)%360},80%,40%)"/>
+      <stop offset="100%" stop-color="hsl(${(hue + 60) % 360},80%,40%)"/>
     </linearGradient>
   </defs>
   <rect width="128" height="128" rx="32" fill="url(#g)"/>
@@ -537,6 +544,9 @@ router.get('/:address/logo', async (req, res) => {
 // IMPORTANT: Must be before /:address route
 router.post('/sync', upload.single('logo'), async (req, res) => {
     const { name, symbol, decimals, supply, owner, description, tokenAddress, txHash, launch_type } = req.body;
+    if (!owner) {
+        console.warn(`[Sync] ⚠️ Token sync for ${symbol} (${tokenAddress}) missing owner/creator address!`);
+    }
     const logoFile = req.file;
 
     console.log('[Sync] Incoming request object:', { name, symbol, tokenAddress, owner, launch_type });
@@ -588,7 +598,7 @@ router.post('/sync', upload.single('logo'), async (req, res) => {
                     address: tokenAddress,
                     description
                 }, logoFile.buffer).then(result => {
-                    if (result?.prUrl)  console.log('[Sync] Trust Wallet PR:', result.prUrl);
+                    if (result?.prUrl) console.log('[Sync] Trust Wallet PR:', result.prUrl);
                     if (result?.ipfsUrl) console.log('[Sync] IPFS Logo:', result.ipfsUrl);
                 }).catch(err => {
                     console.warn('[Sync] Trust Wallet submission error:', err.message);
@@ -616,8 +626,8 @@ router.post('/sync', upload.single('logo'), async (req, res) => {
         const values = [
             name || 'Unknown',
             symbol || 'UNKNOWN',
-            tokenAddress,
-            owner || '',
+            (tokenAddress || '').toLowerCase(),
+            (owner || '').toLowerCase(),
             logoUrl,
             metadataUrl,
             description || '',
@@ -646,13 +656,13 @@ router.post('/sync', upload.single('logo'), async (req, res) => {
         try {
             const TREASURY = (process.env.FEE_WALLET || '').toLowerCase();
             const isOwnerAdmin = (owner || '').toLowerCase() === TREASURY;
-            
+
             // Fees: Standard (0.007), Fair (0.007 + 0.002 trade), Meme (0.007)
             // For logging purposes, we record the base creation fee here
             // If it's a MEME token, the indexer (treasuryAutomation.js) catches the event and logs the fee.
             // For STANDARD and FAIR, we log it here to ensure it is recorded.
             if (!isOwnerAdmin && (launch_type === 'STANDARD' || launch_type === 'FAIR')) {
-                const creationFee = 0.007; 
+                const creationFee = 0.007;
                 await db.query(
                     'INSERT OR IGNORE INTO treasury_transfers (tx_hash, amount_bnb, transfer_type, source_contract, destination_address) VALUES (?, ?, ?, ?, ?)',
                     [txHash || `manual_${tokenAddress}_${Date.now()}`, creationFee, 'creation_fee', tokenAddress, TREASURY]
@@ -694,7 +704,7 @@ router.post('/status/update', async (req, res) => {
     console.log(`[Admin] Token Status Update Request:`, { contract_address, status, is_delisted, wallet });
 
     const TREASURY = (process.env.FEE_WALLET || '').toLowerCase();
-    
+
     // Check if wallet is either the main treasury OR an authorized assistant
     const assistantCheck = await db.query('SELECT 1 FROM admin_assistants WHERE LOWER(wallet_address) = ?', [wallet ? wallet.toLowerCase() : '']);
     const isAuthorized = (wallet && wallet.toLowerCase() === TREASURY) || (assistantCheck.rows.length > 0);
@@ -718,15 +728,15 @@ router.post('/status/update', async (req, res) => {
                 is_delisted = excluded.is_delisted,
                 network = COALESCE(excluded.network, tokens.network)
         `, [
-            contract_address.toLowerCase(), 
-            name || 'External Token', 
-            symbol || 'EXT', 
+            contract_address.toLowerCase(),
+            name || 'External Token',
+            symbol || 'EXT',
             logo_url || 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png',
             network || 'BNB',
-            status || 'Newly Launched Token', 
+            status || 'Newly Launched Token',
             is_delisted ? 1 : 0
         ]);
-        
+
         console.log(`[Admin] ✅ Status updated for ${contract_address}: ${status}, delisted=${is_delisted}`);
         res.json({ success: true, message: 'Platform visibility updated' });
     } catch (error) {
@@ -739,7 +749,7 @@ router.post('/status/update', async (req, res) => {
 router.post('/status/request', async (req, res) => {
     const { contract_address, new_status, tx_hash, requester_wallet, amount_bnb } = req.body;
     const isManual = tx_hash === 'admin_manual';
-    
+
     try {
         if (isManual) {
             // Admin manual override - apply immediately
@@ -808,12 +818,13 @@ router.post('/status/request', async (req, res) => {
 router.post('/boost', async (req, res) => {
     const { contract_address, tx_hash } = req.body;
     if (!contract_address || !tx_hash) return res.status(400).json({ error: 'Missing address/tx' });
-    
+
     try {
         const TREASURY = (process.env.FEE_WALLET || process.env.FEE_WALLET).toLowerCase();
-        
+
+        const normalizedAddr = contract_address.toLowerCase();
         // Update DB
-        await db.query('UPDATE tokens SET is_boosted = 1 WHERE contract_address = ?', [contract_address]);
+        await db.query('UPDATE tokens SET is_boosted = 1 WHERE LOWER(contract_address) = ?', [normalizedAddr]);
 
         // Log fee (0.05 BNB for boosting)
         await db.query(
@@ -863,6 +874,29 @@ router.get('/listing-submissions', async (req, res) => {
     }
 });
 
+// ── GET /api/tokens/force-scan ────────────────────────────────────────────────
+// Emergency manual scan of the last 10,000 blocks to recover missed deployments
+const { pollEvents, resetLastPolledBlock } = require('../services/treasuryAutomation');
+
+router.get('/force-scan', async (req, res) => {
+    try {
+        console.log('[Indexer] 🚨 Manual Force-Scan Triggered');
+        const { ethers } = require('ethers');
+        const provider = new ethers.JsonRpcProvider(process.env.BSC_RPC_URL || 'https://bsc-dataseed.binance.org');
+        const current = await provider.getBlockNumber();
+        
+        // Reset to 10k blocks ago
+        await resetLastPolledBlock(current - 10000);
+        
+        // Trigger one poll cycle immediately
+        await pollEvents();
+        
+        res.json({ success: true, message: 'Indexer has reset to 10,000 blocks ago and performed a deep scan. Any missed tokens should now be visible.' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ─── GET /api/tokens/:address ─────────────────────────────────────────────────
 // Get a single token by contract address
 router.get('/:address', async (req, res) => {
@@ -885,7 +919,7 @@ router.get('/:address', async (req, res) => {
         const platforms = ['binance-smart-chain', 'solana', 'ethereum', 'base', 'tron', 'arbitrum-one', 'optimistic-ethereum'];
         let geckoData = null;
         let detectedPlatform = 'Multi-Chain';
-        
+
         for (const p of platforms) {
             try {
                 // If address doesn't look like EVM, skip EVM platforms (efficiency)
@@ -940,7 +974,7 @@ router.get('/:address', async (req, res) => {
                         symbol = excluded.symbol,
                         logo_url = excluded.logo_url
                 `, [
-                    address.toLowerCase(), formatted.name, formatted.symbol, formatted.logo_url, 
+                    address.toLowerCase(), formatted.name, formatted.symbol, formatted.logo_url,
                     formatted.network, formatted.total_supply.toString(), formatted.launch_type, formatted.trust_status
                 ]);
             } catch (dbErr) { console.warn('Failed to auto-save Gecko token:', dbErr.message); }
@@ -965,7 +999,7 @@ router.get('/:address', async (req, res) => {
                     tokenContract.symbol(),
                     tokenContract.totalSupply()
                 ]);
-                
+
                 const onChainToken = {
                     contract_address: address,
                     name: onChainName,
@@ -992,31 +1026,14 @@ router.get('/:address', async (req, res) => {
         res.status(500).json({ error: 'Failed to resolve token', details: err.message });
     }
 });
-                    price_bnb: 0,
-                    liquidity_bnb: '0',
-                    trading_enabled: false,
-                    launch_type: 'MEME'
-                });
-            } catch (chainErr) {
-                return res.status(404).json({ error: 'Token not found' });
-            }
-        }
 
-        res.json(normalizeToken(result.rows[0]));
-    } catch (error) {
-        console.error('Error fetching token:', error);
-        res.status(500).json({ error: 'Failed to fetch token', details: error.message });
-    }
-});
-
-// ... moved up ...
 
 // ─── POST /api/tokens/admin/verify-cycle ──────────────────────────────────
 // Admin only: Trigge BSCScan / Trust Wallet verification cycle manually
 router.post('/admin/verify-cycle', async (req, res) => {
     const { wallet } = req.body;
     const TREASURY = (process.env.FEE_WALLET || process.env.FEE_WALLET).toLowerCase();
-    
+
     if (!wallet || wallet.toLowerCase() !== TREASURY) {
         return res.status(403).json({ error: 'Admin only access' });
     }
@@ -1034,12 +1051,12 @@ router.post('/admin/verify-cycle', async (req, res) => {
 // ─── POST /api/tokens/admin/list ──────────────────────────────────────────────
 // Admin only: Directly list external/custom tokens to the exchange
 router.post('/admin/list', upload.single('logo'), async (req, res) => {
-    const { 
-        name, symbol, contract_address, total_supply, 
+    const {
+        name, symbol, contract_address, total_supply,
         liquidity_bnb, bnb_price, logo_url, wallet, network
     } = req.body;
     const logoFile = req.file;
-    
+
     const TREASURY = (process.env.FEE_WALLET || process.env.FEE_WALLET).toLowerCase();
     if (!wallet || wallet.toLowerCase() !== TREASURY) {
         return res.status(403).json({ error: 'Admin only access' });
@@ -1080,7 +1097,7 @@ router.post('/admin/list', upload.single('logo'), async (req, res) => {
                 network = excluded.network,
                 trading_enabled = excluded.trading_enabled
         `;
-        
+
         const values = [
             name,
             symbol.toUpperCase(),
@@ -1091,7 +1108,7 @@ router.post('/admin/list', upload.single('logo'), async (req, res) => {
             liquidity_bnb || '0',
             bnb_price || 0,
             'Highly Trusted', // Admins only add trusted tokens
-            'EXCHANGE_LISTING', 
+            'EXCHANGE_LISTING',
             network || 'BNB',
             1 // Trading enabled
         ];
@@ -1158,6 +1175,33 @@ router.patch('/listing-submissions/:id', async (req, res) => {
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: 'Failed to update submission' });
+    }
+});
+
+// ── POST /api/tokens/seed-multichain ──────────────────────────────────────────
+router.post('/seed-multichain', async (req, res) => {
+    const multiChainTokens = [
+        { name: 'Pepe', symbol: 'PEPE', address: '0x6982508145454ce325ddbe47a25d4ec3d2311933', network: 'ETH', img: 'https://assets.coingecko.com/coins/images/29850/large/pepe-token.jpeg' },
+        { name: 'Dogwifhat', symbol: 'WIF', address: 'EKpQGSJtjMFqKZ9KQanAtY7YXamrqz3YHqKk8R319', network: 'SOLANA', img: 'https://assets.coingecko.com/coins/images/33562/large/wif.jpeg' },
+        { name: 'Bonk', symbol: 'BONK', address: 'DezXAZ8z7PnrnMcZE2z4LSW6S6K58YPPXPs9K_1_0', network: 'SOLANA', img: 'https://assets.coingecko.com/coins/images/28600/large/bonk.jpeg' },
+        { name: 'Brett', symbol: 'BRETT', address: '0x532f27101965dd1a59449e27a619fe03b5099a4e', network: 'BASE', img: 'https://assets.coingecko.com/coins/images/35791/large/brett.jpeg' },
+        { name: 'Toshi', symbol: 'TOSHI', address: '0x6982508145454ce325ddbe47a25d4ec3d2311933_base', network: 'BASE', img: 'https://assets.coingecko.com/coins/images/31388/large/toshi.jpeg' },
+        { name: 'Sundog', symbol: 'SUNDOG', address: 'TUX9889222...TRX', network: 'TRON', img: 'https://assets.coingecko.com/coins/images/39564/large/sundog.jpeg' },
+        { name: 'Shiba Inu', symbol: 'SHIB', address: '0x95ad61b0a150d79219dcf64e1e6cc01f0b64c4ce', network: 'ETH', img: 'https://assets.coingecko.com/coins/images/11939/large/shiba.png' }
+    ];
+
+    try {
+        for (const t of multiChainTokens) {
+            await db.query(
+                `INSERT INTO tokens (name, symbol, contract_address, network, logo_url, is_meme, trust_status, launch_type, market_cap)
+                 VALUES (?, ?, ?, ?, ?, 1, 'Premium Token', 'STANDARD', 500000)
+                 ON CONFLICT(contract_address) DO UPDATE SET network = excluded.network`,
+                [t.name, t.symbol, t.address.toLowerCase(), t.network, t.img]
+            );
+        }
+        res.json({ success: true, message: 'Multi-chain tokens seeded' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 

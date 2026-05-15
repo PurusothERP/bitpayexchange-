@@ -152,10 +152,9 @@ export default function StandardAsset() {
                 hash: tx.hash,
                 network: 'BNB Smart Chain (BSC)'
             });
+            setStatus('success'); // Show success immediately
 
-            // 3. Sync with Backend
-            setError('Step 3/3: Syncing metadata & indexing…');
-            
+            // 3. Sync with Backend (Background)
             const metaForm = new FormData();
             metaForm.append('tokenAddress', tokenAddress || 'pending');
             metaForm.append('name', formData.name);
@@ -168,24 +167,20 @@ export default function StandardAsset() {
             metaForm.append('decimals', formData.decimals);
             if (logo) metaForm.append('logo', logo);
 
-            await axios.post(`${API_URL}/tokens/sync`, metaForm, {
+            axios.post(`${API_URL}/tokens/sync`, metaForm, {
                 headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            }).catch(syncErr => console.warn('[Sync] Standard metadata sync failed:', syncErr.message));
 
-            setStatus('success');
-            setError('');
         } catch (err) {
             console.error(err);
-            const partialSuccess = err.config?.url?.includes('/sync') || (err.receipt || err.transactionHash);
-            if (partialSuccess) {
-                setStatus('success');
-                setError('Token deployed successfully, but metadata sync timed out. It will appear on the platform shortly.');
-            } else if (err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
+            if (status === 'success') return; // Skip if already successful
+
+            setStatus('error');
+            if (err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
                 setError('Transaction was rejected by the user.');
             } else {
                 setError(err.reason || err.message || 'Deployment failed. Check your balance.');
             }
-            setStatus('error');
         }
     };
 

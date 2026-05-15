@@ -47,6 +47,7 @@ export default function NueraAdminPortal() {
         { id: 'institutional-futures', label: 'Futures Guard', icon: <Activity size={18} />, color: 'text-sky-600' },
         { id: 'api-panel', label: 'API & Architecture', icon: <Database size={18} />, color: 'text-rose-600' },
         { id: 'address-hub', label: 'Address Hub', icon: <PlusCircle size={18} />, color: 'text-gray-900' },
+        { id: 'nft-terminal', label: 'NFT Terminal', icon: <Zap size={18} />, color: 'text-teal-600' },
     ];
 
     const getAuthHeader = () => ({ headers: { 'x-wallet-address': account } });
@@ -154,6 +155,7 @@ export default function NueraAdminPortal() {
                         {activeTab === 'institutional-futures' && <InstitutionalFutures account={account} />}
                         {activeTab === 'api-panel' && <APIPanel account={account} />}
                         {activeTab === 'address-hub' && <AddressHub account={account} />}
+                        {activeTab === 'nft-terminal' && <NFTTerminal account={account} />}
                         {activeTab === 'community' && <div className="p-20 text-center"><MessageSquare className="w-20 h-20 text-slate-200 mx-auto mb-6" /><h3 className="text-2xl font-black text-slate-900 uppercase italic">Social Mod</h3><p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Community management tools offline for maintenance.</p></div>}
                     </AnimatePresence>
                 </div>
@@ -699,7 +701,7 @@ function ConnectedWallets({ account }) {
     );
 }
 
-function ApiPanel() {
+function APIPanel() {
     const [subTab, setSubTab] = useState('api'); // 'api' | 'architecture' | 'docs'
 
     const apiMatrix = [
@@ -2330,6 +2332,123 @@ function YieldLedger({ account }) {
                                             <ShieldAlert className="w-12 h-12 mx-auto mb-4 text-slate-300" />
                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No institutional deployments recorded</p>
                                         </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function NFTTerminal({ account }) {
+    const [nfts, setNfts] = useState([]);
+    const [trades, setTrades] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchNftData = async () => {
+            try {
+                const [nftRes, tradeRes] = await Promise.all([
+                    axios.get(`${API_URL}/nfts`),
+                    axios.get(`${API_URL}/admin/nft-history`, { headers: { 'x-wallet-address': account } })
+                ]);
+                setNfts(nftRes.data || []);
+                setTrades(tradeRes.data || []);
+            } catch (err) {
+                console.error('Failed to fetch admin NFT data:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchNftData();
+    }, [account]);
+
+    return (
+        <div className="space-y-12 pb-20">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h2 className="text-3xl font-black text-slate-900 uppercase tracking-tighter italic">NFT <span className="text-teal-600">Inventory Nexus</span></h2>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Institutional Monitoring of Asset Metadata & Liquidity</p>
+                </div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {[
+                    { label: 'Mirrored Collections', value: nfts.length, icon: <Box />, color: 'bg-teal-50 text-teal-600' },
+                    { label: 'Settled Trades', value: trades.length, icon: <Activity />, color: 'bg-sky-50 text-sky-600' },
+                    { label: 'Protocol Revenue', value: `${(trades.reduce((s,t) => s + (t.price * 0.005), 0)).toFixed(4)} BNB`, icon: <DollarSign />, color: 'bg-emerald-50 text-emerald-600' },
+                    { label: 'Active Mints', value: nfts.filter(n => n.mintable === 1).length, icon: <Zap />, color: 'bg-violet-50 text-violet-600' }
+                ].map((s, i) => (
+                    <div key={i} className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm">
+                        <div className={`w-10 h-10 rounded-2xl ${s.color} flex items-center justify-center mb-4`}>
+                            {s.icon}
+                        </div>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">{s.label}</p>
+                        <p className="text-2xl font-black text-slate-900 leading-none">{s.value}</p>
+                    </div>
+                ))}
+            </div>
+
+            {/* Trades History */}
+            <div className="bg-white border border-slate-200/60 rounded-[2.5rem] shadow-sm overflow-hidden">
+                <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-widest flex items-center gap-2">
+                        <History size={16} className="text-teal-600" /> Trade Settlement Ledger
+                    </h3>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead>
+                            <tr className="bg-slate-50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                <th className="px-8 py-5">Timestamp</th>
+                                <th className="px-8 py-5">Asset</th>
+                                <th className="px-8 py-5">Settlement Price</th>
+                                <th className="px-8 py-5">Involved Wallets</th>
+                                <th className="px-8 py-5 text-right">Proof</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50">
+                            {trades.map((t, idx) => (
+                                <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                    <td className="px-8 py-5 text-[10px] font-bold text-slate-400">
+                                        {new Date(t.timestamp).toLocaleString()}
+                                    </td>
+                                    <td className="px-8 py-5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-slate-100 overflow-hidden border border-black/5">
+                                                <img src={t.image_url} className="w-full h-full object-cover" />
+                                            </div>
+                                            <div>
+                                                <span className="text-xs font-black text-slate-900 block">{t.name}</span>
+                                                <span className="text-[9px] text-teal-600 font-black uppercase tracking-widest">${t.symbol}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-5">
+                                        <span className="text-xs font-black text-slate-900">{t.price} BNB</span>
+                                    </td>
+                                    <td className="px-8 py-5">
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase">Buyer: {t.buyer_wallet.slice(0, 8)}...</span>
+                                            {t.seller_wallet && <span className="text-[9px] font-bold text-slate-400 uppercase">Seller: {t.seller_wallet.slice(0, 8)}...</span>}
+                                        </div>
+                                    </td>
+                                    <td className="px-8 py-5 text-right">
+                                        <a href={`https://bscscan.com/tx/${t.tx_hash}`} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-white border border-slate-200 text-slate-400 hover:text-teal-600 rounded-xl transition-all inline-block shadow-sm">
+                                            <ArrowUpRight size={14} />
+                                        </a>
+                                    </td>
+                                </tr>
+                            ))}
+                            {trades.length === 0 && !loading && (
+                                <tr>
+                                    <td colSpan="5" className="py-20 text-center opacity-30">
+                                        <Activity className="w-12 h-12 mx-auto mb-4" />
+                                        <p className="text-[10px] font-black uppercase tracking-widest">No NFT settlements captured</p>
                                     </td>
                                 </tr>
                             )}

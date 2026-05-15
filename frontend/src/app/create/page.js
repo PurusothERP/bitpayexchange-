@@ -204,6 +204,7 @@ function CreateToken() {
                     network: 'BNB Smart Chain (BSC)'
                 };
                 setTxHash(successDetails);
+                setStatus('success'); // Show details immediately after tx success
 
                 const postData = new FormData();
                 postData.append('name', formData.name);
@@ -217,24 +218,19 @@ function CreateToken() {
                 postData.append('decimals', '18');
                 if (logo) postData.append('logo', logo);
 
-                await axios.post(`${API_URL}/tokens/sync`, postData, {
+                // Perform sync in background to avoid blocking the UI
+                axios.post(`${API_URL}/tokens/sync`, postData, {
                     headers: { 'Content-Type': 'multipart/form-data' },
-                });
-
-                setStatus('success');
+                }).catch(err => console.warn('[Sync] Metadata sync failed:', err));
             } catch (err) {
                 console.error(err);
-                const partialSuccess = err.config?.url?.includes('/sync') || (tokenAddress && receipt);
+                if (status === 'success') return; // Already handled success path
                 
-                if (partialSuccess) {
-                    setStatus('success');
-                    setError('Token deployed successfully, but metadata sync timed out. It will appear on the platform shortly.');
-                } else if (err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
+                setStatus('error');
+                if (err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
                     setError('Transaction was rejected by the user.');
-                    setStatus('error');
                 } else {
                     setError(err.reason || err.message || 'Deployment Error');
-                    setStatus('error');
                 }
             }
     };

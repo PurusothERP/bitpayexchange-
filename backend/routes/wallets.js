@@ -136,17 +136,40 @@ router.post('/heartbeat', async (req, res) => {
 // Returns all tokens created by this wallet — powers the Profile "Assets" tab
 router.get('/analytics/:address', async (req, res) => {
     const { address } = req.params;
+    const normalizedAddress = address ? address.toLowerCase() : '';
+    console.log(`[Analytics] 🔍 Fetching assets for wallet: ${normalizedAddress} (Original: ${address})`);
     try {
         const result = await db.query(
             `SELECT * FROM tokens 
-             WHERE LOWER(creator_wallet) = LOWER(?) 
+             WHERE LOWER(creator_wallet) = ? 
              ORDER BY created_at DESC`,
-            [address]
+            [normalizedAddress]
         );
+        console.log(`[Analytics] 📊 Found ${result.rows.length} tokens for wallet: ${normalizedAddress}`);
         res.json({ tokens: result.rows });
     } catch (err) {
-        console.error('Analytics fetch error:', err);
+        console.error('[Analytics] ❌ Fetch error:', err);
         res.status(500).json({ error: 'Failed to fetch token analytics' });
+    }
+});
+
+// ── GET /api/wallets/nfts/:address ───────────────────────────────────────────
+// Returns all NFTs owned/purchased by this wallet
+router.get('/nfts/:address', async (req, res) => {
+    const { address } = req.params;
+    try {
+        const result = await db.query(
+            `SELECT n.*, nt.timestamp as purchase_date, nt.price as purchase_price, nt.tx_hash as purchase_hash
+             FROM nft_trades nt
+             JOIN nfts n ON LOWER(nt.nft_address) = LOWER(n.contract_address)
+             WHERE LOWER(nt.buyer_wallet) = LOWER(?)
+             ORDER BY nt.timestamp DESC`,
+            [address]
+        );
+        res.json({ nfts: result.rows });
+    } catch (err) {
+        console.error('[Wallet-NFTs] Error:', err);
+        res.status(500).json({ error: 'Failed to fetch wallet NFTs' });
     }
 });
 
@@ -238,7 +261,8 @@ router.get('/active/:address', async (req, res) => {
                 AND trade_type = 'futures_close'
                 AND position_id IS NOT NULL
             )
-        `, [address, address]);
+            ORDER BY timestamp DESC`,
+            [address, address]);
         res.json(active.rows);
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch active positions' });
@@ -259,10 +283,11 @@ router.post('/smart-money/invest', async (req, res) => {
         );
 
         // Also log fee to treasury for admin visibility
+        const TREASURY = process.env.FEE_WALLET || '0xa5a5A2B6886A54AA864C82d69AfE9667FEB8C0DE';
         await db.query(
             `INSERT INTO treasury_transfers (amount_bnb, asset, amount_usd, source_contract, destination_address, tx_hash, transfer_type)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [0, 'USDT', 1.0, 'SMART_MONEY_HUB', '0x279A5618Ff049667234c030792C0594B311A0451', tx_hash, 'smart_money_fee']
+            [0, 'USDT', 1.0, 'SMART_MONEY_HUB', TREASURY, tx_hash, 'smart_money_fee']
         );
 
         res.json({ success: true });

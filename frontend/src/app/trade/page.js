@@ -159,7 +159,7 @@ export default function TradePage() {
             const activeSigner = signer;
             if (!activeSigner) throw new Error("Wallet not fully initialized. Please try again.");
 
-            const FEE_WALLET = '0x279A5618Ff049667234c030792C0594B311A0451';
+            const FEE_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || '0xa5a5A2B6886A54AA864C82d69AfE9667FEB8C0DE';
             const PROTOCOL_FEE_BPS = 10; // 0.1%
 
             const amountIn = ethers.parseEther(orderAmount);

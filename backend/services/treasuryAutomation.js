@@ -43,12 +43,27 @@ function initProvider() {
 }
 
 // ── Persistence Helpers ────────────────────────────────────────────────────────
+async function getLastPolledBlock() {
+    try {
+        const res = await db.query("SELECT value FROM settings WHERE key = 'INDEXER_LAST_BLOCK'");
+        return res.rows[0] ? parseInt(res.rows[0].value) : 0;
+    } catch (e) { return 0; }
+}
+
+async function setLastPolledBlock(block) {
+    try {
+        await db.query(`INSERT INTO settings (key, value, category, label) 
+                        VALUES ('INDEXER_LAST_BLOCK', ?, 'indexer', 'Indexer Last Polled Block')
+                        ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [block.toString()]);
+    } catch (e) { console.error('[Indexer] Block Save Err:', e.message); }
+}
+
 async function recordTrade({ tokenAddress, trader, tradeType, amountTokens, amountBnb, priceBnb, feeBnb, txHash, blockNumber }) {
     try {
         await db.query(
             `INSERT OR IGNORE INTO trades (token_address, trader_wallet, trade_type, amount_tokens, amount_bnb, price_bnb, fee_bnb, tx_hash, block_number)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [tokenAddress.toLowerCase(), trader, tradeType, amountTokens, amountBnb, priceBnb, feeBnb, txHash, blockNumber]
+            [tokenAddress.toLowerCase(), trader.toLowerCase(), tradeType, amountTokens, amountBnb, priceBnb, feeBnb, txHash, blockNumber]
         );
         const delta = (tradeType === 'buy') ? amountBnb : -amountBnb;
         await db.query(`UPDATE tokens SET price_bnb = ?, liquidity_bnb = CAST(COALESCE(liquidity_bnb, '0') AS REAL) + ? WHERE LOWER(contract_address) = LOWER(?)`, [priceBnb, delta, tokenAddress]);
@@ -73,9 +88,13 @@ async function autoCreateToken({ tokenAddress, name, symbol, supply, creator, tx
         await db.query(
             `INSERT INTO tokens (contract_address, name, symbol, total_supply, creator_wallet, tx_hash, launch_type, description, decimals)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-             ON CONFLICT(contract_address) DO UPDATE SET launch_type = excluded.launch_type`,
-            [tokenAddress.toLowerCase(), name, symbol, supplyFormatted, creator, txHash, launchType, 'Synchronized via Nuera Indexer.', parseInt(decimals) || 18]
+             ON CONFLICT(contract_address) DO UPDATE SET 
+                tx_hash = CASE WHEN tokens.tx_hash IS NULL OR tokens.tx_hash = '' THEN excluded.tx_hash ELSE tokens.tx_hash END,
+                creator_wallet = CASE WHEN tokens.creator_wallet IS NULL THEN excluded.creator_wallet ELSE tokens.creator_wallet END,
+                launch_type = excluded.launch_type`,
+            [tokenAddress.toLowerCase(), name, symbol, supplyFormatted, creator ? creator.toLowerCase() : null, txHash, launchType, 'Synchronized via Nuera Indexer.', parseInt(decimals) || 18]
         );
+        console.log(`[Indexer] 🚀 Token Auto-Captured: ${name} (${symbol}) at ${tokenAddress}`);
     } catch (e) { console.error('[Indexer] Token Creation Err:', e.message); }
 }
 
@@ -84,12 +103,14 @@ async function pollEvents() {
     try {
         const currentBlock = await provider.getBlockNumber();
         if (lastPolledBlock === 0) {
-            lastPolledBlock = currentBlock - 50; // Start with a small window
+            const saved = await getLastPolledBlock();
+            lastPolledBlock = saved > 0 ? saved : currentBlock - 5000; // Scan last 5k blocks on fresh start
+            console.log(`[Nuera-Indexer] 🛠️  Service initialized at block ${lastPolledBlock}`);
             return;
         }
 
         const from = lastPolledBlock + 1;
-        const to = Math.min(from + 2000, currentBlock); // Max 2k blocks per poll
+        const to = Math.min(from + 5000, currentBlock); // Increased range per poll
         
         if (from > to) return;
         console.log(`[Nuera-Indexer] 🔍 Polling range ${from} -> ${to}...`);
@@ -146,10 +167,14 @@ async function pollEvents() {
                 await recordTreasuryTransfer({ amountBnb: fee, sourceContract: 'BONDING_CURVE', destinationAddress: process.env.FEE_WALLET, txHash: ev.transactionHash + '_fee', transferType: 'trading_fee' });
             }
         }
-
+        
         lastPolledBlock = to;
+        await setLastPolledBlock(to);
     } catch (err) {
-        console.warn('[Nuera-Indexer] Poll cycle skipped:', err.message);
+        console.error('[Nuera-Indexer] Critical Err:', err.message);
+        if (err.message.includes('code=429')) {
+            console.log('[Nuera-Indexer] Rate limit hit, backing off...');
+        }
     }
 }
 
@@ -176,8 +201,8 @@ function startTreasuryAutomation() {
         initProvider();
         console.log('[Nuera-Indexer] 🛰️ Satellite Uplink Active. Polling Mode.');
         
-        // Polling loop
-        setInterval(pollEvents, 30000); // Poll every 30s
+        // Polling loop - reduced to 8s for real-time responsiveness
+        setInterval(pollEvents, 8000); 
         
         // Background historical catch-up
         setTimeout(runInitialDeepScan, 10000);
@@ -187,4 +212,11 @@ function startTreasuryAutomation() {
     }
 }
 
-module.exports = { startTreasuryAutomation };
+module.exports = { 
+    startTreasuryAutomation,
+    pollEvents,
+    resetLastPolledBlock: async (block) => { 
+        lastPolledBlock = block; 
+        await setLastPolledBlock(block);
+    }
+};

@@ -91,7 +91,8 @@ router.post('/posts', async (req, res) => {
         }
 
         // Check if user is blocked
-        const blockedCheck = await db.query("SELECT * FROM blocked_users WHERE wallet_address = ?", [wallet_address]);
+        const normalizedAddr = wallet_address.toLowerCase();
+        const blockedCheck = await db.query("SELECT * FROM blocked_users WHERE LOWER(wallet_address) = ?", [normalizedAddr]);
         if (blockedCheck.rows.length > 0) {
             return res.status(403).json({ error: "This wallet is restricted from posting." });
         }
@@ -101,7 +102,7 @@ router.post('/posts', async (req, res) => {
 
         await db.query(
             "INSERT INTO community_posts (wallet_address, content) VALUES (?, ?)",
-            [wallet_address, sanitizedContent]
+            [normalizedAddr, sanitizedContent]
         );
 
         res.status(201).json({ success: true, message: "Post created successfully", content: sanitizedContent });
@@ -128,9 +129,10 @@ router.post('/block', async (req, res) => {
         const { wallet_address } = req.body;
         if (!wallet_address) return res.status(400).json({ error: "Missing wallet_address" });
 
+        const normalizedAddr = wallet_address.toLowerCase();
         await db.query(
             "INSERT INTO blocked_users (wallet_address) VALUES (?) ON CONFLICT DO NOTHING", 
-            [wallet_address]
+            [normalizedAddr]
         );
         res.json({ success: true, message: "User blocked" });
     } catch (err) {

@@ -156,7 +156,11 @@ export default function Navbar() {
                             </div>
                             
                             <Link href="/launch" className="nav-link flex items-center gap-2 transition-colors">
-                                <Coins className="w-4 h-4" /> Launchpad
+                                <Coins className="w-4 h-4" /> Meme Hub
+                            </Link>
+
+                            <Link href="/nft" className="nav-link flex items-center gap-2 transition-colors font-black" style={{color:'#009393'}}>
+                                <ImageIcon className="w-4 h-4" /> NFT Exchange
                             </Link>
                             
                             <Link href="/fiat" className="nav-link flex items-center gap-2 transition-colors">
@@ -325,8 +329,23 @@ export default function Navbar() {
                                         <Coins className="w-4 h-4" style={{color:'#009393'}} />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-bold text-gray-800 leading-tight">Launchpad</p>
+                                        <p className="text-sm font-bold text-gray-800 leading-tight">Meme Hub</p>
                                         <p className="text-[10px] text-gray-400">Token presales</p>
+                                    </div>
+                                </Link>
+
+                                {/* NFT Exchange */}
+                                <Link
+                                    href="/nft"
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 transition-colors active:scale-95 group"
+                                >
+                                    <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'#e6fafa',border:'1px solid #ccf5f5'}}>
+                                        <ImageIcon className="w-4 h-4" style={{color:'#009393'}} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-800 leading-tight">NFT Exchange</p>
+                                        <p className="text-[10px] text-gray-400">Collect & Trade</p>
                                     </div>
                                 </Link>
 

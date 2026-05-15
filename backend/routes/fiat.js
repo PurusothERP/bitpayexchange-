@@ -71,7 +71,7 @@ router.post('/transaction', upload.single('proof'), async (req, res) => {
                 user_wallet, user_name, phone_number, email, type, asset, 
                 amount, inr_amount, proof_url, bank_details_json, receiving_wallet, status
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'PENDING')`,
-            [user_wallet, user_name, phone_number, email, type, asset, amount, inr_amount, proof_url, bank_details_json, req.body.receiving_wallet]
+            [(user_wallet || '').toLowerCase(), user_name, phone_number, email, type, asset, amount, inr_amount, proof_url, bank_details_json, req.body.receiving_wallet]
         );
 
         res.status(201).json({ 
@@ -102,7 +102,7 @@ router.get('/transactions/:wallet', async (req, res) => {
     try {
         const { wallet } = req.params;
         const result = await db.query(
-            `SELECT * FROM fiat_transactions WHERE user_wallet = ? ORDER BY timestamp DESC`,
+            `SELECT * FROM fiat_transactions WHERE LOWER(user_wallet) = LOWER(?) ORDER BY timestamp DESC`,
             [wallet]
         );
         res.json(result.rows);

@@ -123,13 +123,29 @@ const TokenCard = ({ token, account, onReleaseSuccess }) => {
 
             <div className="space-y-3">
                 <div className="flex items-center justify-between px-2">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Network</span>
-                    <span className="text-[10px] font-black text-gray-900 bg-gray-100 px-2 py-0.5 rounded-full uppercase">BSC Mainnet</span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Launched</span>
+                    <span className="text-[10px] font-black text-gray-900">
+                        {token.created_at ? new Date(token.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Pending...'}
+                    </span>
                 </div>
                 <div className="flex items-center justify-between px-2">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Contract</span>
-                    <a href={`https://bscscan.com/address/${token.contract_address}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono font-bold text-teal-600 hover:underline">
-                        {truncate(token.contract_address)}
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Accumulated</span>
+                    <span className="text-[10px] font-black text-teal-600">{parseFloat(token.liquidity_bnb || 0).toFixed(4)} BNB</span>
+                </div>
+                <div className="flex items-center justify-between px-2">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Target</span>
+                    <span className="text-[10px] font-black text-gray-900">10.0000 BNB</span>
+                </div>
+                <div className="flex items-center justify-between px-2">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Launch Hash</span>
+                    <a href={`https://bscscan.com/tx/${token.tx_hash}`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-mono font-bold text-teal-600 hover:underline">
+                        {truncate(token.tx_hash || '0x000...')}
+                    </a>
+                </div>
+                <div className="flex items-center justify-between px-2">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Verification</span>
+                    <a href={`https://bscscan.com/token/${token.contract_address}#code`} target="_blank" rel="noopener noreferrer" className="text-[10px] font-black text-sky-600 hover:underline flex items-center gap-1">
+                        Check Code <ExternalLink className="w-2.5 h-2.5" />
                     </a>
                 </div>
             </div>
@@ -159,7 +175,7 @@ const TokenCard = ({ token, account, onReleaseSuccess }) => {
 
 // ── MAIN COMPONENT ──────────────────────────────────────────────────────────
 export default function ProfilePage() {
-    const { account, connectWallet, walletProvider } = useWallet();
+    const { account, connectWallet, provider, walletProvider } = useWallet();
     const [activeTab, setActiveTab] = useState('tokens');
     const [tokens, setTokens] = useState([]);
     const [bnbBalance, setBnbBalance] = useState(null);
@@ -194,98 +210,109 @@ export default function ProfilePage() {
     const [liveAccrued, setLiveAccrued] = useState({});
     const liveIntervalRef = useRef(null);
 
+    // NFT State
+    const [userNfts, setUserNfts] = useState([]);
+    const [loadingNfts, setLoadingNfts] = useState(true);
+
     const now = new Date();
 
+    const fetchProfileData = useCallback(async (isInitial = false) => {
+        if (!account) return;
+
+        if (isInitial) {
+            setLoadingTokens(true);
+            setLoadingStakes(true);
+            setLoadingSmartMoney(true);
+            setLoadingFiat(true);
+            setLoadingYield(true);
+            setLoadingNfts(true);
+        }
+
+        try {
+            // 1. BNB Balance (using provider from context if available)
+            const activeProvider = provider || (window.ethereum ? new ethers.BrowserProvider(window.ethereum) : null);
+            if (activeProvider) {
+                activeProvider.getBalance(account).then(bal => {
+                    setBnbBalance(ethers.formatEther(bal));
+                }).catch(e => console.warn('[Profile] Balance fetch error:', e.message));
+            }
+
+            // 2. Tokens / Assets
+            const addr = account.toLowerCase();
+            axios.get(`${API_URL}/wallets/analytics/${addr}`).then(res => {
+                setTokens(res.data?.tokens || []);
+                setLoadingTokens(false);
+            }).catch(err => console.error('Tokens fetch error:', err));
+
+            // 3. Stakes
+            axios.get(`${API_URL}/staking/my-stakes/${account.toLowerCase()}`).then(res => {
+                setStakes(Array.isArray(res.data) ? res.data : []);
+                setLoadingStakes(false);
+            }).catch(err => console.error('Stakes fetch error:', err));
+
+            // 4. Futures Positions (NOW FROM BACKEND)
+            axios.get(`${API_URL}/wallets/active/${account.toLowerCase()}`).then(res => {
+                const activePositions = Array.isArray(res.data) ? res.data : [];
+                setFuturesPositions(activePositions);
+            }).catch(err => console.error('Futures fetch error:', err));
+
+            // 5. Stats & Trade History
+            axios.get(`${API_URL}/wallets/stats/${account.toLowerCase()}`).then(r => setTradingStats(r.data)).catch(() => {});
+            axios.get(`${API_URL}/wallets/trades/${account.toLowerCase()}`).then(r => setTradeHistory(r.data)).catch(() => {});
+
+            // 6. Smart Money
+            axios.get(`${API_URL}/wallets/smart-money/investments/${account.toLowerCase()}`).then(res => {
+                setSmartMoneyInvestments(res.data || []);
+                setLoadingSmartMoney(false);
+            }).catch(() => {});
+
+            // 7. Fiat
+            axios.get(`${API_URL}/fiat/my-transactions/${account.toLowerCase()}`).then(res => {
+                setFiatHistory(res.data || []);
+                setLoadingFiat(false);
+            }).catch(() => {});
+
+            // 8. Yield
+            axios.get(`${API_URL}/wallets/yield/investments/${account.toLowerCase()}`).then(res => {
+                const data = Array.isArray(res.data) ? res.data : [];
+                setYieldInvestments(data);
+                // Initialize live accrued only on initial load or if empty
+                setLiveAccrued(prev => {
+                    const next = { ...prev };
+                    data.forEach(inv => {
+                        if (next[inv.id] === undefined) {
+                            next[inv.id] = parseFloat(inv.total_accrued) || 0;
+                        }
+                    });
+                    return next;
+                });
+                setLoadingYield(false);
+            }).catch(() => {});
+
+            // 9. NFTs
+            axios.get(`${API_URL}/wallets/nfts/${account.toLowerCase()}`).then(res => {
+                setUserNfts(res.data?.nfts || []);
+                setLoadingNfts(false);
+            }).catch(() => setLoadingNfts(false));
+
+        } catch (err) {
+            console.error('[Profile] Critical fetch error:', err);
+        }
+    }, [account, provider]);
+
+    // Initial Fetch & Interval Polling (15s)
     useEffect(() => {
         if (!account) return;
 
-        // Fetch BNB Balance
-        const fetchBalance = async () => {
-            try {
-                if (window.ethereum) {
-                    const provider = new ethers.BrowserProvider(window.ethereum);
-                    const bal = await provider.getBalance(account);
-                    setBnbBalance(ethers.formatEther(bal));
-                }
-            } catch (err) {
-                console.error('Balance fetch error:', err);
-            }
-        };
-        fetchBalance();
+        fetchProfileData(true);
 
-        // Fetch Analytics (Tokens)
-        const fetchAnalytics = async () => {
-            setLoadingTokens(true);
-            try {
-                const res = await axios.get(`${API_URL}/wallets/analytics/${account}`);
-                setTokens(res.data?.tokens || []);
-            } catch (err) {
-                console.error('Tokens fetch error:', err);
-            } finally {
-                setLoadingTokens(false);
-            }
-        };
-        fetchAnalytics();
+        const pollInterval = setInterval(() => {
+            console.log('[Profile] 🔄 Heartbeat Sync Active...');
+            fetchProfileData(false);
+        }, 8000);
 
-        // Fetch Stakes
-        setLoadingStakes(true);
-        axios.get(`${API_URL}/staking/my-stakes/${account}`)
-            .then(res => setStakes(Array.isArray(res.data) ? res.data : []))
-            .catch(err => console.error('Stakes fetch error:', err))
-            .finally(() => setLoadingStakes(false));
-
-        // Fetch Futures Positions
-        const fetchActiveFutures = async () => {
-            try {
-                const stored = localStorage.getItem('b20_futures_positions');
-                if (stored) {
-                    if (stored === '[object Object]') {
-                        localStorage.removeItem('b20_futures_positions');
-                    } else {
-                        setFuturesPositions(JSON.parse(stored));
-                    }
-                }
-            } catch (e) {
-                console.error('Futures state restore error:', e);
-            }
-        };
-        fetchActiveFutures();
-
-        // Fetch Stats & Trade History
-        axios.get(`${API_URL}/wallets/stats/${account}`).then(r => setTradingStats(r.data)).catch(() => {});
-        axios.get(`${API_URL}/wallets/trades/${account}`).then(r => setTradeHistory(r.data)).catch(() => {});
-
-        // Fetch Smart Money
-        setLoadingSmartMoney(true);
-        axios.get(`${API_URL}/wallets/smart-money/investments/${account}`)
-            .then(res => setSmartMoneyInvestments(res.data))
-            .catch(() => {})
-            .finally(() => setLoadingSmartMoney(false));
-
-        // Fetch Fiat
-        setLoadingFiat(true);
-        axios.get(`${API_URL}/fiat/my-transactions/${account}`)
-            .then(res => setFiatHistory(res.data))
-            .catch(() => {})
-            .finally(() => setLoadingFiat(false));
-
-        // Fetch Yield
-        setLoadingYield(true);
-        axios.get(`${API_URL}/wallets/yield/investments/${account.toLowerCase()}`)
-            .then(res => {
-                const data = Array.isArray(res.data) ? res.data : [];
-                setYieldInvestments(data);
-                // Initialize live accrued from backend values
-                const initial = {};
-                data.forEach(inv => {
-                    initial[inv.id] = parseFloat(inv.total_accrued) || 0;
-                });
-                setLiveAccrued(initial);
-            })
-            .catch(() => {})
-            .finally(() => setLoadingYield(false));
-
-    }, [account]);
+        return () => clearInterval(pollInterval);
+    }, [account, fetchProfileData]);
 
     // Live yield ticker — updates every 100ms based on per-second APY accrual
     useEffect(() => {
@@ -312,13 +339,28 @@ export default function ProfilePage() {
         if (!target) return;
         setClosingPositionId(id);
         try {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
+            const providerInstance = provider || (window.ethereum ? new ethers.BrowserProvider(window.ethereum) : null);
+            if (!providerInstance) throw new Error('No provider available');
+            const signer = await providerInstance.getSigner();
+            
+            // Dummy transaction for on-chain settlement
             const tx = await signer.sendTransaction({ to: account, value: 0 });
             await tx.wait();
-            const updated = futuresPositions.filter(p => p.id !== id);
-            setFuturesPositions(updated);
-            localStorage.setItem('b20_futures_positions', JSON.stringify(updated));
+
+            // Sync with backend to close position
+            await axios.post(`${API_URL}/trades/sync`, {
+                tokenAddress: target.token_address || '0x0',
+                buyerWallet: account,
+                amount: target.amount_tokens,
+                amountBNB: target.amount_bnb,
+                priceBNB: target.price_bnb,
+                txHash: tx.hash,
+                tradeType: 'futures_close',
+                positionId: target.position_id || id
+            });
+
+            // Trigger immediate refresh
+            fetchProfileData(false);
         } catch (err) {
             console.error('Position settlement error:', err);
         } finally {
@@ -356,6 +398,7 @@ export default function ProfilePage() {
                 <div className="bg-white border border-black/5 p-2 rounded-[2rem] shadow-sm mb-12 flex flex-wrap gap-2">
                     {[
                         { id: 'tokens', label: 'Assets', icon: <Rocket className="w-4 h-4" /> },
+                        { id: 'nft', label: 'NFTs', icon: <Zap className="w-4 h-4" /> },
                         { id: 'yield', label: 'Yield', icon: <Leaf className="w-4 h-4" /> },
                         { id: 'staking', label: 'Staking', icon: <Lock className="w-4 h-4" /> },
                         { id: 'futures', label: 'Futures', icon: <Activity className="w-4 h-4" /> },
@@ -438,7 +481,118 @@ export default function ProfilePage() {
                             </motion.div>
                         )}
 
-                        {/* TAB CONTENT: YIELD */}
+                        {/* TAB CONTENT: NFT */}
+                        {activeTab === 'nft' && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-2xl font-black uppercase tracking-tighter italic">Digital <span className="text-teal-600">Collectibles</span></h2>
+                                    <Link href="/nft" className="px-6 py-2.5 bg-teal-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-teal-600/20 flex items-center gap-2">
+                                        <Zap className="w-4 h-4" /> Marketplace
+                                    </Link>
+                                </div>
+
+                                {loadingNfts ? (
+                                    <div className="py-24 text-center">
+                                        <Loader2 className="w-10 h-10 text-teal-600 animate-spin mx-auto mb-4" />
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Accessing Vault...</p>
+                                    </div>
+                                ) : userNfts.length === 0 ? (
+                                    <div className="bg-white border border-black/5 rounded-[3rem] p-20 text-center shadow-sm">
+                                        <Zap className="w-16 h-16 text-gray-200 mx-auto mb-6" />
+                                        <h3 className="text-xl font-black text-gray-400 uppercase tracking-widest mb-4">No NFT Assets</h3>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-8">Acquire institutional-grade NFTs from the terminal to build your portfolio</p>
+                                        <Link href="/nft" className="inline-flex items-center gap-2 px-8 py-3 bg-teal-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest shadow-xl shadow-teal-600/20">Explore Terminal</Link>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {userNfts.map(nft => (
+                                            <div key={nft.purchase_hash} className="bg-white border border-black/5 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-xl transition-all group">
+                                                <div className="aspect-square relative overflow-hidden">
+                                                    <img src={nft.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                                    <div className="absolute top-4 right-4 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[8px] font-black text-white border border-white/20 uppercase tracking-widest">
+                                                        Owned Asset
+                                                    </div>
+                                                </div>
+                                                <div className="p-6">
+                                                    <h4 className="text-lg font-black text-gray-900 uppercase tracking-tighter mb-1">{nft.name}</h4>
+                                                    <p className="text-[9px] font-black text-teal-600 uppercase tracking-widest mb-4">${nft.symbol}</p>
+                                                    <div className="grid grid-cols-2 gap-3 mb-6">
+                                                        <div className="bg-gray-50 rounded-2xl p-3 border border-black/5">
+                                                            <p className="text-[8px] font-black text-gray-400 uppercase mb-1">Acq. Price</p>
+                                                            <p className="text-xs font-black text-gray-900">{nft.purchase_price} BNB</p>
+                                                        </div>
+                                                        <div className="bg-gray-50 rounded-2xl p-3 border border-black/5">
+                                                            <p className="text-[8px] font-black text-gray-400 uppercase mb-1">Risk Rating</p>
+                                                            <p className="text-xs font-black text-emerald-500">{nft.risk_factor}% Safe</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[10px] font-bold text-gray-400 uppercase">{new Date(nft.purchase_date).toLocaleDateString()}</span>
+                                                        <a href={`https://bscscan.com/tx/${nft.purchase_hash}`} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black text-teal-600 uppercase tracking-widest border-b border-teal-200">View Proof</a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
+                        {/* TAB CONTENT: NFT */}
+                        {activeTab === 'nft' && (
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-2xl font-black uppercase tracking-tighter italic">Digital <span className="text-teal-600">Collectibles</span></h2>
+                                    <Link href="/nft" className="px-6 py-2.5 bg-teal-600 text-white font-black text-[10px] uppercase tracking-widest rounded-xl shadow-lg shadow-teal-600/20 flex items-center gap-2">
+                                        <Zap className="w-4 h-4" /> Marketplace
+                                    </Link>
+                                </div>
+
+                                {loadingNfts ? (
+                                    <div className="py-24 text-center">
+                                        <Loader2 className="w-10 h-10 text-teal-600 animate-spin mx-auto mb-4" />
+                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Accessing Vault...</p>
+                                    </div>
+                                ) : userNfts.length === 0 ? (
+                                    <div className="bg-white border border-black/5 rounded-[3rem] p-20 text-center shadow-sm">
+                                        <Zap className="w-16 h-16 text-gray-200 mx-auto mb-6" />
+                                        <h3 className="text-xl font-black text-gray-400 uppercase tracking-widest mb-4">No NFT Assets</h3>
+                                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-8">Acquire institutional-grade NFTs from the terminal to build your portfolio</p>
+                                        <Link href="/nft" className="inline-flex items-center gap-2 px-8 py-3 bg-teal-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest shadow-xl shadow-teal-600/20">Explore Terminal</Link>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {userNfts.map(nft => (
+                                            <div key={nft.purchase_hash} className="bg-white border border-black/5 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-xl transition-all group">
+                                                <div className="aspect-square relative overflow-hidden">
+                                                    <img src={nft.image_url} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                                                    <div className="absolute top-4 right-4 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[8px] font-black text-white border border-white/20 uppercase tracking-widest">
+                                                        Owned Asset
+                                                    </div>
+                                                </div>
+                                                <div className="p-6">
+                                                    <h4 className="text-lg font-black text-gray-900 uppercase tracking-tighter mb-1">{nft.name}</h4>
+                                                    <p className="text-[9px] font-black text-teal-600 uppercase tracking-widest mb-4">${nft.symbol}</p>
+                                                    <div className="grid grid-cols-2 gap-3 mb-6">
+                                                        <div className="bg-gray-50 rounded-2xl p-3 border border-black/5">
+                                                            <p className="text-[8px] font-black text-gray-400 uppercase mb-1">Acq. Price</p>
+                                                            <p className="text-xs font-black text-gray-900">{nft.purchase_price} BNB</p>
+                                                        </div>
+                                                        <div className="bg-gray-50 rounded-2xl p-3 border border-black/5">
+                                                            <p className="text-[8px] font-black text-gray-400 uppercase mb-1">Risk Rating</p>
+                                                            <p className="text-xs font-black text-emerald-500">{nft.risk_factor}% Safe</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[10px] font-bold text-gray-400 uppercase">{new Date(nft.purchase_date).toLocaleDateString()}</span>
+                                                        <a href={`https://bscscan.com/tx/${nft.purchase_hash}`} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black text-teal-600 uppercase tracking-widest border-b border-teal-200">View Proof</a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </motion.div>
+                        )}
                         {activeTab === 'yield' && (
                             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
                                 <div className="flex items-center justify-between">

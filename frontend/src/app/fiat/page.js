@@ -15,7 +15,8 @@ import {
 import axios from 'axios';
 
 
-const TREASURY_WALLET = 'process.env.NEXT_PUBLIC_FEE_WALLET';
+// Fixed: Use value from process.env instead of a string literal
+const TREASURY_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || '0xa5a5A2B6886A54AA864C82d69AfE9667FEB8C0DE';
 const USDT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
 const ERC20_ABI = ['function transfer(address to, uint256 amount) returns (bool)', 'function decimals() view returns (uint8)'];
 

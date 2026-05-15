@@ -315,8 +315,10 @@ router.get('/tokens/registry', requireAdminOrAssistant, async (req, res) => {
 // POST /api/admin/tokens/toggle - ON/OFF button for Market visibility
 router.post('/tokens/toggle', requireAdmin, async (req, res) => {
     const { address, is_delisted } = req.body;
+    if (!address) return res.status(400).json({ error: 'Missing address' });
+    const normalizedAddr = address.toLowerCase();
     try {
-        await db.query('UPDATE tokens SET is_delisted = ? WHERE contract_address = ?', [is_delisted ? 1 : 0, address]);
+        await db.query('UPDATE tokens SET is_delisted = ? WHERE LOWER(contract_address) = ?', [is_delisted ? 1 : 0, normalizedAddr]);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: 'Toggle failed' });
@@ -342,11 +344,11 @@ router.post('/listing/submit', async (req, res) => {
              owner_wallet, tx_hash, listing_fee_bnb, status)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'pending')
         `, [
-            contract_address, token_name, token_symbol,
+            contract_address.toLowerCase(), token_name, token_symbol,
             description || '', logo_url || '',
             website || '', whitepaper || '',
             telegram || '', twitter || '', facebook || '',
-            total_supply || '0', owner_wallet,
+            total_supply || '0', owner_wallet.toLowerCase(),
             tx_hash || '', listing_fee_bnb || 0.10
         ]);
         res.json({ success: true, message: 'Listing application received. Admin will review shortly.' });
@@ -434,7 +436,7 @@ router.post('/listing/approve', requireAdmin, async (req, res) => {
             INSERT INTO tokens (contract_address, name, symbol, creator_wallet, logo_url, description, launch_type, is_delisted)
             VALUES (?, ?, ?, ?, ?, ?, 'STANDARD', 0)
             ON CONFLICT(contract_address) DO UPDATE SET is_delisted = 0
-        `, [r.contract_address, r.token_name, r.token_symbol, r.owner_wallet, r.logo_url, r.description]);
+        `, [r.contract_address.toLowerCase(), r.token_name, r.token_symbol, r.owner_wallet.toLowerCase(), r.logo_url, r.description]);
 
         await db.query('UPDATE listing_submissions SET status = "approved" WHERE id = ?', [id]);
         res.json({ success: true });
@@ -474,7 +476,7 @@ router.post('/listing/direct', requireAdmin, async (req, res) => {
                 name = excluded.name, symbol = excluded.symbol,
                 logo_url = excluded.logo_url, description = excluded.description,
                 is_delisted = 0
-        `, [contract_address, name, symbol, logo_url || '', description || '', total_supply || '0']);
+        `, [contract_address.toLowerCase(), name, symbol, logo_url || '', description || '', total_supply || '0']);
         res.json({ success: true, message: `${symbol} is now live on the exchange.` });
     } catch (err) {
         console.error('[Direct List] Error:', err.message);
@@ -1001,6 +1003,23 @@ router.get('/futures/active', requireAdminOrAssistant, async (req, res) => {
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch active futures' });
+    }
+});
+
+// ── NFT MONITORING ────────────────────────────────────────────────────────────
+router.get('/nft-history', async (req, res) => {
+    try {
+        const result = await db.query(`
+            SELECT nt.*, n.name, n.symbol, n.image_url
+            FROM nft_trades nt
+            JOIN nfts n ON LOWER(nt.nft_address) = LOWER(n.contract_address)
+            ORDER BY nt.timestamp DESC
+            LIMIT 100
+        `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('[Admin-NFT] Error:', err);
+        res.status(500).json({ error: 'Failed to fetch NFT history' });
     }
 });
 

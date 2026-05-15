@@ -222,6 +222,36 @@ const db = {
                 token_address TEXT NOT NULL,
                 price REAL NOT NULL,
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`,
+            `CREATE TABLE IF NOT EXISTS nfts (
+                id SERIAL PRIMARY KEY,
+                name TEXT NOT NULL,
+                symbol TEXT NOT NULL,
+                contract_address TEXT UNIQUE NOT NULL,
+                image_url TEXT,
+                total_supply TEXT,
+                circulating_supply TEXT,
+                mintable INTEGER DEFAULT 0,
+                liquidity_changes INTEGER DEFAULT 0,
+                high_52w REAL DEFAULT 0,
+                low_52w REAL DEFAULT 0,
+                top_holders TEXT,
+                last_sell_price REAL,
+                last_buy_price REAL,
+                risk_factor REAL DEFAULT 0,
+                market_cap REAL DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                creator_address TEXT,
+                popularity INTEGER DEFAULT 0
+            )`,
+            `CREATE TABLE IF NOT EXISTS nft_trades (
+                id SERIAL PRIMARY KEY,
+                nft_address TEXT NOT NULL,
+                buyer_wallet TEXT,
+                seller_wallet TEXT,
+                price REAL NOT NULL,
+                tx_hash TEXT UNIQUE NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )`
         ];
 

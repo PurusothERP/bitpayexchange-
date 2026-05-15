@@ -97,8 +97,8 @@ export default function NFTExchange() {
 
             {/* Hero Section */}
             <section className="pt-32 pb-20 px-4 md:px-8 max-w-7xl mx-auto">
-                <div className="flex flex-col md:flex-row items-end justify-between gap-8 mb-12">
-                    <div className="max-w-2xl">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mb-16 items-start">
+                    <div className="lg:col-span-7">
                         <motion.div 
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -110,7 +110,7 @@ export default function NFTExchange() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.1 }}
-                            className="text-5xl md:text-7xl font-black text-gray-900 leading-[0.95] uppercase tracking-tighter"
+                            className="text-5xl md:text-8xl font-black text-gray-900 leading-[0.9] uppercase tracking-tighter"
                         >
                             The NFT <span className="text-teal-600 italic">Terminal</span>
                         </motion.h1>
@@ -118,34 +118,60 @@ export default function NFTExchange() {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.2 }}
-                            className="mt-6 text-lg text-gray-500 font-medium leading-relaxed max-w-lg"
+                            className="mt-8 text-xl text-gray-500 font-medium leading-relaxed max-w-lg"
                         >
                             High-fidelity collection mirroring with real-time liquidity tracking, institutional risk scoring, and multi-chain verification.
                         </motion.p>
-                        <div className="mt-8 flex items-center gap-4">
-                             <div className="px-6 py-3 bg-white border border-gray-100 rounded-2xl shadow-sm">
-                                 <span className="text-2xl font-black text-gray-900 leading-none">{nfts.length}</span>
-                                 <span className="ml-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">Live Collections</span>
+                        <div className="mt-10 flex items-center gap-6">
+                             <div className="px-8 py-4 bg-white border border-gray-100 rounded-[2rem] shadow-sm">
+                                 <span className="text-3xl font-black text-gray-900 leading-none tracking-tighter">{nfts.length}</span>
+                                 <span className="ml-3 text-[11px] font-black text-gray-400 uppercase tracking-widest">Live Collections</span>
                              </div>
-                             <div className="px-6 py-3 bg-white border border-gray-100 rounded-2xl shadow-sm">
-                                 <span className="text-2xl font-black text-teal-600 leading-none">3</span>
-                                 <span className="ml-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">Mainnets Active</span>
+                             <div className="px-8 py-4 bg-white border border-gray-100 rounded-[2rem] shadow-sm">
+                                 <span className="text-3xl font-black text-teal-600 leading-none tracking-tighter">3</span>
+                                 <span className="ml-3 text-[11px] font-black text-gray-400 uppercase tracking-widest">Mainnets Active</span>
                              </div>
                         </div>
                     </div>
 
-                    <div className="flex flex-col gap-4 w-full md:w-auto">
+                    {/* Security & Provenance Panel */}
+                    <div className="lg:col-span-5 grid grid-cols-2 gap-4">
+                        {[
+                            { icon: ShieldCheck, title: "Asset Security", desc: "Cold-storage settlement & E2E encrypted transactions.", color: "text-blue-600", bg: "bg-blue-50" },
+                            { icon: Database, title: "Live Source", desc: "Direct Alchemy Mainnet & CoinGecko Institutional feeds.", color: "text-teal-600", bg: "bg-teal-50" },
+                            { icon: Lock, title: "Authentication", desc: "Smart contract verification & multi-sig provenance.", color: "text-amber-600", bg: "bg-amber-50" },
+                            { icon: Network, title: "Multi-Chain", desc: "Native support for ETH, SOL, and BNB liquidity pools.", color: "text-purple-600", bg: "bg-purple-50" }
+                        ].map((item, i) => (
+                            <motion.div 
+                                key={i}
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: 0.3 + (i * 0.1) }}
+                                className="p-6 bg-white border border-gray-100 rounded-[2rem] shadow-sm hover:shadow-xl transition-all group"
+                            >
+                                <div className={`w-10 h-10 ${item.bg} ${item.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                                    <item.icon className="w-5 h-5" />
+                                </div>
+                                <h3 className="text-[11px] font-black text-gray-900 uppercase tracking-widest mb-1.5">{item.title}</h3>
+                                <p className="text-[10px] text-gray-500 font-bold leading-relaxed">{item.desc}</p>
+                            </motion.div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Search & Global Filters Bar */}
+                <div className="flex flex-col md:flex-row items-center gap-6 mb-12 bg-gray-900 p-8 rounded-[3rem] shadow-2xl">
+                    <div className="flex-1 w-full">
                         <form onSubmit={handleSearch} className="relative group">
-                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-teal-600 transition-colors" />
+                            <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 group-focus-within:text-teal-400 transition-colors" />
                             <input 
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search Collections, Symbols, or Addresses..." 
-                                className="w-full md:w-96 bg-white border border-black/5 rounded-[2.5rem] pl-14 pr-8 py-5 text-sm font-bold shadow-sm focus:shadow-xl focus:border-teal-500/30 transition-all outline-none"
+                                placeholder="Search institutional collections, contract addresses, or symbols..." 
+                                className="w-full bg-white/5 border border-white/10 rounded-[2rem] pl-14 pr-8 py-5 text-sm font-bold text-white placeholder:text-gray-500 focus:bg-white/10 focus:border-teal-500/30 transition-all outline-none"
                             />
                         </form>
                     </div>
-                </div>
 
                 {/* Filters Bar */}
                 <div className="flex flex-wrap items-center justify-between gap-6 mb-12 bg-white border border-black/5 rounded-[2.5rem] p-4 shadow-sm">

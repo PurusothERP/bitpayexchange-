@@ -9,7 +9,8 @@ import { API_URL } from '@/lib/api';
 import { 
     Search, Filter, SlidersHorizontal, LayoutGrid, List, Rocket, 
     TrendingUp, ShieldCheck, Zap, DollarSign, Activity, Loader2,
-    ChevronDown, X, Info, ExternalLink, ArrowRight, Wallet, Flame
+    ChevronDown, X, Info, ExternalLink, ArrowRight, Wallet, Flame,
+    CheckCircle2, AlertTriangle
 } from 'lucide-react';
 import NFTCard from '@/components/NFTCard';
 

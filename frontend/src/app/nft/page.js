@@ -122,6 +122,16 @@ export default function NFTExchange() {
                         >
                             High-fidelity collection mirroring with real-time liquidity tracking, institutional risk scoring, and multi-chain verification.
                         </motion.p>
+                        <div className="mt-8 flex items-center gap-4">
+                             <div className="px-6 py-3 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                 <span className="text-2xl font-black text-gray-900 leading-none">{nfts.length}</span>
+                                 <span className="ml-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">Live Collections</span>
+                             </div>
+                             <div className="px-6 py-3 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                 <span className="text-2xl font-black text-teal-600 leading-none">3</span>
+                                 <span className="ml-2 text-[10px] font-black text-gray-400 uppercase tracking-widest">Mainnets Active</span>
+                             </div>
+                        </div>
                     </div>
 
                     <div className="flex flex-col gap-4 w-full md:w-auto">

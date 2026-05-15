@@ -18,94 +18,92 @@ export default function NFTCard({ nft, onBuy }) {
 
     return (
         <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -8 }}
-            className="bg-white border border-black/5 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all group"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            whileHover={{ y: -5 }}
+            className="flex flex-col bg-white border border-gray-100 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 group h-full"
         >
             {/* Image Section */}
-            <div className="relative aspect-square overflow-hidden bg-gray-100">
+            <div className="relative h-64 overflow-hidden bg-gray-50 border-b border-gray-50">
                 <img 
-                    src={nft.image_url || 'https://via.placeholder.com/400x400?text=NFT'} 
+                    src={nft.image_url || 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?q=80&w=300&auto=format&fit=crop'} 
                     alt={nft.name} 
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1643101809754-43a91784611a?q=80&w=300&auto=format&fit=crop'; }}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute top-4 left-4 flex gap-2">
-                    <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-md border border-white/20 shadow-lg ${riskColor}`}>
+                <div className="absolute top-4 left-4 flex flex-col gap-2">
+                    <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest backdrop-blur-md shadow-sm border border-white/20 ${riskColor}`}>
                         Risk: {nft.risk_factor}%
                     </span>
                     {nft.mintable === 1 && (
-                        <span className="px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest bg-teal-500 text-white shadow-lg flex items-center gap-1">
-                            <Zap className="w-2.5 h-2.5" /> Mint Live
+                        <span className="px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-teal-500 text-white shadow-lg flex items-center gap-1.5 border border-teal-400/30">
+                            <Zap className="w-2.5 h-2.5 fill-current" /> Live Mint
                         </span>
                     )}
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-6">
-                    <button 
-                        onClick={() => onBuy(nft)}
-                        className="w-full py-4 bg-white text-gray-900 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] shadow-2xl active:scale-95 transition-all"
-                    >
-                        Acquire Asset
-                    </button>
                 </div>
             </div>
 
             {/* Content Section */}
-            <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                    <div>
-                        <h3 className="text-lg font-black text-gray-900 leading-tight group-hover:text-teal-600 transition-colors uppercase tracking-tighter">
+            <div className="p-6 flex flex-col flex-1">
+                <div className="flex justify-between items-start mb-6">
+                    <div className="min-w-0">
+                        <h3 className="text-base font-black text-gray-900 truncate uppercase tracking-tight leading-none mb-1.5 group-hover:text-teal-600 transition-colors">
                             {nft.name}
                         </h3>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mt-1">
-                            {nft.symbol}
-                        </p>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                                ${nft.symbol}
+                            </span>
+                            <div className="w-1 h-1 bg-gray-200 rounded-full" />
+                            <div className="flex items-center gap-1">
+                                <span className="font-mono text-[9px] text-gray-400">
+                                    {nft.contract_address.slice(0, 4)}...{nft.contract_address.slice(-4)}
+                                </span>
+                                <button onClick={handleCopy} className="text-gray-300 hover:text-teal-500 transition-colors">
+                                    {copied ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div className="text-right">
-                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1">Current Price</p>
-                        <p className="text-xl font-black text-gray-900 leading-none">{nft.last_sell_price} BNB</p>
+                    <div className="text-right shrink-0 pl-4">
+                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 italic">Floor Price</p>
+                        <p className="text-xl font-black text-gray-900 tracking-tighter">{nft.last_sell_price} <span className="text-xs text-teal-600 ml-0.5">BNB</span></p>
                     </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 mb-6">
-                    <div className="bg-gray-50 rounded-2xl p-3 border border-black/5">
-                        <p className="text-[8px] font-black text-gray-400 uppercase mb-1">Market Cap</p>
-                        <p className="text-xs font-black text-gray-900">{parseFloat(nft.market_cap).toLocaleString()} BNB</p>
+                    <div className="bg-gray-50/50 rounded-2xl p-3 border border-gray-100/50">
+                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Market Cap</p>
+                        <p className="text-[11px] font-black text-gray-900 truncate">
+                            {parseFloat(nft.market_cap).toLocaleString()} <span className="text-[9px] text-gray-400">BNB</span>
+                        </p>
                     </div>
-                    <div className="bg-gray-50 rounded-2xl p-3 border border-black/5">
-                        <p className="text-[8px] font-black text-gray-400 uppercase mb-1">Total Supply</p>
-                        <p className="text-xs font-black text-gray-900">{parseFloat(nft.total_supply).toLocaleString()}</p>
+                    <div className="bg-gray-50/50 rounded-2xl p-3 border border-gray-100/50">
+                        <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-1.5">Circulation</p>
+                        <p className="text-[11px] font-black text-gray-900">
+                            {parseFloat(nft.circulating_supply || 8000).toLocaleString()} <span className="text-[9px] text-gray-400">Items</span>
+                        </p>
                     </div>
                 </div>
 
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between text-[9px] font-bold">
-                        <span className="text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                            <ShieldCheck className="w-3 h-3" /> Contract
-                        </span>
-                        <div className="flex items-center gap-2">
-                            <span className="font-mono text-gray-600 italic">
-                                {nft.contract_address.slice(0, 6)}...{nft.contract_address.slice(-4)}
-                            </span>
-                            <button onClick={handleCopy} className="text-teal-600">
-                                {copied ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                            </button>
-                        </div>
+                <div className="mt-auto space-y-4">
+                    <div className="flex items-center justify-between py-3 border-y border-gray-50">
+                         <div className="flex items-center gap-2">
+                             <Activity className="w-3.5 h-3.5 text-teal-600" />
+                             <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">24h Volume</span>
+                         </div>
+                         <span className="text-[10px] font-black text-gray-900 uppercase">
+                             {nft.liquidity_changes} Trades
+                         </span>
                     </div>
-                    <div className="flex items-center justify-between text-[9px] font-bold">
-                        <span className="text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                            <TrendingUp className="w-3 h-3" /> 52W High/Low
-                        </span>
-                        <span className="text-gray-900">
-                            <span className="text-emerald-500">{nft.high_52w}</span> / <span className="text-rose-500">{nft.low_52w}</span>
-                        </span>
-                    </div>
-                    <div className="flex items-center justify-between text-[9px] font-bold">
-                        <span className="text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
-                            <Activity className="w-3 h-3" /> Trading Volume
-                        </span>
-                        <span className="text-teal-600 font-black">{nft.liquidity_changes} Trades</span>
-                    </div>
+
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onBuy(nft); }}
+                        className="w-full py-4 bg-gray-900 text-white rounded-[1.25rem] font-black text-[11px] uppercase tracking-[0.25em] shadow-xl hover:bg-black hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 group/btn"
+                    >
+                        <DollarSign className="w-4 h-4 text-teal-400 group-hover/btn:rotate-12 transition-transform" />
+                        Acquire Asset
+                    </button>
                 </div>
             </div>
         </motion.div>

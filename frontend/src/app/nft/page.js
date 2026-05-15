@@ -200,7 +200,7 @@ export default function NFTExchange() {
                         <p className="text-gray-400 text-sm mt-2">Refine your institutional search parameters.</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-10">
                         {nfts.map((nft, idx) => (
                             <NFTCard key={nft.contract_address} nft={nft} onBuy={handleBuy} />
                         ))}

@@ -21,7 +21,8 @@ export default function NFTCard({ nft, onBuy }) {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             whileHover={{ y: -5 }}
-            className="flex flex-col bg-white border border-gray-100 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 group h-full"
+            onClick={() => onBuy(nft)} // This will now open the detail modal in the parent
+            className="flex flex-col bg-white border border-gray-100 rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-300 group h-full cursor-pointer"
         >
             {/* Image Section */}
             <div className="relative h-64 overflow-hidden bg-gray-50 border-b border-gray-50">

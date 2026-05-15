@@ -32,14 +32,12 @@ export default function NFTCard({ nft, onBuy }) {
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute top-4 left-4 flex flex-col gap-2">
+                    <span className="px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-blue-600 text-white shadow-lg flex items-center gap-1.5 border border-blue-400/30">
+                        <ShieldCheck className="w-2.5 h-2.5 fill-current" /> Mainnet Verified
+                    </span>
                     <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest backdrop-blur-md shadow-sm border border-white/20 ${riskColor}`}>
                         Risk: {nft.risk_factor}%
                     </span>
-                    {nft.mintable === 1 && (
-                        <span className="px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-teal-500 text-white shadow-lg flex items-center gap-1.5 border border-teal-400/30">
-                            <Zap className="w-2.5 h-2.5 fill-current" /> Live Mint
-                        </span>
-                    )}
                 </div>
             </div>
 
@@ -57,17 +55,22 @@ export default function NFTCard({ nft, onBuy }) {
                             <div className="w-1 h-1 bg-gray-200 rounded-full" />
                             <div className="flex items-center gap-1">
                                 <span className="font-mono text-[9px] text-gray-400">
-                                    {nft.contract_address.slice(0, 4)}...{nft.contract_address.slice(-4)}
+                                    {nft.contract_address.slice(0, 6)}...{nft.contract_address.slice(-4)}
                                 </span>
-                                <button onClick={handleCopy} className="text-gray-300 hover:text-teal-500 transition-colors">
-                                    {copied ? <CheckCircle2 className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-                                </button>
+                                <a 
+                                    href={`https://etherscan.io/address/${nft.contract_address}`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-gray-300 hover:text-blue-500 transition-colors"
+                                >
+                                    <ExternalLink className="w-3 h-3" />
+                                </a>
                             </div>
                         </div>
                     </div>
                     <div className="text-right shrink-0 pl-4">
                         <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 italic">Floor Price</p>
-                        <p className="text-xl font-black text-gray-900 tracking-tighter">{nft.last_sell_price} <span className="text-xs text-teal-600 ml-0.5">BNB</span></p>
+                        <p className="text-xl font-black text-gray-900 tracking-tighter">{nft.last_sell_price} <span className="text-xs text-blue-600 ml-0.5">ETH</span></p>
                     </div>
                 </div>
 

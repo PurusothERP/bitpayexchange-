@@ -172,6 +172,7 @@ export default function NFTExchange() {
                             />
                         </form>
                     </div>
+                </div>
 
                 {/* Filters Bar */}
                 <div className="flex flex-wrap items-center justify-between gap-6 mb-12 bg-white border border-black/5 rounded-[2.5rem] p-4 shadow-sm">

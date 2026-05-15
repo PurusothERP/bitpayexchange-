@@ -20,6 +20,7 @@ const path           = require('path');
 const { startTreasuryAutomation } = require('./services/treasuryAutomation');
 const { startTokenVerifier }      = require('./services/tokenVerifier');
 const { startNewsAutomation }     = require('./services/aiNewsAutomation');
+const { startPriceSync }        = require('./services/priceUpdater');
 
 process.on('uncaughtException', (err) => {
     console.error('[Global] Uncaught Exception:', err.message);
@@ -122,6 +123,7 @@ app.listen(PORT, () => {
     // Start BSCScan hourly auto-verification service
     startTokenVerifier();
     startNewsAutomation();
+    startPriceSync();
 
     // Initialize Token Registry (Real Assets)
     const tokenRegistry = require('./services/tokenRegistry');

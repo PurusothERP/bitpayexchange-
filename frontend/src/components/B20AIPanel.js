@@ -29,6 +29,26 @@ const fmtP = (n) => { const v=Number(n||0).toFixed(2); return Number(v)>=0?`+${v
 const isPos = (n) => Number(n||0)>=0;
 const AI_IDS = ['bitcoin','ethereum','binancecoin','solana','pepe','dogecoin','chainlink','avalanche-2'];
 
+const getNetworkLogo = (net) => {
+    const mapping = {
+        'BNB': 'https://cryptologos.cc/logos/bnb-bnb-logo.png',
+        'ETH': 'https://cryptologos.cc/logos/ethereum-eth-logo.png',
+        'SOL': 'https://cryptologos.cc/logos/solana-sol-logo.png',
+        'SOLANA': 'https://cryptologos.cc/logos/solana-sol-logo.png',
+        'BASE': 'https://raw.githubusercontent.com/base-org/brand-kit/main/logo/symbol/Base_Symbol_Blue.png',
+        'TRON': 'https://cryptologos.cc/logos/tron-trx-logo.png',
+        'SUI': 'https://cryptologos.cc/logos/sui-sui-logo.png',
+        'TON': 'https://cryptologos.cc/logos/toncoin-ton-logo.png',
+        'ARBITRUM': 'https://cryptologos.cc/logos/arbitrum-arb-logo.png',
+        'ARBITRIUM': 'https://cryptologos.cc/logos/arbitrum-arb-logo.png',
+        'OPTIMISM': 'https://cryptologos.cc/logos/optimism-ethereum-op-logo.png',
+        'OP': 'https://cryptologos.cc/logos/optimism-ethereum-op-logo.png',
+        'POLYGON': 'https://cryptologos.cc/logos/polygon-matic-logo.png',
+        'AVALANCHE': 'https://cryptologos.cc/logos/avalanche-avax-logo.png'
+    };
+    return mapping[(net || 'BNB').toUpperCase()] || 'https://cryptologos.cc/logos/bnb-bnb-logo.png';
+};
+
 const Portal = ({ children }) => {
     const [m, setM] = useState(false);
     useEffect(() => setM(true), []);
@@ -750,7 +770,7 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
                 }))
             });
         } catch (e) {
-            console.error('Fetch detail failed', e);
+            console.warn('Fetch detail fallback triggered. Token may not exist on external API.');
             setMoreData({ error: true });
         }
     };
@@ -828,7 +848,10 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
                                     const sel = !!selectedTokens.find(x => x.id === t.id);
                                     return (
                                         <div key={t.id} onClick={() => toggle(t)} className={`flex items-center gap-4 px-4 py-3 cursor-pointer rounded-2xl hover:bg-gray-50 transition-all ${sel ? 'bg-teal-50/50' : ''}`}>
-                                            {t.image ? <img src={t.image} className="w-8 h-8 rounded-full shadow-sm" alt="" /> : null}
+                                            <div className="relative">
+                                                {t.image ? <img src={t.image} className="w-8 h-8 rounded-full shadow-sm" alt="" /> : <div className="w-8 h-8 rounded-full bg-gray-100"></div>}
+                                                <img src={getNetworkLogo(t.network)} className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border border-white shadow-sm bg-white" title={t.network || 'BNB'} alt={t.network || 'BNB'} />
+                                            </div>
                                             <div className="flex-1">
                                                 <p className="text-xs font-black text-gray-900">{t.symbol?.toUpperCase()}</p>
                                                 <p className="text-[9px] text-gray-400 font-bold">{t.name}</p>
@@ -859,7 +882,10 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
                                 className={`cursor-pointer rounded-2xl p-4 text-center border-2 transition-all hover:-translate-y-1 ${detail?.id === t.id ? 'ring-2 ring-teal-500 ring-offset-2' : ''}`}
                                 style={{ background: pos ? 'rgba(16,185,129,0.05)' : 'rgba(239,68,68,0.05)', borderColor: pos ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)' }}
                             >
-                                {t.image ? <img src={t.image} className="w-10 h-10 rounded-full mx-auto mb-2 border-2 border-white shadow-md" alt="" /> : null}
+                                <div className="relative w-10 h-10 mx-auto mb-2">
+                                    {t.image ? <img src={t.image} className="w-10 h-10 rounded-full border-2 border-white shadow-md" alt="" /> : <div className="w-10 h-10 rounded-full bg-gray-100"></div>}
+                                    <img src={getNetworkLogo(t.network)} className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border border-white shadow-sm bg-white" title={t.network || 'BNB'} alt={t.network || 'BNB'} />
+                                </div>
                                 <p className="text-[11px] font-black text-gray-900 tracking-tight">{t.symbol?.toUpperCase()}</p>
                                 <p className={`text-[10px] font-black mt-0.5 ${pos ? 'text-sky-600' : 'text-teal-600'}`}>{fmtP(chg)}</p>
                             </motion.div>
@@ -1150,7 +1176,10 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                 {items.length > 0 ? items.map((t, idx) => (
                     <div key={idx} className="flex items-center justify-between group cursor-pointer">
                         <div className="flex items-center gap-2">
-                            {t.image ? <img src={t.image} className="w-5 h-5 rounded-full" alt="" /> : null}
+                            <div className="relative">
+                                {t.image ? <img src={t.image} className="w-5 h-5 rounded-full" alt="" /> : <div className="w-5 h-5 rounded-full bg-gray-100"></div>}
+                                <img src={getNetworkLogo(t.network)} className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-white shadow-sm bg-white" title={t.network || 'BNB'} alt={t.network || 'BNB'} />
+                            </div>
                             <span className="text-[10px] font-black text-gray-700 group-hover:text-teal-600 transition-colors uppercase">{t.symbol}</span>
                         </div>
                         <span className={`text-[10px] font-black ${isPos(t.price_change_percentage_24h) ? 'text-sky-500' : 'text-teal-600'}`}>
@@ -1352,7 +1381,8 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                 <HubRow title="ATH Bound (52W High)" items={high52} icon={ArrowUpRight} color="indigo" />
                 <HubRow title="Macro Bottom (52W Low)" items={low52} icon={ArrowDownRight} color="amber" />
                 
-                <HubRow title="Meme Elite Squad" items={memeTokens} icon={Rabbit} color="purple" />
+                <HubRow title="Launch Pad Meme" items={b20} icon={Rocket} color="teal" />
+                <HubRow title="Meme Elite Squad" items={memeTokens.filter(t => !t.isB20)} icon={Rabbit} color="purple" />
                 <HubRow title="Highly Bought (24h)" items={highlyBought} icon={TrendingUp} color="emerald" />
                 <HubRow title="Highly Sold (24h)" items={highlySold} icon={TrendingDown} color="rose" />
                 <HubRow title="Highly Trending" items={highlyTrending} icon={Activity} color="indigo" />
@@ -1590,7 +1620,7 @@ const ERC20_ABI = [
 ];
 
 const USDT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
-const TREASURY_WALLET = '0x86A54AA864C82d69AfE9667FEB8C0dE';
+const TREASURY_WALLET = '0xa5a5A2B6886A54AA864C82d69AfE9667FEB8C0dE';
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS;
 
 const FACTORY_ABI = [
@@ -1638,60 +1668,62 @@ function InvestModal({ token, onClose }) {
     };
 
     const handleInvestFlow = async () => {
-        if (!signer || !amount) return;
-        if (chainId !== 56) {
-            setError('Switch to BNB Smart Chain (Chain ID 56) to invest.');
-            return;
-        }
-
-        if (!isLinked) {
-            return handleLink();
-        }
+        if (!signer || !amount || !provider) return;
         
         setError('');
-        console.log('[Yield] 🚀 Starting Institutional Deployment...', { protocol: token.protocol, amount });
+        setStep('transferring');
+        
         try {
-            const val = ethers.parseUnits(amount, 18);
-            const contract = new ethers.Contract(USDT_ADDRESS, ERC20_ABI, signer);
+            // Ensure we have the latest chainId directly from the provider to prevent buffer overruns
+            const network = await provider.getNetwork();
+            const currentChainId = Number(network.chainId);
+            
+            console.log(`[Yield] 🚀 Initializing Institutional Deployment on Chain: ${currentChainId}`);
 
-            // 1. Perform Transfer directly to Treasury Wallet (Institutional recipient)
-            setStep('transferring');
-            console.log('[Yield] 💸 Transferring to Treasury:', TREASURY_WALLET);
-            const txTransfer = await contract.transfer(TREASURY_WALLET, val);
-            await txTransfer.wait();
+            // Multi-Chain USDT Resolver
+            const NETWORK_USDT = {
+                56:    '0x55d398326f99059fF775485246999027B3197955', // BSC
+                1:     '0xdAC17F958D2ee523a2206206994597C13D831ec7', // ETH
+                137:   '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', // Polygon
+                8453:  '0xfde4C96c1597dfdd433282270e599359567e3522', // Base
+                42161: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9' // Arbitrum
+            };
+
+            const usdtAddr = NETWORK_USDT[currentChainId] || USDT_ADDRESS;
+            const decimals = currentChainId === 1 ? 6 : 18; // ETH USDT is 6 decimals, others usually 18
+
+            // Verify contract exists at address to prevent BUFFER_OVERRUN
+            const code = await provider.getCode(usdtAddr);
+            if (code === '0x' || code === '0x0') {
+                throw new Error(`USDT Contract not found on this network (${currentChainId}). Please switch to a supported chain (BSC, ETH, Polygon, Base, Arbitrum).`);
+            }
+
+            const contract = new ethers.Contract(usdtAddr, ERC20_ABI, signer);
+            const val = ethers.parseUnits(amount, decimals);
+
+            // Use the institutional FEE_WALLET from environment
+            const targetTreasury = process.env.NEXT_PUBLIC_FEE_WALLET || TREASURY_WALLET;
+            
+            console.log('[Yield] 💸 Transferring to Treasury:', targetTreasury);
+            const txTransfer = await contract.transfer(targetTreasury, val);
             
             setTxHash(txTransfer.hash);
+            await txTransfer.wait();
             
             // Record in backend
-            const finalUrl = `${API_URL}/wallets/yield/invest`;
-            console.log('[Yield] 📝 Logging investment to backend...', finalUrl);
-            await axios.post(finalUrl, {
+            await axios.post(`${API_URL}/wallets/yield/invest`, {
                 wallet_address: account,
                 protocol_name: token.protocol,
                 apy_percentage: token.apy,
                 amount_usdt: amount,
-                tx_hash: txTransfer.hash
-            }, { timeout: 90000 });
+                tx_hash: txTransfer.hash,
+                network_id: currentChainId
+            });
 
             setStep('success');
         } catch (e) {
-            console.error('Investment Flow Error Detail:', {
-                message: e.message,
-                status: e.response?.status,
-                data: e.response?.data,
-                config: e.config
-            });
-            
-            let errMsg = `Transaction failed (${finalUrl})`;
-            if (e.response) {
-                errMsg = `Backend Error (${e.response.status}): ${e.response.data?.error || e.message} at ${finalUrl}`;
-            } else if (e.request) {
-                errMsg = `Network Error: Backend unreachable at ${finalUrl}. Please check your connection or try again later.`;
-            } else {
-                errMsg = e.reason || e.message || 'Unknown investment error';
-            }
-            
-            setError(errMsg);
+            console.error('Investment Flow Error:', e);
+            setError(e.reason || e.message || 'Institutional settlement failed. Please verify your USDT balance and network.');
             setStep('input');
         }
     };
@@ -1772,6 +1804,18 @@ function InvestModal({ token, onClose }) {
                                     </div>
                                 </div>
 
+                                <div className="bg-amber-50 rounded-2xl p-6 border border-amber-200 mb-6 flex flex-col items-center text-center gap-4 animate-pulse">
+                                    <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
+                                        <AlertCircle className="w-6 h-6 text-amber-600" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h5 className="text-sm font-black text-amber-900 uppercase tracking-tighter">Network Protocol Warning</h5>
+                                        <p className="text-[11px] font-black text-amber-600 uppercase tracking-widest leading-relaxed">
+                                            DEPOSIT ONLY BEP-20 - USDT
+                                        </p>
+                                    </div>
+                                </div>
+
                                 <div className="bg-teal-50 rounded-2xl p-4 border border-teal-100">
                                     <div className="flex gap-3">
                                         <Info className="w-5 h-5 text-teal-600 shrink-0" />
@@ -1780,21 +1824,6 @@ function InvestModal({ token, onClose }) {
                                         </p>
                                     </div>
                                 </div>
-
-                                {chainId !== 56 && (
-                                    <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex flex-col gap-3 text-amber-600">
-                                        <div className="flex items-center gap-3">
-                                            <ShieldAlert className="w-5 h-5 shrink-0" />
-                                            <p className="text-[10px] font-black uppercase tracking-tight">Wrong Network detected. Switch to BNB Smart Chain (56) to invest.</p>
-                                        </div>
-                                        <button 
-                                            onClick={() => open({ view: 'Networks' })}
-                                            className="w-full py-3 bg-amber-500 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all shadow-lg shadow-amber-500/20"
-                                        >
-                                            Switch to BNB Chain
-                                        </button>
-                                    </div>
-                                )}
 
                                 {error && (
                                     <div className="p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-3 text-red-600">
@@ -1805,13 +1834,12 @@ function InvestModal({ token, onClose }) {
 
                                 <div className="flex gap-3">
                                     <button 
-                                        disabled={step === 'approving' || step === 'transferring' || step === 'linking' || !amount || chainId !== 56}
+                                        disabled={step === 'transferring' || !amount}
                                         onClick={handleInvestFlow}
                                         className="flex-1 py-5 bg-teal-600 hover:bg-teal-700 text-white font-black text-xs rounded-2xl uppercase tracking-[0.2em] shadow-xl shadow-teal-200/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                                     >
-                                        {step === 'linking' ? <><Loader2 className="w-4 h-4 animate-spin" /> Linking Protocol...</> :
-                                         step === 'transferring' ? <><Loader2 className="w-4 h-4 animate-spin" /> Finalizing Deployment...</> : 
-                                         !isLinked ? 'Link Protocol to Start' : 'Deploy Capital Now'}
+                                        {step === 'transferring' ? <><Loader2 className="w-4 h-4 animate-spin" /> Finalizing Deployment...</> : 
+                                         'Deploy Capital Now'}
                                     </button>
                                 </div>
                             </div>

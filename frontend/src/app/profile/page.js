@@ -239,7 +239,11 @@ export default function ProfilePage() {
             try {
                 const stored = localStorage.getItem('b20_futures_positions');
                 if (stored) {
-                    setFuturesPositions(JSON.parse(stored));
+                    if (stored === '[object Object]') {
+                        localStorage.removeItem('b20_futures_positions');
+                    } else {
+                        setFuturesPositions(JSON.parse(stored));
+                    }
                 }
             } catch (e) {
                 console.error('Futures state restore error:', e);

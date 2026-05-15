@@ -158,6 +158,10 @@ export default function Navbar() {
                             <Link href="/launch" className="nav-link flex items-center gap-2 transition-colors">
                                 <Coins className="w-4 h-4" /> Launchpad
                             </Link>
+                            
+                            <Link href="/fiat" className="nav-link flex items-center gap-2 transition-colors">
+                                <DollarSign className="w-4 h-4" /> Fiat
+                            </Link>
 
                             <Link href="/exchange" className="group relative flex items-center gap-2 px-5 py-2 rounded-full font-black border transition-all duration-300 hover:-translate-y-1 active:scale-95" style={{background:'linear-gradient(135deg,#009393,#007a7a)',color:'white',borderColor:'rgba(0,147,147,0.3)',boxShadow:'0 8px 24px rgba(0,147,147,0.3)'}}>
                                 <div className="p-1.5 rounded-full border transition-colors duration-300" style={{background:'rgba(255,255,255,0.15)',borderColor:'rgba(255,255,255,0.1)'}}>
@@ -323,6 +327,21 @@ export default function Navbar() {
                                     <div>
                                         <p className="text-sm font-bold text-gray-800 leading-tight">Launchpad</p>
                                         <p className="text-[10px] text-gray-400">Token presales</p>
+                                    </div>
+                                </Link>
+
+                                {/* Fiat */}
+                                <Link
+                                    href="/fiat"
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 transition-colors active:scale-95 group"
+                                >
+                                    <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'#e6fafa',border:'1px solid #ccf5f5'}}>
+                                        <DollarSign className="w-4 h-4" style={{color:'#009393'}} />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-800 leading-tight">Fiat</p>
+                                        <p className="text-[10px] text-gray-400">Buy/Sell Crypto</p>
                                     </div>
                                 </Link>
 

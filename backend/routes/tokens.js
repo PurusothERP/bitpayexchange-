@@ -868,17 +868,88 @@ router.get('/listing-submissions', async (req, res) => {
 router.get('/:address', async (req, res) => {
     const { address } = req.params;
 
-    // Validate looks like an Ethereum address
-    if (!address.startsWith('0x') || address.length !== 42) {
-        return res.status(400).json({ error: 'Invalid token address' });
+    // Relaxed validation to allow Solana (base58) and Tron (T...) addresses
+    if (!address || address.length < 30) {
+        return res.status(400).json({ error: 'Invalid token address format' });
     }
 
     try {
-        const query = 'SELECT * FROM tokens WHERE LOWER(contract_address) = LOWER(?)';
-        const result = await db.query(query, [address]);
+        // 1. Check local DB (TokenRegistry results are already persisted here)
+        const dbResult = await db.query('SELECT * FROM tokens WHERE LOWER(contract_address) = LOWER(?)', [address]);
+        if (dbResult.rows.length > 0) {
+            return res.json(normalizeToken(dbResult.rows[0]));
+        }
 
-        if (result.rows.length === 0) {
-            // Fallback: try to fetch basic info on-chain
+        // 2. Multi-Chain Resolve via CoinGecko (AI-powered dynamic fetch)
+        console.log(`[TokenResolve] Deep-fetching asset info for ${address}...`);
+        const platforms = ['binance-smart-chain', 'solana', 'ethereum', 'base', 'tron', 'arbitrum-one', 'optimistic-ethereum'];
+        let geckoData = null;
+        let detectedPlatform = 'Multi-Chain';
+        
+        for (const p of platforms) {
+            try {
+                // If address doesn't look like EVM, skip EVM platforms (efficiency)
+                const isEvm = address.startsWith('0x') && address.length === 42;
+                if (!isEvm && p !== 'solana' && p !== 'tron') continue;
+                if (isEvm && (p === 'solana' || p === 'tron')) continue;
+
+                const geckoRes = await axios.get(`https://api.coingecko.com/api/v3/coins/${p}/contract/${address}`, {
+                    headers: { 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY },
+                    timeout: 6000
+                });
+                if (geckoRes.data && geckoRes.data.id) {
+                    geckoData = geckoRes.data;
+                    detectedPlatform = p;
+                    break;
+                }
+            } catch (e) { /* silent fail for platform probe */ }
+        }
+
+        if (geckoData) {
+            const networkMap = {
+                'binance-smart-chain': 'BNB',
+                'solana': 'Solana',
+                'ethereum': 'ETH',
+                'base': 'Base',
+                'tron': 'Tron',
+                'arbitrum-one': 'ARBITRUM',
+                'optimistic-ethereum': 'OP'
+            };
+
+            const formatted = {
+                contract_address: address,
+                name: geckoData.name,
+                symbol: (geckoData.symbol || '').toUpperCase(),
+                logo_url: geckoData.image?.large || geckoData.image?.small || '',
+                total_supply: geckoData.market_data?.total_supply || 0,
+                price_bnb: geckoData.market_data?.current_price?.usd || 0,
+                market_cap: geckoData.market_data?.market_cap?.usd || 0,
+                network: networkMap[detectedPlatform] || 'EXTERNAL',
+                launch_type: 'MEME',
+                is_external: 1,
+                trust_status: 'Newly Launched Token'
+            };
+
+            // Auto-sync into DB for future lookups
+            try {
+                await db.query(`
+                    INSERT INTO tokens (contract_address, name, symbol, logo_url, network, total_supply, launch_type, is_external, trust_status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+                    ON CONFLICT(contract_address) DO UPDATE SET 
+                        name = excluded.name,
+                        symbol = excluded.symbol,
+                        logo_url = excluded.logo_url
+                `, [
+                    address.toLowerCase(), formatted.name, formatted.symbol, formatted.logo_url, 
+                    formatted.network, formatted.total_supply.toString(), formatted.launch_type, formatted.trust_status
+                ]);
+            } catch (dbErr) { console.warn('Failed to auto-save Gecko token:', dbErr.message); }
+
+            return res.json(normalizeToken(formatted));
+        }
+
+        // 3. Fallback: On-chain check (BSC only)
+        if (address.startsWith('0x') && address.length === 42) {
             try {
                 const { ethers } = require('ethers');
                 const provider = new ethers.JsonRpcProvider(process.env.BSC_RPC_URL || 'https://bsc-dataseed.binance.org');
@@ -889,25 +960,38 @@ router.get('/:address', async (req, res) => {
                     'function decimals() view returns (uint8)'
                 ];
                 const tokenContract = new ethers.Contract(address, tokenAbi, provider);
-                const [name, symbol, totalSupply] = await Promise.all([
+                const [onChainName, onChainSymbol, totalSupply] = await Promise.all([
                     tokenContract.name(),
                     tokenContract.symbol(),
                     tokenContract.totalSupply()
                 ]);
-                // Auto-sync into DB for missing tokens discovered via URL
-                try {
-                    await db.query(
-                        `INSERT OR IGNORE INTO tokens (contract_address, name, symbol, total_supply, launch_type, description)
-                         VALUES (?, ?, ?, ?, ?, ?)`,
-                        [address.toLowerCase(), name, symbol, totalSupply.toString(), 'MEME', 'On-chain auto-synchronized asset. Metadata pending.']
-                    );
-                } catch (dbErr) { console.warn('Failed to auto-sync missing token:', dbErr.message); }
-
-                return res.json({
+                
+                const onChainToken = {
                     contract_address: address,
-                    name,
-                    symbol,
+                    name: onChainName,
+                    symbol: onChainSymbol,
                     total_supply: totalSupply.toString(),
+                    network: 'BNB',
+                    launch_type: 'MEME',
+                    trust_status: 'Newly Launched Token'
+                };
+
+                await db.query(
+                    `INSERT OR IGNORE INTO tokens (contract_address, name, symbol, total_supply, launch_type, network)
+                     VALUES (?, ?, ?, ?, 'MEME', 'BNB')`,
+                    [address.toLowerCase(), onChainName, onChainSymbol, totalSupply.toString()]
+                );
+
+                return res.json(normalizeToken(onChainToken));
+            } catch (chainErr) { /* fallback to 404 */ }
+        }
+
+        return res.status(404).json({ error: 'Asset not found on any supported mainnet (Solana, Base, Tron, ETH, BNB)' });
+    } catch (err) {
+        console.error('[TokenResolve] Global error:', err.message);
+        res.status(500).json({ error: 'Failed to resolve token', details: err.message });
+    }
+});
                     price_bnb: 0,
                     liquidity_bnb: '0',
                     trading_enabled: false,

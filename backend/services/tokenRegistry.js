@@ -39,17 +39,17 @@ class TokenRegistry {
     }
 
     async refresh() {
-        console.log('[TokenRegistry] Starting deep sync of 12,000+ ranked assets...');
+        console.log('[TokenRegistry] Starting massive multi-chain meme & market sync (Target: 500+ per network)...');
         const markets = [];
         const memes = [];
         const seen = new Set();
+        const networkCounts = { BNB: 0, Solana: 0, ETH: 0, Base: 0, Tron: 0, OP: 0, ARBITRUM: 0 };
 
         try {
-            // 1. Fetch Top 10,000 Market Tokens (to ensure 6000+ non-meme assets)
-            // Fetching 40 pages of 250 = 10,000 tokens
+            // 1. Fetch Top 10,000 Market Tokens (for baseline liquidity assets)
             for (let p = 1; p <= 40; p++) {
                 try {
-                    console.log(`[TokenRegistry] Syncing Market Page ${p}/40...`);
+                    console.log(`[TokenRegistry] Syncing Global Market Page ${p}/40...`);
                     const res = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
                         params: {
                             vs_currency: 'usd',
@@ -58,9 +58,7 @@ class TokenRegistry {
                             page: p,
                             sparkline: false
                         },
-                        headers: {
-                            'x-cg-demo-api-key': process.env.COINGECKO_API_KEY
-                        },
+                        headers: { 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY },
                         timeout: 20000
                     });
                     
@@ -68,52 +66,57 @@ class TokenRegistry {
 
                     for (const t of res.data) {
                         const id = t.id;
-                        const addr = (t.address || t.contract_address || id).toLowerCase();
-                        if (seen.has(addr)) continue;
-                        seen.add(addr);
+                        const addr = (t.contract_address || t.address || id).toLowerCase();
+                        if (seen.has(id)) continue;
+                        seen.add(id);
 
+                        const network = this.getNetworkFromPlatforms(t.platforms);
                         const formatted = {
                             id,
                             symbol: (t.symbol || '').toUpperCase(),
                             name: t.name,
                             address: t.contract_address || t.address || id,
-                            network: this.getNetworkFromPlatforms(t.platforms),
+                            network,
                             image: t.image,
                             decimals: 18,
                             market_cap: t.market_cap || 0,
                             current_price: t.current_price || 0,
                             price_change_percentage_24h: t.price_change_percentage_24h || 0,
                             market_cap_rank: t.market_cap_rank,
-                            total_volume: t.total_volume || 0
+                            total_volume: t.total_volume || 0,
+                            high_24h: t.high_24h || 0,
+                            low_24h: t.low_24h || 0
                         };
 
                         if (this.checkIfMeme(formatted.symbol, formatted.name)) {
                             memes.push(formatted);
+                            if (networkCounts[network] !== undefined) networkCounts[network]++;
                         } else {
                             markets.push(formatted);
                         }
                     }
                     
-                    // Progressive Save
-                    this.tokens.markets = Array.from(new Map([...this.tokens.markets, ...markets].map(t => [t.id, t])).values());
-                    this.tokens.memes = Array.from(new Map([...this.tokens.memes, ...memes].map(t => [t.id, t])).values());
-                    this.saveLocal();
-
-                    // Small delay to avoid 429
+                    // Periodic save to avoid data loss
+                    if (p % 5 === 0) this.saveLocal();
                     await new Promise(r => setTimeout(r, 2000));
                 } catch (e) {
                     console.error(`[TokenRegistry] Market Page ${p} failed:`, e.message);
-                    if (e.response?.status === 429) {
-                        console.log('[TokenRegistry] Rate limit hit, stopping market sync.');
-                        break; 
-                    }
+                    if (e.response?.status === 429) break;
                 }
             }
 
-            // 2. Fetch Dedicated Memes (to ensure 6000+ memes)
-            for (let p = 1; p <= 40; p++) {
+            // 2. Specialized Meme Sync (Deep crawl to hit 500 per network)
+            // We'll crawl up to 60 pages of specifically meme-token category
+            for (let p = 1; p <= 60; p++) {
                 try {
-                    console.log(`[TokenRegistry] Syncing Meme Page ${p}/40...`);
+                    // Check if we already hit targets for primary networks
+                    const targetsMet = ['Solana', 'Base', 'Tron', 'ETH', 'BNB'].every(n => networkCounts[n] >= 600);
+                    if (targetsMet && p > 20) {
+                        console.log('[TokenRegistry] Network targets met. Finishing meme sync.');
+                        break;
+                    }
+
+                    console.log(`[TokenRegistry] Syncing Meme Intelligence Page ${p}/60... (${JSON.stringify(networkCounts)})`);
                     const res = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
                         params: {
                             vs_currency: 'usd',
@@ -123,9 +126,7 @@ class TokenRegistry {
                             page: p,
                             sparkline: false
                         },
-                        headers: {
-                            'x-cg-demo-api-key': process.env.COINGECKO_API_KEY
-                        },
+                        headers: { 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY },
                         timeout: 20000
                     });
                     
@@ -133,24 +134,29 @@ class TokenRegistry {
 
                     for (const t of res.data) {
                         const id = t.id;
-                        const addr = (t.address || t.contract_address || id).toLowerCase();
-                        if (seen.has(addr)) continue;
-                        seen.add(addr);
+                        if (seen.has(id)) continue;
+                        seen.add(id);
 
-                        memes.push({
+                        const network = this.getNetworkFromPlatforms(t.platforms);
+                        const formatted = {
                             id,
                             symbol: (t.symbol || '').toUpperCase(),
                             name: t.name,
                             address: t.contract_address || t.address || id,
-                            network: this.getNetworkFromPlatforms(t.platforms),
+                            network,
                             image: t.image,
                             decimals: 18,
                             market_cap: t.market_cap || 0,
                             current_price: t.current_price || 0,
                             price_change_percentage_24h: t.price_change_percentage_24h || 0,
                             market_cap_rank: t.market_cap_rank,
-                            total_volume: t.total_volume || 0
-                        });
+                            total_volume: t.total_volume || 0,
+                            high_24h: t.high_24h || 0,
+                            low_24h: t.low_24h || 0
+                        };
+
+                        memes.push(formatted);
+                        if (networkCounts[network] !== undefined) networkCounts[network]++;
                     }
                     await new Promise(r => setTimeout(r, 1000));
                 } catch (e) {
@@ -159,13 +165,13 @@ class TokenRegistry {
                 }
             }
 
-            if (markets.length > 0 || memes.length > 0) {
-                this.tokens = { 
-                    markets: markets.sort((a,b) => (a.market_cap_rank || 99999) - (b.market_cap_rank || 99999)),
-                    memes: memes.sort((a,b) => (a.market_cap_rank || 99999) - (b.market_cap_rank || 99999))
-                };
-                this.saveLocal();
-            }
+            // Final Sort and Commit
+            this.tokens = { 
+                markets: markets.sort((a,b) => (a.market_cap_rank || 99999) - (b.market_cap_rank || 99999)),
+                memes: memes.sort((a,b) => (a.market_cap_rank || 99999) - (b.market_cap_rank || 99999))
+            };
+            this.saveLocal();
+            console.log('[TokenRegistry] Sync Complete. Final Counts:', networkCounts);
 
         } catch (e) {
             console.error('[TokenRegistry] Deep sync critical failure:', e.message);
@@ -178,14 +184,21 @@ class TokenRegistry {
         if (platforms['ethereum']) return 'ETH';
         if (platforms['base']) return 'Base';
         if (platforms['tron']) return 'Tron';
+        if (platforms['optimistic-ethereum']) return 'OP';
+        if (platforms['arbitrum-one']) return 'ARBITRUM';
         return 'Multi-Chain';
     }
 
     checkIfMeme(symbol, name) {
-        const memeKeywords = ['DOGE', 'PEPE', 'SHIB', 'FLOKI', 'BONK', 'INU', 'ELON', 'PUMP', 'MEME', 'SAFE', 'BABY', 'WIF', 'POPCAT', 'MEW', 'DOGELON', 'HOGE', 'SAMO', 'WOJAK', 'PEPE2', 'MOG'];
+        const memeKeywords = [
+            'DOGE', 'PEPE', 'SHIB', 'FLOKI', 'BONK', 'INU', 'ELON', 'PUMP', 'MEME', 'SAFE', 'BABY', 
+            'WIF', 'POPCAT', 'MEW', 'DOGELON', 'HOGE', 'SAMO', 'WOJAK', 'PEPE2', 'MOG', 'COQ', 
+            'MYRO', 'BOME', 'SLERF', 'DEGEN', 'BRETT', 'TOSHI', 'PONKE', 'WEN', 'MANEKI', 
+            'TURBO', 'GROK', 'LADYS', 'SMOG', 'MYRO', 'PUPS', 'NPC'
+        ];
         const s = (symbol || '').toUpperCase();
         const n = (name || '').toUpperCase();
-        const exactMemes = ['AI', 'MOON', 'FROG', 'CAT', 'DOG'];
+        const exactMemes = ['AI', 'MOON', 'FROG', 'CAT', 'DOG', 'PEPE', 'TRUMP', 'BIDEN'];
         if (exactMemes.includes(s)) return true;
         return memeKeywords.some(k => s.includes(k) || n.includes(k));
     }

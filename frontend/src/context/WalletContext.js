@@ -19,6 +19,38 @@ const bscMainnet = {
     rpcUrl: 'https://bsc-dataseed.binance.org'
 };
 
+const ethereumMainnet = {
+    chainId: 1,
+    name: 'Ethereum',
+    currency: 'ETH',
+    explorerUrl: 'https://etherscan.io',
+    rpcUrl: 'https://cloudflare-eth.com'
+};
+
+const polygonMainnet = {
+    chainId: 137,
+    name: 'Polygon',
+    currency: 'MATIC',
+    explorerUrl: 'https://polygonscan.com',
+    rpcUrl: 'https://polygon-rpc.com'
+};
+
+const baseMainnet = {
+    chainId: 8453,
+    name: 'Base',
+    currency: 'ETH',
+    explorerUrl: 'https://basescan.org',
+    rpcUrl: 'https://mainnet.base.org'
+};
+
+const arbitrumMainnet = {
+    chainId: 42161,
+    name: 'Arbitrum',
+    currency: 'ETH',
+    explorerUrl: 'https://arbiscan.io',
+    rpcUrl: 'https://arb1.arbitrum.io/rpc'
+};
+
 // 3. Create a metadata object
 const metadata = {
     name: 'Tez Exchange Intelligence',
@@ -35,7 +67,6 @@ const ethersConfig = defaultConfig({
     enableCoinbase: true,
     rpcUrl: bscMainnet.rpcUrl,
     defaultChainId: 56,
-    // Fix for Binance Wallet specific injected detection
     enableEmail: false,
     enableSmartAccounts: false
 });
@@ -43,18 +74,18 @@ const ethersConfig = defaultConfig({
 // 5. Create a Web3Modal instance
 createWeb3Modal({
     ethersConfig,
-    chains: [bscMainnet],
+    chains: [bscMainnet, ethereumMainnet, polygonMainnet, baseMainnet, arbitrumMainnet],
     projectId,
     enableAnalytics: true,
     themeMode: 'dark',
-    allWallets: 'SHOW', // Ensure all injected wallets are visible
+    allWallets: 'SHOW',
     featuredWalletIds: [
         '971e689d049048a4e13c9a056bb6d0c4', // MetaMask
         '4622a2b2d6ad141014e58901b8e0d402', // Binance Wallet
         'c5332d3020e2c89e4127138980753f8a'  // Trust Wallet
     ],
     themeVariables: {
-        '--w3m-accent': '#0066FF', // Standard institutional blue
+        '--w3m-accent': '#009393', // Teal accent
         '--w3m-border-radius-master': '12px',
         '--w3m-font-family': 'Inter, sans-serif'
     }
@@ -170,7 +201,8 @@ export function WalletProvider({ children }) {
                 isConnected,
                 isConnecting,
                 connectWallet,
-                disconnectWallet
+                disconnectWallet,
+                switchNetwork: () => open({ view: 'Networks' })
             }}
         >
             {children}

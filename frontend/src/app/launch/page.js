@@ -6,7 +6,8 @@ import {
     TrendingUp, Clock, Rocket, Search as SearchIcon, Flame,
     ArrowRightLeft, Grid, List, Copy, CheckCircle2, Zap, ArrowUpRight, ArrowDownRight,
     Activity, ShieldCheck, Sparkles, Filter, LayoutGrid, BarChart3, ChevronRight,
-    Loader2, Info, Users, Wallet, Share2, Star, TrendingDown
+    Loader2, Info, Users, Wallet, Share2, Star, TrendingDown, Globe, Droplets, Cpu,
+    Coins, DollarSign, Grid3X3
 } from 'lucide-react';
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import Link from 'next/link';
@@ -79,6 +80,14 @@ function TokenCard({ token, index }) {
     // Mock Trend
     const isUp = index % 2 === 0;
 
+    const getNetworkIcon = (net) => {
+        const n = String(net || 'BNB').toUpperCase();
+        if (n.includes('SOL')) return <img src="https://cryptologos.cc/logos/solana-sol-logo.png" className="w-3 h-3 rounded-full" />;
+        if (n.includes('BASE')) return <img src="https://assets.coingecko.com/coins/images/2518/large/base.png" className="w-3 h-3 rounded-full" />;
+        if (n.includes('TRON')) return <img src="https://cryptologos.cc/logos/tron-trx-logo.png" className="w-3 h-3 rounded-full" />;
+        return <img src="https://cryptologos.cc/logos/bnb-bnb-logo.png" className="w-3 h-3 rounded-full" />;
+    };
+
     return (
         <Link href={`/token/${addr}`}>
             <motion.div
@@ -115,7 +124,13 @@ function TokenCard({ token, index }) {
                     </div>
 
                     <div className="mb-6 flex-1">
-                        <p className="text-[10px] font-black text-zinc-400 font-mono uppercase tracking-[0.2em] mb-1">{token.symbol}</p>
+                        <div className="flex items-center gap-2 mb-1">
+                            <p className="text-[10px] font-black text-zinc-400 font-mono uppercase tracking-[0.2em]">{token.symbol}</p>
+                            <div className="flex items-center gap-1 px-2 py-0.5 bg-zinc-100 rounded-md">
+                                {getNetworkIcon(token.network)}
+                                <span className="text-[8px] font-black text-zinc-500 uppercase">{token.network || 'BNB'}</span>
+                            </div>
+                        </div>
                         <h4 className="text-lg font-black text-zinc-900 leading-none group-hover:text-teal-600 transition-colors">{token.name}</h4>
                     </div>
 
@@ -277,6 +292,7 @@ export default function Launchpad() {
     const [loading, setLoading] = useState(true);
     const [view, setView] = useState('all'); 
     const [launchType, setLaunchType] = useState('all'); 
+    const [networkFilter, setNetworkFilter] = useState('all');
     const [viewMode, setViewMode] = useState('grid'); 
     const [search, setSearch] = useState('');
     const [bnbPrice, setBnbPrice] = useState(600);
@@ -297,19 +313,23 @@ export default function Launchpad() {
     }, []);
 
     const filtered = useMemo(() => {
-        let list = tokens;
+        let list = [...tokens].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
         if (view === 'trending') {
-            list = list.filter(t => (t.holders > 0 || t.liquidity_bnb > 0)).sort((a,b) => (b.holders || 0) - (a.holders || 0));
+            list = tokens.filter(t => (t.holders > 0 || t.liquidity_bnb > 0)).sort((a,b) => (b.holders || 0) - (a.holders || 0));
         }
         if (view === 'top') {
-            list = [...list].sort((a,b) => parseFloat(b.liquidity_bnb || 0) - parseFloat(a.liquidity_bnb || 0));
+            list = [...tokens].sort((a,b) => parseFloat(b.liquidity_bnb || 0) - parseFloat(a.liquidity_bnb || 0));
         }
         if (view === 'new') {
-            list = [...list].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+            list = [...tokens].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
         }
         if (launchType === 'bonding') list = list.filter(t => t.launch_type === 'MEME' || !t.launch_type || t.launch_type === 'BONDING_CURVE');
         if (launchType === 'fair') list = list.filter(t => t.launch_type === 'FAIR' || t.launch_type === 'FAIR_LAUNCH');
         if (launchType === 'standard') list = list.filter(t => t.launch_type === 'STANDARD' || t.launch_type === 'EXCHANGE_LISTING');
+
+        if (networkFilter !== 'all') {
+            list = list.filter(t => (t.network || 'BNB').toLowerCase().includes(networkFilter.toLowerCase()));
+        }
 
         if (search) {
             const q = search.toLowerCase();
@@ -351,10 +371,10 @@ export default function Launchpad() {
                     </div>
                     <div className="grid grid-cols-2 gap-4 w-full lg:max-w-md">
                         {[
-                            { label: 'Protocols', val: tokens.length, icon: <Rocket className="w-5 h-5 text-teal-600" /> },
-                            { label: 'Market Cap', val: '$12.4M', icon: <Activity className="w-5 h-5 text-sky-500" /> },
-                            { label: 'Holder Alpha', val: '82.1K', icon: <Users className="w-5 h-5 text-teal-600" /> },
-                            { label: 'Trade Pulse', val: '928/min', icon: <BarChart3 className="w-5 h-5 text-purple-500" /> }
+                            { label: 'Infrastructure', val: 'Multi-Chain', icon: <Rocket className="w-5 h-5 text-teal-600" /> },
+                            { label: 'Nexus Network', val: 'Global Connectivity', icon: <Globe className="w-5 h-5 text-sky-500" /> },
+                            { label: 'Liquidity Pool', val: 'Institutional Grade', icon: <Droplets className="w-5 h-5 text-teal-600" /> },
+                            { label: 'Node Cluster', val: 'Decentralized', icon: <Cpu className="w-5 h-5 text-purple-500" /> }
                         ].map((stat, i) => (
                             <GlassCard key={i} className="p-6">
                                 <div className="flex flex-col gap-4">
@@ -363,7 +383,7 @@ export default function Launchpad() {
                                     </div>
                                     <div>
                                         <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest leading-none mb-1">{stat.label}</p>
-                                        <p className="text-2xl font-black text-zinc-900 tracking-tighter">{stat.val}</p>
+                                        <p className="text-sm font-black text-zinc-900 uppercase tracking-tighter">{stat.val}</p>
                                     </div>
                                 </div>
                             </GlassCard>
@@ -402,6 +422,29 @@ export default function Launchpad() {
                             className="w-full pl-14 pr-6 py-4 bg-zinc-50 border border-transparent focus:border-teal-500/10 rounded-[1.8rem] text-sm font-black text-zinc-900 outline-none transition-all"
                         />
                     </div>
+                </div>
+
+                {/* ── NETWORK FILTER ─────────────────────────────────────────── */}
+                <div className="flex flex-wrap items-center gap-3">
+                    {[
+                        { id: 'all', label: 'All Networks', img: 'https://cdn-icons-png.flaticon.com/512/825/825590.png' },
+                        { id: 'bnb', label: 'BNB Chain', img: 'https://cryptologos.cc/logos/bnb-bnb-logo.png' },
+                        { id: 'solana', label: 'Solana', img: 'https://cryptologos.cc/logos/solana-sol-logo.png' },
+                        { id: 'base', label: 'Base', img: 'https://assets.coingecko.com/coins/images/2518/large/base.png' },
+                        { id: 'tron', label: 'Tron', img: 'https://cryptologos.cc/logos/tron-trx-logo.png' }
+                    ].map(net => (
+                        <button
+                            key={net.id}
+                            onClick={() => setNetworkFilter(net.id)}
+                            className={`
+                                flex items-center gap-2 px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border
+                                ${networkFilter === net.id ? 'bg-zinc-900 text-white border-zinc-900 shadow-lg' : 'bg-white text-zinc-500 border-zinc-100 hover:border-zinc-300'}
+                            `}
+                        >
+                            <img src={net.img} className="w-3.5 h-3.5 rounded-full object-contain" alt="" />
+                            {net.label}
+                        </button>
+                    ))}
                 </div>
 
                 {/* ── LAUNCH TYPE & VIEW MODE SWITCHER ─────────────────────────── */}

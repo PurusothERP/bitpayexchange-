@@ -114,6 +114,16 @@ async function pollEvents() {
             }
         }
 
+        // 1.5 Direct Factory (Fair Launch)
+        if (directFactoryReadOnly) {
+            const directFilter = directFactoryReadOnly.filters.TokenCreatedDirect();
+            const directEvents = await directFactoryReadOnly.queryFilter(directFilter, from, to);
+            for (const ev of directEvents) {
+                const { tokenAddress, name, symbol, supply, creator } = ev.args;
+                await autoCreateToken({ tokenAddress, name, symbol, supply, creator, txHash: ev.transactionHash, launchType: 'FAIR_LAUNCH' });
+            }
+        }
+
         // 2. Bonding Curve Events (Trades)
         if (bondingCurveReadOnly) {
             const buyEvents = await bondingCurveReadOnly.queryFilter(bondingCurveReadOnly.filters.Buy(), from, to);

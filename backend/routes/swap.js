@@ -117,8 +117,8 @@ router.get('/quote', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('[Swap Quote API] Error:', error.message);
-        return res.status(500).json({ error: 'Failed to fetch swap quote', details: error.message });
+        console.warn('[Swap Quote API] Warning:', error.message);
+        return res.json({ error: 'Failed to fetch external price', details: error.message });
     }
 });
 

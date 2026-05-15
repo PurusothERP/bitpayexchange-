@@ -1,100 +1,80 @@
 const { ethers } = require('ethers');
 const db = require('./config/db');
+require('dotenv').config();
 
-const provider = new ethers.JsonRpcProvider('https://data-seed-prebsc-1-s1.binance.org:8545/');
-
-const FACTORY_ABI = [
-  "event TokenCreated(address indexed tokenAddress, string name, string symbol, uint256 supply, address indexed creator, uint256 deploymentFee, uint256 initialBuyBnb)",
-  "event StandardTokenCreated(address indexed tokenAddress, string name, string symbol, uint256 supply, uint8 decimals, address indexed creator, uint256 feePaid)"
-];
-const DIRECT_ABI = [
-  "event TokenCreatedDirect(address indexed tokenAddress, string name, string symbol, uint256 supply, address indexed creator, uint256 deploymentFee, uint256 liquidityBnb)"
+const ERC20_ABI = [
+    'function name() view returns (string)',
+    'function symbol() view returns (string)',
+    'function decimals() view returns (uint8)',
+    'function totalSupply() view returns (uint256)'
 ];
 
-const FACTORY_ADDRESSES = [
-    process.env.FACTORY_ADDRESS,
-    process.env.FACTORY_ADDRESS
-];
-const DIRECT_ADDRESSES = [
-    '0xbe3EA5f2AE5b278796AbCFbd1078EF88dd0d70F5'
-];
-
-async function recover() {
-    const currentBlock = await provider.getBlockNumber();
-    console.log("Current block:", currentBlock);
-    const fromBlock = currentBlock - 50000; // About 2 days
+async function recoverToken(address) {
+    console.log(`[Recovery] Attempting to recover ${address}...`);
+    const provider = new ethers.JsonRpcProvider(process.env.BSC_RPC_URL || 'https://bsc-dataseed.binance.org');
     
-    let count = 0;
-    for (let f of FACTORY_ADDRESSES) {
-        console.log('Querying Factory:', f);
-        const contract = new ethers.Contract(f, FACTORY_ABI, provider);
+    try {
+        const tokenContract = new ethers.Contract(address, ERC20_ABI, provider);
+        const name = await tokenContract.name();
+        const symbol = await tokenContract.symbol();
+        const decimals = await tokenContract.decimals();
+        const supply = await tokenContract.totalSupply();
         
-        let start = fromBlock;
-        while(start <= currentBlock) {
-            let end = start + 500;
-            if (end > currentBlock) end = currentBlock;
-            try {
-                const logs1 = await contract.queryFilter('TokenCreated', start, end);
-                const logs2 = await contract.queryFilter('StandardTokenCreated', start, end);
-                const logs = [...logs1, ...logs2];
-                for (let l of logs) {
-                    const tokenAddr = l.args.tokenAddress;
-                    const res = await db.query('SELECT id FROM tokens WHERE contract_address = ?', [tokenAddr]);
-                    if (res.rows.length === 0) {
-                        try {
-                            console.log('Inserting', tokenAddr);
-                            const supply = l.args.supply.toString();
-                            const creator = l.args.creator;
-                            const ds = l.args.decimals ? Number(l.args.decimals) : 18;
-                            const lt = l.eventName === 'TokenCreated' ? 'MEME' : 'STANDARD';
-                            await db.query(`INSERT INTO tokens (contract_address, name, symbol, launch_type, creator_wallet, decimals, total_supply) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                            [tokenAddr, l.args.name, l.args.symbol, lt, creator, ds, supply]);
-                            count++;
-                        } catch(inner) {
-                            console.error('Inner error', inner);
-                        }
-                    }
-                }
-            } catch(e) {
-                // silentskip
-            }
-            start = end + 1;
-        }
-    }
-    
-    for (let f of DIRECT_ADDRESSES) {
-        console.log('Querying Direct Factory:', f);
-        const contract = new ethers.Contract(f, DIRECT_ABI, provider);
+        console.log(`[Recovery] Found Token: ${name} (${symbol})`);
         
-        let start = fromBlock;
-        while(start <= currentBlock) {
-            let end = start + 500;
-            if (end > currentBlock) end = currentBlock;
-            try {
-                const logs = await contract.queryFilter('TokenCreatedDirect', start, end);
-                for (let l of logs) {
-                    const tokenAddr = l.args.tokenAddress;
-                    const res = await db.query('SELECT id FROM tokens WHERE contract_address = ?', [tokenAddr]);
-                    if (res.rows.length === 0) {
-                        try {
-                            console.log('Inserting Direct', tokenAddr);
-                            const supply = l.args.supply.toString();
-                            const creator = l.args.creator;
-                            await db.query(`INSERT INTO tokens (contract_address, name, symbol, launch_type, creator_wallet, decimals, total_supply) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                            [tokenAddr, l.args.name, l.args.symbol, 'FAIR', creator, 18, supply]);
-                            count++;
-                        } catch (inner) {
-                            console.error('Inner error', inner);
-                        }
-                    }
-                }
-            } catch(e) {
-                // silentskip
-            }
-            start = end + 1;
-        }
+        const now = new Date().toISOString();
+
+        // Save to DB with more fields
+        await db.query(
+            `INSERT INTO tokens (
+                contract_address, name, symbol, decimals, total_supply, 
+                launch_type, description, is_delisted, is_meme, 
+                created_at, trust_status, network, market_cap, liquidity_bnb, price_bnb
+            )
+             VALUES (?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(contract_address) DO UPDATE SET
+                name = excluded.name,
+                symbol = excluded.symbol,
+                decimals = excluded.decimals,
+                is_meme = 1,
+                is_delisted = 0,
+                launch_type = excluded.launch_type`,
+            [
+                address.toLowerCase(), 
+                name, 
+                symbol, 
+                parseInt(decimals), 
+                supply.toString(), 
+                'MEME', 
+                'Recovered via Institutional Discovery.',
+                now,
+                'Newly Launched Token',
+                'BNB',
+                0.00001,
+                0.00001,
+                0.00000001
+            ]
+        );
+        
+        console.log(`[Recovery] ✅ ${symbol} successfully registered in local registry.`);
+    } catch (err) {
+        console.error(`[Recovery] ❌ Failed to recover ${address}:`, err.message);
     }
-    console.log('Recovered count:', count);
+}
+
+const addresses = [
+    '0x13aa8133b323b320fbd77a3b6f488ea90279c394',
+    '0x8bf8aa64b3acd96f322f6cfeac15061a27fad507',
+    '0xeb7bfbf8ee2126a80485268407590701cade8cbd',
+    '0x124819fe03f37339452a5fc599b54ac47a38e2d7'
+];
+
+async function run() {
+    for (const addr of addresses) {
+        await recoverToken(addr);
+    }
+    console.log('[Recovery] All tasks complete.');
     process.exit(0);
 }
-recover();
+
+run();

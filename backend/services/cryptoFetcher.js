@@ -193,32 +193,34 @@ class CryptoFetcher {
     }
 
     async getNewListings() {
-        return this.fetchWithFallback(
-            'CoinGecko (New Listings)',
-            async () => {
-                const res = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
-                    headers: this.getCgHeaders(),
-                    params: { 
-                        vs_currency: 'usd',
-                        category: 'newly-listed-coins',
-                        per_page: 50,
-                        page: 1,
-                        sparkline: false
-                    },
-                    timeout: 15000
-                });
-                return res.data;
-            },
-            'CoinMarketCap (New Listings)',
-            async () => {
+        // High-Fidelity Real Mainnet Only - No Mock Fallback for New Listings
+        try {
+            const res = await axios.get('https://api.coingecko.com/api/v3/coins/markets', {
+                headers: this.getCgHeaders(),
+                params: { 
+                    vs_currency: 'usd',
+                    category: 'newly-listed-coins',
+                    per_page: 250, // Increased for 1-month depth
+                    page: 1,
+                    sparkline: false
+                },
+                timeout: 20000
+            });
+            return res.data;
+        } catch (err) {
+            console.error('[CryptoFetcher] New listings fetch failed, attempting CMC fallback...');
+            try {
                 const res = await axios.get('https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest', {
                     headers: { 'X-CMC_PRO_API_KEY': this.getCmcKey() },
-                    params: { limit: 50, sort: 'date_added', sort_dir: 'desc', convert: 'USD' },
-                    timeout: 15000
+                    params: { limit: 250, sort: 'date_added', sort_dir: 'desc', convert: 'USD' },
+                    timeout: 20000
                 });
                 return this.mapCmcToCg(res.data);
+            } catch (fallbackErr) {
+                console.error('[CryptoFetcher] CMC fallback also failed for new listings.');
+                return []; // Strictly no mock data for newly launched section
             }
-        );
+        }
     }
 
     async getTrending() {

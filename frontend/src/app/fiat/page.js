@@ -200,13 +200,13 @@ export default function FiatPage() {
                     to: TREASURY_WALLET,
                     value: val
                 });
-                await tx.wait();
+                // Speculative fast execution
                 setOnChainTxHash(tx.hash);
             } else {
                 const usdtContract = new Contract(USDT_ADDRESS, ERC20_ABI, signer);
                 const val = ethers.parseUnits(amount.toString(), 18);
                 const tx = await usdtContract.transfer(TREASURY_WALLET, val);
-                await tx.wait();
+                // Speculative fast execution
                 setOnChainTxHash(tx.hash);
             }
             setStep(4);
@@ -273,15 +273,15 @@ export default function FiatPage() {
             {[1, 2, 3, 4].map(s => (
                 <div key={s} className="flex items-center">
                     <div className={`w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center font-black text-[10px] md:text-sm transition-all shadow-md ${
-                        step >= s ? 'bg-sky-500 text-white shadow-sky-500/20' : 'bg-gray-100/5 text-gray-500'
-                    }`}>
+                        step >= s ? 'text-white' : 'bg-gray-100/5 text-gray-500'
+                    }`} style={step >= s ? { background: '#009393' } : {}}>
                         {step > s ? <Check className="w-4 h-4 md:w-5 md:h-5" /> : s}
                     </div>
                     {s < 4 && <div className={`w-6 md:w-12 h-1 bg-gray-100/5 mx-1 md:mx-2 rounded-full overflow-hidden`}>
                         <motion.div 
                             initial={{ width: 0 }} 
                             animate={{ width: step > s ? '100%' : '0%' }} 
-                            className="h-full bg-sky-500" 
+                            className="h-full bg-[#009393]" 
                         />
                     </div>}
                 </div>
@@ -310,7 +310,7 @@ export default function FiatPage() {
                     </motion.div>
                     
                     <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 bg-gradient-to-b from-white to-white/40 bg-clip-text text-transparent italic">
-                        The Nexus <span className="text-sky-500 font-sans">Fiat Portal</span>
+                        TEZ EXCHANGE <span className="font-sans" style={{color:'#009393'}}>FIAT PORTAL</span>
                     </h1>
                     
                     <p className="text-gray-400 font-medium max-w-2xl mx-auto text-lg leading-relaxed">
@@ -345,24 +345,27 @@ export default function FiatPage() {
                             <button 
                                 onClick={() => { setActiveTab('buy'); setStep(1); setStatus('idle'); }}
                                 className={`flex-1 py-4 rounded-[2.2rem] font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
-                                    activeTab === 'buy' ? 'bg-sky-500 text-white shadow-xl shadow-sky-500/20' : 'text-gray-500 hover:text-gray-300'
+                                    activeTab === 'buy' ? 'text-white shadow-xl' : 'text-gray-500 hover:text-gray-300'
                                 }`}
+                                style={activeTab === 'buy' ? { background: '#009393', boxShadow: '0 8px 20px rgba(0,147,147,0.25)' } : {}}
                             >
                                 <ArrowDownLeft className="w-5 h-5" /> Buy Crypto
                             </button>
                             <button 
                                 onClick={() => { setActiveTab('sell'); setStep(1); setStatus('idle'); }}
                                 className={`flex-1 py-4 rounded-[2.2rem] font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
-                                    activeTab === 'sell' ? 'bg-teal-500 text-white shadow-xl shadow-teal-200/20' : 'text-gray-500 hover:text-gray-300'
+                                    activeTab === 'sell' ? 'text-white shadow-xl' : 'text-gray-500 hover:text-gray-300'
                                 }`}
+                                style={activeTab === 'sell' ? { background: '#009393', boxShadow: '0 8px 20px rgba(0,147,147,0.25)' } : {}}
                             >
                                 <ArrowUpRight className="w-5 h-5" /> Sell Crypto
                             </button>
                             <button 
                                 onClick={() => setActiveTab('history')}
                                 className={`flex-1 py-4 rounded-[2.2rem] font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
-                                    activeTab === 'history' ? 'bg-teal-600 text-white shadow-xl shadow-teal-200/20' : 'text-gray-500 hover:text-gray-300'
+                                    activeTab === 'history' ? 'text-white shadow-xl' : 'text-gray-500 hover:text-gray-300'
                                 }`}
+                                style={activeTab === 'history' ? { background: '#009393', boxShadow: '0 8px 20px rgba(0,147,147,0.25)' } : {}}
                             >
                                 <Clock className="w-5 h-5" /> History
                             </button>

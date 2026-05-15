@@ -18,11 +18,34 @@ const CardVariant = ({
     colorClass, 
     isComingSoon = true 
 }) => {
+    const [rotateX, setRotateX] = useState(0);
+    const [rotateY, setRotateY] = useState(0);
+
+    const handleMouseMove = (e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const rotateX = ((y - centerY) / centerY) * -15;
+        const rotateY = ((x - centerX) / centerX) * 15;
+        setRotateX(rotateX);
+        setRotateY(rotateY);
+    };
+
+    const handleMouseLeave = () => {
+        setRotateX(0);
+        setRotateY(0);
+    };
+
     return (
         <motion.div 
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            style={{ perspective: 1000 }}
             className={`relative group bg-white rounded-[3rem] border border-gray-100 p-8 lg:p-12 hover:shadow-4xl transition-all duration-700 overflow-hidden flex flex-col h-full`}
         >
             <div className={`absolute top-0 right-0 w-64 h-64 ${colorClass} rounded-full blur-[100px] -mr-32 -mt-32 opacity-20 group-hover:opacity-40 transition-opacity`} />
@@ -40,11 +63,11 @@ const CardVariant = ({
                     )}
                 </div>
 
-                <div className="relative mb-12 h-64 flex items-center justify-center">
+                <div className="relative mb-12 h-80 flex items-center justify-center">
                     <motion.div 
-                        whileHover={{ scale: 1.05, rotateY: 10, rotateX: 5 }}
+                        animate={{ rotateX, rotateY }}
                         transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                        className="w-full h-full relative z-10 drop-shadow-2xl"
+                        className="w-full h-full relative z-10 drop-shadow-[0_20px_50px_rgba(0,0,0,0.2)]"
                     >
                         <img 
                             src={image} 
@@ -101,11 +124,11 @@ export default function CardsPage() {
                         className="inline-flex items-center gap-3 px-6 py-2 bg-white shadow-xl shadow-gray-200/50 rounded-full border border-gray-100 mb-8"
                     >
                         <CreditCard className="w-4 h-4 text-teal-600" />
-                        <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest">B20CARDS • The Future of Spending</span>
+                        <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Tez Cards • The Future of Spending</span>
                     </motion.div>
                     
                     <h1 className="text-5xl md:text-8xl font-black text-gray-900 tracking-tighter mb-8 leading-none">
-                        CRYPTO <span className="text-teal-600">REALITY</span>
+                        TEZ <span className="text-teal-600">CARD</span>
                     </h1>
                     <p className="text-lg md:text-2xl font-bold text-gray-400 uppercase tracking-[0.2em] max-w-3xl mx-auto leading-relaxed">
                         Spend your digital assets anywhere in the physical world. Instant loads, global reach.
@@ -118,13 +141,13 @@ export default function CardsPage() {
                         type="Virtual + Physical Available"
                         price="30"
                         colorClass="bg-teal-500"
-                        image="/assets/b20card_platinum.png"
+                        image="/assets/tezcard_platinum.png"
                         features={[
                             "Instant Loading from Tez Exchange",
                             "Universal Online Purchase Support",
                             "Free Virtual Card Creation",
                             "1.5% Standard Transaction Fee",
-                            "Connects directly with B20 Wallet"
+                            "Connects directly with Tez Wallet"
                         ]}
                     />
                     <CardVariant 
@@ -132,7 +155,7 @@ export default function CardsPage() {
                         type="Premium Matte Black Finish"
                         price="50"
                         colorClass="bg-teal-500"
-                        image="/assets/b20card_prestige_matte_black.png"
+                        image="/assets/tezcard_prestige.png"
                         features={[
                             "Luxury Physical Card Hardware",
                             "Unlimited ATM Withdrawals Globally",
@@ -154,7 +177,7 @@ export default function CardsPage() {
                                 </div>
                                 <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Instant Loading</h3>
                                 <p className="text-gray-400 font-bold leading-relaxed uppercase text-xs tracking-widest">
-                                    Sell crypto on Tez Exchange and your funds are instantly available on your B20CARD. No waiting for banking cycles.
+                                    Sell crypto on Tez Exchange and your funds are instantly available on your Tez card. No waiting for banking cycles.
                                 </p>
                             </div>
                             <div className="space-y-6">

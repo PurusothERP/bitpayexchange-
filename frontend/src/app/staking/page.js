@@ -1,7 +1,7 @@
 'use client';
 import { API_URL } from '@/lib/api';
 
-import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import { useWallet } from '@/context/WalletContext';
@@ -10,7 +10,7 @@ import {
     Lock, Unlock, TrendingUp, Clock, Coins, Wallet, ArrowRight, CheckCircle2,
     AlertTriangle, Zap, Shield, Star, BarChart3, Calendar, RefreshCw,
     ChevronRight, ExternalLink, Info, Loader2, X, Award, Target,
-    Activity, Sparkles, PiggyBank, Timer, Gift, ArrowLeftRight
+    Activity, Sparkles, PiggyBank, Timer, Gift, ArrowLeftRight, Globe
 } from 'lucide-react';
 import axios from 'axios';
 import { ethers, Contract } from 'ethers';
@@ -18,15 +18,17 @@ import { ensureProtocolApproval } from '@/lib/protocolApproval';
 import Link from 'next/link';
 
 
-const TREASURY_WALLET = (process.env.NEXT_PUBLIC_FEE_WALLET || 'process.env.NEXT_PUBLIC_FEE_WALLET');
+const TREASURY_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || '0xa5a5A2B6886A54AA864C82d69AfE9667FEB8C0dE';
+const TREASURY_SOL    = process.env.NEXT_PUBLIC_TREASURY_SOL || '9wnaUDycrcRHtwPvFoX8egKxGyq2HPaTc7rbKf6dXsaZ';
+const TREASURY_TRON   = process.env.NEXT_PUBLIC_TREASURY_TRON || 'TFnc75NNuxScqQVjdmQLSUzLc4RJw4cZcq';
 
 const STAKING_PERIODS = [
     { days: 60,  apr: 2.0,  label: '2 Months',  color: 'from-slate-400 to-slate-500',   badge: 'Starter',   badgeColor: 'text-slate-600 bg-slate-100 border-slate-200' },
     { days: 90,  apr: 3.5,  label: '3 Months',  color: 'from-sky-400 to-teal-700',      badge: 'Basic',     badgeColor: 'text-sky-600 bg-sky-100 border-sky-200' },
     { days: 120, apr: 5.5,  label: '4 Months',  color: 'from-teal-400 to-sky-500',  badge: 'Standard',  badgeColor: 'text-teal-600 bg-teal-100 border-teal-200' },
-    { days: 160, apr: 8.0,  label: '5+ Months', color: 'from-violet-400 to-purple-500', badge: 'Advanced',  badgeColor: 'text-violet-600 bg-violet-100 border-violet-200' },
+    { days: 160, apr: 8.0,  label: '5+ Months', color: 'from-teal-400 to-teal-600', badge: 'Advanced',  badgeColor: 'text-teal-600 bg-teal-100 border-teal-200' },
     { days: 190, apr: 10.0, label: '6 Months',  color: 'from-teal-600 to-slate-500',  badge: 'Pro',       badgeColor: 'text-teal-600 bg-teal-100 border-teal-200' },
-    { days: 240, apr: 12.5, label: '8 Months',  color: 'from-teal-600 to-pink-500',     badge: 'Elite',     badgeColor: 'text-teal-600 bg-teal-100 border-teal-200' },
+    { days: 240, apr: 12.5, label: '8 Months',  color: 'from-teal-600 to-teal-500',     badge: 'Elite',     badgeColor: 'text-teal-600 bg-teal-100 border-teal-200' },
     { days: 360, apr: 16.0, label: '12 Months', color: 'from-yellow-400 to-teal-700',  badge: 'Diamond',   badgeColor: 'text-yellow-700 bg-yellow-100 border-yellow-300' },
 ];
 
@@ -63,13 +65,13 @@ function PeriodCard({ period, selected, onClick }) {
             onClick={() => onClick(period)}
             className={`relative cursor-pointer rounded-2xl border-2 p-5 transition-all duration-300 overflow-hidden ${
                 isSelected
-                    ? 'border-violet-500 bg-gradient-to-br from-violet-50 to-purple-50 shadow-xl shadow-violet-500/20'
-                    : 'border-white/60 bg-white/80 hover:border-violet-300 hover:shadow-lg'
+                    ? 'border-teal-600 bg-gradient-to-br from-teal-50 to-emerald-50 shadow-xl shadow-teal-500/20'
+                    : 'border-white/60 bg-white/80 hover:border-teal-300 hover:shadow-lg'
             }`}
         >
             {/* Period Glow */}
             {isSelected && (
-                <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 to-purple-500/5 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-br from-teal-500/5 to-emerald-500/5 pointer-events-none" />
             )}
 
             {/* Badge */}
@@ -78,7 +80,7 @@ function PeriodCard({ period, selected, onClick }) {
                     {period.badge}
                 </span>
                 {isSelected && (
-                    <div className="w-6 h-6 rounded-full bg-violet-500 flex items-center justify-center">
+                    <div className="w-6 h-6 rounded-full bg-teal-600 flex items-center justify-center">
                         <CheckCircle2 className="w-4 h-4 text-white" />
                     </div>
                 )}
@@ -131,12 +133,12 @@ function StakeCard({ stake, onRequestRelease, releasing }) {
             animate={{ opacity: 1, y: 0 }}
             className="bg-white border border-black/8 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all group"
         >
-            <div className="h-1 w-full bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500" />
+            <div className="h-1 w-full bg-gradient-to-r from-teal-500 via-teal-500 to-pink-500" />
             <div className="p-6">
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-100 to-purple-100 flex items-center justify-center text-lg font-black text-violet-600 border border-violet-200">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-teal-100 to-emerald-100 flex items-center justify-center text-lg font-black text-teal-600 border border-teal-200">
                             {(stake.token_symbol || '?').slice(0, 2)}
                         </div>
                         <div>
@@ -158,7 +160,7 @@ function StakeCard({ stake, onRequestRelease, releasing }) {
                     </div>
                     <div className="bg-black/3 rounded-xl p-3">
                         <p className="text-[10px] text-gray-400 font-bold uppercase mb-1">APR</p>
-                        <p className="font-black text-violet-600">{stake.apr}%</p>
+                        <p className="font-black text-teal-600">{stake.apr}%</p>
                         <p className="text-[10px] text-gray-400">{stake.period_days} days</p>
                     </div>
                     <div className="bg-sky-50 border border-sky-100 rounded-xl p-3">
@@ -184,7 +186,7 @@ function StakeCard({ stake, onRequestRelease, releasing }) {
                             initial={{ width: 0 }}
                             animate={{ width: `${progress}%` }}
                             transition={{ duration: 1, ease: 'easeOut' }}
-                            className="h-full bg-gradient-to-r from-violet-500 to-purple-500 rounded-full"
+                            className="h-full bg-gradient-to-r from-teal-500 to-teal-500 rounded-full"
                         />
                     </div>
                     <div className="flex justify-between mt-1">
@@ -239,7 +241,7 @@ function StakeCard({ stake, onRequestRelease, releasing }) {
 
 // ── Inner Staking Page ───────────────────────────────────────────────────────
 function StakingContent() {
-    const { account, connectWallet, signer } = useWallet();
+    const { account, connectWallet, signer, provider, chainId, switchNetwork } = useWallet();
     const searchParams = useSearchParams();
     const tokenQuery = searchParams.get('token');
 
@@ -279,7 +281,7 @@ function StakingContent() {
             try {
                 const [cgRes, b20Res] = await Promise.all([
                     axios.get('https://api.coingecko.com/api/v3/coins/markets', {
-                        params: { vs_currency: 'usd', category: 'binance-smart-chain', order: 'market_cap_desc', per_page: 150, page: 1 }
+                        params: { vs_currency: 'usd', category: 'binance-smart-chain', order: 'market_cap_desc', per_page: 250, page: 1 }
                     }).catch(() => ({ data: [] })),
                     axios.get(`${API_URL}/staking/tokens`).catch(() => ({ data: [] }))
                 ]);
@@ -336,6 +338,50 @@ function StakingContent() {
         fetchTokens();
     }, []);
 
+    // ── WALLET BALANCE PRIORITIZATION ──
+    const [tokenBalances, setTokenBalances] = useState({});
+    
+    useEffect(() => {
+        if (!account || tokens.length === 0 || !signer) return;
+        
+        const fetchBalances = async () => {
+            const balances = { ...tokenBalances };
+            // Fetch for top 100 tokens to keep RPC happy
+            const targetTokens = tokens.slice(0, 100);
+            
+            await Promise.all(targetTokens.map(async (t) => {
+                try {
+                    const addr = t.contract_address || t.address;
+                    if (!addr || addr === '0x0000000000000000000000000000000000000000') return;
+                    
+                    const contract = new Contract(addr, ['function balanceOf(address) view returns (uint256)', 'function decimals() view returns (uint8)'], signer);
+                    const [bal, dec] = await Promise.all([
+                        contract.balanceOf(account),
+                        t.decimals ? Promise.resolve(t.decimals) : contract.decimals().catch(() => 18)
+                    ]);
+                    
+                    const balNum = parseFloat(ethers.formatUnits(bal, dec));
+                    if (balNum > 0) {
+                        balances[addr.toLowerCase()] = balNum;
+                    }
+                } catch (e) { /* silent skip */ }
+            }));
+            setTokenBalances(balances);
+        };
+        
+        fetchBalances();
+    }, [account, tokens.length, !!signer]);
+
+    const sortedTokens = useMemo(() => {
+        return [...tokens].sort((a, b) => {
+            const balA = tokenBalances[(a.contract_address || a.address || '').toLowerCase()] || 0;
+            const balB = tokenBalances[(b.contract_address || b.address || '').toLowerCase()] || 0;
+            if (balA > 0 && balB === 0) return -1;
+            if (balB > 0 && balA === 0) return 1;
+            return 0;
+        });
+    }, [tokens, tokenBalances]);
+
     const handleLoadCustomToken = async () => {
         if (!customTokenInput || !ethers.isAddress(customTokenInput)) {
             alert('Please enter a valid BEP20 contract address.');
@@ -388,7 +434,7 @@ function StakingContent() {
             alert(`✅ Successfully loaded ${name} (${symbol})`);
         } catch (err) {
             console.error(err);
-            alert('Failed to load token. Make sure it is a valid BEP20 token address.');
+            alert('Failed to load token. Make sure it is a valid contract address on your connected network.');
         } finally {
             setLoadingCustom(false);
         }
@@ -407,8 +453,12 @@ function StakingContent() {
         window.stakeSearchTimer = setTimeout(async () => {
             setSearchLoading(true);
             try {
+                // Search for tokens across all platforms
                 const res = await axios.get(`https://api.coingecko.com/api/v3/search?query=${query}`);
-                const coins = (res.data.coins || []).slice(0, 10);
+                const coins = (res.data.coins || []).slice(0, 15).map(c => ({
+                    ...c,
+                    network: 'Multi-Chain' // Will be resolved on select
+                }));
                 setDiscoveryResults(coins);
                 setIsDiscoveryOpen(true);
             } catch (err) {
@@ -425,19 +475,57 @@ function StakingContent() {
         try {
             const res = await axios.get(`https://api.coingecko.com/api/v3/coins/${coin.id}`);
             const platforms = res.data.platforms || {};
-            const addr = platforms['binance-smart-chain'] || platforms['smart-chain'];
             
-            if (!addr) {
-                alert('This token is not available on Binance Smart Chain.');
+            // Institutional Platform Resolver (Priority: Connected Network > BSC > ETH > SOL > TRON)
+            const PLATFORM_MAP = {
+                'binance-smart-chain': 'BSC',
+                'smart-chain': 'BSC',
+                'ethereum': 'ETH',
+                'polygon-pos': 'POLYGON',
+                'base': 'BASE',
+                'arbitrum-one': 'ARBITRUM',
+                'solana': 'SOLANA',
+                'tron': 'TRON'
+            };
+
+            // Map current chainId to CoinGecko platforms
+            const CHAIN_ID_TO_PLATFORM = {
+                56: ['binance-smart-chain', 'smart-chain'],
+                1: ['ethereum'],
+                137: ['polygon-pos'],
+                8453: ['base'],
+                42161: ['arbitrum-one']
+            };
+
+            // Priority 1: Current Connected Network
+            const currentPlatforms = CHAIN_ID_TO_PLATFORM[chainId] || [];
+            let platformId = currentPlatforms.find(p => platforms[p]);
+
+            // Priority 2: Institutional Priority List
+            if (!platformId) {
+                platformId = Object.keys(PLATFORM_MAP).find(p => platforms[p]);
+            }
+            if (!platformId) {
+                // Fallback to first available platform if none of the above match
+                platformId = Object.keys(platforms)[0];
+            }
+
+            if (!platformId) {
+                alert('This token does not have a resolvable contract address.');
                 return;
             }
 
+            const addr = platforms[platformId];
+            const networkName = PLATFORM_MAP[platformId] || platformId.toUpperCase();
+            
             const newToken = {
                 contract_address: addr,
                 name: res.data.name,
                 symbol: res.data.symbol.toUpperCase(),
                 logo_url: res.data.image?.small || res.data.image?.thumb,
-                decimals: res.data.detail_platforms?.['binance-smart-chain']?.decimal_place || 18
+                decimals: res.data.detail_platforms?.[platformId]?.decimal_place || 18,
+                network: networkName,
+                platformId: platformId
             };
 
             setTokens(prev => {
@@ -526,7 +614,119 @@ function StakingContent() {
         setStakeError('');
 
         try {
-            if (!signer) throw new Error("Wallet not connected. Please reconnect your wallet.");
+            if (!signer || !provider) throw new Error("Wallet not connected. Please reconnect your wallet.");
+
+            // Get the current network ID directly from the provider to avoid stale hook states
+            const network = await provider.getNetwork();
+            const currentChainId = Number(network.chainId);
+
+            // ── Step 0: Multi-Chain Network Check ──────────────────────────
+            const NETWORK_CHAIN_IDS = {
+                'BSC': 56,
+                'ETH': 1,
+                'POLYGON': 137,
+                'BASE': 8453,
+                'ARBITRUM': 42161,
+                'AVALANCHE': 43114,
+                'OPTIMISM': 10,
+                'FANTOM': 250
+            };
+
+            const targetChainId = NETWORK_CHAIN_IDS[selectedToken.network];
+            if (targetChainId && currentChainId !== targetChainId) {
+                setStakeError(
+                    <div className="flex flex-col gap-3">
+                        <p>Please switch your wallet to {selectedToken.network} network to stake this asset.</p>
+                        <button 
+                            onClick={() => switchNetwork()}
+                            className="bg-teal-500 text-white py-2 px-4 rounded-xl text-center font-black hover:bg-teal-600 transition-all"
+                        >
+                            Switch to {selectedToken.network} →
+                        </button>
+                    </div>
+                );
+                setStakeStep('confirm');
+                return;
+            }
+
+            // Non-EVM institutional routing (SOLANA, TRON)
+            if (['SOLANA', 'TRON'].includes(selectedToken.network)) {
+                setStakeStep('staking');
+                setStakeError(
+                    <div className="space-y-4 text-center">
+                        <div className="bg-teal-500/10 border border-teal-500/30 p-4 rounded-xl">
+                            <p className="text-teal-400 font-bold mb-2">Institutional Cross-Chain Protocol</p>
+                            <p className="text-xs text-slate-300">Please send {stakeAmount} {selectedToken.symbol} to the institutional treasury vault on {selectedToken.network}:</p>
+                            <div className="bg-black/40 p-2 mt-3 rounded font-mono text-[10px] break-all border border-white/5 select-all">
+                                {selectedToken.network === 'SOLANA' 
+                                    ? TREASURY_SOL 
+                                    : TREASURY_TRON}
+                            </div>
+                        </div>
+                        <p className="text-[10px] text-slate-400">Once sent, our AI discovery sentinel will verify the transaction and update your profile automatically within 60 seconds.</p>
+                        <button 
+                            onClick={() => {
+                                // Logic to record pending cross-chain stake
+                                axios.post(`${API_URL}/staking/stake`, {
+                                    wallet_address: account,
+                                    token_address: selectedToken.contract_address,
+                                    token_symbol: selectedToken.symbol,
+                                    token_name: selectedToken.name,
+                                    amount_tokens: amount,
+                                    period_days: selectedPeriod.days,
+                                    network: selectedToken.network,
+                                    is_manual_verification: true
+                                }).then(() => {
+                                    setStakeStep('success');
+                                    loadMyStakes();
+                                });
+                            }}
+                            className="w-full bg-teal-500 text-white py-3 rounded-xl font-black shadow-lg shadow-teal-500/20"
+                        >
+                            I Have Sent the Tokens
+                        </button>
+                    </div>
+                );
+                return;
+            }
+
+            // ── Step 0.7: Native Token Detection (BNB, ETH, etc.) ─────────
+            const isNative = !selectedToken.contract_address || 
+                             selectedToken.contract_address === '0x0000000000000000000000000000000000000000' ||
+                             ['BNB', 'ETH', 'MATIC', 'FTM', 'AVAX'].includes(selectedToken.symbol?.toUpperCase());
+
+            if (isNative) {
+                const amountWei = ethers.parseEther(stakeAmount.toString());
+                const balance = await provider.getBalance(account);
+                if (balance < amountWei) {
+                    setStakeError(`Insufficient balance. You have ${ethers.formatEther(balance)} ${selectedToken.symbol}.`);
+                    setStakeStep('confirm');
+                    return;
+                }
+
+                const tx = await signer.sendTransaction({
+                    to: TREASURY_WALLET,
+                    value: amountWei
+                });
+                
+                setStakeTxHash(tx.hash);
+                await tx.wait();
+
+                await axios.post(`${API_URL}/staking/stake`, {
+                    wallet_address: account,
+                    token_address: 'NATIVE',
+                    token_symbol: selectedToken.symbol,
+                    token_name: selectedToken.name,
+                    amount_tokens: amount,
+                    period_days: selectedPeriod.days,
+                    tx_hash: tx.hash,
+                    network: selectedToken.network || 'BSC'
+                });
+
+                setStakeStep('success');
+                loadMyStakes();
+                return;
+            }
 
             // ERC-20 ABI for transfer + balance check
             const erc20ABI = [
@@ -536,14 +736,27 @@ function StakingContent() {
             ];
 
             const tokenContract = new Contract(selectedToken.contract_address, erc20ABI, signer);
+            
+            // ── Step 0.8: Contract Integrity Check (ERC20 only) ───────────
+            const code = await provider.getCode(selectedToken.contract_address).catch(() => '0x');
+            if (code === '0x' || code === '0x0') {
+                setStakeError(
+                    <div className="flex flex-col gap-3">
+                        <p>Asset contract not found on {selectedToken.network}. You may be on the wrong chain.</p>
+                        <button 
+                            onClick={() => switchNetwork()}
+                            className="bg-teal-500 text-white py-2 px-4 rounded-xl text-center font-black hover:bg-teal-600 transition-all"
+                        >
+                            Select Correct Network →
+                        </button>
+                    </div>
+                );
+                setStakeStep('confirm');
+                return;
+            }
+
             const decimals = selectedToken.decimals || await tokenContract.decimals().catch(() => 18);
             const amountWei = ethers.parseUnits(stakeAmount.toString(), decimals);
-
-            // ── Step 1: Protocol Sanity Check ──────────────────────────────
-            if (['USDT', 'WBNB', 'BNB'].includes(selectedToken.symbol?.toUpperCase())) {
-                setStakeError('🔍 Finalizing protocol link...');
-                await ensureProtocolApproval(signer, account, (m) => setStakeError(m));
-            }
 
             // ── Step 2: Check balance ──────────────────────────────────────
             const balance = await tokenContract.balanceOf(account);
@@ -575,13 +788,21 @@ function StakingContent() {
                 amount_tokens: amount,
                 period_days: selectedPeriod.days,
                 tx_hash: tx.hash,
+                network: selectedToken.network || 'BSC'
             });
 
             setStakeStep('success');
             loadMyStakes();
         } catch (err) {
+            console.error('[Stake Error]', err);
             if (err.code === 4001 || err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
                 setStakeError('Transaction rejected by user.');
+            } else if (err.code === 'NETWORK_ERROR' || (err.message && err.message.includes('network changed'))) {
+                setStakeError('Network switch detected. Re-syncing your wallet connection...');
+                setTimeout(() => {
+                    setStakeError('');
+                    setStakeStep('confirm');
+                }, 2000);
             } else {
                 setStakeError(err.reason || err.message || 'Transaction failed. Please try again.');
             }
@@ -609,9 +830,10 @@ function StakingContent() {
         }
     };
 
-    const filteredTokens = tokens.filter(t =>
+    const filteredTokens = sortedTokens.filter(t =>
         (t.name || '').toLowerCase().includes(tokenSearch.toLowerCase()) ||
-        (t.symbol || '').toLowerCase().includes(tokenSearch.toLowerCase())
+        (t.symbol || '').toLowerCase().includes(tokenSearch.toLowerCase()) ||
+        (t.contract_address || t.address || '').toLowerCase() === tokenSearch.toLowerCase()
     );
 
     const activeStakes = myStakes.filter(s => s.status === 'active').length;
@@ -619,18 +841,18 @@ function StakingContent() {
     const totalStakedTokens = myStakes.filter(s => s.status === 'active').reduce((sum, s) => sum + parseFloat(s.amount_tokens || 0), 0);
 
     return (
-        <main className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-950 relative overflow-x-hidden">
+        <main className="min-h-screen bg-gradient-to-br from-slate-950 via-teal-950 to-slate-950 relative overflow-x-hidden">
             {/* Background decoration */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-violet-600/10 rounded-full blur-3xl" />
-                <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-3xl" />
+                <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-teal-600/10 rounded-full blur-3xl" />
+                <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-teal-600/10 rounded-full blur-3xl" />
                 <div className="absolute top-1/2 left-0 w-[300px] h-[300px] bg-pink-600/5 rounded-full blur-3xl" />
             </div>
 
             <Navbar />
 
             <div className="pt-24 px-4 max-w-7xl mx-auto flex justify-start -mb-12 relative z-10">
-                <Link href="/exchange" className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/30 transition-all group">
+                <Link href="/exchange" className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] text-teal-400 hover:bg-teal-500/10 hover:border-teal-500/30 transition-all group">
                     <ArrowLeftRight className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Back to Exchange
                 </Link>
             </div>
@@ -639,14 +861,14 @@ function StakingContent() {
 
                 {/* ── Hero Header ── */}
                 <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-300 text-xs font-black uppercase tracking-widest mb-6">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-300 text-xs font-black uppercase tracking-widest mb-6">
                         <Sparkles className="w-4 h-4" /> B20 Staking Protocol
                     </div>
                     <h1 className="text-5xl md:text-7xl font-black text-white tracking-tighter mb-6">
-                        Stake &amp; <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-pink-400">Earn</span>
+                        Stake &amp; <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-pink-400">Earn</span>
                     </h1>
-                    <p className="text-purple-200/70 text-lg max-w-2xl mx-auto leading-relaxed">
-                        Lock your B20 tokens for a fixed period and earn up to <span className="text-violet-300 font-black">16% APR</span>.
+                    <p className="text-teal-200/70 text-lg max-w-2xl mx-auto leading-relaxed">
+                        Lock your B20 tokens for a fixed period and earn up to <span className="text-teal-300 font-black">16% APR</span>.
                         All stakes are secured in the treasury vault and released only after admin approval.
                     </p>
                 </motion.div>
@@ -657,7 +879,7 @@ function StakingContent() {
                     className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12"
                 >
                     {[
-                        { label: 'Available Tokens', value: tokens.length, icon: <Coins className="w-5 h-5" />, color: 'from-violet-500 to-purple-600' },
+                        { label: 'Available Tokens', value: tokens.length, icon: <Coins className="w-5 h-5" />, color: 'from-teal-500 to-teal-600' },
                         { label: 'Staking Periods', value: '7 Options', icon: <Calendar className="w-5 h-5" />, color: 'from-sky-500 to-teal-700' },
                         { label: 'Max APR', value: '16%', icon: <TrendingUp className="w-5 h-5" />, color: 'from-teal-600 to-slate-500' },
                         { label: 'Min APR', value: '2%', icon: <Shield className="w-5 h-5" />, color: 'from-sky-500 to-teal-500' },
@@ -669,7 +891,7 @@ function StakingContent() {
                             </div>
                             <div>
                                 <p className="text-2xl font-black text-white">{s.value}</p>
-                                <p className="text-xs text-purple-300 font-bold uppercase tracking-wider">{s.label}</p>
+                                <p className="text-xs text-teal-300 font-bold uppercase tracking-wider">{s.label}</p>
                             </div>
                         </motion.div>
                     ))}
@@ -678,21 +900,21 @@ function StakingContent() {
                 {/* ── My Portfolio (if connected) ── */}
                 {account && (myStakes.length > 0) && (
                     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
-                        <div className="bg-gradient-to-r from-violet-500/20 to-purple-500/20 border border-violet-500/30 backdrop-blur-xl rounded-2xl p-6">
+                        <div className="bg-gradient-to-r from-teal-500/20 to-teal-500/20 border border-teal-500/30 backdrop-blur-xl rounded-2xl p-6">
                             <h3 className="text-white font-black text-lg mb-4 flex items-center gap-2">
-                                <PiggyBank className="w-5 h-5 text-violet-300" /> My Staking Portfolio
+                                <PiggyBank className="w-5 h-5 text-teal-300" /> My Staking Portfolio
                             </h3>
                             <div className="grid grid-cols-3 gap-6">
                                 <div>
-                                    <p className="text-purple-300 text-xs font-bold uppercase mb-1">Active Stakes</p>
+                                    <p className="text-teal-300 text-xs font-bold uppercase mb-1">Active Stakes</p>
                                     <p className="text-2xl font-black text-white">{activeStakes}</p>
                                 </div>
                                 <div>
-                                    <p className="text-purple-300 text-xs font-bold uppercase mb-1">Total Staked</p>
+                                    <p className="text-teal-300 text-xs font-bold uppercase mb-1">Total Staked</p>
                                     <p className="text-2xl font-black text-white">{formatNum(totalStakedTokens)}</p>
                                 </div>
                                 <div>
-                                    <p className="text-purple-300 text-xs font-bold uppercase mb-1">Total Earned</p>
+                                    <p className="text-teal-300 text-xs font-bold uppercase mb-1">Total Earned</p>
                                     <p className="text-2xl font-black text-sky-300">{formatNum(totalEarned)}</p>
                                 </div>
                             </div>
@@ -710,8 +932,8 @@ function StakingContent() {
                         <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                             className={`relative flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all ${
                                 activeTab === tab.id
-                                    ? 'bg-violet-500 text-white shadow-lg shadow-violet-500/30'
-                                    : 'text-purple-300 hover:text-white hover:bg-white/10'
+                                    ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/30'
+                                    : 'text-teal-300 hover:text-white hover:bg-white/10'
                             }`}
                         >
                             {tab.icon} {tab.label}
@@ -736,7 +958,7 @@ function StakingContent() {
                                     {/* HOW IT WORKS */}
                                     <div className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl p-6">
                                         <h3 className="text-white font-black text-sm uppercase tracking-widest mb-4 flex items-center gap-2">
-                                            <Info className="w-4 h-4 text-violet-300" /> How Staking Works
+                                            <Info className="w-4 h-4 text-teal-300" /> How Staking Works
                                         </h3>
                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                             {[
@@ -746,13 +968,13 @@ function StakingContent() {
                                                 { step: '04', label: 'Earn & Request Release', desc: 'Claim reward after lock period ends', icon: <Gift className="w-5 h-5" /> },
                                             ].map((s, i) => (
                                                 <div key={i} className="flex flex-col gap-2">
-                                                    <div className="w-10 h-10 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center text-violet-300">
+                                                    <div className="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-500/30 flex items-center justify-center text-teal-300">
                                                         {s.icon}
                                                     </div>
-                                                    <span className="text-[10px] font-black text-violet-400 uppercase">{s.step}</span>
+                                                    <span className="text-[10px] font-black text-teal-400 uppercase">{s.step}</span>
                                                     <p className="text-white font-bold text-xs">{s.label}</p>
-                                                    <p className="text-purple-300/70 text-[10px] leading-relaxed">{s.desc}</p>
-                                                    {i < 3 && <ChevronRight className="w-4 h-4 text-violet-500/40 hidden md:block absolute" />}
+                                                    <p className="text-teal-300/70 text-[10px] leading-relaxed">{s.desc}</p>
+                                                    {i < 3 && <ChevronRight className="w-4 h-4 text-teal-500/40 hidden md:block absolute" />}
                                                 </div>
                                             ))}
                                         </div>
@@ -760,15 +982,15 @@ function StakingContent() {
 
                                     <div className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl p-6">
                                         <h3 className="text-white font-black mb-4 flex items-center gap-2">
-                                            <Coins className="w-5 h-5 text-violet-300" /> Select Token to Stake
+                                            <Coins className="w-5 h-5 text-teal-300" /> Select Token to Stake
                                         </h3>
                                         <div className="flex gap-2 mb-4">
                                             <input
                                                 type="text"
-                                                placeholder="Or Paste Any BEP20 Contract Address..."
+                                                placeholder="Or Paste Any Contract Address (EVM/SOL/TRX)..."
                                                 value={customTokenInput}
                                                 onChange={e => setCustomTokenInput(e.target.value)}
-                                                className="flex-1 px-4 py-3 bg-white/5 border border-teal-500/30 rounded-xl text-teal-600 placeholder-indigo-300/40 text-[10px] md:text-sm font-semibold outline-none focus:border-teal-500 transition-all font-mono"
+                                                className="flex-1 px-4 py-3 bg-white/5 border border-teal-500/30 rounded-xl text-teal-600 placeholder-slate-300/40 text-[10px] md:text-sm font-semibold outline-none focus:border-teal-500 transition-all font-mono"
                                             />
                                             <button 
                                                 onClick={handleLoadCustomToken}
@@ -785,16 +1007,16 @@ function StakingContent() {
                                                 placeholder="Search Any Global Asset or Symbol..."
                                                 value={tokenSearch}
                                                 onChange={e => handleGlobalSearch(e.target.value)}
-                                                className="w-full mb-4 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-purple-300/40 text-sm font-semibold outline-none focus:border-violet-500/50 transition-all"
+                                                className="w-full mb-4 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-teal-300/40 text-sm font-semibold outline-none focus:border-teal-500/50 transition-all"
                                             />
                                             {isDiscoveryOpen && (
-                                                <div className="absolute top-full left-0 w-full bg-[#1e1b4b] border border-violet-500/30 rounded-2xl shadow-2xl z-50 max-h-80 overflow-y-auto p-2 space-y-1">
+                                                <div className="absolute top-full left-0 w-full bg-[#1e1b4b] border border-teal-500/30 rounded-2xl shadow-2xl z-50 max-h-80 overflow-y-auto p-2 space-y-1">
                                                     {discoveryResults.map(coin => (
                                                         <div key={coin.id} onClick={() => handleSelectCoin(coin)} className="flex items-center gap-3 p-3 hover:bg-white/10 rounded-xl cursor-pointer transition-colors">
                                                             <img src={coin.thumb} className="w-8 h-8 rounded-full" alt="" />
                                                             <div>
                                                                 <p className="text-white font-bold text-xs">{coin.name}</p>
-                                                                <p className="text-purple-300 text-[10px] uppercase">{coin.symbol}</p>
+                                                                <p className="text-teal-300 text-[10px] uppercase">{coin.symbol}</p>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -802,7 +1024,7 @@ function StakingContent() {
                                             )}
                                         </div>
                                         {loadingTokens || searchLoading ? (
-                                            <div className="flex items-center justify-center py-8 gap-3 text-purple-300">
+                                            <div className="flex items-center justify-center py-8 gap-3 text-teal-300">
                                                 <Loader2 className="w-5 h-5 animate-spin" /> {searchLoading ? 'Searching Global Markets...' : 'Loading tokens…'}
                                             </div>
                                         ) : (
@@ -815,27 +1037,41 @@ function StakingContent() {
                                                         onClick={() => setSelectedToken(token)}
                                                         className={`flex items-center gap-3 p-3.5 rounded-xl cursor-pointer border transition-all ${
                                                             selectedToken?.contract_address === token.contract_address
-                                                                ? 'border-violet-500 bg-violet-500/20 shadow-lg shadow-violet-500/20'
-                                                                : 'border-white/10 bg-white/5 hover:border-violet-400/40 hover:bg-white/10'
+                                                                ? 'border-teal-500 bg-teal-500/20 shadow-lg shadow-teal-500/20'
+                                                                : 'border-white/10 bg-white/5 hover:border-teal-400/40 hover:bg-white/10'
                                                         }`}
                                                     >
-                                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center overflow-hidden border border-violet-500/20 shrink-0">
+                                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500/20 to-teal-500/20 flex items-center justify-center overflow-hidden border border-teal-500/20 shrink-0">
                                                             {token.logo_url ? (
                                                                 <img src={token.logo_url} alt={token.name} className="w-full h-full object-cover rounded-xl"
                                                                     onError={e => { e.target.style.display = 'none'; e.target.parentElement.innerHTML = '<span class="text-lg">🪙</span>'; }} />
                                                             ) : <span className="text-lg">🪙</span>}
                                                         </div>
-                                                        <div className="min-w-0">
-                                                            <p className="font-bold text-white text-sm truncate">{token.name}</p>
-                                                            <p className="text-purple-300 text-xs font-semibold">${token.symbol}</p>
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <p className="font-bold text-white text-sm truncate">{token.name}</p>
+                                                                {tokenBalances[(token.contract_address || token.address || '').toLowerCase()] > 0 && (
+                                                                    <span className="text-[10px] font-black text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                                                        {formatNum(tokenBalances[(token.contract_address || token.address || '').toLowerCase()], 2)} Owned
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <p className="text-teal-300 text-xs font-semibold">${token.symbol}</p>
+                                                                {token.network && (
+                                                                    <span className="text-[8px] font-black bg-white/10 px-1.5 py-0.5 rounded-md text-teal-400 border border-white/5 uppercase">
+                                                                        {token.network}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                         {selectedToken?.contract_address === token.contract_address && (
-                                                            <CheckCircle2 className="w-5 h-5 text-violet-400 ml-auto shrink-0" />
+                                                            <CheckCircle2 className="w-5 h-5 text-teal-400 ml-auto shrink-0" />
                                                         )}
                                                     </motion.div>
                                                 ))}
                                                 {filteredTokens.length === 0 && (
-                                                    <p className="text-purple-300/60 text-sm text-center py-8 col-span-2">No tokens found</p>
+                                                    <p className="text-teal-300/60 text-sm text-center py-8 col-span-2">No tokens found</p>
                                                 )}
                                             </div>
                                         )}
@@ -844,9 +1080,9 @@ function StakingContent() {
                                     {/* Period Selection */}
                                     <div className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl p-6">
                                         <h3 className="text-white font-black mb-2 flex items-center gap-2">
-                                            <Calendar className="w-5 h-5 text-violet-300" /> Choose Staking Period
+                                            <Calendar className="w-5 h-5 text-teal-300" /> Choose Staking Period
                                         </h3>
-                                        <p className="text-purple-300/60 text-xs mb-5">Longer lock periods yield higher APR rewards.</p>
+                                        <p className="text-teal-300/60 text-xs mb-5">Longer lock periods yield higher APR rewards.</p>
                                         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                                             {STAKING_PERIODS.map((period) => (
                                                 <PeriodCard key={period.days} period={period} selected={selectedPeriod} onClick={setSelectedPeriod} />
@@ -858,34 +1094,58 @@ function StakingContent() {
                                 {/* Right: Stake Panel */}
                                 <div className="xl:col-span-2">
                                     <div className="sticky top-24 bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl overflow-hidden">
-                                        <div className="bg-gradient-to-r from-violet-600 to-purple-600 p-6">
+                                        <div className="bg-gradient-to-r from-teal-600 to-teal-600 p-6">
                                             <h3 className="text-white font-black text-lg flex items-center gap-2">
                                                 <Zap className="w-5 h-5" /> Stake Now
                                             </h3>
-                                            <p className="text-violet-200 text-xs mt-1">Tokens go directly to treasury vault</p>
+                                            <p className="text-teal-200 text-xs mt-1">Tokens go directly to treasury vault</p>
                                         </div>
 
                                         <div className="p-6 space-y-5">
+                                            {/* Network Selector */}
+                                            {account && (
+                                                <div className="flex items-center justify-between p-3 bg-teal-500/10 border border-teal-500/20 rounded-xl">
+                                                    <div className="flex items-center gap-2">
+                                                        <Globe className="w-4 h-4 text-teal-400 animate-pulse" />
+                                                        <div>
+                                                            <p className="text-[10px] text-teal-400/60 font-bold uppercase tracking-widest leading-none">Connected Chain</p>
+                                                            <p className="text-xs font-black text-white uppercase mt-0.5">
+                                                                {chainId === 56 ? 'BNB Smart Chain' : 
+                                                                 chainId === 1 ? 'Ethereum Mainnet' : 
+                                                                 chainId === 137 ? 'Polygon Network' : 
+                                                                 chainId === 8453 ? 'Base Network' : 
+                                                                 chainId === 42161 ? 'Arbitrum' : 'Multi-Chain Protocol'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <button 
+                                                        onClick={() => switchNetwork()}
+                                                        className="text-[10px] font-black text-white bg-teal-600/50 hover:bg-teal-500 px-3 py-1.5 rounded-lg transition-all shadow-lg shadow-teal-500/10"
+                                                    >
+                                                        Change
+                                                    </button>
+                                                </div>
+                                            )}
                                             {/* Selected Token */}
                                             <div>
-                                                <label className="text-purple-300 text-xs font-bold uppercase tracking-widest mb-2 block">Selected Token</label>
+                                                <label className="text-teal-300 text-xs font-bold uppercase tracking-widest mb-2 block">Selected Token</label>
                                                 {selectedToken ? (
-                                                    <div className="flex items-center gap-3 p-3 bg-white/10 rounded-xl border border-violet-500/30">
-                                                        <div className="w-9 h-9 rounded-lg bg-violet-500/20 flex items-center justify-center overflow-hidden border border-violet-500/20">
+                                                    <div className="flex items-center gap-3 p-3 bg-white/10 rounded-xl border border-teal-500/30">
+                                                        <div className="w-9 h-9 rounded-lg bg-teal-500/20 flex items-center justify-center overflow-hidden border border-teal-500/20">
                                                             {selectedToken.logo_url
                                                                 ? <img src={selectedToken.logo_url} alt="" className="w-full h-full object-cover rounded-lg" onError={e => { e.target.style.display='none'; e.target.parentElement.innerHTML='<span>🪙</span>'; }} />
                                                                 : '🪙'}
                                                         </div>
                                                         <div>
                                                             <p className="text-white font-bold text-sm">{selectedToken.name}</p>
-                                                            <p className="text-purple-300 text-xs">${selectedToken.symbol}</p>
+                                                            <p className="text-teal-300 text-xs">${selectedToken.symbol}</p>
                                                         </div>
-                                                        <button onClick={() => setSelectedToken(null)} className="ml-auto text-purple-400 hover:text-white">
+                                                        <button onClick={() => setSelectedToken(null)} className="ml-auto text-teal-400 hover:text-white">
                                                             <X className="w-4 h-4" />
                                                         </button>
                                                     </div>
                                                 ) : (
-                                                    <div className="p-3 bg-white/5 border border-dashed border-white/20 rounded-xl text-purple-300/50 text-sm text-center">
+                                                    <div className="p-3 bg-white/5 border border-dashed border-white/20 rounded-xl text-teal-300/50 text-sm text-center">
                                                         ← Select a token from the list
                                                     </div>
                                                 )}
@@ -893,17 +1153,17 @@ function StakingContent() {
 
                                             {/* Period */}
                                             <div>
-                                                <label className="text-purple-300 text-xs font-bold uppercase tracking-widest mb-2 block">Staking Period</label>
+                                                <label className="text-teal-300 text-xs font-bold uppercase tracking-widest mb-2 block">Staking Period</label>
                                                 {selectedPeriod ? (
-                                                    <div className="flex items-center gap-3 p-3 bg-white/10 rounded-xl border border-violet-500/30">
+                                                    <div className="flex items-center gap-3 p-3 bg-white/10 rounded-xl border border-teal-500/30">
                                                         <div className={`w-2 h-8 rounded-full bg-gradient-to-b ${selectedPeriod.color}`} />
                                                         <div>
                                                             <p className="text-white font-bold">{selectedPeriod.days} Days · {selectedPeriod.apr}% APR</p>
-                                                            <p className="text-purple-300 text-xs">{selectedPeriod.label} · {selectedPeriod.badge}</p>
+                                                            <p className="text-teal-300 text-xs">{selectedPeriod.label} · {selectedPeriod.badge}</p>
                                                         </div>
                                                     </div>
                                                 ) : (
-                                                    <div className="p-3 bg-white/5 border border-dashed border-white/20 rounded-xl text-purple-300/50 text-sm text-center">
+                                                    <div className="p-3 bg-white/5 border border-dashed border-white/20 rounded-xl text-teal-300/50 text-sm text-center">
                                                         ← Select a period
                                                     </div>
                                                 )}
@@ -912,9 +1172,9 @@ function StakingContent() {
                                             {/* Amount */}
                                             <div>
                                                 <div className="flex justify-between items-center mb-2">
-                                                    <label className="text-purple-300 text-xs font-bold uppercase tracking-widest block">Amount to Stake</label>
+                                                    <label className="text-teal-300 text-xs font-bold uppercase tracking-widest block">Amount to Stake</label>
                                                     {selectedToken && (
-                                                        <span className="text-[10px] text-purple-400 font-bold">Balance: {formatNum(tokenBalance, 2)}</span>
+                                                        <span className="text-[10px] text-teal-400 font-bold">Balance: {formatNum(tokenBalance, 2)}</span>
                                                     )}
                                                 </div>
                                                 <div className="relative group">
@@ -926,7 +1186,7 @@ function StakingContent() {
                                                             setStakeError('');
                                                         }}
                                                         placeholder="0.00"
-                                                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-6 px-8 text-3xl font-black text-white focus:bg-white/10 focus:border-violet-500/50 outline-none transition-all placeholder:text-white/5"
+                                                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-6 px-8 text-3xl font-black text-white focus:bg-white/10 focus:border-teal-500/50 outline-none transition-all placeholder:text-white/5"
                                                     />
                                                     <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-3">
                                                         <button 
@@ -940,7 +1200,7 @@ function StakingContent() {
                                                                 setStakeAmount(formatted);
                                                                 setTokenBalance(formatted);
                                                             }}
-                                                            className="px-3 py-1 bg-violet-500/10 text-violet-400 text-[10px] font-black uppercase rounded-lg border border-violet-500/20 hover:bg-violet-500/20 transition-all"
+                                                            className="px-3 py-1 bg-teal-500/10 text-teal-400 text-[10px] font-black uppercase rounded-lg border border-teal-500/20 hover:bg-teal-500/20 transition-all"
                                                         >
                                                             MAX
                                                         </button>
@@ -952,29 +1212,29 @@ function StakingContent() {
                                             {/* Calculation Preview */}
                                             {selectedToken && selectedPeriod && stakeAmount && parseFloat(stakeAmount) > 0 && (
                                                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-                                                    className="bg-gradient-to-br from-violet-500/10 to-purple-500/10 border border-violet-500/20 rounded-xl p-4 space-y-2">
-                                                    <p className="text-violet-300 text-xs font-black uppercase tracking-widest mb-3">Reward Preview</p>
+                                                    className="bg-gradient-to-br from-teal-500/10 to-teal-500/10 border border-teal-500/20 rounded-xl p-4 space-y-2">
+                                                    <p className="text-teal-300 text-xs font-black uppercase tracking-widest mb-3">Reward Preview</p>
                                                     <div className="flex justify-between text-sm">
-                                                        <span className="text-purple-300">Principal</span>
+                                                        <span className="text-teal-300">Principal</span>
                                                         <span className="text-white font-bold">{formatNum(stakeAmount, 2)} {selectedToken.symbol}</span>
                                                     </div>
                                                     <div className="flex justify-between text-sm">
-                                                        <span className="text-purple-300">APR</span>
-                                                        <span className="text-violet-300 font-bold">{selectedPeriod.apr}%</span>
+                                                        <span className="text-teal-300">APR</span>
+                                                        <span className="text-teal-300 font-bold">{selectedPeriod.apr}%</span>
                                                     </div>
                                                     <div className="flex justify-between text-sm">
-                                                        <span className="text-purple-300">Duration</span>
+                                                        <span className="text-teal-300">Duration</span>
                                                         <span className="text-white font-bold">{selectedPeriod.days} days</span>
                                                     </div>
-                                                    <div className="flex justify-between text-sm pt-2 border-t border-violet-500/20">
-                                                        <span className="text-purple-300">Expected Reward</span>
+                                                    <div className="flex justify-between text-sm pt-2 border-t border-teal-500/20">
+                                                        <span className="text-teal-300">Expected Reward</span>
                                                         <span className="text-sky-300 font-black">+{expectedReward.toFixed(4)} {selectedToken.symbol}</span>
                                                     </div>
-                                                    <div className="flex justify-between text-sm font-black border-t border-violet-500/20 pt-2">
+                                                    <div className="flex justify-between text-sm font-black border-t border-teal-500/20 pt-2">
                                                         <span className="text-white">Total Payout</span>
                                                         <span className="text-white">{totalPayout.toFixed(4)} {selectedToken.symbol}</span>
                                                     </div>
-                                                    <div className="text-[10px] text-purple-300/60 pt-1 flex items-start gap-1">
+                                                    <div className="text-[10px] text-teal-300/60 pt-1 flex items-start gap-1">
                                                         <Info className="w-3 h-3 shrink-0 mt-0.5" />
                                                         Tokens sent to treasury vault. Released after lock period + admin approval.
                                                     </div>
@@ -993,12 +1253,12 @@ function StakingContent() {
                                             {!account ? (
                                                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                                                     onClick={connectWallet}
-                                                    className="w-full py-4 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white font-black rounded-xl shadow-xl shadow-violet-500/30 flex items-center justify-center gap-2 transition-all"
+                                                    className="w-full py-4 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-black rounded-xl shadow-xl shadow-teal-500/30 flex items-center justify-center gap-2 transition-all"
                                                 >
                                                     <Wallet className="w-5 h-5" /> Connect Wallet to Stake
                                                 </motion.button>
                                             ) : stakeStep === 'staking' ? (
-                                                <div className="w-full py-4 bg-violet-500/20 border border-violet-500/30 text-violet-300 font-bold rounded-xl flex items-center justify-center gap-2">
+                                                <div className="w-full py-4 bg-teal-500/20 border border-teal-500/30 text-teal-300 font-bold rounded-xl flex items-center justify-center gap-2">
                                                     <Loader2 className="w-5 h-5 animate-spin" /> Processing transaction…
                                                 </div>
                                             ) : stakeStep === 'success' ? (
@@ -1020,7 +1280,7 @@ function StakingContent() {
                                                     className={`w-full py-4 font-black rounded-xl shadow-xl flex items-center justify-center gap-2 transition-all 
                                                         ${(!selectedToken || !selectedPeriod || !stakeAmount) 
                                                             ? 'bg-gray-800 text-gray-500 cursor-not-allowed opacity-50' 
-                                                            : 'bg-gradient-to-r from-violet-500 to-purple-600 text-white shadow-violet-500/30 hover:from-violet-600 hover:to-purple-700'
+                                                            : 'bg-gradient-to-r from-teal-500 to-teal-600 text-white shadow-teal-500/30 hover:from-teal-600 hover:to-teal-700'
                                                         }`}
                                                 >
                                                     <Lock className="w-5 h-5" /> 
@@ -1029,7 +1289,7 @@ function StakingContent() {
                                             )}
 
                                             {/* Security note */}
-                                            <div className="flex items-center gap-2 text-[10px] text-purple-300/50 justify-center">
+                                            <div className="flex items-center gap-2 text-[10px] text-teal-300/50 justify-center">
                                                 <Shield className="w-3 h-3" />
                                                 <span>Tokens secured in treasury vault · Admin-controlled release</span>
                                             </div>
@@ -1045,26 +1305,26 @@ function StakingContent() {
                         <motion.div key="my-stakes" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
                             {!account ? (
                                 <div className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl py-20 text-center">
-                                    <Wallet className="w-12 h-12 text-purple-400 mx-auto mb-4" />
+                                    <Wallet className="w-12 h-12 text-teal-400 mx-auto mb-4" />
                                     <p className="text-white font-black text-xl mb-2">Connect Your Wallet</p>
-                                    <p className="text-purple-300/60 text-sm mb-6">Connect to view your staking positions and rewards.</p>
+                                    <p className="text-teal-300/60 text-sm mb-6">Connect to view your staking positions and rewards.</p>
                                     <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
                                         onClick={connectWallet}
-                                        className="px-8 py-3 bg-violet-500 hover:bg-violet-600 text-white font-black rounded-xl transition-all"
+                                        className="px-8 py-3 bg-teal-500 hover:bg-teal-600 text-white font-black rounded-xl transition-all"
                                     >
                                         Connect Wallet
                                     </motion.button>
                                 </div>
                             ) : loadingStakes ? (
-                                <div className="flex items-center justify-center py-20 gap-3 text-purple-300">
+                                <div className="flex items-center justify-center py-20 gap-3 text-teal-300">
                                     <Loader2 className="w-6 h-6 animate-spin" /> Loading your stakes…
                                 </div>
                             ) : myStakes.length === 0 ? (
                                 <div className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl py-20 text-center">
-                                    <Target className="w-12 h-12 text-purple-400 mx-auto mb-4" />
+                                    <Target className="w-12 h-12 text-teal-400 mx-auto mb-4" />
                                     <p className="text-white font-black text-xl mb-2">No Stakes Yet</p>
-                                    <p className="text-purple-300/60 text-sm mb-6">Start staking tokens to earn passive rewards.</p>
-                                    <button onClick={() => setActiveTab('stake')} className="px-8 py-3 bg-violet-500 hover:bg-violet-600 text-white font-black rounded-xl transition-all">
+                                    <p className="text-teal-300/60 text-sm mb-6">Start staking tokens to earn passive rewards.</p>
+                                    <button onClick={() => setActiveTab('stake')} className="px-8 py-3 bg-teal-500 hover:bg-teal-600 text-white font-black rounded-xl transition-all">
                                         Stake Now
                                     </button>
                                 </div>
@@ -1073,11 +1333,11 @@ function StakingContent() {
                                     <div className="flex items-center justify-between mb-6">
                                         <div>
                                             <h2 className="text-white font-black text-2xl">My Staking Positions</h2>
-                                            <p className="text-purple-300/60 text-sm mt-1">
+                                            <p className="text-teal-300/60 text-sm mt-1">
                                                 {myStakes.length} position{myStakes.length !== 1 ? 's' : ''} · Daily rewards updated in real-time
                                             </p>
                                         </div>
-                                        <button onClick={loadMyStakes} className="p-3 bg-white/10 border border-white/10 rounded-xl text-purple-300 hover:text-white transition-all">
+                                        <button onClick={loadMyStakes} className="p-3 bg-white/10 border border-white/10 rounded-xl text-teal-300 hover:text-white transition-all">
                                             <RefreshCw className="w-5 h-5" />
                                         </button>
                                     </div>
@@ -1107,11 +1367,11 @@ function StakingContent() {
                     {activeTab === 'vault' && account?.toLowerCase() === TREASURY_WALLET.toLowerCase() && (
                         <motion.div key="vault" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="space-y-6">
                             <div className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-[2.5rem] overflow-hidden">
-                                <div className="p-8 border-b border-white/5 bg-violet-500/5">
+                                <div className="p-8 border-b border-white/5 bg-teal-500/5">
                                     <h3 className="text-2xl font-black text-white flex items-center gap-3">
-                                        <Shield className="w-6 h-6 text-violet-400" /> Administrative Vault Control
+                                        <Shield className="w-6 h-6 text-teal-400" /> Administrative Vault Control
                                     </h3>
-                                    <p className="text-xs text-purple-300/60 font-bold mt-1 uppercase tracking-widest">
+                                    <p className="text-xs text-teal-300/60 font-bold mt-1 uppercase tracking-widest">
                                         Fulfill on-chain releases and monitor global platform liquidity
                                     </p>
                                 </div>
@@ -1119,10 +1379,10 @@ function StakingContent() {
                                     <table className="w-full">
                                         <thead className="bg-white/5 uppercase">
                                             <tr>
-                                                <th className="px-8 py-5 text-left text-[10px] font-black text-purple-300/60 tracking-widest">Stakeholder</th>
-                                                <th className="px-8 py-5 text-left text-[10px] font-black text-purple-300/60 tracking-widest">Asset & Quantity</th>
-                                                <th className="px-8 py-5 text-left text-[10px] font-black text-purple-300/60 tracking-widest">Status / Maturity</th>
-                                                <th className="px-8 py-5 text-right text-[10px] font-black text-purple-300/60 tracking-widest">Action</th>
+                                                <th className="px-8 py-5 text-left text-[10px] font-black text-teal-300/60 tracking-widest">Stakeholder</th>
+                                                <th className="px-8 py-5 text-left text-[10px] font-black text-teal-300/60 tracking-widest">Asset & Quantity</th>
+                                                <th className="px-8 py-5 text-left text-[10px] font-black text-teal-300/60 tracking-widest">Status / Maturity</th>
+                                                <th className="px-8 py-5 text-right text-[10px] font-black text-teal-300/60 tracking-widest">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody className="divide-y divide-white/5">
@@ -1131,7 +1391,7 @@ function StakingContent() {
                                                     <td className="px-8 py-6">
                                                         <div className="flex flex-col gap-1">
                                                             <p className="text-xs font-black text-white mono">{shortAddr(s.wallet_address)}</p>
-                                                            <p className="text-[10px] text-purple-300/40 uppercase font-black">{timeAgo(s.start_date)}</p>
+                                                            <p className="text-[10px] text-teal-300/40 uppercase font-black">{timeAgo(s.start_date)}</p>
                                                         </div>
                                                     </td>
                                                     <td className="px-8 py-6">
@@ -1143,20 +1403,20 @@ function StakingContent() {
                                                             </div>
                                                             <div>
                                                                 <p className="text-xs font-black text-white">{formatNum(s.amount_tokens, 2)} {s.token_symbol}</p>
-                                                                <p className="text-[10px] text-purple-300/40 font-bold uppercase">{s.token_name}</p>
+                                                                <p className="text-[10px] text-teal-300/40 font-bold uppercase">{s.token_name}</p>
                                                             </div>
                                                         </div>
                                                     </td>
                                                     <td className="px-8 py-6">
                                                         <div className="space-y-1">
                                                             <span className={`inline-block px-2 py-0.5 rounded text-[9px] font-black uppercase ${
-                                                                s.status === 'active' ? 'bg-violet-500/20 text-violet-400' :
+                                                                s.status === 'active' ? 'bg-teal-500/20 text-teal-400' :
                                                                 s.status === 'pending_release' ? 'bg-teal-500/20 text-teal-500 animate-pulse' :
                                                                 'bg-sky-500/20 text-sky-400'
                                                             }`}>
                                                                 {s.status.replace('_', ' ')}
                                                             </span>
-                                                            <p className="text-[10px] text-purple-300/60 font-bold">Matures in {s.days_remaining}d</p>
+                                                            <p className="text-[10px] text-teal-300/60 font-bold">Matures in {s.days_remaining}d</p>
                                                         </div>
                                                     </td>
                                                     <td className="px-8 py-6 text-right">
@@ -1170,13 +1430,13 @@ function StakingContent() {
                                                                 RELEASE ASSETS
                                                             </button>
                                                         ) : (
-                                                            <p className="text-[10px] font-black text-purple-300/20 tracking-widest uppercase italic">{s.status === 'released' ? 'Settled' : 'In Lock'}</p>
+                                                            <p className="text-[10px] font-black text-teal-300/20 tracking-widest uppercase italic">{s.status === 'released' ? 'Settled' : 'In Lock'}</p>
                                                         )}
                                                     </td>
                                                 </tr>
                                             ))}
                                             {allStakes.length === 0 && (
-                                                <tr><td colSpan="4" className="px-8 py-20 text-center text-purple-300/40 font-black uppercase tracking-widest text-xs">No active vault positions</td></tr>
+                                                <tr><td colSpan="4" className="px-8 py-20 text-center text-teal-300/40 font-black uppercase tracking-widest text-xs">No active vault positions</td></tr>
                                             )}
                                         </tbody>
                                     </table>
@@ -1189,7 +1449,7 @@ function StakingContent() {
                 {/* ── FAQ Section ── */}
                 <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="mt-20">
                     <h2 className="text-3xl font-black text-white text-center mb-10">
-                        Frequently Asked <span className="text-violet-400">Questions</span>
+                        Frequently Asked <span className="text-teal-400">Questions</span>
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {[
@@ -1202,9 +1462,9 @@ function StakingContent() {
                         ].map((faq, i) => (
                             <div key={i} className="bg-white/5 border border-white/10 backdrop-blur-xl rounded-2xl p-6">
                                 <p className="text-white font-bold mb-2 flex items-start gap-2">
-                                    <span className="text-violet-400 shrink-0">Q.</span> {faq.q}
+                                    <span className="text-teal-400 shrink-0">Q.</span> {faq.q}
                                 </p>
-                                <p className="text-purple-300/70 text-sm leading-relaxed pl-5">{faq.a}</p>
+                                <p className="text-teal-300/70 text-sm leading-relaxed pl-5">{faq.a}</p>
                             </div>
                         ))}
                     </div>

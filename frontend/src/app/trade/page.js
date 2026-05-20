@@ -274,8 +274,8 @@ export default function TradePage() {
             <Navbar />
 
             {/* ── QUICK SELECT CARDS — Top of Spot ── */}
-            <div className="pt-28 pb-0 px-4 md:px-6 max-w-[1800px] mx-auto relative z-10">
-                <div className="mb-5">
+            <div className="pt-28 pb-0 px-4 md:px-6 max-w-[1800px] mx-auto relative z-40">
+                <div className="mb-5 mt-2">
                     <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
                         <Zap className="w-3 h-3 text-teal-500" /> Quick Select — Major Assets
                     </p>
@@ -286,10 +286,11 @@ export default function TradePage() {
                                 <button
                                     key={qt.id}
                                     onClick={() => setSelectedToken(qt)}
-                                    className={`relative p-4 rounded-2xl border transition-all duration-200 text-left overflow-hidden
+                                    style={{ cursor: 'pointer' }}
+                                    className={`relative p-4 rounded-2xl border transition-all duration-200 text-left overflow-hidden pointer-events-auto
                                         ${isActive
                                             ? 'bg-teal-600/20 border-teal-500/60 shadow-xl shadow-teal-600/20'
-                                            : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
+                                            : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 active:scale-95'
                                         }`}
                                 >
                                     {isActive && <div className="absolute inset-0 bg-gradient-to-br from-teal-600/10 to-transparent pointer-events-none" />}
@@ -313,8 +314,8 @@ export default function TradePage() {
 
             <div className="px-4 md:px-6 max-w-[1800px] mx-auto grid grid-cols-1 xl:grid-cols-12 gap-6 relative z-10">
                 {/* ── LEFT AMBIENT LIGHT ── */}
-                <div className="fixed top-20 left-0 w-[800px] h-[800px] bg-teal-600/10 rounded-full blur-[150px] pointer-events-none -z-10" />
-                <div className="fixed bottom-0 right-0 w-[800px] h-[800px] bg-sky-600/10 rounded-full blur-[150px] pointer-events-none -z-10" />
+                <div className="fixed top-20 left-0 w-[800px] h-[800px] bg-teal-600/10 rounded-full blur-[150px] pointer-events-none -z-20" />
+                <div className="fixed bottom-0 right-0 w-[800px] h-[800px] bg-sky-600/10 rounded-full blur-[150px] pointer-events-none -z-20" />
 
                 {/* ── LEFT: MARKET BROWSER ─────────────────────────────────────────── */}
                 <div className="xl:col-span-3 space-y-4 h-auto xl:h-[calc(100vh-140px)] flex flex-col order-3 xl:order-1 relative z-20">

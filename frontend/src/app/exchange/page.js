@@ -1611,19 +1611,47 @@ const ExchangeContent = () => {
                                     </p>
                                     <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
                                         {[
-                                            { id: 'tether-bep20', symbol: 'USDT', name: 'Tether BEP20', network: 'BEP-20', address: '0x55d398326f99059fF775485246999027B3197955', image: 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png' },
-                                            { id: 'tether-trc20', symbol: 'USDT', name: 'Tether TRC20', network: 'TRON',   address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',    image: 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png' },
-                                            { id: 'bitcoin',      symbol: 'BTC',  name: 'Bitcoin',     network: 'BTC',    address: '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c', image: 'https://assets.coingecko.com/coins/images/1/thumb/bitcoin.png' },
-                                            { id: 'binancecoin',  symbol: 'BNB',  name: 'BNB Chain',   network: 'BEP-20', address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', image: 'https://assets.coingecko.com/coins/images/825/thumb/bnb-icon2_2x.png' },
-                                            { id: 'ethereum',     symbol: 'ETH',  name: 'Ethereum',    network: 'ERC-20', address: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', image: 'https://assets.coingecko.com/coins/images/279/thumb/ethereum.png' },
-                                            { id: 'solana',       symbol: 'SOL',  name: 'Solana',      network: 'SOL',    address: 'So11111111111111111111111111111111111111112', image: 'https://assets.coingecko.com/coins/images/4128/thumb/solana.png' },
+                                            { id: 'tether',      symbol: 'USDT', name: 'Tether BEP20', network: 'BEP-20', address: '0x55d398326f99059fF775485246999027B3197955', image: 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png' },
+                                            { id: 'tether',      symbol: 'USDT', name: 'Tether TRC20', network: 'TRON',   address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',    image: 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png' },
+                                            { id: 'bitcoin',     symbol: 'BTC',  name: 'Bitcoin',      network: 'BTC',    address: '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c', image: 'https://assets.coingecko.com/coins/images/1/thumb/bitcoin.png' },
+                                            { id: 'binancecoin', symbol: 'BNB',  name: 'BNB Chain',    network: 'BEP-20', address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', image: 'https://assets.coingecko.com/coins/images/825/thumb/bnb-icon2_2x.png' },
+                                            { id: 'ethereum',    symbol: 'ETH',  name: 'Ethereum',     network: 'ERC-20', address: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', image: 'https://assets.coingecko.com/coins/images/279/thumb/ethereum.png' },
+                                            { id: 'solana',      symbol: 'SOL',  name: 'Solana',       network: 'SOL',    address: 'So11111111111111111111111111111111111111112', image: 'https://assets.coingecko.com/coins/images/4128/thumb/solana.png' },
                                         ].map(qt => {
-                                            const isActive = toToken?.id === qt.id;
+                                            const isActive = toToken?.id === qt.id && toToken?.network === qt.network;
                                             return (
                                                 <button
-                                                    key={qt.id}
+                                                    key={qt.id + qt.network}
                                                     type="button"
-                                                    onClick={() => setToToken({ ...qt, current_price: 0 })}
+                                                    onClick={async () => {
+                                                        // Set token immediately with placeholder so UI responds instantly
+                                                        setToToken({ ...qt, current_price: null });
+                                                        try {
+                                                            // Fetch real live price from backend CoinGecko proxy
+                                                            const res = await axios.get(`${API_URL}/tokens/markets/cg`, {
+                                                                params: { ids: qt.id, per_page: 1, page: 1 },
+                                                                timeout: 6000
+                                                            });
+                                                            if (res?.data?.length > 0) {
+                                                                const live = res.data[0];
+                                                                setToToken({
+                                                                    ...qt,
+                                                                    id: live.id || qt.id,
+                                                                    current_price: live.current_price,
+                                                                    price_change_percentage_24h: live.price_change_percentage_24h,
+                                                                    high_24h: live.high_24h,
+                                                                    low_24h: live.low_24h,
+                                                                    market_cap: live.market_cap,
+                                                                    total_volume: live.total_volume,
+                                                                    image: live.image || qt.image,
+                                                                    ath: live.ath,
+                                                                    circulating_supply: live.circulating_supply,
+                                                                });
+                                                            }
+                                                        } catch (e) {
+                                                            // Keep placeholder if fetch fails
+                                                        }
+                                                    }}
                                                     className={`flex flex-col items-center gap-1.5 p-2.5 rounded-2xl border transition-all duration-150 active:scale-95 relative
                                                         ${isActive
                                                             ? 'bg-teal-50 border-teal-400 shadow-md shadow-teal-100'

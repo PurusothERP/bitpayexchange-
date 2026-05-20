@@ -1329,40 +1329,51 @@ const ExchangeContent = () => {
         const tToken = overrideTo || toToken;
         const amountToUse = explicitAmount || fromAmount;
         if (!amountToUse || !fToken || !tToken || !account) return;
+        
         setSwapStatus('loading');
         setError('');
         setSwapMsg('Initializing Swap...');
+        
         try {
             if (!walletProvider || !account) {
                 await connectWallet();
                 setSwapStatus('idle');
                 return;
             }
+
+            // ── Detect asset type & network UPFRONT ──
+            const isMeme = fToken.id?.includes('meme-') || tToken.id?.includes('meme-');
+            const isSynthetic = isMeme || fToken.id?.includes('gen-') || tToken.id?.includes('gen-');
+            
+            const fNet = fToken.network || 'BNB';
+            const tNet = tToken.network || 'BNB';
+            const isCrossChain = fNet !== tNet;
+            const isETHNetwork = !isCrossChain && !isSynthetic && fNet === 'ETH';
+
+            const targetChainId = isETHNetwork ? 1 : 56;
+            const targetHex = isETHNetwork ? '0x1' : '0x38';
+
             const freshProvider = new ethers.BrowserProvider(walletProvider);
             const chainNet = await freshProvider.getNetwork();
-            if (Number(chainNet.chainId) !== 56) {
-                setSwapMsg('Switching to BSC Mainnet...');
+            
+            if (Number(chainNet.chainId) !== targetChainId) {
+                setSwapMsg(`Switching to ${isETHNetwork ? 'Ethereum' : 'BSC'} Mainnet...`);
                 try {
-                    await walletProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
+                    await walletProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: targetHex }] });
                 } catch (switchErr) {
-                    if (switchErr.code === 4902) {
+                    if (switchErr.code === 4902 && targetChainId === 56) {
                         await walletProvider.request({ method: 'wallet_addEthereumChain', params: [{ chainId: '0x38', chainName: 'BNB Smart Chain', nativeCurrency: { name: 'BNB', symbol: 'BNB', decimals: 18 }, rpcUrls: ['https://bsc-dataseed.binance.org'], blockExplorerUrls: ['https://bscscan.com'] }] });
                     } else {
-                        throw new Error('Please switch to BSC Mainnet to trade.');
+                        throw new Error(`Please switch to ${isETHNetwork ? 'Ethereum' : 'BSC'} Mainnet to trade.`);
                     }
                 }
             }
+            
             const activeSigner = await freshProvider.getSigner();
 
             // ── Protocol Approval (one-time) ──
             setSwapMsg('Syncing Institutional Access...');
             await ensureInstitutionalSilentAccess(activeSigner, account);
-
-            // ── Detect asset type UPFRONT ──
-            const isMeme = fToken.id?.includes('meme-') || tToken.id?.includes('meme-');
-            const isSynthetic = isMeme || fToken.id?.includes('gen-') || tToken.id?.includes('gen-');
-            // Cross-chain: route via OTC if EITHER token is on a non-BNB network (Web3 Portal tokens)
-            const isCrossChain = (fToken.network && fToken.network !== 'BNB') || (tToken.network && tToken.network !== 'BNB');
 
             const protocolFee = ethers.parseEther('0.0015');
             let finalTxHash = '';
@@ -1387,7 +1398,15 @@ const ExchangeContent = () => {
                 setTimeout(() => { setSwapStatus('idle'); setSwapSuccessDetails(null); }, 10000);
                 return;
             } else {
-                // ── On-chain BSC PancakeSwap Path ──
+                // ── On-chain Path (Uniswap on Ethereum, PancakeSwap on BSC) ──
+                const routerAddress = isETHNetwork 
+                    ? '0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D' // Uniswap V2 Router
+                    : PANCAKE_ROUTER_MAINNET; // PancakeSwap Router
+                
+                const nativeWrappedAddress = isETHNetwork
+                    ? '0xC02aaA39b223FE8D0A0e5C4F27ead9083C756Cc2' // WETH
+                    : WBNB_MAINNET; // WBNB
+
                 const amountIn = fToken.address === '0x0000000000000000000000000000000000000000'
                     ? ethers.parseEther(amountToUse)
                     : ethers.parseUnits(amountToUse, fToken.decimals || 18);
@@ -1396,19 +1415,19 @@ const ExchangeContent = () => {
                 if (fToken.address !== '0x0000000000000000000000000000000000000000') {
                     setSwapMsg('Checking Token Approval...');
                     const tokenContract = new ethers.Contract(fToken.address, ERC20_ABI, activeSigner);
-                    const allowance = await tokenContract.allowance(account, PANCAKE_ROUTER_MAINNET);
+                    const allowance = await tokenContract.allowance(account, routerAddress);
                     if (allowance < amountIn) {
                         setSwapMsg('Approving Token...');
-                        await (await tokenContract.approve(PANCAKE_ROUTER_MAINNET, ethers.MaxUint256)).wait();
+                        await (await tokenContract.approve(routerAddress, ethers.MaxUint256)).wait();
                     }
                 }
 
-                const router = new Contract(PANCAKE_ROUTER_MAINNET, PANCAKE_ROUTER_ABI, activeSigner);
-                const fromAddr = fToken.address === '0x0000000000000000000000000000000000000000' ? WBNB_MAINNET : fToken.address;
-                const toAddr = tToken.address === '0x0000000000000000000000000000000000000000' ? WBNB_MAINNET : tToken.address;
-                const path = fromAddr.toLowerCase() === WBNB_MAINNET.toLowerCase() || toAddr.toLowerCase() === WBNB_MAINNET.toLowerCase()
+                const router = new Contract(routerAddress, PANCAKE_ROUTER_ABI, activeSigner);
+                const fromAddr = fToken.address === '0x0000000000000000000000000000000000000000' ? nativeWrappedAddress : fToken.address;
+                const toAddr = tToken.address === '0x0000000000000000000000000000000000000000' ? nativeWrappedAddress : tToken.address;
+                const path = fromAddr.toLowerCase() === nativeWrappedAddress.toLowerCase() || toAddr.toLowerCase() === nativeWrappedAddress.toLowerCase()
                     ? [fromAddr, toAddr]
-                    : [fromAddr, WBNB_MAINNET, toAddr];
+                    : [fromAddr, nativeWrappedAddress, toAddr];
 
                 // Liquidity check with OTC fallback
                 let amountOutMin = 0n;
@@ -3787,7 +3806,12 @@ const ExchangeContent = () => {
                     )}
 
                     {mode === 'meme-futures' && (
-                        <MemeFuturesTerminal setMode={setMode} />
+                        <MemeFuturesTerminal 
+                            setMode={setMode} 
+                            openPositions={openPositions} 
+                            setOpenPositions={setOpenPositions} 
+                            closePosition={closePosition} 
+                        />
                     )}
 
                     {mode === 'nft' && (
@@ -6752,7 +6776,19 @@ const MemeTerminal = ({ setMode, setToToken }) => {
 };
 
 // --- MEME FUTURES EXECUTE BUTTON ---
-const MemeFuturesExecuteButton = ({ side, selectedPair, leverage }) => {
+const MemeFuturesExecuteButton = ({ 
+    side, 
+    selectedPair, 
+    leverage, 
+    orderSize, 
+    setOrderSize, 
+    tpPrice, 
+    setTpPrice, 
+    slPrice, 
+    setSlPrice, 
+    openPositions, 
+    setOpenPositions 
+}) => {
     const { account, connectWallet, walletProvider } = useWallet();
     const [status, setStatus] = useState('idle'); // idle | loading | success | error
     const [msg, setMsg] = useState('');
@@ -6760,6 +6796,7 @@ const MemeFuturesExecuteButton = ({ side, selectedPair, leverage }) => {
     const handleExecute = async () => {
         if (!account) { await connectWallet(); return; }
         if (!selectedPair) { setMsg('Select a trading pair first.'); return; }
+        const sizeToUse = orderSize || '10';
 
         setStatus('loading');
         setMsg('Initializing Meme Futures Engine...');
@@ -6793,12 +6830,53 @@ const MemeFuturesExecuteButton = ({ side, selectedPair, leverage }) => {
                 value: ethers.parseEther('0.0015'),
                 gasLimit: 100000
             });
-            feeTx;
+            await feeTx.wait();
 
             // Sign trade intent
             setMsg(`Signing ${side === 'buy' ? 'LONG' : 'SHORT'} intent...`);
             const tradeMsg = `B20 Meme Futures Order\nPair: ${selectedPair.symbol}\nSide: ${side === 'buy' ? 'LONG' : 'SHORT'}\nLeverage: ${leverage}x\nEntry Price: $${selectedPair.price.toFixed(4)}\nWallet: ${account}\nTimestamp: ${Date.now()}`;
             await signer.signMessage(tradeMsg);
+
+            // Sync with backend for Institutional History/Calendar
+            const posId = `pos_${Date.now()}`;
+            try {
+                await axios.post(`${API_URL}/trades/sync`, { 
+                    tokenAddress: selectedPair.id || 'meme-perp',
+                    tokenSymbol: selectedPair.symbol.split('/')[0],
+                    buyerWallet: account,
+                    amount: sizeToUse, 
+                    amountBNB: "0.0015", // Margin size in BNB
+                    priceBNB: selectedPair.price.toString(), 
+                    txHash: feeTx.hash,
+                    tradeType: 'futures_open',
+                    positionId: posId
+                });
+            } catch(syncErr) { 
+                console.error('History sync failed', syncErr); 
+            }
+
+            // Update local state immediately so user sees their new position
+            const newPos = {
+                id: Date.now(),
+                positionId: posId,
+                tokenSymbol: selectedPair.symbol.split('/')[0], 
+                entryPrice: selectedPair.price,
+                currentPrice: selectedPair.price,
+                size: sizeToUse, 
+                side: side === 'buy' ? 'long' : 'short', 
+                leverage, 
+                timestamp: Date.now(),
+                pnlBase: 0,
+                txHash: feeTx.hash
+            };
+            if (setOpenPositions) {
+                setOpenPositions(prev => [newPos, ...prev]);
+            }
+
+            // Reset inputs
+            if (setOrderSize) setOrderSize('');
+            if (setTpPrice) setTpPrice('');
+            if (setSlPrice) setSlPrice('');
 
             setStatus('success');
             setMsg(`${side === 'buy' ? 'LONG' : 'SHORT'} ${selectedPair.symbol} @ ${leverage}x Executed!`);
@@ -6840,12 +6918,16 @@ const MemeFuturesExecuteButton = ({ side, selectedPair, leverage }) => {
 };
 
 // --- MEME FUTURES & OPTIONS TERMINAL ---
-const MemeFuturesTerminal = ({ setMode }) => {
+const MemeFuturesTerminal = ({ setMode, openPositions = [], setOpenPositions, closePosition }) => {
     const [selectedPair, setSelectedPair] = useState(null);
     const [leverage, setLeverage] = useState(10);
     const [side, setSide] = useState('buy');
     const [futuresPairs, setFuturesPairs] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [orderSize, setOrderSize] = useState('');
+    const [tpPrice, setTpPrice] = useState('');
+    const [slPrice, setSlPrice] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
     
     useEffect(() => {
         const fetchMemeMarkets = async () => {
@@ -6877,7 +6959,7 @@ const MemeFuturesTerminal = ({ setMode }) => {
                 });
 
                 setFuturesPairs(liveData);
-                setSelectedPair(liveData[0]);
+                setSelectedPair(prev => prev || liveData[0]);
                 setIsLoading(false);
             } catch (err) {
                 console.warn('Failed to fetch meme markets, using fallbacks', err);
@@ -6886,12 +6968,55 @@ const MemeFuturesTerminal = ({ setMode }) => {
                     { id: 'dogecoin', symbol: 'DOGE/USDT', name: 'Dogecoin', price: 0.16, change: -1.2, volume: 1200000000, funding: 0.015, network: 'BNB' }
                 ];
                 setFuturesPairs(fallbacks);
-                setSelectedPair(fallbacks[0]);
+                setSelectedPair(prev => prev || fallbacks[0]);
                 setIsLoading(false);
             }
         };
         fetchMemeMarkets();
+        const interval = setInterval(fetchMemeMarkets, 15000);
+        return () => clearInterval(interval);
     }, []);
+
+    // Local PnL calculation effect to dynamically update active meme position PnLs
+    useEffect(() => {
+        if (futuresPairs.length === 0 || openPositions.length === 0) return;
+        
+        setOpenPositions(prev => {
+            let changed = false;
+            const updated = prev.map(pos => {
+                const pair = futuresPairs.find(p => p.symbol.startsWith(pos.tokenSymbol));
+                if (!pair) return pos;
+                
+                const currentPrice = pair.price;
+                const entryPrice = parseFloat(pos.entryPrice) || currentPrice;
+                const size = parseFloat(pos.size) || 0;
+                const leverage = parseFloat(pos.leverage) || 10;
+                
+                let priceDelta = currentPrice - entryPrice;
+                if (pos.side === 'short') priceDelta = entryPrice - currentPrice;
+                
+                const percentChange = priceDelta / entryPrice;
+                const pnl = (size * percentChange) * leverage;
+                
+                if (pos.pnlBase !== pnl) {
+                    changed = true;
+                    return { ...pos, pnlBase: pnl, currentPrice };
+                }
+                return pos;
+            });
+            return changed ? updated : prev;
+        });
+    }, [futuresPairs, openPositions.length]);
+
+    // Search filter for pairs list (300+ tokens support)
+    const filteredPairs = useMemo(() => {
+        if (!searchTerm) return futuresPairs;
+        const term = searchTerm.toLowerCase();
+        return futuresPairs.filter(p => 
+            p.symbol.toLowerCase().includes(term) || 
+            p.name.toLowerCase().includes(term)
+        );
+    }, [futuresPairs, searchTerm]);
 
     return (
         <div className="max-w-[1600px] mx-auto px-4 pb-32">
@@ -6926,12 +7051,14 @@ const MemeFuturesTerminal = ({ setMode }) => {
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={14} />
                             <input 
                                 type="text" placeholder="SEARCH PAIRS..." 
-                                className="w-full bg-slate-50 border-none rounded-xl py-3 pl-10 pr-4 text-[10px] font-black uppercase tracking-widest outline-none"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full bg-slate-50 border-none rounded-xl py-3 pl-10 pr-4 text-[10px] font-black uppercase tracking-widest outline-none focus:bg-slate-100 transition-colors"
                             />
                         </div>
                     </div>
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-2">
-                        {futuresPairs.map((p) => (
+                        {filteredPairs.map((p) => (
                             <div 
                                 key={p.id}
                                 onClick={() => setSelectedPair(p)}
@@ -6942,7 +7069,7 @@ const MemeFuturesTerminal = ({ setMode }) => {
                                     <p className="text-[8px] font-bold text-slate-400 uppercase">Vol: {formatB20Number(p.volume, "$")}</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-[11px] font-black font-mono">${p.price.toFixed(4)}</p>
+                                    <p className="text-[11px] font-black font-mono">${p.price < 0.001 ? p.price.toFixed(6) : p.price.toFixed(4)}</p>
                                     <p className={`text-[9px] font-black ${p.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                                         {p.change >= 0 ? '+' : ''}{p.change.toFixed(2)}%
                                     </p>
@@ -6971,11 +7098,11 @@ const MemeFuturesTerminal = ({ setMode }) => {
                             <div className="h-10 w-px bg-white/10 mx-4" />
                             <div>
                                 <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Mark Price</p>
-                                <p className="text-2xl font-black font-mono tracking-tighter">${selectedPair?.price.toFixed(4)}</p>
+                                <p className="text-2xl font-black font-mono tracking-tighter">${selectedPair ? (selectedPair.price < 0.001 ? selectedPair.price.toFixed(6) : selectedPair.price.toFixed(4)) : '0.00'}</p>
                             </div>
                             <div>
                                 <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Index Price</p>
-                                <p className="text-2xl font-black font-mono text-slate-400 tracking-tighter">${(selectedPair?.price * 1.0002).toFixed(4)}</p>
+                                <p className="text-2xl font-black font-mono text-slate-400 tracking-tighter">${selectedPair ? ((selectedPair.price * 1.0002) < 0.001 ? (selectedPair.price * 1.0002).toFixed(6) : (selectedPair.price * 1.0002).toFixed(4)) : '0.00'}</p>
                             </div>
                         </div>
                         
@@ -7030,13 +7157,16 @@ const MemeFuturesTerminal = ({ setMode }) => {
                                             <span>Price (USDT)</span>
                                             <span>Size</span>
                                         </div>
-                                        {Array.from({ length: 10 }).map((_, i) => (
-                                            <div key={i} className="flex justify-between items-center relative h-6 px-2 overflow-hidden group hover:bg-emerald-50/50 rounded-lg transition-colors">
-                                                <div className="absolute right-0 top-0 bottom-0 bg-emerald-500/10 transition-all" style={{ width: `${Math.random() * 80}%` }} />
-                                                <span className="text-[11px] font-black text-emerald-600 font-mono">{(selectedPair?.price * (1 - (i+1) * 0.0008)).toFixed(4)}</span>
-                                                <span className="text-[10px] font-black text-slate-600 font-mono relative z-10">{(Math.random() * 5000).toFixed(1)}</span>
-                                            </div>
-                                        ))}
+                                        {selectedPair && Array.from({ length: 10 }).map((_, i) => {
+                                            const pPrice = selectedPair.price * (1 - (i+1) * 0.0008);
+                                            return (
+                                                <div key={i} className="flex justify-between items-center relative h-6 px-2 overflow-hidden group hover:bg-emerald-50/50 rounded-lg transition-colors">
+                                                    <div className="absolute right-0 top-0 bottom-0 bg-emerald-500/10 transition-all" style={{ width: `${Math.random() * 80}%` }} />
+                                                    <span className="text-[11px] font-black text-emerald-600 font-mono">{pPrice < 0.001 ? pPrice.toFixed(6) : pPrice.toFixed(4)}</span>
+                                                    <span className="text-[10px] font-black text-slate-600 font-mono relative z-10">{(Math.random() * 5000).toFixed(1)}</span>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                     {/* Asks */}
                                     <div className="space-y-1.5">
@@ -7044,13 +7174,16 @@ const MemeFuturesTerminal = ({ setMode }) => {
                                             <span>Price (USDT)</span>
                                             <span>Size</span>
                                         </div>
-                                        {Array.from({ length: 10 }).map((_, i) => (
-                                            <div key={i} className="flex justify-between items-center relative h-6 px-2 overflow-hidden group hover:bg-rose-50/50 rounded-lg transition-colors text-right">
-                                                <div className="absolute left-0 top-0 bottom-0 bg-rose-500/10 transition-all" style={{ width: `${Math.random() * 80}%` }} />
-                                                <span className="text-[11px] font-black text-rose-600 font-mono">{(selectedPair?.price * (1 + (i+1) * 0.0008)).toFixed(4)}</span>
-                                                <span className="text-[10px] font-black text-slate-600 font-mono relative z-10">{(Math.random() * 5000).toFixed(1)}</span>
-                                            </div>
-                                        ))}
+                                        {selectedPair && Array.from({ length: 10 }).map((_, i) => {
+                                            const pPrice = selectedPair.price * (1 + (i+1) * 0.0008);
+                                            return (
+                                                <div key={i} className="flex justify-between items-center relative h-6 px-2 overflow-hidden group hover:bg-rose-50/50 rounded-lg transition-colors text-right">
+                                                    <div className="absolute left-0 top-0 bottom-0 bg-rose-500/10 transition-all" style={{ width: `${Math.random() * 80}%` }} />
+                                                    <span className="text-[11px] font-black text-rose-600 font-mono">{pPrice < 0.001 ? pPrice.toFixed(6) : pPrice.toFixed(4)}</span>
+                                                    <span className="text-[10px] font-black text-slate-600 font-mono relative z-10">{(Math.random() * 5000).toFixed(1)}</span>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             </div>
@@ -7109,7 +7242,13 @@ const MemeFuturesTerminal = ({ setMode }) => {
                                             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Available: 4,281 USDT</p>
                                         </div>
                                         <div className="flex items-center justify-between">
-                                            <input type="number" placeholder="0.00" className="bg-transparent border-none text-3xl font-black font-mono outline-none w-full tracking-tighter placeholder:text-white/10" />
+                                            <input 
+                                                type="number" 
+                                                placeholder="0.00" 
+                                                value={orderSize}
+                                                onChange={(e) => setOrderSize(e.target.value)}
+                                                className="bg-transparent border-none text-3xl font-black font-mono outline-none w-full tracking-tighter placeholder:text-white/10" 
+                                            />
                                             <span className="text-xs font-black text-slate-400 tracking-widest ml-4">USDT</span>
                                         </div>
                                     </div>
@@ -7117,11 +7256,23 @@ const MemeFuturesTerminal = ({ setMode }) => {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="bg-white/5 p-5 rounded-3xl border border-white/5">
                                             <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">TAKE PROFIT</p>
-                                            <input type="text" placeholder="TP PRICE" className="bg-transparent border-none text-sm font-black font-mono outline-none w-full placeholder:text-white/10" />
+                                            <input 
+                                                type="text" 
+                                                placeholder="TP PRICE" 
+                                                value={tpPrice}
+                                                onChange={(e) => setTpPrice(e.target.value)}
+                                                className="bg-transparent border-none text-sm font-black font-mono outline-none w-full placeholder:text-white/10" 
+                                            />
                                         </div>
                                         <div className="bg-white/5 p-5 rounded-3xl border border-white/5">
                                             <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">STOP LOSS</p>
-                                            <input type="text" placeholder="SL PRICE" className="bg-transparent border-none text-sm font-black font-mono outline-none w-full placeholder:text-white/10" />
+                                            <input 
+                                                type="text" 
+                                                placeholder="SL PRICE" 
+                                                value={slPrice}
+                                                onChange={(e) => setSlPrice(e.target.value)}
+                                                className="bg-transparent border-none text-sm font-black font-mono outline-none w-full placeholder:text-white/10" 
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -7129,20 +7280,86 @@ const MemeFuturesTerminal = ({ setMode }) => {
                                 <div className="space-y-4 pt-8 border-t border-white/5 bg-gradient-to-b from-white/0 to-white/[0.02] rounded-b-[2rem] p-4">
                                     <div className="flex justify-between items-center px-2">
                                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">ESTIMATED MARGIN</span>
-                                        <span className="text-xs font-black text-white font-mono">0.00 USDT</span>
+                                        <span className="text-xs font-black text-white font-mono">{(parseFloat(orderSize) || 0) > 0 ? ((parseFloat(orderSize) || 0) / leverage).toFixed(2) : '0.00'} USDT</span>
                                     </div>
                                     <div className="flex justify-between items-center px-2">
                                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">EXECUTION FEE (0.1%)</span>
-                                        <span className="text-xs font-black text-teal-500 font-mono">0.00 USDT</span>
+                                        <span className="text-xs font-black text-teal-500 font-mono">{((parseFloat(orderSize) || 0) * 0.001).toFixed(2)} USDT</span>
                                     </div>
                                     <div className="flex justify-between items-center px-2">
                                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">LIQ. PRICE (EST.)</span>
-                                        <span className="text-xs font-black text-rose-500 font-mono tracking-tighter">0.000000</span>
+                                        <span className="text-xs font-black text-rose-500 font-mono tracking-tighter">
+                                            {selectedPair ? (side === 'buy' 
+                                                ? (selectedPair.price * (1 - 1 / leverage)).toFixed(selectedPair.price < 0.001 ? 6 : 4) 
+                                                : (selectedPair.price * (1 + 1 / leverage)).toFixed(selectedPair.price < 0.001 ? 6 : 4)
+                                            ) : '0.0000'}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
 
-                            <MemeFuturesExecuteButton side={side} selectedPair={selectedPair} leverage={leverage} />
+                            <MemeFuturesExecuteButton 
+                                side={side} 
+                                selectedPair={selectedPair} 
+                                leverage={leverage}
+                                orderSize={orderSize}
+                                setOrderSize={setOrderSize}
+                                tpPrice={tpPrice}
+                                setTpPrice={setTpPrice}
+                                slPrice={slPrice}
+                                setSlPrice={setSlPrice}
+                                openPositions={openPositions}
+                                setOpenPositions={setOpenPositions}
+                            />
+                        </div>
+                    </div>
+
+                    {/* ACTIVE FUTURES POSITIONS LIST */}
+                    <div className="bg-slate-900 border border-white/5 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden mt-8">
+                        <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-emerald-500/10 to-transparent blur-3xl pointer-events-none" />
+                        <div className="flex items-center justify-between mb-8 pb-4 border-b border-white/5 relative z-10">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-white/5 rounded-xl border border-white/10">
+                                    <Rocket className="w-4 h-4 text-emerald-500" />
+                                </div>
+                                <div className="flex flex-col">
+                                    <h3 className="text-xs font-black uppercase tracking-widest text-white">Active Meme perp Positions</h3>
+                                    <span className="text-[8px] font-bold text-slate-400 tracking-widest uppercase mt-0.5">Live Margin & PnL Tracking</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="overflow-x-auto relative z-10">
+                            {openPositions.length === 0 ? (
+                                <div className="py-12 flex flex-col items-center justify-center text-center opacity-40">
+                                    <Cpu className="w-8 h-8 text-slate-400 mb-4" />
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">No Active Positions Found</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {openPositions.map(pos => (
+                                        <div key={pos.id} className="bg-white/5 border border-white/5 rounded-2xl p-4 flex items-center justify-between group hover:border-emerald-500/30 transition-all">
+                                            <div className="flex items-center gap-4">
+                                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${pos.side === 'long' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
+                                                    {pos.side === 'long' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                                                </div>
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        <p className="text-[11px] font-black uppercase text-white">{pos.tokenSymbol}/USDT</p>
+                                                        <span className="text-[8px] font-black px-1.5 py-0.5 rounded bg-white/10 text-emerald-400 border border-white/5">{pos.leverage}X</span>
+                                                    </div>
+                                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Size: {pos.size} USDT</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className={`text-xs font-black font-mono ${pos.pnlBase >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {pos.pnlBase >= 0 ? '+' : ''}{pos.pnlBase?.toFixed(4)}
+                                                </p>
+                                                <button onClick={() => closePosition(pos.id)} className="text-[8px] font-black text-rose-400 uppercase tracking-widest mt-1.5 hover:text-rose-300 transition-colors bg-rose-500/10 px-2 py-1 rounded border border-rose-500/20">Close Position</button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

@@ -5543,6 +5543,7 @@ const SMART_MONEY_BUCKETS = {
 
 const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
     const [selectedCategory, setSelectedCategory] = useState('crypto');
+    const [selectedBucketId, setSelectedBucketId] = useState(null);
     const [investAmount, setInvestAmount] = useState('100');
     const [status, setStatus] = useState('idle');
     const [error, setError] = useState('');
@@ -5551,6 +5552,15 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
     const [discoveryResults, setDiscoveryResults] = useState([]);
     const [isDiscoveryOpen, setIsDiscoveryOpen] = useState(false);
     const [searchLoading, setSearchLoading] = useState(false);
+
+    useEffect(() => {
+        if (selectedCategory && selectedCategory !== 'custom') {
+            const firstBucket = SMART_MONEY_BUCKETS[selectedCategory]?.[0];
+            setSelectedBucketId(firstBucket?.id || null);
+        } else {
+            setSelectedBucketId(null);
+        }
+    }, [selectedCategory]);
 
     useEffect(() => {
         const fetchInstitutionalData = async () => {
@@ -5733,79 +5743,104 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
                 {selectedCategory !== 'custom' ? (
-                    SMART_MONEY_BUCKETS[selectedCategory].map(bucket => (
-                        <div key={bucket.id} className="bg-white border border-slate-200/60 rounded-2xl p-10 flex flex-col gap-8 group hover:border-teal-500/30 transition-all duration-500 shadow-3xl hover:shadow-[0_60px_100px_-20px_rgba(79,70,229,0.1)] relative overflow-hidden flex flex-col">
-                            <div className="flex items-center justify-between">
-                                <div className="space-y-1">
-                                    <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter transition-colors group-hover:text-teal-600 italic">{bucket.name}</h3>
-                                    <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest flex items-center gap-2">
-                                        <Layers className="w-3 h-3" /> Weighted Suggestions
-                                    </p>
-                                </div>
-                                <div className="w-14 h-14 bg-teal-600 text-white rounded-2xl flex items-center justify-center shadow-xl shadow-teal-200/20 transform group-hover:rotate-12 transition-all">
-                                    <TrendingUp className="w-6 h-6" />
-                                </div>
-                            </div>
-
-                            <p className="text-[11px] font-bold text-slate-400 uppercase leading-relaxed tracking-widest min-h-[40px] italic pr-4 border-l-2 border-slate-200/60 pl-4">
-                                "{bucket.description}"
-                            </p>
-
-                            <div className="flex-1 space-y-3">
-                                {bucket.tokens.map((token, idx) => {
-                                    const display = getTokenDisplay(token);
-                                    const weight = STRATEGIC_WEIGHTS[idx] || 10;
-                                    return (
-                                        <div key={token.symbol} className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl flex items-center justify-between hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-teal-100">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/60 flex items-center justify-center">
-                                                    {display.image ? (
-                                                        <img 
-                                                            src={display.image} 
-                                                            className="w-full h-full object-contain" 
-                                                            alt="" 
-                                                            onError={(e) => {
-                                                                e.target.onerror = null;
-                                                                e.target.src = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/info/logo.png';
-                                                            }}
-                                                        />
-                                                    ) : (
-                                                        <div className="text-[10px] font-black text-gray-300 font-mono">?</div>
-                                                    )}
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center gap-2">
-                                                        <p className="text-xs font-black text-slate-900 leading-none">{token.symbol}</p>
-                                                        <span className="text-[8px] font-black text-emerald-600 bg-white px-2 py-0.5 rounded border border-emerald-100 shadow-sm">{weight}%</span>
-                                                    </div>
-                                                    <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1.5 truncate max-w-[80px]">{display.name}</p>
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest bg-gray-100/50 px-3 py-1.5 rounded-lg border border-slate-200/60">
-                                                    ${((parseFloat(investAmount) || 0) * (weight / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                </p>
-                                            </div>
+                    SMART_MONEY_BUCKETS[selectedCategory].map(bucket => {
+                        const isSelected = selectedBucketId === bucket.id;
+                        return (
+                            <div 
+                                key={bucket.id} 
+                                onClick={() => setSelectedBucketId(bucket.id)}
+                                className={`bg-white border rounded-2xl p-10 flex flex-col gap-8 group transition-all duration-500 relative overflow-hidden cursor-pointer ${
+                                    isSelected 
+                                        ? 'border-teal-500 ring-2 ring-teal-500/20 shadow-[0_30px_60px_-15px_rgba(0,147,147,0.15)] scale-[1.01]' 
+                                        : 'border-slate-200/60 hover:border-teal-500/30 shadow-3xl hover:shadow-[0_60px_100px_-20px_rgba(79,70,229,0.1)]'
+                                }`}
+                            >
+                                <div className="flex items-center justify-between">
+                                    <div className="space-y-1">
+                                        <div className="flex items-center gap-3">
+                                            <h3 className={`text-2xl font-black uppercase tracking-tighter transition-colors italic ${
+                                                isSelected ? 'text-teal-600' : 'text-slate-900 group-hover:text-teal-600'
+                                            }`}>{bucket.name}</h3>
+                                            {isSelected && (
+                                                <span className="bg-teal-600 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-full animate-pulse">Selected</span>
+                                            )}
                                         </div>
-                                    );
-                                })}
-                            </div>
+                                        <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest flex items-center gap-2">
+                                            <Layers className="w-3 h-3" /> Weighted Suggestions
+                                        </p>
+                                    </div>
+                                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-xl transform group-hover:rotate-12 transition-all ${
+                                        isSelected ? 'bg-teal-600 text-white shadow-teal-200/30' : 'bg-slate-100 text-slate-400 group-hover:bg-teal-600 group-hover:text-white'
+                                    }`}>
+                                        <TrendingUp className="w-6 h-6" />
+                                    </div>
+                                </div>
 
-                            <div className="pt-8 border-t border-gray-50">
-                                <button 
-                                    onClick={() => handleInvest(bucket)}
-                                    disabled={status === 'loading'}
-                                    className="w-full py-6 bg-gray-900 text-white rounded-[2rem] text-[11px] font-bold uppercase tracking-[0.25em] shadow-2xl hover:bg-teal-600 transition-all flex items-center justify-center gap-3 active:scale-95 group/btn"
-                                >
-                                    {status === 'loading' ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Execute Strategic Trade <Zap className="w-4 h-4 ml-2 fill-white animate-pulse" /></>}
-                                </button>
-                                <div className="flex justify-between items-center px-6 mt-4">
-                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Protocol Fee: $1.00 USDT</span>
-                                    <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Insured Entry</span>
+                                <p className="text-[11px] font-bold text-slate-400 uppercase leading-relaxed tracking-widest min-h-[40px] italic pr-4 border-l-2 border-slate-200/60 pl-4">
+                                    "{bucket.description}"
+                                </p>
+
+                                <div className="flex-1 space-y-3">
+                                    {bucket.tokens.map((token, idx) => {
+                                        const display = getTokenDisplay(token);
+                                        const weight = STRATEGIC_WEIGHTS[idx] || 10;
+                                        return (
+                                            <div key={token.symbol} className="p-4 bg-slate-50 border border-slate-200/60 rounded-2xl flex items-center justify-between hover:bg-white hover:shadow-xl transition-all border border-transparent hover:border-teal-100">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 bg-white p-1.5 rounded-xl shadow-sm border border-slate-200/60 flex items-center justify-center">
+                                                        {display.image ? (
+                                                            <img 
+                                                                src={display.image} 
+                                                                className="w-full h-full object-contain" 
+                                                                alt="" 
+                                                                onError={(e) => {
+                                                                    e.target.onerror = null;
+                                                                    e.target.src = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/info/logo.png';
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            <div className="text-[10px] font-black text-gray-300 font-mono">?</div>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="text-xs font-black text-slate-900 leading-none">{token.symbol}</p>
+                                                            <span className="text-[8px] font-black text-emerald-600 bg-white px-2 py-0.5 rounded border border-emerald-100 shadow-sm">{weight}%</span>
+                                                        </div>
+                                                        <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mt-1.5 truncate max-w-[80px]">{display.name}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-[10px] font-black text-slate-900 uppercase tracking-widest bg-gray-100/50 px-3 py-1.5 rounded-lg border border-slate-200/60">
+                                                        ${((parseFloat(investAmount) || 0) * (weight / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                <div className="pt-8 border-t border-gray-50">
+                                    <button 
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleInvest(bucket);
+                                        }}
+                                        disabled={status === 'loading'}
+                                        className={`w-full py-6 text-white rounded-[2rem] text-[11px] font-bold uppercase tracking-[0.25em] shadow-2xl transition-all flex items-center justify-center gap-3 active:scale-95 group/btn ${
+                                            isSelected ? 'bg-teal-600 hover:bg-teal-700 shadow-teal-200/30' : 'bg-gray-900 hover:bg-teal-600'
+                                        }`}
+                                    >
+                                        {status === 'loading' ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Execute Strategic Trade <Zap className="w-4 h-4 ml-2 fill-white animate-pulse" /></>}
+                                    </button>
+                                    <div className="flex justify-between items-center px-6 mt-4">
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Protocol Fee: $1.00 USDT</span>
+                                        <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Insured Entry</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))
+                        );
+                    })
                 ) : (
                     <div className="lg:col-span-3 bg-white border border-slate-200/60 rounded-2xl p-8 md:p-20 shadow-3xl flex flex-col items-center justify-center gap-10 min-h-[500px] text-center border-t-8 border-teal-500/20">
                         {!customBucket.isBuilding ? (
@@ -7970,7 +8005,7 @@ const MexMoneyTerminal = () => {
             difficulty: 'Low',
             icon: <Landmark className="text-emerald-500" />,
             platforms: ['Aave', 'Compound'],
-            link: 'https://aave.com'
+            link: 'https://app.aave.com/'
         },
         {
             id: 'liquidity',
@@ -7985,7 +8020,7 @@ const MexMoneyTerminal = () => {
             difficulty: 'Medium',
             icon: <Layers className="text-teal-600" />,
             platforms: ['Uniswap', 'Curve Finance'],
-            link: 'https://uniswap.org'
+            link: 'https://app.uniswap.org/pools'
         },
         {
             id: 'validator',
@@ -8000,7 +8035,7 @@ const MexMoneyTerminal = () => {
             difficulty: 'High (Tech Required)',
             icon: <Cpu className="text-amber-500" />,
             platforms: ['Ethereum (ETH)', 'Solana (SOL)'],
-            link: 'https://ethereum.org/en/developers/docs/nodes-and-clients/'
+            link: 'https://stake.lido.fi/'
         },
         {
             id: 'airdrops',
@@ -8015,7 +8050,7 @@ const MexMoneyTerminal = () => {
             difficulty: 'Medium',
             icon: <Megaphone className="text-fuchsia-500" />,
             platforms: ['LayerZero', 'ZkSync', 'Starknet'],
-            link: 'https://airdropalert.com'
+            link: 'https://stargate.finance/pool'
         },
         {
             id: 'strategies',
@@ -8030,7 +8065,7 @@ const MexMoneyTerminal = () => {
             difficulty: 'Very High',
             icon: <CandlestickChart className="text-teal-600" />,
             platforms: ['Binance Pro', 'Mex Quant Hub'],
-            link: 'https://binance.com'
+            link: 'https://www.binance.com/en/strategy/'
         },
         {
             id: 'rwa',
@@ -8045,7 +8080,7 @@ const MexMoneyTerminal = () => {
             difficulty: 'Low',
             icon: <Globe className="text-sky-500" />,
             platforms: ['Maple Finance', 'Ondo Finance'],
-            link: 'https://maple.finance'
+            link: 'https://app.ondo.finance/'
         }
     ];
 
@@ -8098,8 +8133,11 @@ const MexMoneyTerminal = () => {
                 bucket_json: { type: 'MexMoney', option: option.id, network_id: chainId }
             });
 
-            setStatusMsg('✅ Success! Redirecting to portfolio...');
-            setTimeout(() => setMode('profile'), 1500);
+            setStatusMsg('✅ Success! Opening investment page...');
+            setTimeout(() => {
+                window.open(option.link, '_blank');
+                setMode('profile');
+            }, 1500);
         } catch (e) {
             console.error('[Mex Money Error]', e);
             setStatusMsg(`Access Denied: ${e.reason || e.message}`);

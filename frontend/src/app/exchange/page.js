@@ -1604,6 +1604,44 @@ const ExchangeContent = () => {
                             className="max-w-[1400px] mx-auto flex flex-col items-center gap-12 px-4 pb-20"
                         >
                             <div className="w-full max-w-xl flex flex-col gap-6">
+                                {/* ── Quick Select Token Cards ── */}
+                                <div>
+                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em] mb-3 flex items-center gap-1.5">
+                                        <span className="w-2 h-2 rounded-full bg-teal-500 inline-block"></span> Quick Select
+                                    </p>
+                                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                                        {[
+                                            { id: 'tether-bep20', symbol: 'USDT', name: 'Tether BEP20', network: 'BEP-20', address: '0x55d398326f99059fF775485246999027B3197955', image: 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png' },
+                                            { id: 'tether-trc20', symbol: 'USDT', name: 'Tether TRC20', network: 'TRON',   address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',    image: 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png' },
+                                            { id: 'bitcoin',      symbol: 'BTC',  name: 'Bitcoin',     network: 'BTC',    address: '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c', image: 'https://assets.coingecko.com/coins/images/1/thumb/bitcoin.png' },
+                                            { id: 'binancecoin',  symbol: 'BNB',  name: 'BNB Chain',   network: 'BEP-20', address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', image: 'https://assets.coingecko.com/coins/images/825/thumb/bnb-icon2_2x.png' },
+                                            { id: 'ethereum',     symbol: 'ETH',  name: 'Ethereum',    network: 'ERC-20', address: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', image: 'https://assets.coingecko.com/coins/images/279/thumb/ethereum.png' },
+                                            { id: 'solana',       symbol: 'SOL',  name: 'Solana',      network: 'SOL',    address: 'So11111111111111111111111111111111111111112', image: 'https://assets.coingecko.com/coins/images/4128/thumb/solana.png' },
+                                        ].map(qt => {
+                                            const isActive = toToken?.id === qt.id;
+                                            return (
+                                                <button
+                                                    key={qt.id}
+                                                    type="button"
+                                                    onClick={() => setToToken({ ...qt, current_price: 0 })}
+                                                    className={`flex flex-col items-center gap-1.5 p-2.5 rounded-2xl border transition-all duration-150 active:scale-95 relative
+                                                        ${isActive
+                                                            ? 'bg-teal-50 border-teal-400 shadow-md shadow-teal-100'
+                                                            : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-teal-200 hover:shadow-sm'
+                                                        }`}
+                                                >
+                                                    {isActive && <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />}
+                                                    <div className="w-8 h-8 rounded-xl overflow-hidden bg-white border border-slate-100 shadow-sm flex items-center justify-center">
+                                                        <img src={qt.image} className="w-full h-full object-cover" onError={e => e.target.style.display='none'} alt="" />
+                                                    </div>
+                                                    <p className={`text-[10px] font-black tracking-wide leading-none ${isActive ? 'text-teal-700' : 'text-slate-700'}`}>{qt.symbol}</p>
+                                                    <p className="text-[8px] text-slate-400 font-medium leading-none">{qt.network}</p>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
                                 <div className="bg-white shadow-xl shadow-slate-200/50 border border-slate-100 rounded-3xl p-6 relative overflow-hidden transition-all duration-500">
                                     <div className="flex items-center justify-between mb-6">
                                         <div className="flex gap-4 items-center">

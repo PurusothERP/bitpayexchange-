@@ -416,46 +416,9 @@ export default function TradePage() {
                 )}
             </AnimatePresence>
 
-            {/* ── QUICK SELECT CARDS ── */}
-            <div className="pt-28 pb-0 px-4 md:px-6 max-w-[1800px] mx-auto relative z-40">
-                <div className="mb-5 mt-2">
-                    <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
-                        <Zap className="w-3 h-3 text-teal-500" /> Quick Select — Major Assets
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                        {QUICK_TOKENS.map(qt => {
-                            const isActive = selectedToken?.id === qt.id;
-                            return (
-                                <button
-                                    key={qt.id}
-                                    onClick={() => setSelectedToken(qt)}
-                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl border text-xs font-black uppercase tracking-wider transition-all duration-150 active:scale-95
-                                        ${isActive
-                                            ? 'bg-teal-600 border-teal-500 text-white shadow-lg shadow-teal-600/30'
-                                            : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white hover:border-white/20'
-                                        }`}
-                                >
-                                    <img src={qt.logo} className="w-5 h-5 rounded-full" onError={e => e.target.style.display='none'} alt="" />
-                                    {qt.symbol}
-                                    <span className="text-[9px] opacity-50 normal-case font-medium">{qt.network}</span>
-                                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse ml-1" />}
-                                </button>
-                            );
-                        })}
-                        {/* ── Browse All button ── */}
-                        <button
-                            onClick={() => setShowTokenModal(true)}
-                            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-dashed border-white/20 text-xs font-black text-white/40 hover:text-white hover:border-white/40 hover:bg-white/5 transition-all duration-150 active:scale-95"
-                        >
-                            <Search className="w-3.5 h-3.5" />
-                            All Tokens
-                        </button>
-                    </div>
-                </div>
-            </div>
 
 
-            <div className="px-4 md:px-6 max-w-[1800px] mx-auto grid grid-cols-1 xl:grid-cols-12 gap-6 relative z-10">
+            <div className="pt-28 px-4 md:px-6 max-w-[1800px] mx-auto grid grid-cols-1 xl:grid-cols-12 gap-6 relative z-10">
                 {/* ── LEFT AMBIENT LIGHT ── */}
                 <div className="fixed top-20 left-0 w-[800px] h-[800px] bg-teal-600/10 rounded-full blur-[150px] pointer-events-none -z-20" />
                 <div className="fixed bottom-0 right-0 w-[800px] h-[800px] bg-sky-600/10 rounded-full blur-[150px] pointer-events-none -z-20" />
@@ -707,8 +670,44 @@ export default function TradePage() {
                             </div>
                         </div>
 
+                        {/* ── QUICK SELECT TOKEN CARDS — above spot box ── */}
+                        <div className="mb-5">
+                            <p className="text-[8px] font-black text-white/25 uppercase tracking-[0.3em] mb-2.5 flex items-center gap-1.5">
+                                <Zap className="w-2.5 h-2.5 text-teal-500" /> Quick Select
+                            </p>
+                            <div className="grid grid-cols-3 gap-2">
+                                {QUICK_TOKENS.map(qt => {
+                                    const isActive = selectedToken?.id === qt.id;
+                                    return (
+                                        <button
+                                            key={qt.id}
+                                            onClick={() => setSelectedToken(qt)}
+                                            className={`flex flex-col items-center gap-1.5 p-2.5 rounded-2xl border transition-all duration-150 active:scale-95 relative overflow-hidden
+                                                ${isActive
+                                                    ? 'bg-teal-600/20 border-teal-500/50 shadow-lg shadow-teal-600/20'
+                                                    : 'bg-white/5 border-white/8 hover:bg-white/10 hover:border-white/20'
+                                                }`}
+                                        >
+                                            {isActive && <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse" />}
+                                            <div className="w-8 h-8 rounded-xl overflow-hidden bg-white/10 border border-white/10 flex items-center justify-center">
+                                                <img src={qt.logo} className="w-full h-full object-cover" onError={e => e.target.style.display='none'} alt="" />
+                                            </div>
+                                            <p className={`text-[10px] font-black tracking-wide leading-none ${isActive ? 'text-teal-400' : 'text-white'}`}>{qt.symbol}</p>
+                                            <p className="text-[8px] text-white/30 font-medium leading-none">{qt.network}</p>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            <button
+                                onClick={() => setShowTokenModal(true)}
+                                className="mt-2 w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-dashed border-white/15 text-[10px] font-black text-white/30 hover:text-white/60 hover:border-white/30 hover:bg-white/5 transition-all active:scale-95"
+                            >
+                                <Search className="w-3 h-3" /> Browse All Tokens
+                            </button>
+                        </div>
+
                         {/* Buy / Sell Selector */}
-                        <div className="bg-white/5 p-1.5 rounded-2xl flex mb-10 shadow-inner relative z-10">
+                        <div className="bg-white/5 p-1.5 rounded-2xl flex mb-6 shadow-inner relative z-10">
                             <button onClick={() => setOrderSide('buy')} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${orderSide === 'buy' ? 'bg-sky-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'text-white/40 hover:text-white/80'}`}>Protocol Buy</button>
                             <button onClick={() => setOrderSide('sell')} className={`flex-1 py-3.5 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 ${orderSide === 'sell' ? 'bg-teal-500 text-white shadow-[0_0_20px_rgba(244,63,94,0.3)]' : 'text-white/40 hover:text-white/80'}`}>Protocol Sell</button>
                         </div>

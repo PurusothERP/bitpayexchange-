@@ -64,7 +64,7 @@ function NeonPriceTooltip({ active, payload }) {
     return null;
 }
 
-// ── Pinned Quick Tokens for Spot Trading ─────────────────────────────────────
+// ── Pinned Quick Tokens ───────────────────────────────────────────────────────
 const QUICK_TOKENS = [
     { id: 'tether-bep20', symbol: 'USDT', name: 'Tether (BEP20)', network: 'BEP-20', logo: 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png', contract_address: '0x55d398326f99059fF775485246999027B3197955', price_bnb: 0.0017, price_change: 0.01, launch_type: 'STANDARD' },
     { id: 'tether-trc20', symbol: 'USDT', name: 'Tether (TRC20)', network: 'TRON', logo: 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png', contract_address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', price_bnb: 0.0017, price_change: -0.02, launch_type: 'STANDARD' },
@@ -73,6 +73,135 @@ const QUICK_TOKENS = [
     { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', network: 'ERC-20', logo: 'https://assets.coingecko.com/coins/images/279/thumb/ethereum.png', contract_address: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', price_bnb: 5.6, price_change: 0.8, launch_type: 'STANDARD' },
     { id: 'solana', symbol: 'SOL', name: 'Solana', network: 'SOL', logo: 'https://assets.coingecko.com/coins/images/4128/thumb/solana.png', contract_address: 'So11111111111111111111111111111111111111112', price_bnb: 0.28, price_change: 1.2, launch_type: 'STANDARD' },
 ];
+
+// ── Token Selector Modal ──────────────────────────────────────────────────────
+function TokenSelectModal({ isOpen, onClose, allTokens, onSelect, currentToken }) {
+    const [q, setQ] = useState('');
+    const [dq, setDq] = useState('');
+    const timerRef = useRef(null);
+    const inputRef = useRef(null);
+
+    useEffect(() => {
+        if (isOpen) { setQ(''); setDq(''); setTimeout(() => inputRef.current?.focus(), 80); }
+    }, [isOpen]);
+
+    useEffect(() => {
+        clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => setDq(q), 150);
+        return () => clearTimeout(timerRef.current);
+    }, [q]);
+
+    const allList = useMemo(() => [...QUICK_TOKENS, ...allTokens], [allTokens]);
+
+    const filtered = useMemo(() => {
+        const query = dq.trim().toLowerCase();
+        if (!query) return allList;
+        return allList.filter(t =>
+            t.symbol?.toLowerCase().includes(query) ||
+            t.name?.toLowerCase().includes(query) ||
+            t.contract_address?.toLowerCase() === query ||
+            t.contract_address?.toLowerCase().includes(query)
+        );
+    }, [allList, dq]);
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4" onClick={onClose}>
+            <div className="absolute inset-0 bg-black/70 backdrop-blur-md" />
+            <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+                onClick={e => e.stopPropagation()}
+                className="relative w-full max-w-md bg-[#0d0d1a] border border-white/10 rounded-3xl shadow-2xl overflow-hidden z-10"
+            >
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-white/5">
+                    <h3 className="text-base font-black text-white tracking-wide">Select Token</h3>
+                    <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-white/50 hover:text-white transition-all">✕</button>
+                </div>
+
+                {/* Search */}
+                <div className="px-4 pt-4">
+                    <div className="relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={q}
+                            onChange={e => setQ(e.target.value)}
+                            placeholder="Search by name, symbol or paste address..."
+                            className="w-full pl-11 pr-10 py-3.5 bg-white/5 border border-white/10 rounded-2xl text-sm font-medium text-white placeholder:text-white/25 outline-none focus:border-teal-500/60 focus:bg-white/8 transition-all"
+                        />
+                        {q && <button onClick={() => setQ('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white text-lg">✕</button>}
+                    </div>
+                </div>
+
+                {/* Quick select chips */}
+                {!dq && (
+                    <div className="px-4 pt-4">
+                        <p className="text-[9px] font-black text-white/25 uppercase tracking-[0.3em] mb-2">Quick Select</p>
+                        <div className="flex flex-wrap gap-2">
+                            {QUICK_TOKENS.map(qt => (
+                                <button key={qt.id} onClick={() => { onSelect(qt); onClose(); }}
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold transition-all active:scale-95
+                                        ${currentToken?.id === qt.id
+                                            ? 'bg-teal-600 border-teal-500 text-white'
+                                            : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white'
+                                        }`}
+                                >
+                                    <img src={qt.logo} className="w-4 h-4 rounded-full" onError={e => e.target.style.display='none'} alt="" />
+                                    {qt.symbol}
+                                    <span className="text-[9px] opacity-50">{qt.network}</span>
+                                </button>
+                            ))}
+                        </div>
+                        <div className="h-px bg-white/5 mt-4" />
+                    </div>
+                )}
+
+                {/* Token list */}
+                <div className="overflow-y-auto max-h-[340px] px-4 py-3 space-y-1 custom-dark-scroll">
+                    {filtered.length === 0 ? (
+                        <div className="py-12 text-center">
+                            <p className="text-white/20 text-sm font-bold">No tokens found</p>
+                            <p className="text-white/10 text-xs mt-1">Try a different search term</p>
+                        </div>
+                    ) : filtered.map(t => {
+                        const logo = t.logo_url || t.logo;
+                        const isSelected = currentToken?.id === t.id;
+                        const chg = t.price_change || 0;
+                        return (
+                            <button key={t.id} onClick={() => { onSelect(t); onClose(); }}
+                                className={`w-full flex items-center justify-between p-3 rounded-2xl transition-all active:scale-[0.98] group
+                                    ${isSelected ? 'bg-teal-600/20 border border-teal-500/40' : 'hover:bg-white/5 border border-transparent'}`}
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 overflow-hidden flex items-center justify-center flex-shrink-0">
+                                        {logo ? <img src={logo} className="w-full h-full object-cover" onError={e => e.target.style.display='none'} alt="" /> : <span className="text-sm">🪙</span>}
+                                    </div>
+                                    <div className="text-left">
+                                        <p className={`text-sm font-black ${isSelected ? 'text-teal-400' : 'text-white'}`}>{t.symbol}</p>
+                                        <p className="text-[10px] text-white/35 font-medium truncate max-w-[160px]">{t.name}{t.network ? ` · ${t.network}` : ''}</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs font-mono font-bold text-white/70">{formatPrice(t.price_bnb)}</p>
+                                    <p className={`text-[10px] font-bold ${chg >= 0 ? 'text-sky-400' : 'text-rose-400'}`}>
+                                        {chg >= 0 ? '+' : ''}{Number(chg).toFixed(2)}%
+                                    </p>
+                                </div>
+                            </button>
+                        );
+                    })}
+                </div>
+                <div className="h-4" />
+            </motion.div>
+        </div>
+    );
+}
 
 export default function TradePage() {
     const { account, connectWallet, isConnecting, signer } = useWallet();
@@ -96,6 +225,7 @@ export default function TradePage() {
     const [orderError, setOrderError] = useState('');
 
     const [activeBottomTab, setActiveBottomTab] = useState('history');
+    const [showTokenModal, setShowTokenModal] = useState(false);
 
     // Live Heart-beat Simulation for empty charts
     const liveChartData = useMemo(() => {
@@ -273,44 +403,57 @@ export default function TradePage() {
         <main className="min-h-screen bg-[#050511] text-white selection:bg-teal-500 selection:text-white pb-32 cyber-grid font-sans">
             <Navbar />
 
-            {/* ── QUICK SELECT CARDS — Top of Spot ── */}
+            {/* ── TOKEN SELECT MODAL ── */}
+            <AnimatePresence>
+                {showTokenModal && (
+                    <TokenSelectModal
+                        isOpen={showTokenModal}
+                        onClose={() => setShowTokenModal(false)}
+                        allTokens={allTokens}
+                        onSelect={(t) => { setSelectedToken(t); }}
+                        currentToken={selectedToken}
+                    />
+                )}
+            </AnimatePresence>
+
+            {/* ── QUICK SELECT CARDS ── */}
             <div className="pt-28 pb-0 px-4 md:px-6 max-w-[1800px] mx-auto relative z-40">
                 <div className="mb-5 mt-2">
                     <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
                         <Zap className="w-3 h-3 text-teal-500" /> Quick Select — Major Assets
                     </p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                    <div className="flex flex-wrap gap-2">
                         {QUICK_TOKENS.map(qt => {
                             const isActive = selectedToken?.id === qt.id;
                             return (
                                 <button
                                     key={qt.id}
                                     onClick={() => setSelectedToken(qt)}
-                                    style={{ cursor: 'pointer' }}
-                                    className={`relative p-4 rounded-2xl border transition-all duration-200 text-left overflow-hidden pointer-events-auto
+                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl border text-xs font-black uppercase tracking-wider transition-all duration-150 active:scale-95
                                         ${isActive
-                                            ? 'bg-teal-600/20 border-teal-500/60 shadow-xl shadow-teal-600/20'
-                                            : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 active:scale-95'
+                                            ? 'bg-teal-600 border-teal-500 text-white shadow-lg shadow-teal-600/30'
+                                            : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white hover:border-white/20'
                                         }`}
                                 >
-                                    {isActive && <div className="absolute inset-0 bg-gradient-to-br from-teal-600/10 to-transparent pointer-events-none" />}
-                                    <div className="flex items-center gap-3 mb-3">
-                                        <div className="w-10 h-10 rounded-xl overflow-hidden bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
-                                            <img src={qt.logo} className="w-full h-full object-cover" onError={e => { e.target.style.display='none'; }} alt={qt.symbol} />
-                                        </div>
-                                        <div>
-                                            <p className={`text-sm font-black tracking-wider ${isActive ? 'text-teal-400' : 'text-white'}`}>{qt.symbol}</p>
-                                            <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">{qt.network}</p>
-                                        </div>
-                                    </div>
-                                    <p className={`text-[10px] font-bold truncate ${isActive ? 'text-teal-300/70' : 'text-white/30'}`}>{qt.name}</p>
-                                    {isActive && <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-teal-400 animate-pulse" />}
+                                    <img src={qt.logo} className="w-5 h-5 rounded-full" onError={e => e.target.style.display='none'} alt="" />
+                                    {qt.symbol}
+                                    <span className="text-[9px] opacity-50 normal-case font-medium">{qt.network}</span>
+                                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse ml-1" />}
                                 </button>
                             );
                         })}
+                        {/* ── Browse All button ── */}
+                        <button
+                            onClick={() => setShowTokenModal(true)}
+                            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl border border-dashed border-white/20 text-xs font-black text-white/40 hover:text-white hover:border-white/40 hover:bg-white/5 transition-all duration-150 active:scale-95"
+                        >
+                            <Search className="w-3.5 h-3.5" />
+                            All Tokens
+                        </button>
                     </div>
                 </div>
             </div>
+
 
             <div className="px-4 md:px-6 max-w-[1800px] mx-auto grid grid-cols-1 xl:grid-cols-12 gap-6 relative z-10">
                 {/* ── LEFT AMBIENT LIGHT ── */}
@@ -542,12 +685,25 @@ export default function TradePage() {
                         {/* Ambient glow */}
                         <div className={`absolute top-0 right-0 w-[300px] h-[300px] rounded-full blur-[100px] pointer-events-none transition-colors duration-1000 ${orderSide === 'buy' ? 'bg-sky-500/10' : 'bg-teal-500/10'}`} />
 
-                        <div className="flex justify-between items-center mb-10 mt-2 px-2">
+                        <div className="flex justify-between items-center mb-6 mt-2 px-2">
                             <h2 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-3">
                                 <Swap className="w-4 h-4 text-white/50" /> Operations
                             </h2>
-                            <div className="text-[9px] px-3 py-1 bg-white/5 rounded-lg border border-white/10 text-white/40 font-black uppercase tracking-widest">
-                                Slippage: 0.5%
+                            <div className="flex items-center gap-2">
+                                {/* Token Selector Button */}
+                                <button
+                                    onClick={() => setShowTokenModal(true)}
+                                    className="flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-teal-500/40 transition-all active:scale-95"
+                                >
+                                    <div className="w-5 h-5 rounded-full overflow-hidden bg-white/10 flex-shrink-0">
+                                        <img src={selectedToken?.logo_url || selectedToken?.logo} className="w-full h-full object-cover" onError={e => e.target.style.display='none'} alt="" />
+                                    </div>
+                                    <span className="text-[11px] font-black text-white tracking-wider">{selectedToken?.symbol || 'Select'}</span>
+                                    <ChevronDown className="w-3.5 h-3.5 text-white/40" />
+                                </button>
+                                <div className="text-[9px] px-2 py-1 bg-white/5 rounded-lg border border-white/10 text-white/40 font-black uppercase tracking-widest">
+                                    0.5%
+                                </div>
                             </div>
                         </div>
 

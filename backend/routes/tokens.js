@@ -270,7 +270,7 @@ router.get('/markets/cg', async (req, res) => {
     try {
         // If specific IDs are requested (e.g. for detail enrichment), use cryptoFetcher
         if (ids) {
-            const data = await cryptoFetcher.getMarkets(ids, 1, 1);
+            const data = await cryptoFetcher.getMarkets(null, per_page, page, ids);
             return res.json(data);
         }
 

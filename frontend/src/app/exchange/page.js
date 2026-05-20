@@ -212,7 +212,7 @@ const ExchangeContent = () => {
     
     // Token State
     const [fromToken, setFromToken] = useState({ id: 'binancecoin', symbol: 'BNB', name: 'Binance Coin', address: '0x0000000000000000000000000000000000000000', image: 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png' });
-    const [toToken, setToToken] = useState({ id: 'tether', symbol: 'USDT', name: 'Tether', address: '0x55d398326f99059fF775485246999027B3197955', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png' });
+    const [toToken, setToToken] = useState({ id: 'tether', symbol: 'USDT', name: 'Tether', address: '0x55d398326f99059fF775485246999027B3197955', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', network: 'BEP-20' });
     
     // Futures State
     const [leverage, setLeverage] = useState(10);
@@ -3882,7 +3882,7 @@ const ExchangeContent = () => {
 
                             <div className="flex items-baseline gap-3 mb-6 relative">
                                 <span className="text-4xl font-black text-slate-900 font-mono tracking-tighter">
-                                    ${selectedMarketToken.current_price < 0.01 ? selectedMarketToken.current_price.toFixed(8) : selectedMarketToken.current_price?.toLocaleString()}
+                                    ${(selectedMarketToken.current_price || 0) < 0.01 ? (selectedMarketToken.current_price || 0).toFixed(8) : selectedMarketToken.current_price?.toLocaleString()}
                                 </span>
                             </div>
 
@@ -5083,7 +5083,7 @@ const AssetDetails = ({ token, setMode }) => {
                     <div className="flex-1 p-6 bg-slate-50 border border-slate-100 rounded-3xl">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Market Price</p>
                         <p className="text-2xl font-black text-slate-900 font-mono tracking-tighter">
-                            ${token.current_price < 0.01 ? token.current_price.toFixed(6) : token.current_price?.toLocaleString()}
+                            ${(token.current_price || 0) < 0.01 ? (token.current_price || 0).toFixed(6) : token.current_price?.toLocaleString()}
                         </p>
                         <div className={`mt-2 inline-block px-2 py-0.5 rounded-md text-[10px] font-black ${token.price_change_percentage_24h >= 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
                             {token.price_change_percentage_24h >= 0 ? '+' : ''}{token.price_change_percentage_24h?.toFixed(2)}%

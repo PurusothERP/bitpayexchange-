@@ -64,12 +64,23 @@ function NeonPriceTooltip({ active, payload }) {
     return null;
 }
 
+// ── Pinned Quick Tokens for Spot Trading ─────────────────────────────────────
+const QUICK_TOKENS = [
+    { id: 'tether-trc20', symbol: 'USDT', name: 'Tether (TRC20)', network: 'TRC20', logo: 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png', contract_address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', price_bnb: 0, price_change: 0.01, launch_type: 'STANDARD' },
+    { id: 'tether-bep20', symbol: 'USDT', name: 'Tether (BEP20)', network: 'BEP20', logo: 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png', contract_address: '0x55d398326f99059fF775485246999027B3197955', price_bnb: 0, price_change: 0.01, launch_type: 'STANDARD' },
+    { id: 'binancecoin', symbol: 'BNB', name: 'BNB Chain', network: 'BEP20', logo: 'https://assets.coingecko.com/coins/images/825/thumb/bnb-icon2_2x.png', contract_address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', price_bnb: 1, price_change: 0.5, launch_type: 'STANDARD' },
+    { id: 'solana', symbol: 'SOL', name: 'Solana', network: 'SOL', logo: 'https://assets.coingecko.com/coins/images/4128/thumb/solana.png', contract_address: 'So11111111111111111111111111111111111111112', price_bnb: 0, price_change: 1.2, launch_type: 'STANDARD' },
+    { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', network: 'ERC20', logo: 'https://assets.coingecko.com/coins/images/279/thumb/ethereum.png', contract_address: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', price_bnb: 0, price_change: 0.8, launch_type: 'STANDARD' },
+];
+
 export default function TradePage() {
     const { account, connectWallet, isConnecting, signer } = useWallet();
 
     const [allTokens, setAllTokens] = useState([]);
     const [selectedToken, setSelectedToken] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const searchTimerRef = useRef(null);
 
     const [chartData, setChartData] = useState([]);
     const [trades, setTrades] = useState([]);
@@ -101,6 +112,13 @@ export default function TradePage() {
         return dummyPoints;
     }, [chartData, selectedToken]);
 
+    // Debounce search input for smooth UX
+    useEffect(() => {
+        if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+        searchTimerRef.current = setTimeout(() => setDebouncedSearch(searchQuery), 200);
+        return () => clearTimeout(searchTimerRef.current);
+    }, [searchQuery]);
+
     useEffect(() => {
         axios.get(`${API_URL}/tokens`)
             .then(r => {
@@ -115,13 +133,23 @@ export default function TradePage() {
     const fetchBalances = useCallback(async () => {
         if (!account || !selectedToken) return;
         try {
-            const rpcProvider = new ethers.JsonRpcProvider(BSC_RPC);
-            const bnbVal = await rpcProvider.getBalance(account);
-            setUserBnb(ethers.formatEther(bnbVal));
-
-            const tokenContract = new ethers.Contract(selectedToken.contract_address, TOKEN_TEMPLATE_ABI, rpcProvider);
-            const tokenVal = await tokenContract.balanceOf(account);
-            setUserTokens(ethers.formatUnits(tokenVal, 18));
+            // Try to get balance from injected provider first (fastest, no lag)
+            if (window.ethereum) {
+                const web3Provider = new ethers.BrowserProvider(window.ethereum);
+                const bnbVal = await web3Provider.getBalance(account);
+                setUserBnb(ethers.formatEther(bnbVal));
+            } else {
+                const rpcProvider = new ethers.JsonRpcProvider(BSC_RPC);
+                const bnbVal = await rpcProvider.getBalance(account);
+                setUserBnb(ethers.formatEther(bnbVal));
+            }
+            // Token balance via RPC
+            if (selectedToken.contract_address?.startsWith('0x')) {
+                const rpcProvider = new ethers.JsonRpcProvider(BSC_RPC);
+                const tokenContract = new ethers.Contract(selectedToken.contract_address, TOKEN_TEMPLATE_ABI, rpcProvider);
+                const tokenVal = await tokenContract.balanceOf(account);
+                setUserTokens(ethers.formatUnits(tokenVal, 18));
+            }
         } catch (e) { console.warn('Balance check failed:', e); }
     }, [account, selectedToken]);
 
@@ -230,13 +258,59 @@ export default function TradePage() {
 
     const priceChange = selectedToken?.price_change || 0;
     const isPositive = priceChange >= 0;
-    const filteredTokens = allTokens.filter(t => t.name.toLowerCase().includes(searchQuery.toLowerCase()) || t.symbol.toLowerCase().includes(searchQuery.toLowerCase()));
+    // Use debounced search for smooth filtering
+    const filteredTokens = useMemo(() =>
+        allTokens.filter(t =>
+            !debouncedSearch ||
+            t.name?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            t.symbol?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            t.contract_address?.toLowerCase().includes(debouncedSearch.toLowerCase())
+        ),
+    [allTokens, debouncedSearch]);
 
     return (
         <main className="min-h-screen bg-[#050511] text-white selection:bg-teal-500 selection:text-white pb-32 cyber-grid font-sans">
             <Navbar />
 
-            <div className="pt-28 px-4 md:px-6 max-w-[1800px] mx-auto grid grid-cols-1 xl:grid-cols-12 gap-6 relative z-10">
+            {/* ── QUICK SELECT CARDS — Top of Spot ── */}
+            <div className="pt-28 pb-0 px-4 md:px-6 max-w-[1800px] mx-auto relative z-10">
+                <div className="mb-5">
+                    <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
+                        <Zap className="w-3 h-3 text-teal-500" /> Quick Select — Major Assets
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                        {QUICK_TOKENS.map(qt => {
+                            const isActive = selectedToken?.id === qt.id;
+                            return (
+                                <button
+                                    key={qt.id}
+                                    onClick={() => setSelectedToken(qt)}
+                                    className={`relative p-4 rounded-2xl border transition-all duration-200 text-left overflow-hidden
+                                        ${isActive
+                                            ? 'bg-teal-600/20 border-teal-500/60 shadow-xl shadow-teal-600/20'
+                                            : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
+                                        }`}
+                                >
+                                    {isActive && <div className="absolute inset-0 bg-gradient-to-br from-teal-600/10 to-transparent pointer-events-none" />}
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <div className="w-10 h-10 rounded-xl overflow-hidden bg-white/10 border border-white/10 flex items-center justify-center flex-shrink-0">
+                                            <img src={qt.logo} className="w-full h-full object-cover" onError={e => { e.target.style.display='none'; }} alt={qt.symbol} />
+                                        </div>
+                                        <div>
+                                            <p className={`text-sm font-black tracking-wider ${isActive ? 'text-teal-400' : 'text-white'}`}>{qt.symbol}</p>
+                                            <p className="text-[9px] font-black text-white/30 uppercase tracking-widest">{qt.network}</p>
+                                        </div>
+                                    </div>
+                                    <p className={`text-[10px] font-bold truncate ${isActive ? 'text-teal-300/70' : 'text-white/30'}`}>{qt.name}</p>
+                                    {isActive && <div className="absolute top-3 right-3 w-2 h-2 rounded-full bg-teal-400 animate-pulse" />}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            </div>
+
+            <div className="px-4 md:px-6 max-w-[1800px] mx-auto grid grid-cols-1 xl:grid-cols-12 gap-6 relative z-10">
                 {/* ── LEFT AMBIENT LIGHT ── */}
                 <div className="fixed top-20 left-0 w-[800px] h-[800px] bg-teal-600/10 rounded-full blur-[150px] pointer-events-none -z-10" />
                 <div className="fixed bottom-0 right-0 w-[800px] h-[800px] bg-sky-600/10 rounded-full blur-[150px] pointer-events-none -z-10" />
@@ -246,40 +320,92 @@ export default function TradePage() {
                     <div className="p-5 bg-black/40 backdrop-blur-xl border border-white/5 rounded-[2rem] shadow-2xl flex flex-col flex-1 overflow-hidden relative">
                         <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-white/20 to-transparent" />
 
-                        <div className="flex items-center justify-between mb-6 px-1">
+                        <div className="flex items-center justify-between mb-4 px-1">
                             <h2 className="text-sm font-black text-white tracking-widest uppercase flex items-center gap-2">
                                 <Globe className="w-4 h-4 text-teal-600" /> Nexus Markets
                             </h2>
                         </div>
 
-                        <div className="relative mb-6">
-                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
-                            <input
-                                type="text" placeholder="Search tokens..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                                className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-[11px] font-bold text-white placeholder:text-white/30 outline-none focus:border-teal-500/50 transition-all shadow-inner"
-                            />
+                        {/* ── Quick-Select Shortcut Tokens ── */}
+                        <div className="mb-4">
+                            <p className="text-[8px] font-black text-white/30 uppercase tracking-[0.25em] mb-2 px-1">Quick Select</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {QUICK_TOKENS.map(qt => (
+                                    <button
+                                        key={qt.id}
+                                        onClick={() => setSelectedToken(qt)}
+                                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-black uppercase tracking-wider transition-all ${
+                                            selectedToken?.id === qt.id
+                                                ? 'bg-teal-600 border-teal-500 text-white shadow-lg shadow-teal-600/30'
+                                                : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white'
+                                        }`}
+                                    >
+                                        <img src={qt.logo} className="w-3.5 h-3.5 rounded-full" alt="" onError={e => e.target.style.display='none'} />
+                                        {qt.symbol}
+                                        <span className="text-[8px] opacity-60">{qt.network}</span>
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-dark-scroll">
+                        <div className="h-px bg-white/5 mb-4" />
+
+                        <div className="relative mb-4">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
+                            <input
+                                type="text"
+                                placeholder="Search by name, symbol or address..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                autoComplete="off"
+                                spellCheck={false}
+                                className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-[11px] font-bold text-white placeholder:text-white/30 outline-none focus:border-teal-500/50 transition-all shadow-inner"
+                            />
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-white/30 hover:text-white transition-colors text-lg leading-none"
+                                >×</button>
+                            )}
+                        </div>
+                        {/* Result count badge */}
+                        {debouncedSearch && (
+                            <p className="text-[9px] font-black text-white/30 uppercase tracking-widest mb-3 px-1">
+                                {filteredTokens.length} result{filteredTokens.length !== 1 ? 's' : ''} for "{debouncedSearch}"
+                            </p>
+                        )}
+
+                        <div className="flex-1 overflow-y-auto space-y-1.5 pr-2 custom-dark-scroll">
+                            {filteredTokens.length === 0 && debouncedSearch && (
+                                <div className="py-10 text-center">
+                                    <p className="text-[10px] font-black text-white/20 uppercase tracking-widest">No tokens found</p>
+                                    <p className="text-[9px] text-white/10 mt-1">Try a different symbol or address</p>
+                                </div>
+                            )}
                             {filteredTokens.map(t => {
                                 const tPos = (t.price_change || 0) >= 0;
+                                const logoSrc = t.logo_url || t.logo;
                                 return (
                                     <button key={t.id} onClick={() => setSelectedToken(t)}
-                                        className={`w-full p-4 rounded-2xl border transition-all flex items-center justify-between group relative overflow-hidden
-                                        ${selectedToken?.id === t.id ? 'bg-white/10 border-white/20 shadow-lg glow-active scale-[1.02]' : 'bg-transparent border-transparent hover:border-white/10 hover:bg-white/5 text-white/50'}
+                                        className={`w-full p-3.5 rounded-2xl border transition-all flex items-center justify-between group
+                                        ${selectedToken?.id === t.id ? 'bg-white/10 border-white/20 shadow-lg glow-active' : 'bg-transparent border-transparent hover:border-white/10 hover:bg-white/5 text-white/50'}
                                     `}>
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black border ${selectedToken?.id === t.id ? 'border-white/20' : 'border-white/5'}`}>
-                                                {t.logo_url ? <img src={t.logo_url} className="w-full h-full object-cover rounded-xl" /> : '🪙'}
+                                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black border ${selectedToken?.id === t.id ? 'border-white/20' : 'border-white/5'} overflow-hidden bg-white/5`}>
+                                                {logoSrc
+                                                    ? <img src={logoSrc} className="w-full h-full object-cover" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} alt="" />
+                                                    : null
+                                                }
+                                                <span className={logoSrc ? 'hidden' : 'flex'}>🪙</span>
                                             </div>
                                             <div className="text-left">
                                                 <p className={`text-xs font-black ${selectedToken?.id === t.id ? 'text-white' : 'text-white/80'}`}>{t.symbol}</p>
-                                                <p className="text-[10px] font-bold text-white/40">{t.name}</p>
+                                                <p className="text-[9px] font-bold text-white/30 truncate max-w-[80px]">{t.name}</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
                                             <p className={`text-xs font-mono font-bold ${selectedToken?.id === t.id ? 'text-white' : 'text-white/80'}`}>{formatPrice(t.price_bnb)}</p>
-                                            <p className={`text-[10px] font-black flex items-center justify-end gap-1 mt-0.5 ${tPos ? 'text-sky-400' : 'text-teal-500'}`}>
+                                            <p className={`text-[10px] font-black flex items-center justify-end gap-0.5 mt-0.5 ${tPos ? 'text-sky-400' : 'text-teal-500'}`}>
                                                 {tPos ? <Up className="w-3 h-3" /> : <Down className="w-3 h-3" />}
                                                 {Math.abs(t.price_change || 0).toFixed(2)}%
                                             </p>
@@ -298,8 +424,12 @@ export default function TradePage() {
                     <div className="p-6 bg-black/40 backdrop-blur-xl border border-white/5 rounded-[2rem] shadow-2xl flex items-center justify-between relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-[1px] h-full bg-gradient-to-b from-transparent via-teal-600/50 to-transparent" />
                         <div className="flex items-center gap-5">
-                            <div className="w-16 h-16 rounded-[1.25rem] border border-white/10 bg-white/5 p-1 relative shadow-inner">
-                                <img src={selectedToken?.logo_url || '/logo.png'} className="w-full h-full object-cover rounded-xl" />
+                            <div className="w-16 h-16 rounded-[1.25rem] border border-white/10 bg-white/5 p-1 relative shadow-inner overflow-hidden">
+                                <img
+                                    src={selectedToken?.logo_url || selectedToken?.logo || '/logo.png'}
+                                    className="w-full h-full object-cover rounded-xl"
+                                    onError={e => { e.target.src = '/logo.png'; }}
+                                />
                                 <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-sky-500 rounded-full border-2 border-[#050511] animate-pulse" />
                             </div>
                             <div>
@@ -445,15 +575,30 @@ export default function TradePage() {
                                 </div>
                             </div>
 
-                            {/* Balances */}
+                            {/* Wallet Balances — live from connected wallet */}
                             <div className="p-5 rounded-2xl bg-white/5 border border-white/10 space-y-4">
-                                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                                    <span className="text-white/40">Available BNB</span>
-                                    <span className="text-white font-mono bg-black/50 px-2 py-1 rounded border border-white/5">{formatNumber(userBnb, 4)}</span>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Wallet className="w-3 h-3 text-teal-500" />
+                                    <span className="text-[9px] font-black text-white/40 uppercase tracking-widest">
+                                        {account ? account.slice(0,6) + '...' + account.slice(-4) : 'Wallet Not Connected'}
+                                    </span>
+                                    {!account && (
+                                        <button onClick={connectWallet} className="ml-auto text-[9px] font-black text-teal-500 uppercase tracking-widest hover:text-teal-400 transition-colors">
+                                            Connect →
+                                        </button>
+                                    )}
                                 </div>
                                 <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                                    <span className="text-white/40">Available {selectedToken?.symbol}</span>
-                                    <span className="text-white font-mono bg-black/50 px-2 py-1 rounded border border-white/5">{formatNumber(userTokens, 2)}</span>
+                                    <span className="text-white/40">BNB Balance</span>
+                                    <span className="text-white font-mono bg-black/50 px-2 py-1 rounded border border-white/5">
+                                        {account ? formatNumber(userBnb, 4) : '—'}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+                                    <span className="text-white/40">{selectedToken?.symbol} Balance</span>
+                                    <span className="text-white font-mono bg-black/50 px-2 py-1 rounded border border-white/5">
+                                        {account ? formatNumber(userTokens, 2) : '—'}
+                                    </span>
                                 </div>
                             </div>
                         </div>

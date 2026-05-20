@@ -1584,6 +1584,10 @@ const ExchangeContent = () => {
                             <Lock className="w-4 h-4" /> Staking
                         </Link>
 
+                        <Link href="/nft" className="flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 text-slate-500 hover:text-teal-600 hover:bg-teal-50">
+                            <Diamond className="w-4 h-4" /> NFT
+                        </Link>
+
                         <button onClick={() => setMode('list')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'list' ? 'bg-teal-600 text-white shadow-2xl shadow-teal-600/20' : 'text-teal-600 bg-teal-50/50 hover:bg-teal-100'}`}>
                             <PlusCircle className="w-4 h-4" /> List
                         </button>

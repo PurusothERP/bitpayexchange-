@@ -15,7 +15,8 @@ import {
     PieChart, Shield, Copy, Lock, Layers, Eye,
     CheckCircle2, DollarSign, Percent,
     Radio, Cpu, Sparkles, Award, Search, MessageSquare, AlertCircle,
-    Calendar, ShieldAlert, Rabbit, Monitor, Info, ArrowUp, ArrowDown, X, FileText, Leaf, Loader2
+    Calendar, ShieldAlert, Rabbit, Monitor, Info, ArrowUp, ArrowDown, X, FileText, Leaf, Loader2,
+    Rocket
 } from 'lucide-react';
 import axios from 'axios';
 import Link from 'next/link';
@@ -1119,6 +1120,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
     const low52 = useMemo(() => [...tokens].sort((a,b) => (a.price_change_percentage_24h||0) - (b.price_change_percentage_24h||0)).reverse().slice(-10), [tokens]);
     
     const memeTokens = useMemo(() => tokens.filter(t => ['doge','shib','pepe','bonk','floki','wif','meme','coq'].includes(t.symbol?.toLowerCase())).slice(0,10), [tokens]);
+    const b20 = useMemo(() => tokens.filter(t => t.symbol?.toLowerCase().includes('b20') || t.name?.toLowerCase().includes('b20')).slice(0,10), [tokens]);
     
     // Streaks
     const green7d = useMemo(() => [...tokens].filter(t => (t.price_change_percentage_24h||0) > 2).slice(5,15), [tokens]);

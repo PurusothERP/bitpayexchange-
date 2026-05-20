@@ -1624,8 +1624,8 @@ const ExchangeContent = () => {
                                                     key={qt.id + qt.network}
                                                     type="button"
                                                     onClick={async () => {
-                                                        // Set token immediately with placeholder so UI responds instantly
-                                                        setToToken({ ...qt, current_price: null });
+                                                        // Set token immediately — use 0 so .toFixed() never crashes
+                                                        setToToken({ ...qt, current_price: 0 });
                                                         try {
                                                             // Fetch real live price from backend CoinGecko proxy
                                                             const res = await axios.get(`${API_URL}/tokens/markets/cg`, {

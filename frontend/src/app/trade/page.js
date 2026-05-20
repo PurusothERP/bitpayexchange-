@@ -66,11 +66,12 @@ function NeonPriceTooltip({ active, payload }) {
 
 // ── Pinned Quick Tokens for Spot Trading ─────────────────────────────────────
 const QUICK_TOKENS = [
-    { id: 'tether-trc20', symbol: 'USDT', name: 'Tether (TRC20)', network: 'TRC20', logo: 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png', contract_address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', price_bnb: 0, price_change: 0.01, launch_type: 'STANDARD' },
-    { id: 'tether-bep20', symbol: 'USDT', name: 'Tether (BEP20)', network: 'BEP20', logo: 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png', contract_address: '0x55d398326f99059fF775485246999027B3197955', price_bnb: 0, price_change: 0.01, launch_type: 'STANDARD' },
-    { id: 'binancecoin', symbol: 'BNB', name: 'BNB Chain', network: 'BEP20', logo: 'https://assets.coingecko.com/coins/images/825/thumb/bnb-icon2_2x.png', contract_address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', price_bnb: 1, price_change: 0.5, launch_type: 'STANDARD' },
-    { id: 'solana', symbol: 'SOL', name: 'Solana', network: 'SOL', logo: 'https://assets.coingecko.com/coins/images/4128/thumb/solana.png', contract_address: 'So11111111111111111111111111111111111111112', price_bnb: 0, price_change: 1.2, launch_type: 'STANDARD' },
-    { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', network: 'ERC20', logo: 'https://assets.coingecko.com/coins/images/279/thumb/ethereum.png', contract_address: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', price_bnb: 0, price_change: 0.8, launch_type: 'STANDARD' },
+    { id: 'tether-bep20', symbol: 'USDT', name: 'Tether (BEP20)', network: 'BEP-20', logo: 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png', contract_address: '0x55d398326f99059fF775485246999027B3197955', price_bnb: 0.0017, price_change: 0.01, launch_type: 'STANDARD' },
+    { id: 'tether-trc20', symbol: 'USDT', name: 'Tether (TRC20)', network: 'TRON', logo: 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png', contract_address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t', price_bnb: 0.0017, price_change: -0.02, launch_type: 'STANDARD' },
+    { id: 'bitcoin', symbol: 'BTC', name: 'Bitcoin', network: 'BTC', logo: 'https://assets.coingecko.com/coins/images/1/thumb/bitcoin.png', contract_address: '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c', price_bnb: 110.5, price_change: 2.45, launch_type: 'STANDARD' },
+    { id: 'binancecoin', symbol: 'BNB', name: 'BNB Chain', network: 'BEP-20', logo: 'https://assets.coingecko.com/coins/images/825/thumb/bnb-icon2_2x.png', contract_address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', price_bnb: 1, price_change: 0.5, launch_type: 'STANDARD' },
+    { id: 'ethereum', symbol: 'ETH', name: 'Ethereum', network: 'ERC-20', logo: 'https://assets.coingecko.com/coins/images/279/thumb/ethereum.png', contract_address: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', price_bnb: 5.6, price_change: 0.8, launch_type: 'STANDARD' },
+    { id: 'solana', symbol: 'SOL', name: 'Solana', network: 'SOL', logo: 'https://assets.coingecko.com/coins/images/4128/thumb/solana.png', contract_address: 'So11111111111111111111111111111111111111112', price_bnb: 0.28, price_change: 1.2, launch_type: 'STANDARD' },
 ];
 
 export default function TradePage() {
@@ -278,7 +279,7 @@ export default function TradePage() {
                     <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em] mb-3 flex items-center gap-2">
                         <Zap className="w-3 h-3 text-teal-500" /> Quick Select — Major Assets
                     </p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
                         {QUICK_TOKENS.map(qt => {
                             const isActive = selectedToken?.id === qt.id;
                             return (

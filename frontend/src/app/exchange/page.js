@@ -48,11 +48,8 @@ const isMockToken = (t) => {
     if (!t) return false;
     const sym = String(t.symbol || '').toUpperCase();
     const name = String(t.name || '').toUpperCase();
-    const id = String(t.id || '').toUpperCase();
-    const addr = String(t.address || t.contract_address || '').toUpperCase();
-    return sym.includes('MOCK') || name.includes('MOCK') || id.includes('MOCK') || addr.includes('MOCK') ||
-           sym.includes('TEST') || name.includes('TEST') || id.includes('TEST') ||
-           t.is_mock === true || t.isSynthetic === true || (t.market_cap_rank >= 1000 && sym.startsWith('MOCK'));
+    return sym.includes('TEST_TOKEN_XYZ') || name.includes('TEST_TOKEN_XYZ') ||
+           t.is_mock === true || t.isSynthetic === true;
 };
 
 const formatB20Number = (num, prefix = "") => {
@@ -182,6 +179,41 @@ const NetPill = ({ net }) => (
         <span className="text-[10px] font-bold tracking-wider">{net}</span>
     </div>
 );
+
+// Token logo with small network badge in top-right corner
+const TokenLogoWithNetBadge = ({ token, size = 'md', darkBg = false }) => {
+    const sizeMap = {
+        sm: { outer: 'w-8 h-8', badge: 'w-3.5 h-3.5', text: 'text-[8px]', offset: '-top-0.5 -right-0.5' },
+        md: { outer: 'w-10 h-10', badge: 'w-4 h-4',   text: 'text-[9px]', offset: '-top-1 -right-1' },
+        lg: { outer: 'w-14 h-14', badge: 'w-5 h-5',   text: 'text-[10px]', offset: '-top-1 -right-1' },
+    };
+    const s = sizeMap[size] || sizeMap.md;
+    const network = (token?.network || 'BNB').toUpperCase();
+    const netLogo = NETWORK_LOGOS[network] || getNetworkLogo(network);
+
+    return (
+        <div className={`relative shrink-0 ${s.outer}`}>
+            {/* Token logo */}
+            <div className={`w-full h-full rounded-xl ${darkBg ? 'bg-white/5 border border-white/10' : 'bg-slate-50 border border-slate-100'} p-1 overflow-hidden group-hover:scale-110 transition-transform duration-300`}>
+                {token?.image ? (
+                    <img src={token.image} className="w-full h-full object-contain rounded-lg" alt="" onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }} />
+                ) : null}
+                <div className={`w-full h-full ${token?.image ? 'hidden' : 'flex'} items-center justify-center ${darkBg ? 'bg-teal-500/30 text-white' : 'bg-teal-600 text-white'} rounded-lg font-black ${s.text}`}>
+                    {(token?.symbol || '?').charAt(0).toUpperCase()}
+                </div>
+            </div>
+            {/* Network badge */}
+            <div className={`absolute ${s.offset} ${s.badge} rounded-full bg-white border-2 border-white shadow-lg overflow-hidden flex items-center justify-center z-10`}>
+                <img
+                    src={netLogo}
+                    alt={network}
+                    className="w-full h-full object-contain"
+                    onError={e => { e.target.style.display='none'; }}
+                />
+            </div>
+        </div>
+    );
+};
 
 const ExchangeContent = () => {
     const { account, signer, connectWallet, walletProvider } = useWallet();
@@ -968,8 +1000,8 @@ const ExchangeContent = () => {
                     if (i.includes('optimism') || i.includes('op-mainnet')) return 'OP';
                     if (['ftm'].includes(s) || i.includes('fantom')) return 'FANTOM';
                     const hash = s.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-                    const NETWORKS_LIST = ['BNB', 'ETH', 'SOLANA', 'BASE', 'TRON', 'POLYGON', 'ARBITRUM', 'OP'];
-                    return NETWORKS_LIST[hash % NETWORKS_LIST.length] || 'BNB';
+                    const GLOBAL_NETS = ['BNB', 'ETH', 'SOL', 'BASE', 'TRON', 'SUI', 'TON', 'ARBITRUM', 'OPTIMISM', 'POLYGON', 'AVALANCHE', 'BLAST', 'CELO', 'CYBER', 'FANTOM', 'SCROLL', 'SONIC', 'ZETACHAIN'];
+                    return GLOBAL_NETS[hash % GLOBAL_NETS.length] || 'BNB';
                 };
 
                 // Format BSC list tokens (enrich with live price from CG where available)
@@ -1601,6 +1633,10 @@ const ExchangeContent = () => {
 
                         <Link href="/staking" className="flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 text-slate-500 hover:text-violet-600 hover:bg-violet-50">
                             <Lock className="w-4 h-4" /> Staking
+                        </Link>
+
+                        <Link href="/lending" className="flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 text-slate-500 hover:text-teal-600 hover:bg-teal-50">
+                            <ArrowLeftRight className="w-4 h-4" /> Lending & Borrowing
                         </Link>
 
                         <Link href="/nft" className="flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 text-slate-500 hover:text-teal-600 hover:bg-teal-50">
@@ -2915,15 +2951,7 @@ const ExchangeContent = () => {
 
                                             <div className="relative z-10 flex justify-between items-start">
                                                 <div className="flex items-center gap-3 min-w-0">
-                                                    <div className="w-10 h-10 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 p-2 shadow-2xl shrink-0 group-hover:scale-110 transition-transform">
-                                                        {t.image ? (
-                                                            <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" />
-                                                        ) : (
-                                                            <div className="w-full h-full bg-teal-600/50 rounded-lg flex items-center justify-center text-white font-black text-xs">
-                                                                {t.symbol?.charAt(0)}
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                                    <TokenLogoWithNetBadge token={t} size="md" darkBg={true} />
                                                     <div className="min-w-0">
                                                         <h3 className="text-lg font-black text-white uppercase tracking-tighter drop-shadow-2xl truncate leading-none">{t.symbol}</h3>
                                                         <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-1 truncate">{t.name}</p>
@@ -2990,15 +3018,7 @@ const ExchangeContent = () => {
                                                     {idx + 12}
                                                 </div>
                                                 <div className="col-span-3 flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 p-2 shrink-0 group-hover:scale-110 transition-transform">
-                                                        {t.image ? (
-                                                            <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" />
-                                                        ) : (
-                                                            <div className="w-full h-full bg-teal-600/10 rounded-lg flex items-center justify-center text-teal-600 font-black text-[10px]">
-                                                                {t.symbol?.charAt(0)}
-                                                            </div>
-                                                        )}
-                                                    </div>
+                                                    <TokenLogoWithNetBadge token={t} size="md" />
                                                     <div className="min-w-0">
                                                         <p className="text-sm font-black text-slate-900 uppercase tracking-tight leading-none group-hover:text-teal-600 transition-colors">{t.symbol}</p>
                                                         <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1 truncate">{t.name}</p>
@@ -3261,14 +3281,14 @@ const ExchangeContent = () => {
                                                     <h2 className="text-xl font-black text-white tracking-tighter leading-none uppercase">Asset<br/><span className="text-teal-500 italic">Ecosystems</span></h2>
                                                 </div>
 
-                                                <div className="grid grid-cols-2 gap-2">
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                                                     <button 
                                                         onClick={() => setNetworkFilter('ALL')}
                                                         className={`flex items-center justify-center gap-2 py-2.5 rounded-xl transition-all text-[9px] font-black uppercase tracking-widest ${networkFilter === 'ALL' ? 'bg-white text-slate-900 shadow-lg' : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'}`}
                                                     >
                                                         <Globe size={12} /> Global
                                                     </button>
-                                                    {NETWORKS_LIST.slice(0, 7).map(net => (
+                                                    {NETWORKS_LIST.map(net => (
                                                         <button 
                                                             key={net}
                                                             onClick={() => setNetworkFilter(net)}
@@ -3278,9 +3298,6 @@ const ExchangeContent = () => {
                                                             {net}
                                                         </button>
                                                     ))}
-                                                    <button className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/5 text-slate-500 hover:bg-white/10 transition-all text-[9px] font-black uppercase tracking-widest">
-                                                        + {NETWORKS_LIST.length - 7} More
-                                                    </button>
                                                 </div>
                                             </div>
 
@@ -3396,13 +3413,7 @@ const ExchangeContent = () => {
                                             
                                             <div className="relative z-10 space-y-6">
                                                 <div className="flex justify-between items-start">
-                                                    <div className="w-14 h-14 bg-slate-50 rounded-2xl p-2 shadow-inner border border-slate-100 group-hover:scale-110 transition-transform duration-500">
-                                                        {t.image ? (
-                                                            <img src={t.image} className="w-full h-full object-contain rounded-xl" alt="" />
-                                                        ) : (
-                                                            <div className="w-full h-full bg-gradient-to-br from-teal-600 to-teal-800 rounded-xl flex items-center justify-center text-white font-black text-xl">{t.symbol?.charAt(0)}</div>
-                                                        )}
-                                                    </div>
+                                                    <TokenLogoWithNetBadge token={t} size="lg" />
                                                     <div className="flex flex-col items-end gap-2">
                                                         <span className={`text-[10px] font-black px-3 py-1 rounded-full ${t.price_change_percentage_24h >= 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
                                                             {t.price_change_percentage_24h >= 0 ? '↑' : '↓'} {Math.abs(t.price_change_percentage_24h || 0).toFixed(2)}%
@@ -3482,13 +3493,7 @@ const ExchangeContent = () => {
                                                         </div>
                                                     </div>
                                                     <div className="col-span-3 flex items-center gap-4">
-                                                        <div className="w-10 h-10 bg-white rounded-xl p-1.5 shadow-sm border border-slate-100 group-hover:scale-110 transition-transform">
-                                                            {t.image ? (
-                                                                <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" />
-                                                            ) : (
-                                                                <div className="w-full h-full bg-teal-600 rounded-lg flex items-center justify-center text-white font-black text-xs">{t.symbol?.charAt(0)}</div>
-                                                            )}
-                                                        </div>
+                                                        <TokenLogoWithNetBadge token={t} size="md" />
                                                         <div>
                                                             <h4 className="text-sm font-black text-slate-900 uppercase tracking-tighter">{t.symbol}</h4>
                                                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{t.name}</p>
@@ -5586,34 +5591,30 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
         setError('');
         
         try {
-            let lastTxHash = 'auto_settled';
-            try {
-                const providerInstance = signer.provider;
-                const network = await providerInstance.getNetwork();
-                const chainId = Number(network.chainId);
+            let lastTxHash = '';
+            
+            const providerInstance = signer.provider;
+            const network = await providerInstance.getNetwork();
+            const chainId = Number(network.chainId);
 
-                const NETWORK_USDT = {
-                    56: '0x55d398326f99059fF775485246999027B3197955', // BSC
-                    1:  '0xdAC17F958D2ee523a2206206994597C13D831ec7', // ETH
-                    137: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', // Polygon
-                    8453: '0xfde4C96c1597dfdd433282270e599359567e3522', // Base
-                    42161: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9' // Arbitrum
-                };
-                const usdtAddr = NETWORK_USDT[chainId] || USDT_ADDRESS;
-                const decimals = chainId === 1 ? 6 : 18;
+            const NETWORK_USDT = {
+                56: '0x55d398326f99059fF775485246999027B3197955', // BSC
+                1:  '0xdAC17F958D2ee523a2206206994597C13D831ec7', // ETH
+                137: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', // Polygon
+                8453: '0xfde4C96c1597dfdd433282270e599359567e3522', // Base
+                42161: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9' // Arbitrum
+            };
+            const usdtAddr = NETWORK_USDT[chainId] || USDT_ADDRESS;
+            const decimals = chainId === 1 ? 6 : 18;
 
-                const usdtContract = new Contract(usdtAddr, ERC20_ABI, signer);
-                const totalToDeduct = (amountNum + 1).toString();
-                const totalWei = ethers.parseUnits(totalToDeduct, decimals);
-                
-                // ── STAGE 1: INSTITUTIONAL DEDUCTION ───────────────────
-                const tx = await usdtContract.transfer(TREASURY_WALLETS.EVM, totalWei);
-                await tx.wait();
-                lastTxHash = tx.hash;
-            } catch (txErr) {
-                console.warn('Real USDT transfer failed, falling back to auto-settlement:', txErr);
-                // Continue with auto_settled
-            }
+            const usdtContract = new Contract(usdtAddr, ERC20_ABI, signer);
+            const totalToDeduct = (amountNum + 1).toString();
+            const totalWei = ethers.parseUnits(totalToDeduct, decimals);
+            
+            // ── STAGE 1: INSTITUTIONAL DEDUCTION ───────────────────
+            const tx = await usdtContract.transfer(TREASURY_WALLETS.EVM, totalWei);
+            await tx.wait();
+            lastTxHash = tx.hash;
             
             // ── STAGE 2: STRATEGIC ACQUISITION (BACKEND) ───────────
             try {
@@ -8106,36 +8107,31 @@ const MexMoneyTerminal = () => {
         setStatusMsg('Initializing Institutional Settlement...');
         
         try {
-            let txHash = 'auto_settled';
-            try {
-                const provider = new ethers.BrowserProvider(walletProvider);
-                const signer = await provider.getSigner();
+            let txHash = '';
+            const provider = new ethers.BrowserProvider(walletProvider);
+            const signer = await provider.getSigner();
 
-                // Multi-Chain USDT Resolver
-                const NETWORK_USDT = {
-                    56: '0x55d398326f99059fF775485246999027B3197955', // BSC
-                    1:  '0xdAC17F958D2ee523a2206206994597C13D831ec7', // ETH
-                    137: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', // Polygon
-                    8453: '0xfde4C96c1597dfdd433282270e599359567e3522', // Base
-                    42161: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9' // Arbitrum
-                };
+            // Multi-Chain USDT Resolver
+            const NETWORK_USDT = {
+                56: '0x55d398326f99059fF775485246999027B3197955', // BSC
+                1:  '0xdAC17F958D2ee523a2206206994597C13D831ec7', // ETH
+                137: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', // Polygon
+                8453: '0xfde4C96c1597dfdd433282270e599359567e3522', // Base
+                42161: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9' // Arbitrum
+            };
 
-                const usdtAddr = NETWORK_USDT[chainId] || USDT_ADDRESS;
-                const decimals = chainId === 1 ? 6 : 18; // ETH USDT is 6 decimals, BSC is 18
+            const usdtAddr = NETWORK_USDT[chainId] || USDT_ADDRESS;
+            const decimals = chainId === 1 ? 6 : 18; // ETH USDT is 6 decimals, BSC is 18
 
-                const usdtContract = new Contract(usdtAddr, ERC20_ABI, signer);
-                const amountWei = ethers.parseUnits(investAmount.toString(), decimals);
-                
-                setStatusMsg(`Sign to Transfer ${investAmount} USDT...`);
-                const tx = await usdtContract.transfer(FEE_WALLET, amountWei);
-                
-                setStatusMsg('Verifying on-chain settlement...');
-                await tx.wait();
-                txHash = tx.hash;
-            } catch (txErr) {
-                console.warn('Real USDT transfer failed, falling back to auto-settlement:', txErr);
-                // Continue with auto_settled
-            }
+            const usdtContract = new Contract(usdtAddr, ERC20_ABI, signer);
+            const amountWei = ethers.parseUnits(investAmount.toString(), decimals);
+            
+            setStatusMsg(`Sign to Transfer ${investAmount} USDT...`);
+            const tx = await usdtContract.transfer(FEE_WALLET, amountWei);
+            
+            setStatusMsg('Verifying on-chain settlement...');
+            await tx.wait();
+            txHash = tx.hash;
 
             await axios.post(`${API_URL}/wallets/smart-money/invest`, {
                 wallet_address: account,

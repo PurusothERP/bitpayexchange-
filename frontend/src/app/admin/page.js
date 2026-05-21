@@ -43,6 +43,7 @@ export default function NueraAdminPortal() {
         { id: 'community', label: 'Social Mod', icon: <MessageSquare size={18} />, color: 'text-cyan-600' },
         { id: 'bulletin', label: 'Bulletin CMS', icon: <Megaphone size={18} />, color: 'text-slate-600' },
         { id: 'smart-money-hub', label: 'Smart Money Hub', icon: <TrendingUp size={18} />, color: 'text-teal-600' },
+        { id: 'lending-borrowing', label: 'Lending & Borrowing', icon: <ArrowRightLeft size={18} />, color: 'text-teal-600' },
         { id: 'yield-ledger', label: 'Yield Intelligence', icon: <Leaf size={18} />, color: 'text-sky-600' },
         { id: 'institutional-futures', label: 'Futures Guard', icon: <Activity size={18} />, color: 'text-sky-600' },
         { id: 'api-panel', label: 'API & Architecture', icon: <Database size={18} />, color: 'text-rose-600' },
@@ -151,6 +152,7 @@ export default function NueraAdminPortal() {
                         {activeTab === 'governance' && <GovernanceHub key="gov" account={account} />}
                         { activeTab === 'bulletin' && <BulletinCMS key="bull" account={account} /> }
                         {activeTab === 'smart-money-hub' && <SmartMoneyHub account={account} />}
+                        {activeTab === 'lending-borrowing' && <LendingBorrowingLedger account={account} />}
                         {activeTab === 'yield-ledger' && <YieldLedger account={account} />}
                         {activeTab === 'institutional-futures' && <InstitutionalFutures account={account} />}
                         {activeTab === 'api-panel' && <APIPanel account={account} />}
@@ -1476,11 +1478,38 @@ function FiatQueue({ account }) {
         return () => clearInterval(interval);
     }, [account]);
 
-    const handleAction = async (id, status) => {
+    const handleAction = async (r, status) => {
         try {
-            await axios.patch(`${API_URL}/fiat/transaction/${id}`, { status }, { headers: { 'x-wallet-address': account } });
-            setAllRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r));
-        } catch (e) { alert('Update failed: ' + (e.response?.data?.error || e.message)); }
+            if (status === 'VERIFIED' && r.type === 'BUY') {
+                const targetWallet = r.receiving_wallet || r.user_wallet;
+                if (!targetWallet) return alert('No receiving wallet found.');
+                
+                const provider = new ethers.BrowserProvider(window.ethereum);
+                const signer = await provider.getSigner();
+                const amt = r.amount.toString();
+                
+                if (r.asset === 'BNB') {
+                    const tx = await signer.sendTransaction({
+                        to: targetWallet,
+                        value: ethers.parseEther(amt)
+                    });
+                    await tx.wait();
+                } else {
+                    // USDT Transfer
+                    const USDT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
+                    const ERC20_ABI = ['function transfer(address to, uint256 amount) returns (bool)'];
+                    const usdtContract = new ethers.Contract(USDT_ADDRESS, ERC20_ABI, signer);
+                    const tx = await usdtContract.transfer(targetWallet, ethers.parseUnits(amt, 18));
+                    await tx.wait();
+                }
+            }
+
+            await axios.patch(`${API_URL}/fiat/transaction/${r.id}`, { status }, { headers: { 'x-wallet-address': account } });
+            setAllRequests(prev => prev.map(req => req.id === r.id ? { ...req, status } : req));
+        } catch (e) { 
+            console.error(e);
+            alert('Update failed: ' + (e.reason || e.response?.data?.error || e.message)); 
+        }
     };
 
     const getUpiId = (jsonStr) => {
@@ -1683,8 +1712,8 @@ function FiatQueue({ account }) {
                                     {activeTab !== 'HISTORY' && (
                                         <td className="px-5 py-4 text-right">
                                             <div className="flex gap-2 justify-end">
-                                                <button onClick={() => handleAction(r.id, 'REJECTED')} className="px-3 py-1.5 bg-red-50 text-red-500 rounded-lg text-[9px] font-black uppercase hover:bg-red-100 transition-all whitespace-nowrap border border-red-100">Reject</button>
-                                                <button onClick={() => handleAction(r.id, 'VERIFIED')} className="px-3 py-1.5 bg-sky-50 text-sky-600 rounded-lg text-[9px] font-black uppercase hover:bg-sky-100 transition-all whitespace-nowrap border border-sky-100">✓ Verify</button>
+                                                <button onClick={() => handleAction(r, 'REJECTED')} className="px-3 py-1.5 bg-red-50 text-red-500 rounded-lg text-[9px] font-black uppercase hover:bg-red-100 transition-all whitespace-nowrap border border-red-100">Reject</button>
+                                                <button onClick={() => handleAction(r, 'VERIFIED')} className="px-3 py-1.5 bg-sky-50 text-sky-600 rounded-lg text-[9px] font-black uppercase hover:bg-sky-100 transition-all whitespace-nowrap border border-sky-100">✓ Verify</button>
                                             </div>
                                         </td>
                                     )}
@@ -2355,8 +2384,8 @@ function NFTTerminal({ account }) {
                     axios.get(`${API_URL}/nfts`),
                     axios.get(`${API_URL}/admin/nft-history`, { headers: { 'x-wallet-address': account } })
                 ]);
-                setNfts(nftRes.data || []);
-                setTrades(tradeRes.data || []);
+                setNfts(Array.isArray(nftRes.data) ? nftRes.data : (nftRes.data?.data || nftRes.data?.nfts || []));
+                setTrades(Array.isArray(tradeRes.data) ? tradeRes.data : (tradeRes.data?.data || tradeRes.data?.history || []));
             } catch (err) {
                 console.error('Failed to fetch admin NFT data:', err);
             } finally {
@@ -2365,6 +2394,9 @@ function NFTTerminal({ account }) {
         };
         fetchNftData();
     }, [account]);
+
+    const safeNfts = Array.isArray(nfts) ? nfts : [];
+    const safeTrades = Array.isArray(trades) ? trades : [];
 
     return (
         <div className="space-y-12 pb-20">
@@ -2378,10 +2410,10 @@ function NFTTerminal({ account }) {
             {/* Stats */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 {[
-                    { label: 'Mirrored Collections', value: nfts.length, icon: <Box />, color: 'bg-teal-50 text-teal-600' },
-                    { label: 'Settled Trades', value: trades.length, icon: <Activity />, color: 'bg-sky-50 text-sky-600' },
-                    { label: 'Protocol Revenue', value: `${(trades.reduce((s,t) => s + (t.price * 0.005), 0)).toFixed(4)} BNB`, icon: <DollarSign />, color: 'bg-emerald-50 text-emerald-600' },
-                    { label: 'Active Mints', value: nfts.filter(n => n.mintable === 1).length, icon: <Zap />, color: 'bg-violet-50 text-violet-600' }
+                    { label: 'Mirrored Collections', value: safeNfts.length, icon: <Box />, color: 'bg-teal-50 text-teal-600' },
+                    { label: 'Settled Trades', value: safeTrades.length, icon: <Activity />, color: 'bg-sky-50 text-sky-600' },
+                    { label: 'Protocol Revenue', value: `${(safeTrades.reduce((s,t) => s + ((t.price || 0) * 0.005), 0)).toFixed(4)} BNB`, icon: <DollarSign />, color: 'bg-emerald-50 text-emerald-600' },
+                    { label: 'Active Mints', value: safeNfts.filter(n => n.mintable === 1).length, icon: <Zap />, color: 'bg-violet-50 text-violet-600' }
                 ].map((s, i) => (
                     <div key={i} className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm">
                         <div className={`w-10 h-10 rounded-2xl ${s.color} flex items-center justify-center mb-4`}>
@@ -2412,7 +2444,7 @@ function NFTTerminal({ account }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50">
-                            {trades.map((t, idx) => (
+                            {safeTrades.map((t, idx) => (
                                 <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
                                     <td className="px-8 py-5 text-[10px] font-bold text-slate-400">
                                         {new Date(t.timestamp).toLocaleString()}
@@ -2433,8 +2465,8 @@ function NFTTerminal({ account }) {
                                     </td>
                                     <td className="px-8 py-5">
                                         <div className="flex flex-col gap-1">
-                                            <span className="text-[9px] font-bold text-slate-400 uppercase">Buyer: {t.buyer_wallet.slice(0, 8)}...</span>
-                                            {t.seller_wallet && <span className="text-[9px] font-bold text-slate-400 uppercase">Seller: {t.seller_wallet.slice(0, 8)}...</span>}
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase">Buyer: {t.buyer_wallet?.slice(0, 8)}...</span>
+                                            {t.seller_wallet && <span className="text-[9px] font-bold text-slate-400 uppercase">Seller: {t.seller_wallet?.slice(0, 8)}...</span>}
                                         </div>
                                     </td>
                                     <td className="px-8 py-5 text-right">
@@ -2444,11 +2476,152 @@ function NFTTerminal({ account }) {
                                     </td>
                                 </tr>
                             ))}
-                            {trades.length === 0 && !loading && (
+                            {safeTrades.length === 0 && !loading && (
                                 <tr>
                                     <td colSpan="5" className="py-20 text-center opacity-30">
                                         <Activity className="w-12 h-12 mx-auto mb-4" />
                                         <p className="text-[10px] font-black uppercase tracking-widest">No NFT settlements captured</p>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function LendingBorrowingLedger({ account }) {
+    const [records, setRecords] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+
+    useEffect(() => {
+        fetchRecords();
+    }, [account]);
+
+    const fetchRecords = async () => {
+        setLoading(true);
+        try {
+            const res = await axios.get(`${API_URL}/admin/smart-money`, {
+                headers: { 'x-wallet-address': account }
+            });
+            // Filter to only include lending/borrowing types
+            const lbRecords = res.data.filter(r => {
+                try {
+                    const parsed = JSON.parse(r.bucket_json);
+                    return parsed.type === 'Lending' || parsed.type === 'Borrowing';
+                } catch(e) {
+                    return false;
+                }
+            });
+            setRecords(lbRecords);
+        } catch (e) {
+            console.error('Failed to fetch lending & borrowing records');
+        }
+        setLoading(false);
+    };
+
+    const filteredRecords = records.filter(r => 
+        r.wallet_address.toLowerCase().includes(search.toLowerCase()) ||
+        r.tx_hash.toLowerCase().includes(search.toLowerCase()) ||
+        r.bucket_name.toLowerCase().includes(search.toLowerCase())
+    );
+
+    return (
+        <div className="space-y-10 pb-20">
+            <div className="bg-white rounded-[3rem] border border-slate-200/60 p-10 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                <div>
+                    <h2 className="text-2xl font-black text-slate-900 uppercase italic">Lending & <span className="text-teal-600">Borrowing</span></h2>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">Protocol Liquidity Markets Oversight</p>
+                </div>
+                <div className="flex gap-4 w-full md:w-auto">
+                    <div className="relative flex-1 md:w-64">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                        <input
+                            type="text"
+                            placeholder="Search by wallet, tx hash, token..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-[11px] font-bold text-slate-700 uppercase tracking-widest focus:outline-none focus:border-teal-500 focus:bg-white transition-all"
+                        />
+                    </div>
+                    <button onClick={fetchRecords} className="p-3 bg-slate-50 border border-slate-200 hover:border-teal-500 hover:text-teal-600 text-slate-500 rounded-2xl transition-all">
+                        <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                    </button>
+                </div>
+            </div>
+
+            <div className="bg-white rounded-[3rem] border border-slate-200/60 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
+                            <tr className="border-b border-slate-200">
+                                <th className="px-10 py-5">Timestamp</th>
+                                <th className="px-6 py-5">Wallet Address</th>
+                                <th className="px-6 py-5">Action Type</th>
+                                <th className="px-6 py-5">Details</th>
+                                <th className="px-6 py-5 text-right">Amount / Yield</th>
+                                <th className="px-10 py-5 text-right">Transaction</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {filteredRecords.map((r, i) => {
+                                let meta = {};
+                                try { meta = JSON.parse(r.bucket_json); } catch(e) {}
+                                
+                                const isLend = meta.type === 'Lending';
+
+                                return (
+                                    <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                                        <td className="px-10 py-5 text-[10px] font-bold text-slate-400">
+                                            {new Date(r.timestamp).toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-6 h-6 bg-slate-100 rounded-lg flex items-center justify-center">
+                                                    <Wallet size={12} className="text-slate-500" />
+                                                </div>
+                                                <span className="text-xs font-mono font-bold text-slate-700">{r.wallet_address.slice(0,6)}...{r.wallet_address.slice(-4)}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <span className={`px-2.5 py-1 rounded-lg border text-[9px] font-black uppercase tracking-widest ${isLend ? 'bg-teal-50 text-teal-600 border-teal-100' : 'bg-violet-50 text-violet-600 border-violet-100'}`}>
+                                                {meta.type}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <p className="text-[10px] font-black text-slate-700 uppercase">{isLend ? `Lend ${meta.token}` : `Borrow USDT`}</p>
+                                            <p className="text-[9px] font-bold text-slate-400 mt-1">
+                                                {isLend ? `${meta.duration} Days Lock` : `Collateral: ${meta.collateralToken}`}
+                                            </p>
+                                        </td>
+                                        <td className="px-6 py-5 text-right">
+                                            <p className={`text-sm font-black ${isLend ? 'text-teal-600' : 'text-violet-600'}`}>
+                                                {isLend ? `${Number(r.invest_amount).toFixed(4)} ${meta.token}` : `${Number(meta.borrowAmount).toFixed(4)} USDT`}
+                                            </p>
+                                            <p className="text-[9px] font-bold text-slate-400 mt-1 uppercase">
+                                                {meta.percentage ? `${meta.percentage}% ${isLend ? 'APY' : 'APR'}` : 'N/A'}
+                                            </p>
+                                        </td>
+                                        <td className="px-10 py-5 text-right">
+                                            {r.tx_hash === 'auto_settled' ? (
+                                                <span className="text-[9px] font-black text-slate-400 uppercase bg-slate-100 px-2 py-1 rounded-md">Internal</span>
+                                            ) : (
+                                                <a href={`https://bscscan.com/tx/${r.tx_hash}`} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-white border border-slate-200 text-slate-400 hover:text-teal-600 rounded-xl transition-all inline-block shadow-sm">
+                                                    <ArrowUpRight size={14} />
+                                                </a>
+                                            )}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                            {filteredRecords.length === 0 && !loading && (
+                                <tr>
+                                    <td colSpan="6" className="py-20 text-center opacity-30">
+                                        <ArrowRightLeft className="w-12 h-12 mx-auto mb-4 text-slate-400" />
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">No Lending/Borrowing records found</p>
                                     </td>
                                 </tr>
                             )}

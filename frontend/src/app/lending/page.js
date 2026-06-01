@@ -16,18 +16,18 @@ import { ethers, Contract } from 'ethers';
 import { API_URL } from '@/lib/api';
 
 const LENDING_TOKENS = [
-    { symbol: 'USDT', name: 'Tether USD', apy: 6.8, logo: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/0x55d398326f99059fF775485246999027B3197955/logo.png', address: '0x55d398326f99059fF775485246999027B3197955' },
-    { symbol: 'USDC', name: 'USD Coin', apy: 6.2, logo: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/0x8AC76a51cc950d9822D68b83fE1Ad97B32CD580d/logo.png', address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32CD580d' },
-    { symbol: 'ETH', name: 'Ethereum', apy: 3.5, logo: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/0x2170Ed0880ac9A755fd29B2688956BD959F933F8/logo.png', address: '0x2170Ed0880ac9A755fd29B2688956BD959F933F8' },
-    { symbol: 'BNB', name: 'Binance Coin', apy: 4.1, logo: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c/logo.png', address: '0x0000000000000000000000000000000000000000' },
-    { symbol: 'BTC', name: 'Bitcoin', apy: 2.8, logo: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3EAd9c/logo.png', address: '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3EAd9c' }
+    { symbol: 'USDT', name: 'Tether USD', apy: 6.8, logo: 'https://assets.coingecko.com/coins/images/325/small/tether.png', address: '0x55d398326f99059fF775485246999027B3197955' },
+    { symbol: 'USDC', name: 'USD Coin', apy: 6.2, logo: 'https://assets.coingecko.com/coins/images/6319/small/USD_Coin_icon.png', address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32CD580d' },
+    { symbol: 'ETH', name: 'Ethereum', apy: 3.5, logo: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png', address: '0x2170Ed0880ac9A755fd29B2688956BD959F933F8' },
+    { symbol: 'BNB', name: 'Binance Coin', apy: 4.1, logo: 'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png', address: '0x0000000000000000000000000000000000000000' },
+    { symbol: 'BTC', name: 'Bitcoin', apy: 2.8, logo: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png', address: '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3EAd9c' }
 ];
 
 const COLLATERAL_TOKENS = [
-    { symbol: 'ETH', name: 'Ethereum', price: 3450, ltv: 75, logo: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/0x2170Ed0880ac9A755fd29B2688956BD959F933F8/logo.png', address: '0x2170Ed0880ac9A755fd29B2688956BD959F933F8' },
-    { symbol: 'BTC', name: 'Bitcoin', price: 67200, ltv: 70, logo: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3EAd9c/logo.png', address: '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3EAd9c' },
-    { symbol: 'BNB', name: 'Binance Coin', price: 580, ltv: 65, logo: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c/logo.png', address: '0x0000000000000000000000000000000000000000' },
-    { symbol: 'USDC', name: 'USD Coin', price: 1.0, ltv: 85, logo: 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/smartchain/assets/0x8AC76a51cc950d9822D68b83fE1Ad97B32CD580d/logo.png', address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32CD580d' }
+    { symbol: 'ETH', name: 'Ethereum', price: 3450, ltv: 75, logo: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png', address: '0x2170Ed0880ac9A755fd29B2688956BD959F933F8' },
+    { symbol: 'BTC', name: 'Bitcoin', price: 67200, ltv: 70, logo: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png', address: '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3EAd9c' },
+    { symbol: 'BNB', name: 'Binance Coin', price: 580, ltv: 65, logo: 'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png', address: '0x0000000000000000000000000000000000000000' },
+    { symbol: 'USDC', name: 'USD Coin', price: 1.0, ltv: 85, logo: 'https://assets.coingecko.com/coins/images/6319/small/USD_Coin_icon.png', address: '0x8AC76a51cc950d9822D68b83fE1Ad97B32CD580d' }
 ];
 
 export default function LendingBorrowingPage() {

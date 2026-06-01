@@ -304,13 +304,66 @@ router.get('/markets/cg', async (req, res) => {
 });
 
 // ─── GET /api/tokens/markets/memes ───────────────────────────────────────────
-// Dedicated endpoint for the 6000+ Meme Terminal registry
+// Dedicated endpoint for the Meme Terminal registry.
+// MERGED: Local MemeHub DB tokens + CoinGecko registry memes.
+// Local tokens always appear first so newly launched coins are immediately visible.
 router.get('/markets/memes', async (req, res) => {
-    const { per_page = 250, page = 1 } = req.query;
+    const { per_page = 6000, page = 1 } = req.query;
     try {
-        const memes = tokenRegistry.getMemes(parseInt(page), parseInt(per_page));
-        res.json(memes);
+        // 1. Fetch locally launched MemeHub tokens from the DB
+        let localTokens = [];
+        try {
+            const result = await db.query(
+                `SELECT *, COALESCE(launch_type, 'MEME') as launch_type
+                 FROM tokens WHERE is_delisted = 0 ORDER BY created_at DESC`
+            );
+            localTokens = (result.rows || []).map(t => {
+                const normalized = normalizeToken(t);
+                return {
+                    id: normalized.contract_address,
+                    symbol: (normalized.symbol || '').toUpperCase(),
+                    name: normalized.name,
+                    address: normalized.contract_address,
+                    contract_address: normalized.contract_address,
+                    network: normalized.network || 'BNB',
+                    image: normalized.logo_url || null,
+                    logoURI: normalized.logo_url || null,
+                    decimals: 18,
+                    market_cap: normalized.market_cap || 0,
+                    current_price: normalized.price_bnb || 0,
+                    price_change_percentage_24h: 0,
+                    total_volume: normalized.total_volume || 0,
+                    high_24h: 0,
+                    low_24h: 0,
+                    is_local: true,
+                    bonding_progress: normalized.bonding_progress || 0,
+                    trust_status: normalized.trust_status,
+                    description: normalized.description || ''
+                };
+            });
+        } catch (dbErr) {
+            console.error('[markets/memes] DB fetch failed:', dbErr.message);
+        }
+
+        // 2. Fetch registry memes (CoinGecko backed)
+        const registryMemes = tokenRegistry.getMemes(1, parseInt(per_page));
+
+        // 3. Merge: local first, then registry — de-duplicate by address
+        const seen = new Set();
+        const merged = [];
+
+        for (const t of localTokens) {
+            const key = (t.address || t.id || '').toLowerCase();
+            if (!seen.has(key)) { seen.add(key); merged.push(t); }
+        }
+        for (const t of registryMemes) {
+            const key = (t.address || t.id || '').toLowerCase();
+            if (!seen.has(key)) { seen.add(key); merged.push(t); }
+        }
+
+        res.json(merged);
     } catch (err) {
+        console.error('[markets/memes] Fatal error:', err.message);
         res.json([]);
     }
 });

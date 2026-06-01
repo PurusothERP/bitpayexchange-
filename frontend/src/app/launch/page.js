@@ -14,6 +14,7 @@ import Link from 'next/link';
 import axios from 'axios';
 
 import { API_URL } from '@/lib/api';
+import TrendingTicker from '@/components/TrendingTicker';
 // 
 const formatB20Number = (num, prefix = "") => {
     if (!num || isNaN(num)) return prefix + "0";
@@ -297,6 +298,21 @@ export default function Launchpad() {
     const [viewMode, setViewMode] = useState('grid'); 
     const [search, setSearch] = useState('');
     const [bnbPrice, setBnbPrice] = useState(600);
+    const [dexBoosts, setDexBoosts] = useState([]);
+
+    useEffect(() => {
+        const fetchDexBoosts = async () => {
+            try {
+                const res = await axios.get(`${API_URL}/dex/boosts/latest`);
+                setDexBoosts(Array.isArray(res.data) ? res.data.slice(0, 4) : []);
+            } catch (e) {
+                console.warn('Failed to fetch latest boosts for launchpad:', e.message);
+            }
+        };
+        fetchDexBoosts();
+        const interval = setInterval(fetchDexBoosts, 30000);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         axios.get('https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd')
@@ -305,7 +321,7 @@ export default function Launchpad() {
             
         const fetchTokens = async () => {
             try {
-                const res = await axios.get(`${API_URL}/tokens`);
+                const res = await axios.get(`${API_URL}/tokens/markets/memes`, { params: { per_page: 6000 } });
                 setTokens(Array.isArray(res.data) ? res.data : []);
             } catch (err) { 
                 console.error('Fetch failed:', err); 
@@ -352,8 +368,11 @@ export default function Launchpad() {
     return (
         <main className="min-h-screen bg-[#FDFDFD] selection:bg-teal-500 selection:text-white pb-32">
             <Navbar />
+            <div className="pt-20">
+                <TrendingTicker />
+            </div>
             
-            <div className="pt-20 px-4 md:px-8 max-w-[1440px] mx-auto space-y-20 relative z-10">
+            <div className="pt-4 px-4 md:px-8 max-w-[1440px] mx-auto space-y-20 relative z-10">
                 
                 {/* ── HERO SECTION ────────────────────────────────────────────── */}
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-12">
@@ -397,6 +416,59 @@ export default function Launchpad() {
                         ))}
                     </div>
                 </div>
+
+                {/* ── DEXSCREENER LIVE BOOSTS ── */}
+                {dexBoosts.length > 0 && (
+                    <div className="space-y-6">
+                        <div className="flex items-center gap-3">
+                            <span className="p-2.5 bg-orange-500 rounded-xl text-white shadow-lg shadow-orange-500/20">
+                                <Flame className="w-5 h-5 animate-pulse" />
+                            </span>
+                            <div>
+                                <h3 className="text-lg font-black text-zinc-900 uppercase tracking-wider italic leading-none mb-1">DexScreener Boosted Signals</h3>
+                                <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Real-time mainnet campaign updates</p>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                            {dexBoosts.map((b, i) => {
+                                const isSol = b.chainId === 'solana';
+                                const getIcon = () => {
+                                    if (isSol) return 'https://cryptologos.cc/logos/solana-sol-logo.png';
+                                    if (b.chainId === 'bsc') return 'https://cryptologos.cc/logos/bnb-bnb-logo.png';
+                                    return 'https://assets.coingecko.com/coins/images/2518/large/base.png';
+                                };
+                                return (
+                                    <div key={i} className="p-6 bg-white border border-zinc-100 hover:border-orange-500/30 rounded-[2rem] shadow-sm hover:shadow-xl transition-all cursor-pointer flex flex-col justify-between group relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-orange-500/5 to-transparent rounded-full blur-xl" />
+                                        <div>
+                                            <div className="flex items-start justify-between mb-4">
+                                                <div className="w-12 h-12 rounded-2xl bg-zinc-50 border border-zinc-100 overflow-hidden shadow-sm shrink-0">
+                                                    <img src={b.icon || `https://api.dicebear.com/7.x/identicon/svg?seed=${b.tokenAddress}`} className="w-full h-full object-cover" onError={e => { e.target.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${b.tokenAddress}`; }} />
+                                                </div>
+                                                <div className="flex items-center gap-1.5 px-2 py-1 bg-zinc-100 rounded-md">
+                                                    <img src={getIcon()} className="w-3 h-3 rounded-full object-contain" alt="" />
+                                                    <span className="text-[8px] font-black text-zinc-500 uppercase">{b.chainId}</span>
+                                                </div>
+                                            </div>
+                                            <h4 className="text-sm font-black text-zinc-900 group-hover:text-orange-600 transition-colors uppercase font-mono truncate">{b.tokenAddress.slice(0, 6)}...{b.tokenAddress.slice(-4)}</h4>
+                                            <p className="text-[10px] text-zinc-400 font-bold uppercase mt-2 leading-relaxed line-clamp-2 h-10">{b.description || 'Verified live contract active on DEX pool campaign.'}</p>
+                                        </div>
+                                        <div className="mt-4 pt-4 border-t border-zinc-100 flex items-center justify-between">
+                                            <a 
+                                                href={b.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="text-[9px] font-black text-teal-600 hover:text-orange-500 transition-colors uppercase tracking-widest hover:underline flex items-center gap-1"
+                                            >
+                                                View on DEX <ArrowUpRight className="w-3.5 h-3.5" />
+                                            </a>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
 
                 {/* ── FILTER & SEARCH ─────────────────────────────────────────── */}
                 <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-2 bg-white/50 backdrop-blur-3xl border border-black/5 rounded-[2.5rem] shadow-sm">

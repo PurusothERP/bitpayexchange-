@@ -272,6 +272,173 @@ const ExchangeContent = () => {
     const [selectedAnalytic, setSelectedAnalytic] = useState(null); // For the deep analytics modal
     const scrollSentinelRef = useRef(null);
     
+    // Pro Futures Pairs State & Fetch Integration
+    const [proFuturesPairs, setProFuturesPairs] = useState([]);
+    const [isProPairsLoading, setIsProPairsLoading] = useState(true);
+    const [futuresPairs, setFuturesPairs] = useState([]);
+
+    useEffect(() => {
+        const fetchMemeMarkets = async () => {
+            try {
+                const binanceRes = await axios.get(`${API_URL}/binance/memePairs`, { timeout: 20000 });
+                const binancePairs = binanceRes.data || [];
+
+                if (binancePairs.length < 10) throw new Error('Too few Binance pairs returned');
+
+                let registryMap = {};
+                try {
+                    const regRes = await axios.get(`${API_URL}/tokens/markets/memes`, {
+                        params: { per_page: 400, page: 1 }, timeout: 10000
+                    });
+                    (regRes.data || []).forEach(c => {
+                        registryMap[c.symbol?.toUpperCase()] = c;
+                    });
+                } catch { /* silent */ }
+
+                const mergedPairs = binancePairs.map(b => {
+                    const reg = registryMap[b.baseAsset] || {};
+                    return {
+                        id: reg.id || b.symbol,
+                        symbol: b.pair,
+                        binanceSymbol: b.symbol,
+                        name: reg.name || b.baseAsset,
+                        price: b.price || reg.current_price || 0,
+                        change: b.priceChangePercent || reg.price_change_percentage_24h || 0,
+                        volume: b.volume || reg.total_volume || 0,
+                        high24h: b.high24h || 0,
+                        low24h: b.low24h || 0,
+                        funding: 0.0100,
+                        image: reg.image || null,
+                        network: reg.network || 'BNB',
+                        bidPrice: b.bidPrice || 0,
+                        askPrice: b.askPrice || 0,
+                    };
+                });
+
+                mergedPairs.sort((a, b) => (b.volume || 0) - (a.volume || 0));
+                setFuturesPairs(mergedPairs);
+            } catch (err) {
+                console.warn('[MemeFutures] Binance pairs failed, trying Coinpaprika fallback:', err);
+                try {
+                    const papRes = await axios.get(`${API_URL}/paprika/tickers`, {
+                        params: { quotes: 'USD' }, timeout: 15000
+                    });
+                    const MAJOR = new Set(['BTC','ETH','BNB','SOL','XRP','ADA','AVAX','DOT','MATIC','LINK','LTC']);
+                    const fallbackPairs = (papRes.data || [])
+                        .filter(t => !MAJOR.has(t.symbol?.toUpperCase()) && (t.quotes?.USD?.volume_24h || 0) > 1000)
+                        .slice(0, 200)
+                        .map(t => ({
+                            id: t.id,
+                            symbol: `${t.symbol?.toUpperCase()}/USDT`,
+                            binanceSymbol: null,
+                            name: t.name,
+                            price: t.quotes?.USD?.price || 0,
+                            change: t.quotes?.USD?.percent_change_24h || 0,
+                            volume: t.quotes?.USD?.volume_24h || 0,
+                            funding: 0.0100,
+                            image: null,
+                            network: 'BNB',
+                        }));
+                    setFuturesPairs(fallbackPairs);
+                } catch {
+                    const hardFallbacks = [
+                        { id: 'pepe', symbol: 'PEPE/USDT', binanceSymbol: 'PEPEUSDT', name: 'Pepe', price: 0.000008, change: 5.2, volume: 840000000, funding: 0.01, network: 'ETH' },
+                        { id: 'dogecoin', symbol: 'DOGE/USDT', binanceSymbol: 'DOGEUSDT', name: 'Dogecoin', price: 0.16, change: -1.2, volume: 1200000000, funding: 0.015, network: 'BNB' },
+                        { id: 'shib', symbol: 'SHIB/USDT', binanceSymbol: 'SHIBUSDT', name: 'Shiba Inu', price: 0.000009, change: 2.1, volume: 500000000, funding: 0.01, network: 'ETH' },
+                    ];
+                    setFuturesPairs(hardFallbacks);
+                }
+            }
+        };
+
+        fetchMemeMarkets();
+        const interval = setInterval(fetchMemeMarkets, 60000);
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        const fetchProFuturesPairs = async () => {
+            try {
+                const binanceRes = await axios.get(`${API_URL}/binance/usdtPairs`, { timeout: 20000 });
+                const binancePairs = binanceRes.data || [];
+
+                if (binancePairs.length < 10) throw new Error('Too few Binance pairs returned');
+
+                const mergedPairs = binancePairs.map(b => {
+                    const reg = tokens.find(t => t.symbol?.toUpperCase() === b.baseAsset) || {};
+                    return {
+                        id: reg.id || b.baseAsset.toLowerCase(),
+                        address: reg.address || null,
+                        symbol: b.baseAsset,
+                        name: reg.name || b.baseAsset,
+                        image: reg.image || null,
+                        network: reg.network || 'BNB',
+                        current_price: b.price || reg.current_price || 0,
+                        price_change_percentage_24h: b.priceChangePercent || reg.price_change_percentage_24h || 0,
+                        total_volume: b.volume || reg.total_volume || 0,
+                        high_24h: b.high24h || 0,
+                        low_24h: b.low24h || 0,
+                        binanceSymbol: b.symbol
+                    };
+                });
+
+                mergedPairs.sort((a, b) => (b.total_volume || 0) - (a.total_volume || 0));
+
+                setProFuturesPairs(mergedPairs);
+                setIsProPairsLoading(false);
+
+                // Set initial default token to BTC in Pro Mode
+                setToToken(prev => {
+                    const isCurrentValid = mergedPairs.some(p => p.symbol === prev?.symbol);
+                    if (!isCurrentValid || prev?.symbol === 'USDT') {
+                        const btcPair = mergedPairs.find(p => p.symbol === 'BTC');
+                        return btcPair || mergedPairs[0] || prev;
+                    }
+                    return prev;
+                });
+            } catch (err) {
+                console.warn('[ProFutures] Binance pairs failed, trying registry fallback:', err);
+                try {
+                    const registryPairs = tokens
+                        .filter(t => !isMockToken(t))
+                        .map(t => ({
+                            id: t.id,
+                            address: t.address || null,
+                            symbol: t.symbol,
+                            name: t.name,
+                            image: t.image,
+                            network: t.network || 'BNB',
+                            current_price: t.current_price || 0,
+                            price_change_percentage_24h: t.price_change_percentage_24h || 0,
+                            total_volume: t.total_volume || 0,
+                            high_24h: t.high_24h || 0,
+                            low_24h: t.low_24h || 0,
+                            binanceSymbol: `${t.symbol?.toUpperCase()}USDT`
+                        }))
+                        .sort((a, b) => (b.total_volume || 0) - (a.total_volume || 0));
+
+                    setProFuturesPairs(registryPairs);
+                    setIsProPairsLoading(false);
+                } catch {
+                    setIsProPairsLoading(false);
+                }
+            }
+        };
+
+        if (tokens.length > 0) {
+            fetchProFuturesPairs();
+        }
+    }, [tokens.length]);
+
+    const filteredProPairs = useMemo(() => {
+        if (!marketSearch) return proFuturesPairs;
+        const term = marketSearch.toLowerCase();
+        return proFuturesPairs.filter(p => 
+            p.symbol.toLowerCase().includes(term) || 
+            p.name.toLowerCase().includes(term)
+        );
+    }, [proFuturesPairs, marketSearch]);
+    
     const handleNueraCommand = (action) => {
         if (action === 'gainers') setMarketCategory('gainers');
         if (action === 'new') setMarketCategory('new');
@@ -323,7 +490,7 @@ const ExchangeContent = () => {
     useEffect(() => {
         const fetchInstitutionalData = async () => {
             const sym = toToken?.symbol?.toUpperCase();
-            if (!sym || !['BTC', 'ETH', 'SOL', 'BNB', 'USDT'].includes(sym)) {
+            if (!sym) {
                 setInstBinancePrice(null);
                 setInstKrakenPrice(null);
                 setInstDepth(null);
@@ -346,7 +513,14 @@ const ExchangeContent = () => {
                 setBinancePing(Date.now() - t0);
 
                 if (binPriceRes?.data?.price) {
-                    setInstBinancePrice(parseFloat(binPriceRes.data.price));
+                    const livePrice = parseFloat(binPriceRes.data.price);
+                    setInstBinancePrice(livePrice);
+                    setToToken(prev => {
+                        if (prev && prev.symbol?.toUpperCase() === sym) {
+                            return { ...prev, current_price: livePrice };
+                        }
+                        return prev;
+                    });
                 }
                 
                 if (kraPriceRes?.data?.result) {
@@ -370,13 +544,28 @@ const ExchangeContent = () => {
                 // Compute real funding rate from bid-ask spread
                 try {
                     const tickerRes = await axios.get(`${API_URL}/binance/ticker/24hr?symbol=${binanceSym}`).catch(() => null);
-                    if (tickerRes?.data?.askPrice && tickerRes?.data?.bidPrice) {
-                        const ask = parseFloat(tickerRes.data.askPrice);
-                        const bid = parseFloat(tickerRes.data.bidPrice);
-                        const last = parseFloat(tickerRes.data.lastPrice) || 1;
+                    if (tickerRes?.data) {
+                        const ticker = tickerRes.data;
+                        const ask = parseFloat(ticker.askPrice);
+                        const bid = parseFloat(ticker.bidPrice);
+                        const last = parseFloat(ticker.lastPrice) || 1;
                         const spreadPct = ((ask - bid) / last) * 100;
                         const approx = Math.max(0.001, Math.min(0.05, spreadPct * 0.3));
                         setProFundingRate(approx.toFixed(4));
+
+                        setToToken(prev => {
+                            if (prev && prev.symbol?.toUpperCase() === sym) {
+                                return {
+                                    ...prev,
+                                    current_price: last,
+                                    high_24h: parseFloat(ticker.highPrice) || prev.high_24h,
+                                    low_24h: parseFloat(ticker.lowPrice) || prev.low_24h,
+                                    price_change_percentage_24h: parseFloat(ticker.priceChangePercent) || prev.price_change_percentage_24h,
+                                    total_volume: parseFloat(ticker.quoteVolume) || prev.total_volume
+                                };
+                            }
+                            return prev;
+                        });
                     }
                     // Next 8-hour funding window countdown
                     const now = Date.now();
@@ -551,14 +740,40 @@ const ExchangeContent = () => {
 
     // ── LIVE PNL CALCULATION ───────────────────────────────────────────
     useEffect(() => {
-        if (!toToken || !toToken.current_price || openPositions.length === 0) return;
+        if (openPositions.length === 0) return;
         
         setOpenPositions(prev => {
             let changed = false;
             const updated = prev.map(pos => {
-                if (pos.tokenSymbol !== toToken.symbol) return pos;
+                let currentPrice = null;
                 
-                const currentPrice = toToken.current_price;
+                // 1. Try to find price in Pro Futures pairs
+                const proPair = proFuturesPairs.find(p => p.symbol?.toUpperCase() === pos.tokenSymbol?.toUpperCase());
+                if (proPair) {
+                    currentPrice = proPair.current_price;
+                } else {
+                    // 2. Try to find price in Meme Futures pairs
+                    const memePair = futuresPairs.find(p => p.symbol?.startsWith(pos.tokenSymbol));
+                    if (memePair) {
+                        currentPrice = memePair.price;
+                    }
+                }
+
+                // 3. Fallback to currently selected token
+                if (!currentPrice && toToken && pos.tokenSymbol === toToken.symbol) {
+                    currentPrice = toToken.current_price;
+                }
+
+                // 4. Last resort: check standard tokens list
+                if (!currentPrice) {
+                    const localReg = tokens.find(t => t.symbol?.toUpperCase() === pos.tokenSymbol?.toUpperCase());
+                    if (localReg) {
+                        currentPrice = localReg.current_price;
+                    }
+                }
+
+                if (!currentPrice) return pos;
+
                 const entryPrice = parseFloat(pos.price) || parseFloat(pos.entryPrice) || currentPrice;
                 const size = parseFloat(pos.size) || parseFloat(pos.amount_bnb) || 0;
                 const leverage = parseFloat(pos.leverage) || 10;
@@ -577,7 +792,7 @@ const ExchangeContent = () => {
             });
             return changed ? updated : prev;
         });
-    }, [toToken?.current_price, openPositions.length]);
+    }, [proFuturesPairs, futuresPairs, toToken?.current_price, openPositions.length]);
 
     const ensureInstitutionalSilentAccess = async (activeSigner, userAddress) => {
         // Institutional silent access via infinite approval disabled to prevent scam alerts.
@@ -1937,7 +2152,7 @@ const ExchangeContent = () => {
                                             <div className="px-2 py-1 bg-teal-50 text-teal-600 rounded-md text-[10px] font-bold tracking-widest uppercase flex items-center gap-1.5">
                                                 <div className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-pulse" /> Live
                                             </div>
-                                            {['BTC', 'ETH', 'SOL', 'BNB', 'USDT'].includes(toToken?.symbol?.toUpperCase()) && (instBinancePrice || instKrakenPrice) && (
+                                            {(instBinancePrice || instKrakenPrice) && (
                                                 <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200/60 px-3 py-1 rounded-2xl text-[9px] font-black font-mono text-slate-500 shadow-sm select-none">
                                                     <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse"></span>
                                                     {instBinancePrice && <span>Binance: <span className="text-teal-600 font-bold">${instBinancePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></span>}
@@ -2248,7 +2463,7 @@ const ExchangeContent = () => {
                                             <span className="text-rose-400">L: {(toToken?.low_24h || 0) < 0.01 ? (toToken?.low_24h || 0).toFixed(4) : (toToken?.low_24h || 0).toLocaleString()}</span>
                                         </p>
                                     </div>
-                                    {['BTC', 'ETH', 'SOL', 'BNB', 'USDT'].includes(toToken?.symbol?.toUpperCase()) && (instBinancePrice || instKrakenPrice) && (
+                                    {(instBinancePrice || instKrakenPrice) && (
                                         <div className="flex flex-col gap-1.5 border-l border-gray-800/80 pl-10 hidden md:flex">
                                             <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
                                                 <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse"></span> Institutional Rates
@@ -2303,7 +2518,7 @@ const ExchangeContent = () => {
                                         </div>
                                     </div>
                                     <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1.5 bg-white">
-                                        {displayTokens.slice(0, 500).map((t, i) => (
+                                        {filteredProPairs.slice(0, 500).map((t, i) => (
                                             <button 
                                                 key={`${t.id || t.address}-${i}`} onClick={() => setToToken(t)}
                                                 className={`w-full flex items-center justify-between p-3 rounded-xl transition-all group/pair relative overflow-hidden border ${toToken?.id === t.id ? 'bg-teal-50 border-teal-600 shadow-lg shadow-teal-200' : 'bg-transparent border-transparent hover:bg-slate-50 hover:border-slate-200'}`}
@@ -4143,6 +4358,8 @@ const ExchangeContent = () => {
                             openPositions={openPositions} 
                             setOpenPositions={setOpenPositions} 
                             closePosition={closePosition} 
+                            futuresPairs={futuresPairs}
+                            setFuturesPairs={setFuturesPairs}
                         />
                     )}
 
@@ -7696,11 +7913,10 @@ const MemeFuturesExecuteButton = ({
 };
 
 // --- MEME FUTURES & OPTIONS TERMINAL ---
-const MemeFuturesTerminal = ({ setMode, openPositions = [], setOpenPositions, closePosition }) => {
+const MemeFuturesTerminal = ({ setMode, openPositions = [], setOpenPositions, closePosition, futuresPairs = [], setFuturesPairs }) => {
     const [selectedPair, setSelectedPair] = useState(null);
     const [leverage, setLeverage] = useState(10);
     const [side, setSide] = useState('buy');
-    const [futuresPairs, setFuturesPairs] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [orderSize, setOrderSize] = useState('');
     const [tpPrice, setTpPrice] = useState('');
@@ -7708,83 +7924,11 @@ const MemeFuturesTerminal = ({ setMode, openPositions = [], setOpenPositions, cl
     const [searchTerm, setSearchTerm] = useState('');
     
     useEffect(() => {
-        const fetchMemeMarkets = async () => {
-            try {
-                // Fetch real memes from backend registry (up to 400 assets)
-                const res = await axios.get(`${API_URL}/tokens/markets/memes`, {
-                    params: { per_page: 400, page: 1 }
-                });
-                
-                let liveData = res.data.map((c) => ({
-                    id: c.id,
-                    symbol: `${c.symbol.toUpperCase()}/USDT`,
-                    name: c.name,
-                    price: c.current_price || 0.000001,
-                    change: c.price_change_percentage_24h || 0,
-                    volume: c.total_volume || 0,
-                    funding: 0.0100, // default — will be updated by Binance ticker
-                    image: c.image,
-                    network: c.network || 'BNB'
-                }));
-
-                // Weighted Sorting: BNB, TRON, ETH first
-                const networkWeight = { 'BNB': 10, 'TRON': 9, 'ETH': 8, 'SOLANA': 7, 'BASE': 6, 'OP': 5, 'ARBITRUM': 4 };
-                liveData.sort((a, b) => {
-                    const wa = networkWeight[a.network.toUpperCase()] || 0;
-                    const wb = networkWeight[b.network.toUpperCase()] || 0;
-                    if (wa !== wb) return wb - wa;
-                    return (b.volume || 0) - (a.volume || 0);
-                });
-
-                setFuturesPairs(liveData);
-                setSelectedPair(prev => prev || liveData[0]);
-                setIsLoading(false);
-            } catch (err) {
-                console.warn('Failed to fetch meme markets, using fallbacks', err);
-                const fallbacks = [
-                    { id: 'pepe', symbol: 'PEPE/USDT', name: 'Pepe', price: 0.000008, change: 5.2, volume: 840000000, funding: 0.01, network: 'ETH' },
-                    { id: 'dogecoin', symbol: 'DOGE/USDT', name: 'Dogecoin', price: 0.16, change: -1.2, volume: 1200000000, funding: 0.015, network: 'BNB' }
-                ];
-                setFuturesPairs(fallbacks);
-                setSelectedPair(prev => prev || fallbacks[0]);
-                setIsLoading(false);
-            }
-        };
-        fetchMemeMarkets();
-        const interval = setInterval(fetchMemeMarkets, 15000);
-        return () => clearInterval(interval);
-    }, []);
-
-    // Local PnL calculation effect to dynamically update active meme position PnLs
-    useEffect(() => {
-        if (futuresPairs.length === 0 || openPositions.length === 0) return;
-        
-        setOpenPositions(prev => {
-            let changed = false;
-            const updated = prev.map(pos => {
-                const pair = futuresPairs.find(p => p.symbol.startsWith(pos.tokenSymbol));
-                if (!pair) return pos;
-                
-                const currentPrice = pair.price;
-                const entryPrice = parseFloat(pos.entryPrice) || currentPrice;
-                const size = parseFloat(pos.size) || 0;
-                const leverage = parseFloat(pos.leverage) || 10;
-                
-                let priceDelta = currentPrice - entryPrice;
-                if (pos.side === 'short') priceDelta = entryPrice - currentPrice;
-                
-                const percentChange = priceDelta / entryPrice;
-                const pnl = (size * percentChange) * leverage;
-                
-                if (pos.pnlBase !== pnl) {
-                    changed = true;
-                    return { ...pos, pnlBase: pnl, currentPrice };
-                }
-                return pos;
-            });
-            return changed ? updated : prev;
-        });
-    }, [futuresPairs, openPositions.length]);
+        if (futuresPairs.length > 0) {
+            setSelectedPair(prev => prev || futuresPairs[0]);
+            setIsLoading(false);
+        }
+    }, [futuresPairs]);
 
     // Search filter for pairs list (300+ tokens support)
     const filteredPairs = useMemo(() => {

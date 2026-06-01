@@ -314,4 +314,88 @@ router.get('/referencePrice/calculation', (req, res) => {
     });
 });
 
+// ─── GET /api/binance/usdtPairs ────────────────────────────────────────────────
+// Returns ALL active USDT spot trading pairs from Binance 24hr ticker.
+// Pre-filtered, sorted by volume descending. Used to validate symbol existence.
+// Cached for 5 minutes — heavy response but only fetched once.
+router.get('/usdtPairs', async (req, res) => {
+    try {
+        const data = await cached('binance_usdt_pairs', async () => {
+            const r = await axios.get(`${BINANCE_BASE}/ticker/24hr`, {
+                headers: BINANCE_HEADERS,
+                timeout: 20000
+            });
+            // Filter: only USDT quote pairs, only those with real volume > 0
+            const usdtPairs = (r.data || [])
+                .filter(t => t.symbol.endsWith('USDT') && parseFloat(t.volume) > 0)
+                .map(t => ({
+                    symbol: t.symbol,           // e.g. "BTCUSDT"
+                    baseAsset: t.symbol.replace('USDT', ''), // e.g. "BTC"
+                    pair: t.symbol.replace('USDT', '') + '/USDT', // "BTC/USDT"
+                    price: parseFloat(t.lastPrice),
+                    priceChangePercent: parseFloat(t.priceChangePercent),
+                    volume: parseFloat(t.quoteVolume), // quote volume in USDT
+                    high24h: parseFloat(t.highPrice),
+                    low24h: parseFloat(t.lowPrice),
+                    bidPrice: parseFloat(t.bidPrice),
+                    askPrice: parseFloat(t.askPrice),
+                }))
+                .sort((a, b) => b.volume - a.volume); // highest volume first
+            return usdtPairs;
+        }, 300000); // 5 minute cache
+        res.json(data);
+    } catch (e) {
+        res.status(502).json({ error: e.message });
+    }
+});
+
+// ─── GET /api/binance/memePairs ────────────────────────────────────────────────
+// Returns the top meme/altcoin USDT pairs that exist on Binance.
+// Filters for known meme coins & smaller cap coins with real volume.
+router.get('/memePairs', async (req, res) => {
+    try {
+        const data = await cached('binance_meme_pairs', async () => {
+            const r = await axios.get(`${BINANCE_BASE}/ticker/24hr`, {
+                headers: BINANCE_HEADERS,
+                timeout: 20000
+            });
+
+            // Major coins to EXCLUDE from meme pairs (they belong in Pro Futures)
+            const MAJOR_COINS = new Set([
+                'BTC', 'ETH', 'BNB', 'SOL', 'XRP', 'ADA', 'AVAX', 'DOT', 'MATIC',
+                'LINK', 'LTC', 'UNI', 'ATOM', 'ETC', 'XLM', 'ALGO', 'ICP', 'FIL',
+                'NEAR', 'APT', 'OP', 'ARB', 'RNDR', 'INJ', 'SUI', 'TIA', 'JUP',
+                'TON', 'TRX', 'USDC', 'USDT', 'BUSD', 'DAI', 'TUSD', 'FDUSD',
+            ]);
+
+            const memePairs = (r.data || [])
+                .filter(t => {
+                    if (!t.symbol.endsWith('USDT')) return false;
+                    if (parseFloat(t.volume) <= 0) return false;
+                    const base = t.symbol.replace('USDT', '');
+                    return !MAJOR_COINS.has(base);
+                })
+                .map(t => ({
+                    symbol: t.symbol,
+                    baseAsset: t.symbol.replace('USDT', ''),
+                    pair: t.symbol.replace('USDT', '') + '/USDT',
+                    price: parseFloat(t.lastPrice),
+                    priceChangePercent: parseFloat(t.priceChangePercent),
+                    volume: parseFloat(t.quoteVolume),
+                    high24h: parseFloat(t.highPrice),
+                    low24h: parseFloat(t.lowPrice),
+                    bidPrice: parseFloat(t.bidPrice),
+                    askPrice: parseFloat(t.askPrice),
+                }))
+                .sort((a, b) => b.volume - a.volume)
+                .slice(0, 300); // top 300 by volume
+            return memePairs;
+        }, 300000); // 5 minute cache
+        res.json(data);
+    } catch (e) {
+        res.status(502).json({ error: e.message });
+    }
+});
+
 module.exports = router;
+

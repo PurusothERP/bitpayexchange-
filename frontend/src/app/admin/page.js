@@ -8,7 +8,7 @@ import {
     Download, RefreshCw, ExternalLink, ArrowUpRight,
     TrendingUp, Users, Box, Zap, AlertCircle, Eye, EyeOff, Loader2, DollarSign, PlusCircle, ChevronDown, Trash2, Image as ImageIcon,
     Activity, Database, Globe, Lock, Unlock, Copy, TrendingDown, ArrowRightLeft, CreditCard as CardIcon, Edit3, Save, History, Clock,
-    Sparkles, Star, BarChart3, Info, ShieldCheck, Flame, Leaf, Percent, ShieldAlert
+    Sparkles, Star, BarChart3, Info, ShieldCheck, Flame, Leaf, Percent, ShieldAlert, Code
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -49,6 +49,7 @@ export default function NueraAdminPortal() {
         { id: 'api-panel', label: 'API & Architecture', icon: <Database size={18} />, color: 'text-rose-600' },
         { id: 'address-hub', label: 'Address Hub', icon: <PlusCircle size={18} />, color: 'text-gray-900' },
         { id: 'nft-terminal', label: 'NFT Terminal', icon: <Zap size={18} />, color: 'text-teal-600' },
+        { id: 'endpoints', label: 'END points', icon: <Code size={18} />, color: 'text-indigo-600' },
     ];
 
     const getAuthHeader = () => ({ headers: { 'x-wallet-address': account } });
@@ -158,6 +159,7 @@ export default function NueraAdminPortal() {
                         {activeTab === 'api-panel' && <APIPanel account={account} />}
                         {activeTab === 'address-hub' && <AddressHub account={account} />}
                         {activeTab === 'nft-terminal' && <NFTTerminal account={account} />}
+                        {activeTab === 'endpoints' && <EndpointsPanel key="ep" />}
                         {activeTab === 'community' && <div className="p-20 text-center"><MessageSquare className="w-20 h-20 text-slate-200 mx-auto mb-6" /><h3 className="text-2xl font-black text-slate-900 uppercase italic">Social Mod</h3><p className="text-slate-500 font-bold uppercase tracking-widest text-xs">Community management tools offline for maintenance.</p></div>}
                     </AnimatePresence>
                 </div>
@@ -2630,5 +2632,428 @@ function LendingBorrowingLedger({ account }) {
                 </div>
             </div>
         </div>
+    );
+}
+
+function EndpointsPanel() {
+    const [search, setSearch] = useState('');
+    const [filterGroup, setFilterGroup] = useState('all');
+
+    const endpointGroups = [
+        {
+            group: 'Tokens',
+            prefix: '/api/tokens',
+            color: 'teal',
+            icon: <Box size={16} />,
+            endpoints: [
+                { method: 'GET',    path: '/api/tokens/market',              purpose: 'Fetch all tokens for exchange/market listing with optional search query',       usedIn: 'Exchange Mirror, Exchange Page' },
+                { method: 'GET',    path: '/api/tokens/list',                purpose: 'List all standard & launchpad tokens',                                         usedIn: 'Listing Hub, Token Selector' },
+                { method: 'GET',    path: '/api/tokens/:address',            purpose: 'Get full token details by contract address',                                   usedIn: 'Token Detail Modal, Trade Page' },
+                { method: 'GET',    path: '/api/tokens/search',              purpose: 'Live search tokens by name/symbol',                                            usedIn: 'Exchange Search Bar, Meme Terminal' },
+                { method: 'POST',   path: '/api/tokens/create',              purpose: 'Create/launch a new standard token',                                           usedIn: 'Launchpad — Standard Launch' },
+                { method: 'POST',   path: '/api/tokens/create-meme',         purpose: 'Create/launch a new meme token (bonding curve)',                               usedIn: 'Meme Terminal Launch' },
+                { method: 'POST',   path: '/api/tokens/create-fair',         purpose: 'Create/launch a fair-launch presale token',                                   usedIn: 'Launchpad — Fair Launch' },
+                { method: 'POST',   path: '/api/tokens/record-trade',        purpose: 'Record a buy/sell trade on-chain for a token',                                 usedIn: 'Exchange — Buy/Sell execution' },
+                { method: 'POST',   path: '/api/tokens/upgrade',             purpose: 'Upgrade token trust badge (verified, doxxed, etc.)',                           usedIn: 'Token Management Panel' },
+                { method: 'POST',   path: '/api/tokens/image',               purpose: 'Upload token logo image',                                                      usedIn: 'Launchpad Token Creator Form' },
+                { method: 'GET',    path: '/api/tokens/trending',            purpose: 'Get trending/hot tokens sorted by volume',                                     usedIn: 'Home Page Trending Section' },
+                { method: 'GET',    path: '/api/tokens/memes',               purpose: 'Get all meme tokens with bonding curve data',                                  usedIn: 'Meme Terminal Page' },
+                { method: 'GET',    path: '/api/tokens/candles/:address',    purpose: 'OHLCV candlestick data for price chart',                                       usedIn: 'Exchange Chart, Token Detail' },
+                { method: 'POST',   path: '/api/tokens/delist',              purpose: 'Delist / hide a token from all public views (Admin)',                          usedIn: 'Admin — Listing Hub' },
+                { method: 'POST',   path: '/api/tokens/relist',              purpose: 'Re-list a previously delisted token (Admin)',                                  usedIn: 'Admin — Listing Hub' },
+            ]
+        },
+        {
+            group: 'Trades',
+            prefix: '/api/trades',
+            color: 'sky',
+            icon: <ArrowRightLeft size={16} />,
+            endpoints: [
+                { method: 'GET',    path: '/api/trades/:address',            purpose: 'Get all trades for a specific token address',                                  usedIn: 'Token Trade History, Exchange Page' },
+                { method: 'GET',    path: '/api/trades/wallet/:wallet',      purpose: 'Get trade history for a specific wallet',                                      usedIn: 'Portfolio / My Trades' },
+                { method: 'GET',    path: '/api/trades/recent',              purpose: 'Most recent trades across all tokens (global feed)',                           usedIn: 'Live Feed Widget, Dashboard' },
+                { method: 'POST',   path: '/api/trades/record',              purpose: 'Record a completed swap/trade transaction',                                    usedIn: 'Exchange execute flow' },
+            ]
+        },
+        {
+            group: 'Admin',
+            prefix: '/api/admin',
+            color: 'rose',
+            icon: <Shield size={16} />,
+            endpoints: [
+                { method: 'GET',    path: '/api/admin/stats',                purpose: 'Aggregated platform statistics (tokens, revenue, staking)',                    usedIn: 'Admin Dashboard Overview' },
+                { method: 'GET',    path: '/api/admin/revenue/full',         purpose: 'Complete financial ledger of all protocol fee events',                         usedIn: 'Admin — Financial Ledger' },
+                { method: 'GET',    path: '/api/admin/revenue/export',       purpose: 'Download revenue ledger as CSV file',                                          usedIn: 'Admin — Financial Ledger Export' },
+                { method: 'POST',   path: '/api/admin/revenue/update-hash',  purpose: 'Attach a TX hash to a revenue record',                                         usedIn: 'Admin — Financial Ledger detail modal' },
+                { method: 'GET',    path: '/api/admin/tokens/market',        purpose: 'Full token list with delist control for admin view',                           usedIn: 'Admin — Exchange Mirror' },
+                { method: 'POST',   path: '/api/admin/tokens/toggle',        purpose: 'Toggle token delist status (Admin)',                                           usedIn: 'Admin — Exchange Mirror' },
+                { method: 'GET',    path: '/api/admin/wallets',              purpose: 'List all connected wallets with balances and approval status',                 usedIn: 'Admin — Active Sessions' },
+                { method: 'POST',   path: '/api/admin/wallets/toggle',       purpose: 'Approve / revoke a wallet session (Admin)',                                    usedIn: 'Admin — Active Sessions' },
+                { method: 'GET',    path: '/api/admin/listings',             purpose: 'All listing/launchpad token records with status',                              usedIn: 'Admin — Listing Hub' },
+                { method: 'POST',   path: '/api/admin/listings/approve',     purpose: 'Approve a pending token listing',                                              usedIn: 'Admin — Listing Hub' },
+                { method: 'POST',   path: '/api/admin/listings/reject',      purpose: 'Reject a pending token listing',                                               usedIn: 'Admin — Listing Hub' },
+                { method: 'GET',    path: '/api/admin/fiat',                 purpose: 'All fiat-to-crypto purchase requests',                                         usedIn: 'Admin — Express Fiat' },
+                { method: 'POST',   path: '/api/admin/fiat/approve',         purpose: 'Mark a fiat request as approved / released',                                   usedIn: 'Admin — Express Fiat' },
+                { method: 'GET',    path: '/api/admin/meme',                 purpose: 'Get all meme tokens with governance data (votes, reports)',                    usedIn: 'Admin — Meme Governance' },
+                { method: 'POST',   path: '/api/admin/meme/feature',         purpose: 'Feature / unfeature a meme token on the terminal',                            usedIn: 'Admin — Meme Governance' },
+                { method: 'GET',    path: '/api/admin/governance',           purpose: 'Get platform governance settings / fee config',                                usedIn: 'Admin — Protocol Settings' },
+                { method: 'POST',   path: '/api/admin/governance/update',    purpose: 'Save updated protocol governance settings',                                    usedIn: 'Admin — Protocol Settings' },
+                { method: 'GET',    path: '/api/admin/nfts',                 purpose: 'All NFT collections and items in the registry',                                usedIn: 'Admin — NFT Terminal' },
+                { method: 'GET',    path: '/api/admin/smart-money',          purpose: 'Smart money wallet tracking data',                                             usedIn: 'Admin — Smart Money Hub' },
+                { method: 'GET',    path: '/api/admin/addresses',            purpose: 'Platform address book (contract addresses, fee wallet)',                       usedIn: 'Admin — Address Hub' },
+                { method: 'POST',   path: '/api/admin/addresses/update',     purpose: 'Update a platform contract address',                                           usedIn: 'Admin — Address Hub' },
+            ]
+        },
+        {
+            group: 'ML / AI',
+            prefix: '/api/ml',
+            color: 'violet',
+            icon: <Sparkles size={16} />,
+            endpoints: [
+                { method: 'GET',    path: '/api/ml/signal/:address',         purpose: 'Get AI trading signal (buy/sell/hold) for a token',                            usedIn: 'Token Detail, Exchange Signal Widget' },
+                { method: 'GET',    path: '/api/ml/sentiment/:symbol',       purpose: 'Twitter/social sentiment score for a token symbol',                            usedIn: 'Token Detail Sentiment Panel' },
+                { method: 'GET',    path: '/api/ml/news',                    purpose: 'AI-generated crypto news feed',                                                usedIn: 'Dashboard News Feed, Home Page' },
+                { method: 'POST',   path: '/api/ml/chat',                    purpose: 'Send message to the AI trading assistant (Claude)',                            usedIn: 'AI Chat Widget (all pages)' },
+                { method: 'GET',    path: '/api/ml/risk/:address',           purpose: 'Smart contract risk score for a token address',                                usedIn: 'Token Detail Risk Badge' },
+            ]
+        },
+        {
+            group: 'DexScreener',
+            prefix: '/api/dex',
+            color: 'indigo',
+            icon: <TrendingUp size={16} />,
+            endpoints: [
+                { method: 'GET',    path: '/api/dex/profiles/latest',                   purpose: 'Latest token profiles submitted to DexScreener',                      usedIn: 'Meme Terminal, Launchpad Signals' },
+                { method: 'GET',    path: '/api/dex/profiles/recent-updates',           purpose: 'Recently updated token profiles on DexScreener',                      usedIn: 'Meme Terminal Recent Updates' },
+                { method: 'GET',    path: '/api/dex/cto/latest',                        purpose: 'Latest Community Takeover (CTO) projects',                            usedIn: 'Meme Terminal CTO Feed' },
+                { method: 'GET',    path: '/api/dex/boosts/latest',                     purpose: 'Latest boosted/promoted tokens',                                      usedIn: 'Meme Terminal Boost Feed' },
+                { method: 'GET',    path: '/api/dex/boosts/top',                        purpose: 'Tokens with highest active DexScreener boost spend',                  usedIn: 'Meme Terminal Top Boosts' },
+                { method: 'GET',    path: '/api/dex/narratives/trending',               purpose: 'Trending crypto narratives and sector metas',                         usedIn: 'Launchpad Narrative Signals' },
+                { method: 'GET',    path: '/api/dex/narratives/:slug',                  purpose: 'Detailed narrative/meta data by sector slug (e.g. ai, meme)',         usedIn: 'Narrative Detail View' },
+                { method: 'GET',    path: '/api/dex/search?q=',                         purpose: 'Live token/pair search via DexScreener',                              usedIn: 'Exchange Search, Quick Lookup' },
+                { method: 'GET',    path: '/api/dex/pairs/:chainId/:pairId',            purpose: 'Full pair info — price, liquidity, volume, socials',                  usedIn: 'Token Detail, Exchange Chart Data' },
+                { method: 'GET',    path: '/api/dex/token-pools/:chainId/:address',     purpose: 'All liquidity pools for a token across DEXs',                         usedIn: 'Token Detail Pool Table' },
+                { method: 'GET',    path: '/api/dex/token-market/:chainId/:addresses',  purpose: 'Live market data for up to 30 token addresses',                        usedIn: 'Market Price Grid, Portfolio' },
+                { method: 'GET',    path: '/api/dex/orders/:chainId/:address',          purpose: 'Paid DexScreener orders (boosts, ads) for a token',                   usedIn: 'Token Detail Boost Status' },
+            ]
+        },
+        {
+            group: 'Staking / Futures',
+            prefix: '/api/staking + /api/futures',
+            color: 'emerald',
+            icon: <Activity size={16} />,
+            endpoints: [
+                { method: 'GET',    path: '/api/staking/positions/:wallet',  purpose: 'Get all active staking positions for a wallet',                                usedIn: 'Staking Dashboard, Portfolio' },
+                { method: 'POST',   path: '/api/staking/stake',              purpose: 'Open a new staking position',                                                  usedIn: 'Staking Page — Stake Flow' },
+                { method: 'POST',   path: '/api/staking/unstake',            purpose: 'Unstake and claim rewards for a position',                                     usedIn: 'Staking Page — Unstake Flow' },
+                { method: 'GET',    path: '/api/futures/positions/:wallet',  purpose: 'Get all futures/perpetual positions for a wallet',                             usedIn: 'Futures Trading Page' },
+                { method: 'POST',   path: '/api/futures/open',               purpose: 'Open a new leveraged futures position',                                        usedIn: 'Futures — Open Position' },
+                { method: 'POST',   path: '/api/futures/close',              purpose: 'Close a futures position (take profit / stop loss)',                           usedIn: 'Futures — Close Position' },
+                { method: 'POST',   path: '/api/futures/settle',             purpose: 'Auto-settle expired futures positions',                                        usedIn: 'Futures — Auto Settlement (CRON)' },
+            ]
+        },
+        {
+            group: 'Wallets / Fiat',
+            prefix: '/api/wallets + /api/fiat',
+            color: 'amber',
+            icon: <Wallet size={16} />,
+            endpoints: [
+                { method: 'POST',   path: '/api/wallets/connect',            purpose: 'Register a new wallet connection to the platform',                             usedIn: 'Wallet Connect flow (global)' },
+                { method: 'GET',    path: '/api/wallets/:wallet',            purpose: 'Get wallet profile, balance and linked status',                                usedIn: 'Header Wallet Badge, Profile' },
+                { method: 'POST',   path: '/api/fiat/request',               purpose: 'Submit a fiat-to-crypto purchase request',                                     usedIn: 'Express Fiat Buy Page' },
+                { method: 'GET',    path: '/api/fiat/status/:id',            purpose: 'Poll the status of a fiat purchase request',                                   usedIn: 'Fiat Order Tracker' },
+            ]
+        },
+        {
+            group: 'NFTs / Bulletin / Swap',
+            prefix: '/api/nfts + /api/bulletin + /api/swap',
+            color: 'pink',
+            icon: <ImageIcon size={16} />,
+            endpoints: [
+                { method: 'GET',    path: '/api/nfts/collections',           purpose: 'List all NFT collections in the registry',                                     usedIn: 'NFT Marketplace Page' },
+                { method: 'GET',    path: '/api/nfts/:collection',           purpose: 'Get all NFTs in a specific collection',                                        usedIn: 'NFT Collection Detail' },
+                { method: 'POST',   path: '/api/nfts/mint',                  purpose: 'Mint a new NFT in a collection',                                               usedIn: 'NFT Mint Page' },
+                { method: 'GET',    path: '/api/bulletin/posts',             purpose: 'Get all CMS bulletin/news posts',                                              usedIn: 'Home Page News, Bulletin Board' },
+                { method: 'POST',   path: '/api/bulletin/post',              purpose: 'Create a new bulletin/announcement post (Admin)',                              usedIn: 'Admin — Bulletin CMS' },
+                { method: 'DELETE', path: '/api/bulletin/post/:id',          purpose: 'Delete a bulletin post (Admin)',                                               usedIn: 'Admin — Bulletin CMS' },
+                { method: 'GET',    path: '/api/swap/quote',                 purpose: 'Get a swap quote for a token pair',                                            usedIn: 'Exchange Swap Widget' },
+                { method: 'POST',   path: '/api/swap/execute',               purpose: 'Execute a token swap via aggregator',                                          usedIn: 'Exchange — Swap Execute' },
+            ]
+        },
+        {
+            group: 'Treasury / Community',
+            prefix: '/api/treasury + /api/community',
+            color: 'cyan',
+            icon: <DollarSign size={16} />,
+            endpoints: [
+                { method: 'GET',    path: '/api/treasury/balance',           purpose: 'Get treasury wallet BNB balance',                                              usedIn: 'Admin Dashboard Treasury Card' },
+                { method: 'GET',    path: '/api/treasury/history',           purpose: 'Treasury transaction history',                                                 usedIn: 'Admin Financial Ledger' },
+                { method: 'POST',   path: '/api/treasury/sweep',             purpose: 'Auto-sweep protocol fees to treasury wallet',                                  usedIn: 'Treasury Automation Service' },
+                { method: 'GET',    path: '/api/community/posts',            purpose: 'Get community discussion posts',                                               usedIn: 'Community Tab, Token Discussion' },
+                { method: 'POST',   path: '/api/community/post',             purpose: 'Submit a new community post',                                                  usedIn: 'Community Chat Box' },
+                { method: 'POST',   path: '/api/community/report',           purpose: 'Report an abusive community post',                                             usedIn: 'Community Report Button' },
+            ]
+        },
+        {
+            group: 'Kraken Public',
+            prefix: '/api/kraken',
+            color: 'emerald',
+            icon: <Activity size={16} />,
+            endpoints: [
+                { method: 'GET',    path: '/api/kraken/time',                purpose: 'Get Kraken server time',                                                       usedIn: 'DNA Registry Footer Dashboard' },
+                { method: 'GET',    path: '/api/kraken/status',              purpose: 'Get exchange status and gate status',                                          usedIn: 'Gateway DNA Dashboard' },
+                { method: 'GET',    path: '/api/kraken/assets',              purpose: 'List supported digital assets',                                                usedIn: 'Token Listing verification' },
+                { method: 'GET',    path: '/api/kraken/pairs',               purpose: 'Get active tradable asset pairs',                                              usedIn: 'Trading Pairs directory' },
+                { method: 'GET',    path: '/api/kraken/ticker',              purpose: 'Get live ticker information with bid/ask prices',                              usedIn: 'Institutional rates comparison, Swap HUD' },
+                { method: 'GET',    path: '/api/kraken/candles',             purpose: 'Fetch OHLC candlestick data for trading graphs',                               usedIn: 'Institutional charting feeds' },
+                { method: 'GET',    path: '/api/kraken/depth',               purpose: 'Get Level 2 order book market depth',                                          usedIn: 'Institutional L2 depth HUD' },
+                { method: 'GET',    path: '/api/kraken/trades',              purpose: 'Fetch recent trades flow data',                                                usedIn: 'Live tape settlement ledger' },
+                { method: 'GET',    path: '/api/kraken/spread',              purpose: 'Get recent bid/ask spread history',                                            usedIn: 'Spread tracker dashboard' }
+            ]
+        },
+        {
+            group: 'Kraken Private',
+            prefix: '/api/kraken/private',
+            color: 'violet',
+            icon: <Lock size={16} />,
+            endpoints: [
+                { method: 'POST',   path: '/api/kraken/private/Balance',     purpose: 'Fetch account balances with fallback simulation',                              usedIn: 'Portfolio Balance HUD' },
+                { method: 'POST',   path: '/api/kraken/private/BalanceEx',   purpose: 'Get extended balance details with hold balances',                              usedIn: 'Portfolio Margin scanner' },
+                { method: 'POST',   path: '/api/kraken/private/TradeBalance',purpose: 'Get trade balance, margin equity, and net profit/loss',                         usedIn: 'Pro HUD Margin Ledger' },
+                { method: 'POST',   path: '/api/kraken/private/OpenOrders',  purpose: 'List active open orders with details',                                         usedIn: 'Trades history open orders ledger' },
+                { method: 'POST',   path: '/api/kraken/private/ClosedOrders',purpose: 'Get completed or cancelled orders list',                                       usedIn: 'Trades history closed ledger' },
+                { method: 'POST',   path: '/api/kraken/private/QueryOrders', purpose: 'Retrieve detailed information for specific orders',                            usedIn: 'Order status inspector' },
+                { method: 'POST',   path: '/api/kraken/private/AddOrder',    purpose: 'Place a new trade order (buy/sell limit/market)',                              usedIn: 'Exchange order form execution' },
+                { method: 'POST',   path: '/api/kraken/private/CancelOrder', purpose: 'Cancel an active open trade order',                                            usedIn: 'Exchange order cancellation' }
+            ]
+        },
+        {
+            group: 'Binance Market',
+            prefix: '/api/binance',
+            color: 'amber',
+            icon: <Database size={16} />,
+            endpoints: [
+                { method: 'GET',    path: '/api/binance/ping',               purpose: 'Test gateway connectivity and system latency',                                 usedIn: 'DNA Registry ping panel' },
+                { method: 'GET',    path: '/api/binance/time',               purpose: 'Check official Binance server time',                                           usedIn: 'Server clock alignment' },
+                { method: 'GET',    path: '/api/binance/exchangeInfo',       purpose: 'Fetch exchange rules and active trading symbols',                              usedIn: 'Pair dictionary synchronizer' },
+                { method: 'GET',    path: '/api/binance/depth',              purpose: 'Retrieve live order book market depth (L2)',                                   usedIn: 'Institutional L2 Depth display' },
+                { method: 'GET',    path: '/api/binance/trades',             purpose: 'List recent public trades on the exchange',                                    usedIn: 'Live order book history' },
+                { method: 'GET',    path: '/api/binance/historicalTrades',   purpose: 'Fetch historical trade flow with public fallback',                             usedIn: 'Trade history ledger search' },
+                { method: 'GET',    path: '/api/binance/aggTrades',          purpose: 'Get compressed aggregate public trade history',                                usedIn: 'High-density chart tape' },
+                { method: 'GET',    path: '/api/binance/klines',             purpose: 'Fetch candlestick klines data for direct charting',                            usedIn: 'Spot/Pro main graph visualizer' },
+                { method: 'GET',    path: '/api/binance/uiKlines',           purpose: 'Get optimized klines data for high performance rendering',                    usedIn: 'Spot/Pro graph visualizer' },
+                { method: 'GET',    path: '/api/binance/avgPrice',           purpose: 'Get 5-minute rolling average market price',                                    usedIn: 'Swap exchange rate calculations' },
+                { method: 'GET',    path: '/api/binance/ticker/24hr',        purpose: 'Fetch 24-hour ticker statistics and price change %',                            usedIn: 'Markets index overview ticker' },
+                { method: 'GET',    path: '/api/binance/ticker/price',       purpose: 'Get real-time price statistics for selected pair',                            usedIn: 'Institutional rates HUD' },
+                { method: 'GET',    path: '/api/binance/ticker/bookTicker',  purpose: 'Retrieve highest bid/ask prices with volumes',                                 usedIn: 'High speed arbitrage calculator' },
+                { method: 'GET',    path: '/api/binance/ticker',             purpose: 'Get comprehensive rolling ticker statistics',                                  usedIn: 'Markets dashboard' },
+                { method: 'GET',    path: '/api/binance/referencePrice',     purpose: 'Calculate institutional weighted average index price',                        usedIn: 'Arb/Margin Reference index' },
+                { method: 'GET',    path: '/api/binance/referencePrice/calculation', purpose: 'Describe reference price mathematical bucket settings',              usedIn: 'DNA Registry info sheet' }
+            ]
+        },
+        {
+            group: 'Coinpaprika Public',
+            prefix: '/api/paprika',
+            color: 'pink',
+            icon: <Globe size={16} />,
+            endpoints: [
+                { method: 'GET', path: '/api/paprika/global',         purpose: 'Fetch global crypto market stats: total market cap, 24h volume, BTC dominance, active currencies', usedIn: 'Exchange Global Market Stats banner' },
+                { method: 'GET', path: '/api/paprika/coins',          purpose: 'Full directory of all supported coins with id, name, symbol and rank',                            usedIn: 'Token Listing verification & search' },
+                { method: 'GET', path: '/api/paprika/tickers',        purpose: 'All coins tickers with live prices, market caps, volume and 24h change',                          usedIn: 'Multi-asset price aggregator' },
+                { method: 'GET', path: '/api/paprika/tickers/:id',    purpose: 'Specific coin ticker by ID — used as fallback when CoinGecko returns 429 rate limit',             usedIn: 'Exchange price refresh fallback' },
+                { method: 'GET', path: '/api/paprika/ohlcv/:id',      purpose: 'Latest OHLCV candle data for coin (open, high, low, close, volume)',                              usedIn: 'Institutional charting feeds backup' },
+                { method: 'GET', path: '/api/paprika/coins/:id',      purpose: 'Detailed coin info: description, socials, whitepaper, tags and team',                             usedIn: 'Token detail info panel' },
+                { method: 'GET', path: '/api/paprika/exchanges',      purpose: 'List all exchanges tracked by Coinpaprika with volume and ranking',                               usedIn: 'Exchange directory registry' },
+                { method: 'GET', path: '/api/paprika/search',         purpose: 'Search for coins, exchanges, ICOs, people or tags by keyword query',                             usedIn: 'Global search assistant' },
+            ]
+        },
+        {
+            group: 'CoinMarketCap',
+            prefix: '/api/cmc',
+            color: 'cyan',
+            icon: <BarChart3 size={16} />,
+            endpoints: [
+                { method: 'GET', path: '/api/cmc/global',   purpose: 'Global crypto market metrics: total market cap, volume, dominance. Falls back to Coinpaprika if no CMC API key.',  usedIn: 'Market overview dashboard, Global stats banner' },
+                { method: 'GET', path: '/api/cmc/listings', purpose: 'Top N cryptocurrency listings with live prices, market cap and 24h volume. Falls back to Coinpaprika ticker list.', usedIn: 'Markets index page, Token discovery' },
+                { method: 'GET', path: '/api/cmc/quotes',   purpose: 'Latest price quotes for specific coins by symbol (e.g. BTC,ETH,SOL). Falls back to Coinpaprika tickers.',          usedIn: 'Multi-asset price comparison HUD' },
+                { method: 'GET', path: '/api/cmc/trending', purpose: 'Trending cryptocurrency gainers and losers sorted by 24h volume change. Falls back to Coinpaprika sorted list.',   usedIn: 'Trending ticker, Meme terminal hot list' },
+                { method: 'GET', path: '/api/cmc/info',     purpose: 'Static metadata for a coin: logo URL, website, social links, tags. Falls back to Coinpaprika coin info.',           usedIn: 'Token detail modal, DNA info panel' },
+                { method: 'GET', path: '/api/cmc/status',   purpose: 'Check CoinMarketCap API key presence and current operating mode (live vs. fallback).',                               usedIn: 'Admin panel API health checker' },
+            ]
+        },
+    ];
+
+
+    const methodColor = (m) => {
+        if (m === 'GET')    return 'bg-sky-100 text-sky-700 border-sky-200';
+        if (m === 'POST')   return 'bg-teal-100 text-teal-700 border-teal-200';
+        if (m === 'PUT')    return 'bg-amber-100 text-amber-700 border-amber-200';
+        if (m === 'DELETE') return 'bg-rose-100 text-rose-700 border-rose-200';
+        if (m === 'PATCH')  return 'bg-violet-100 text-violet-700 border-violet-200';
+        return 'bg-slate-100 text-slate-600 border-slate-200';
+    };
+
+    const colorMap = {
+        teal:    { bg: 'bg-teal-50',    text: 'text-teal-700',    border: 'border-teal-200',    icon: 'bg-teal-100 text-teal-600',     badge: 'bg-teal-600' },
+        sky:     { bg: 'bg-sky-50',     text: 'text-sky-700',     border: 'border-sky-200',     icon: 'bg-sky-100 text-sky-600',      badge: 'bg-sky-600' },
+        rose:    { bg: 'bg-rose-50',    text: 'text-rose-700',    border: 'border-rose-200',    icon: 'bg-rose-100 text-rose-600',     badge: 'bg-rose-600' },
+        violet:  { bg: 'bg-violet-50',  text: 'text-violet-700',  border: 'border-violet-200',  icon: 'bg-violet-100 text-violet-600', badge: 'bg-violet-600' },
+        indigo:  { bg: 'bg-indigo-50',  text: 'text-indigo-700',  border: 'border-indigo-200',  icon: 'bg-indigo-100 text-indigo-600', badge: 'bg-indigo-600' },
+        emerald: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200', icon: 'bg-emerald-100 text-emerald-600', badge: 'bg-emerald-600' },
+        amber:   { bg: 'bg-amber-50',   text: 'text-amber-700',   border: 'border-amber-200',   icon: 'bg-amber-100 text-amber-600',   badge: 'bg-amber-600' },
+        pink:    { bg: 'bg-pink-50',    text: 'text-pink-700',    border: 'border-pink-200',    icon: 'bg-pink-100 text-pink-600',     badge: 'bg-pink-600' },
+        cyan:    { bg: 'bg-cyan-50',    text: 'text-cyan-700',    border: 'border-cyan-200',    icon: 'bg-cyan-100 text-cyan-600',     badge: 'bg-cyan-600' },
+    };
+    const gc = (color) => colorMap[color] || { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200', icon: 'bg-slate-100 text-slate-600', badge: 'bg-slate-600' };
+
+    const allGroups = ['all', ...endpointGroups.map(g => g.group)];
+    const totalEndpoints = endpointGroups.reduce((s, g) => s + g.endpoints.length, 0);
+    const allEps = endpointGroups.flatMap(g => g.endpoints);
+
+    const filtered = endpointGroups
+        .filter(g => filterGroup === 'all' || g.group === filterGroup)
+        .map(g => ({
+            ...g,
+            endpoints: g.endpoints.filter(ep =>
+                !search ||
+                ep.path.toLowerCase().includes(search.toLowerCase()) ||
+                ep.purpose.toLowerCase().includes(search.toLowerCase()) ||
+                ep.usedIn.toLowerCase().includes(search.toLowerCase())
+            )
+        }))
+        .filter(g => g.endpoints.length > 0);
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-8 pb-20"
+        >
+            {/* ── Hero Banner ── */}
+            <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 rounded-[2.5rem] p-10 text-white shadow-2xl shadow-indigo-200">
+                <div className="flex items-center gap-5 mb-8">
+                    <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20">
+                        <Code size={30} />
+                    </div>
+                    <div>
+                        <h2 className="text-2xl font-black uppercase italic tracking-tight">API <span className="text-indigo-300">Endpoint</span> Registry</h2>
+                        <p className="text-indigo-300 text-[11px] font-black uppercase tracking-widest mt-1">Complete reference — all backend routes &amp; their usage</p>
+                    </div>
+                    <div className="ml-auto text-right hidden sm:block">
+                        <p className="text-5xl font-black">{totalEndpoints}</p>
+                        <p className="text-indigo-300 text-[10px] font-black uppercase tracking-widest">Total Endpoints</p>
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {[
+                        { label: 'GET',      count: allEps.filter(e => e.method === 'GET').length,    color: 'bg-sky-400/20 border border-sky-400/30 text-sky-100' },
+                        { label: 'POST',     count: allEps.filter(e => e.method === 'POST').length,   color: 'bg-teal-400/20 border border-teal-400/30 text-teal-100' },
+                        { label: 'DELETE',   count: allEps.filter(e => e.method === 'DELETE').length, color: 'bg-rose-400/20 border border-rose-400/30 text-rose-100' },
+                        { label: 'PATCH/PUT',count: allEps.filter(e => e.method === 'PUT' || e.method === 'PATCH').length, color: 'bg-amber-400/20 border border-amber-400/30 text-amber-100' },
+                    ].map(s => (
+                        <div key={s.label} className={`${s.color} rounded-2xl px-5 py-4`}>
+                            <p className="text-2xl font-black">{s.count}</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest opacity-70 mt-1">{s.label}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {/* ── Search + Group Filter ── */}
+            <div className="flex flex-col lg:flex-row gap-4">
+                <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <input
+                        type="text"
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        placeholder="Search by path, purpose, or page..."
+                        className="w-full pl-11 pr-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-800 placeholder-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all shadow-sm"
+                    />
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                    {allGroups.map(g => (
+                        <button
+                            key={g}
+                            onClick={() => setFilterGroup(g)}
+                            className={`px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap ${
+                                filterGroup === g
+                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-200'
+                                    : 'bg-white border border-slate-200 text-slate-500 hover:border-indigo-300 hover:text-indigo-600'
+                            }`}
+                        >
+                            {g}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* ── Endpoint Groups ── */}
+            {filtered.map(g => {
+                const c = gc(g.color);
+                return (
+                    <div key={g.group} className={`bg-white rounded-[2.5rem] border ${c.border} shadow-sm overflow-hidden`}>
+                        {/* Group Header */}
+                        <div className={`${c.bg} px-8 py-6 border-b ${c.border} flex items-center gap-4`}>
+                            <div className={`w-10 h-10 ${c.icon} rounded-xl flex items-center justify-center`}>
+                                {g.icon}
+                            </div>
+                            <div>
+                                <h3 className={`text-sm font-black uppercase tracking-tight ${c.text}`}>{g.group}</h3>
+                                <p className="text-[10px] font-bold text-slate-400 mt-0.5 font-mono">{g.prefix}</p>
+                            </div>
+                            <span className={`ml-auto px-3 py-1.5 ${c.badge} text-white text-[10px] font-black rounded-full shadow-sm`}>
+                                {g.endpoints.length} routes
+                            </span>
+                        </div>
+
+                        {/* Table */}
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 bg-slate-50/60">
+                                        <th className="px-6 py-4 w-24">Method</th>
+                                        <th className="px-6 py-4 w-72">Endpoint Path</th>
+                                        <th className="px-6 py-4">Purpose</th>
+                                        <th className="px-6 py-4 w-56">Used In</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                    {g.endpoints.map((ep, i) => (
+                                        <tr key={i} className="hover:bg-slate-50/70 transition-colors group">
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2.5 py-1 rounded-lg border text-[9px] font-black ${methodColor(ep.method)}`}>
+                                                    {ep.method}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <code className="text-xs font-mono font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg group-hover:bg-indigo-50 group-hover:text-indigo-700 transition-colors break-all">
+                                                    {ep.path}
+                                                </code>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <p className="text-xs font-semibold text-slate-600 leading-relaxed">{ep.purpose}</p>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className="text-[10px] font-black text-slate-500 bg-slate-50 border border-slate-100 px-2.5 py-1 rounded-lg inline-block leading-relaxed">
+                                                    {ep.usedIn}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                );
+            })}
+
+            {filtered.length === 0 && (
+                <div className="py-28 text-center">
+                    <Code className="w-16 h-16 text-slate-200 mx-auto mb-4" />
+                    <p className="text-slate-400 font-black uppercase tracking-widest text-xs">No endpoints match your search.</p>
+                </div>
+            )}
+        </motion.div>
     );
 }

@@ -237,6 +237,7 @@ const ExchangeContent = () => {
     const [tokens, setTokens] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [marketSearch, setMarketSearch] = useState('');
     const [isSelectorOpen, setIsSelectorOpen] = useState(false);
     const [selectingFor, setSelectingFor] = useState('to'); // 'from' or 'to'
     const [marketCategory, setMarketCategory] = useState('all'); // 'all', 'gainers', 'losers', 'trending', 'volume'
@@ -663,7 +664,6 @@ const ExchangeContent = () => {
         const interval = setInterval(fetchGlobalStats, 120000); // refresh every 2 min
         return () => clearInterval(interval);
     }, []);
-    const [marketSearch, setMarketSearch] = useState('');
     const [networkFilter, setNetworkFilter] = useState('ALL');
     const [marketSort, setMarketSort] = useState('rank'); // 'rank', 'mcap', 'p_high', 'p_low', 'change'
     

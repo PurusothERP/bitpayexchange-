@@ -18,6 +18,7 @@ const swapRoutes     = require('./routes/swap');
 const stockRoutes    = require('./routes/stocks');
 const nftRoutes      = require('./routes/nfts');
 const dexScreenerRoutes = require('./routes/dexscreener');
+const memeAggRoutes     = require('./routes/memeAggregator');
 const krakenRoutes      = require('./routes/kraken');
 const binanceRoutes     = require('./routes/binance');
 const coinpaprikaRoutes = require('./routes/coinpaprika');
@@ -111,6 +112,7 @@ app.use('/api/kraken',    krakenRoutes);
 app.use('/api/binance',   binanceRoutes);
 app.use('/api/paprika',   coinpaprikaRoutes);
 app.use('/api/cmc',       coinmarketcapRoutes);
+app.use('/api/meme',      memeAggRoutes);
 // Static serving for user-uploaded proofs
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Static serving for token logos (local fallback — always works, no IPFS dependency)

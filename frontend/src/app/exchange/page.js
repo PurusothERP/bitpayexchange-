@@ -6892,92 +6892,100 @@ const TradingViewChart = ({ symbol, theme = 'light' }) => {
 // --- MEME TERMINAL COMPONENT ---
 const MemeTerminal = ({ setMode, setToToken }) => {
     const [network, setNetwork] = useState('all');
-    const [filter, setFilter] = useState('trending');
+    const [filter, setFilter] = useState('volume');
+    const [source, setSource] = useState('all');
     const [search, setSearch] = useState('');
     const [selectedMeme, setSelectedMeme] = useState(null);
     const [visibleCount, setVisibleCount] = useState(50);
     const [realMemes, setRealMemes] = useState([]);
+    const [aggStats, setAggStats] = useState({ total: 0, sources: {} });
     const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchMemes = async () => {
-            setIsLoading(true);
-            try {
-                // Fetch high-quality tokens from Institutional Meme Registry (6000+ Real Assets)
-                const memeRes = await axios.get(`${API_URL}/tokens/markets/memes`, { params: { per_page: 6000 } }).catch(() => ({ data: [] }));
+    const SOURCES = [
+        { id: 'all',           label: 'All Sources',   icon: '🌐', color: 'bg-orange-500' },
+        { id: 'coingecko',     label: 'CoinGecko',     icon: '🦎', color: 'bg-green-500' },
+        { id: 'dexscreener',   label: 'DexScreener',   icon: '📊', color: 'bg-cyan-500' },
+        { id: 'binance',       label: 'Binance',       icon: '🟡', color: 'bg-yellow-500' },
+        { id: 'four.meme',     label: 'four.meme',     icon: '4', color: 'bg-purple-500' },
+        { id: 'pump.fun',      label: 'pump.fun',      icon: '🚀', color: 'bg-pink-500' },
+        { id: 'geckoterminal', label: 'GeckoTerminal', icon: '📈', color: 'bg-emerald-500' },
+        { id: 'flap.sh',       label: 'FLAP',          icon: '🐸', color: 'bg-lime-500' },
+    ];
 
-                const memeRegistry = memeRes.data || [];
-                const b20LocalTokens = []; // removed duplicate fetch
-                
-                // Fetch trending tokens for extra alpha
-                const trendRes = await axios.get(`${API_URL}/tokens/markets/trending`).catch(() => ({ data: { coins: [] } }));
-                const trendTokens = (trendRes.data.coins || []).map(c => ({
-                    address: c.item.contract_address || c.item.id,
-                    symbol: (c.item.symbol || '').toUpperCase(),
-                    name: c.item.name,
-                    image: c.item.large || c.item.thumb,
-                    current_price: c.item.current_price || 0,
-                    market_cap: c.item.market_cap_rank,
-                    price_change_percentage_24h: c.item.price_change_percentage_24h || 0,
-                    network: 'BNB'
-                }));
+    const fetchMemes = async (sel_source, sel_filter, sel_network) => {
+        setIsLoading(true);
+        try {
+            const params = { sort: sel_filter || 'volume', limit: 2000 };
+            if (sel_source && sel_source !== 'all') params.source = sel_source;
+            if (sel_network && sel_network !== 'all') params.network = sel_network;
 
-                const merged = [...b20LocalTokens, ...memeRegistry]
-                    .filter(t => t.symbol !== 'B20')
-                    .map((t, i) => {
-                        const seed = t.address || t.contract_address || `token-${i}`;
-                        const salt = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-                        
-                        return {
-                            id: t.id || `token-${i}`,
-                            name: t.name,
-                            symbol: t.symbol,
-                            network: t.network || 'BNB',
-                            price: t.current_price || t.price || (0.000001 * (1 + (salt % 100) / 100)),
-                            launchPrice: (t.current_price || 0.000001) * (0.8 + (salt % 40) / 100),
-                            liquidity: t.total_volume ? t.total_volume / 2 : (t.market_cap ? t.market_cap / 50 : (1000 + (salt % 9000))),
-                            change: t.price_change_percentage_24h || ((salt % 40) - 20),
-                            mcap: t.market_cap || (50000 + (salt % 950000)),
-                            volume24h: t.total_volume || ((t.market_cap || 1000000) * 0.1),
-                            image: t.logoURI || t.image || `https://api.dicebear.com/7.x/identicon/svg?seed=${t.symbol}`,
-                            contract: t.address || t.contract_address || '0x0000000000000000000000000000000000000000',
-                            creator: '0x' + Array(40).fill(0).map((_, idx) => ((salt + idx) % 16).toString(16)).join(''),
-                            launchDate: new Date(Date.now() - (salt % 30) * 86400000).toLocaleDateString(),
-                            high24: (t.current_price || 0.000001) * 1.15,
-                            low24: (t.current_price || 0.000001) * 0.85,
-                            mintable: salt % 7 === 0,
-                            freezeAuthority: salt % 11 === 0,
-                            lpAddedCount: 1 + (salt % 5),
-                            lpRemovedCount: salt % 3,
-                            riskPercentage: 5 + (salt % 45),
-                            isMexapayCertified: (t.market_cap || 0) > 500000 || salt % 10 === 0,
-                            holders: Array.from({ length: 10 }, (_, j) => ({
-                                address: '0x' + Array(40).fill(0).map((_, idx) => ((salt + idx + j) % 16).toString(16)).join(''),
-                                weight: (25 / (j + 1)).toFixed(2)
-                            })),
-                            supply: (1000000000 * (1 + (salt % 100) / 10)),
-                            isRisky: salt % 15 === 0,
-                            description: t.description || `High-performance ${t.network} asset with institutional-grade forensics. Audit verified on ${new Date().toLocaleDateString()}.`,
-                            rugStatus: salt % 20 === 0 ? 'DANGER' : 'SECURE',
-                            low52: (t.current_price || 0.000001) * 0.4,
-                            high52: (t.current_price || 0.000001) * 2.5
-                        };
-                    });
+            const [aggRes, b20Res] = await Promise.allSettled([
+                axios.get(`${API_URL}/meme/live`, { params, timeout: 30000 }),
+                axios.get(`${API_URL}/tokens/markets/memes`, { params: { per_page: 500 }, timeout: 10000 })
+            ]);
 
-                // Institutional Ranking: Sorting by Market Cap (Highest first)
-                const finalMemes = merged
-                    .sort((a, b) => (b.mcap || 0) - (a.mcap || 0))
-                    .slice(0, 6000);
+            const aggData   = aggRes.status === 'fulfilled' ? aggRes.value.data : { tokens: [], total: 0, sources: {} };
+            const aggTokens = aggData.tokens || [];
+            setAggStats({ total: aggData.total || 0, sources: aggData.sources || {} });
 
-                setRealMemes(finalMemes);
-            } catch (err) {
-                console.error('Failed to fetch real memes:', err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchMemes();
-    }, []);
+            const b20Raw   = b20Res.status === 'fulfilled' ? b20Res.value.data || [] : [];
+            const b20Local = b20Raw.filter(t => t.is_local);
+
+            const seen = new Set();
+            const allTokens = [...b20Local, ...aggTokens].filter(t => {
+                const key = (t.address || t.id || '').toLowerCase();
+                if (!key || seen.has(key)) return false;
+                seen.add(key);
+                return true;
+            });
+
+            const mapped = allTokens.map((t, i) => {
+                const price = t.current_price || t.price || 0;
+                return {
+                    id: t.id || t.address || `token-${i}`,
+                    name: t.name || 'Unknown',
+                    symbol: (t.symbol || '').toUpperCase(),
+                    network: t.network || 'BNB',
+                    price,
+                    launchPrice: price * 0.85,
+                    liquidity: t.liquidity_usd || (t.total_volume ? t.total_volume / 2 : t.market_cap ? t.market_cap / 50 : 0),
+                    change: t.price_change_percentage_24h || 0,
+                    mcap: t.market_cap || 0,
+                    volume24h: t.total_volume || 0,
+                    image: t.image || t.logoURI || null,
+                    contract: t.address || t.contract_address || '0x0000000000000000000000000000000000000000',
+                    launchDate: t.pair_created_at ? new Date(t.pair_created_at).toLocaleDateString() : 'Live',
+                    high24: t.high_24h || price * 1.1,
+                    low24: t.low_24h || price * 0.9,
+                    mintable: false,
+                    freezeAuthority: false,
+                    lpAddedCount: 1,
+                    lpRemovedCount: 0,
+                    riskPercentage: t.market_cap > 1000000 ? 15 : 45,
+                    isMexapayCertified: (t.market_cap || 0) > 500000,
+                    holders: [],
+                    supply: 1000000000,
+                    isRisky: (t.market_cap || 0) < 10000,
+                    description: t.description || `${t.name} — Live on ${t.network || 'BNB'} chain. Source: ${t.source || 'Registry'}.`,
+                    rugStatus: (t.market_cap || 0) > 100000 ? 'SECURE' : 'CAUTION',
+                    low52: price * 0.3,
+                    high52: price * 3,
+                    source: t.source || (t.is_local ? 'b20-launchpad' : 'registry'),
+                    dex_url: t.dex_url || null,
+                    is_local: t.is_local || false,
+                    bonding_progress: t.bonding_progress || 0
+                };
+            });
+
+            setRealMemes(mapped);
+        } catch (err) {
+            console.error('MemeTerminal fetch failed:', err);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => { fetchMemes(source, filter, network); }, [source, filter, network]);
 
     // ── DexScreener Integration States ──
     const [showDexHub, setShowDexHub] = useState(true);
@@ -7157,40 +7165,43 @@ const MemeTerminal = ({ setMode, setToToken }) => {
     }, [selectedMeme]);
 
     const filteredMemes = useMemo(() => {
-        let result = realMemes;
-        
-        // ── Institutional Filter: Liquidity > $100 ──
-        // Overridden if a specific contract search is active
-        const isContractSearch = search && search.startsWith('0x') && search.length > 30;
-        
-        if (!isContractSearch) {
-            result = result.filter(m => m.liquidity >= 100);
+        let result = [...realMemes];
+
+        // Source filter (already applied server-side, but re-apply for instant UI response)
+        if (source !== 'all') {
+            result = result.filter(m => m.source === source);
         }
 
+        // Network filter
         if (network !== 'all') {
-            result = result.filter(m => m.network.toUpperCase() === network.toUpperCase());
+            result = result.filter(m => (m.network || '').toUpperCase() === network.toUpperCase());
         }
-        
+
+        // Search filter
         if (search) {
             const s = search.toLowerCase();
-            result = result.filter(m => 
-                m.name.toLowerCase().includes(s) || 
-                m.symbol.toLowerCase().includes(s) || 
-                m.contract.toLowerCase() === s
+            const isContract = s.startsWith('0x') && s.length > 30;
+            result = result.filter(m =>
+                isContract
+                    ? (m.contract || '').toLowerCase() === s
+                    : (m.name || '').toLowerCase().includes(s) || (m.symbol || '').toLowerCase().includes(s)
             );
         }
 
-        if (filter === 'trending') result = [...result].sort((a, b) => b.volume24h - a.volume24h);
-        if (filter === 'gainers') result = [...result].sort((a, b) => b.change - a.change);
-        if (filter === 'losers') result = [...result].sort((a, b) => a.change - b.change);
-        if (filter === 'top50') result = [...result].sort((a, b) => b.mcap - a.mcap).slice(0, 50);
+        // Sort
+        if (filter === 'volume')    result = result.sort((a, b) => (b.volume24h || 0) - (a.volume24h || 0));
+        if (filter === 'mcap')      result = result.sort((a, b) => (b.mcap || 0) - (a.mcap || 0));
+        if (filter === 'change')    result = result.sort((a, b) => (b.change || 0) - (a.change || 0));
+        if (filter === 'new')       result = result.sort((a, b) => (b.pair_created_at || 0) - (a.pair_created_at || 0));
+        if (filter === 'liquidity') result = result.sort((a, b) => (b.liquidity || 0) - (a.liquidity || 0));
 
-        if (dexSearchResult && !result.some(m => m.contract.toLowerCase() === dexSearchResult.contract.toLowerCase())) {
+        // Prepend live DexScreener search result if not already in list
+        if (dexSearchResult && !result.some(m => (m.contract || '').toLowerCase() === (dexSearchResult.contract || '').toLowerCase())) {
             result = [dexSearchResult, ...result];
         }
 
         return result;
-    }, [realMemes, network, filter, search, dexSearchResult]);
+    }, [realMemes, source, network, filter, search, dexSearchResult]);
 
     return (
         <div className="max-w-[1400px] mx-auto px-4 pb-32">
@@ -7232,6 +7243,35 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                             </div>
                         ))}
                     </div>
+                </div>
+            </div>
+
+            {/* ── Source Filter Tabs ─────────────────────────────────────── */}
+            <div className="mb-8">
+                <div className="flex items-center gap-3 mb-4">
+                    <span className="px-3 py-1 bg-orange-500/10 text-orange-600 text-[9px] font-black uppercase tracking-[0.25em] rounded-full border border-orange-500/20">Live Sources</span>
+                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{aggStats.total.toLocaleString()} tokens aggregated</span>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                    {SOURCES.map(s => (
+                        <button
+                            key={s.id}
+                            onClick={() => { setSource(s.id); setVisibleCount(50); }}
+                            className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${
+                                source === s.id
+                                ? 'bg-slate-900 text-white border-slate-900 shadow-xl scale-105'
+                                : 'bg-white text-slate-500 border-slate-100 hover:border-orange-300 hover:bg-orange-50/40'
+                            }`}
+                        >
+                            <span>{s.icon}</span>
+                            {s.label}
+                            {aggStats.sources[s.id] > 0 && (
+                                <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[8px] font-black ${source === s.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>
+                                    {aggStats.sources[s.id]}
+                                </span>
+                            )}
+                        </button>
+                    ))}
                 </div>
             </div>
 
@@ -7290,11 +7330,11 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Intelligence Classification</span>
                     </div>
                     {[
-                        { id: 'trending', label: 'Trending Heat', icon: <Flame size={14}/>, color: 'orange' },
-                        { id: 'top50', label: 'Institutional Top 50', icon: <Award size={14}/>, color: 'indigo' },
-                        { id: 'gainers', label: 'Top Gainers', icon: <TrendingUp size={14}/>, color: 'emerald' },
-                        { id: 'losers', label: 'Market Losers', icon: <TrendingDown size={14}/>, color: 'rose' },
-                        { id: 'risky', label: 'Risk Assessment', icon: <ShieldAlert size={14}/>, color: 'amber' }
+                        { id: 'volume',    label: 'Top Volume',    icon: <Flame size={14}/>,      color: 'orange' },
+                        { id: 'mcap',      label: 'Market Cap',    icon: <Award size={14}/>,      color: 'indigo' },
+                        { id: 'change',    label: 'Top Gainers',   icon: <TrendingUp size={14}/>, color: 'emerald' },
+                        { id: 'new',       label: 'Newly Listed',  icon: <Zap size={14}/>,        color: 'rose' },
+                        { id: 'liquidity', label: 'Deep Liquidity',icon: <ShieldAlert size={14}/>,color: 'amber' }
                     ].map(f => (
                         <button 
                             key={f.id}
@@ -7383,6 +7423,25 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                                         />
                                     </div>
                                 </div>
+
+                                {/* Source Badge */}
+                                {m.source && (
+                                    <div className="hidden md:flex col-span-1 items-center">
+                                        <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${
+                                            m.source === 'pump.fun'      ? 'bg-pink-100 text-pink-700' :
+                                            m.source === 'four.meme'     ? 'bg-purple-100 text-purple-700' :
+                                            m.source === 'binance'       ? 'bg-yellow-100 text-yellow-700' :
+                                            m.source === 'dexscreener'   ? 'bg-cyan-100 text-cyan-700' :
+                                            m.source === 'geckoterminal' ? 'bg-emerald-100 text-emerald-700' :
+                                            m.source === 'flap.sh'       ? 'bg-lime-100 text-lime-700' :
+                                            m.source === 'b20-launchpad' ? 'bg-orange-100 text-orange-700' :
+                                            'bg-slate-100 text-slate-500'
+                                        }`}>
+                                            {m.source === 'pump.fun' ? '🚀' : m.source === 'four.meme' ? '4️⃣' : m.source === 'binance' ? '🟡' : m.source === 'dexscreener' ? '📊' : m.source === 'geckoterminal' ? '📈' : m.source === 'flap.sh' ? '🐸' : m.source === 'b20-launchpad' ? '⭐' : '🌐'}
+                                            {' '}{m.source}
+                                        </span>
+                                    </div>
+                                )}
 
                                 <div className="col-span-2">
                                     <p className="text-xs font-black text-slate-900 font-mono tracking-tighter">

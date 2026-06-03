@@ -19,6 +19,59 @@ const BSCSCAN_API = 'https://api.etherscan.io/v2/api';
 const BSCSCAN_KEY = process.env.BSCSCAN_API_KEY || '2X6VV2BKDA4YPFPBZC56X2RIQSWM4M58YW';
 const VERIFY_INTERVAL = 10 * 60 * 1000; // 10 Minutes
 
+// ── Helper Checker Functions for Indexing ─────────────────────
+async function checkDexScreener(tokenAddress) {
+    try {
+        const res = await axios.get(`https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`, { timeout: 10000 });
+        const pairs = res.data.pairs || [];
+        const bscPair = pairs.find(p => p.chainId === 'bsc');
+        if (bscPair) return { status: 'indexed', url: bscPair.url };
+        return { status: 'pending' };
+    } catch (_) { return { status: 'pending' }; }
+}
+
+async function checkGeckoTerminal(tokenAddress) {
+    try {
+        const res = await axios.get(`https://api.geckoterminal.com/api/v2/networks/bsc/tokens/${tokenAddress}`, { timeout: 10000 });
+        const data = res.data.data;
+        if (data && data.id) {
+            return { status: 'indexed', url: `https://www.geckoterminal.com/bsc/tokens/${tokenAddress}` };
+        }
+        return { status: 'pending' };
+    } catch (_) { return { status: 'pending' }; }
+}
+
+async function checkCoinGecko(tokenAddress) {
+    try {
+        const url = `https://api.coingecko.com/api/v3/coins/binance-smart-chain/contract/${tokenAddress.toLowerCase()}`;
+        const res = await axios.get(url, {
+            headers: { 'x-cg-demo-api-key': process.env.COINGECKO_API_KEY || '' },
+            timeout: 10000
+        });
+        if (res.data && res.data.id) {
+            return { status: 'indexed', url: `https://www.coingecko.com/en/coins/${res.data.id}` };
+        }
+        return { status: 'pending' };
+    } catch (_) { return { status: 'pending' }; }
+}
+
+async function checkCoinpaprika(symbol, tokenAddress) {
+    try {
+        const res = await axios.get(`https://api.coinpaprika.com/v1/search?q=${symbol}&c=currencies`, { timeout: 10000 });
+        const currencies = res.data.currencies || [];
+        const found = currencies.find(c => c.symbol.toUpperCase() === symbol.toUpperCase());
+        if (found) {
+            const coinRes = await axios.get(`https://api.coinpaprika.com/v1/coins/${found.id}`, { timeout: 10000 });
+            const platforms = coinRes.data.platforms || [];
+            const isBscContract = platforms.some(p => p.platform === 'binance-smart-chain' && p.contract_address?.toLowerCase() === tokenAddress.toLowerCase());
+            if (isBscContract) {
+                return { status: 'indexed', url: `https://coinpaprika.com/coin/${found.id}` };
+            }
+        }
+        return { status: 'pending' };
+    } catch (_) { return { status: 'pending' }; }
+}
+
 // Read Solidity source for verification submission
 function readContract(filename) {
     const contractsDir = path.join(__dirname, '..', '..', 'contracts', 'contracts');
@@ -54,23 +107,36 @@ async function checkVerificationStatus(contractAddress) {
     }
 }
 
-// ── 2. Submit source code for verification ───────────────────
-async function submitVerification(contractAddress, contractName, sourceCode, constructorArgs, compilerVersion) {
+// ── 2. Submit source code for verification (Standard JSON format) ───
+async function submitVerification(contractAddress, contractName, sourceCode, constructorArgs, compilerVersion, pathKey = 'contracts/contracts/TokenTemplate.sol') {
     try {
+        const jsonInput = {
+            language: 'Solidity',
+            sources: {
+                [pathKey]: {
+                    content: sourceCode
+                }
+            },
+            settings: {
+                optimizer: {
+                    enabled: true,
+                    runs: 200
+                },
+                viaIR: true,
+                evmVersion: 'paris'
+            }
+        };
+
         const body = {
             chainid:          '56',
             module:           'contract',
             action:           'verifysourcecode',
             apikey:           BSCSCAN_KEY,
             contractaddress:  contractAddress,
-            sourceCode:       sourceCode,
-            codeformat:       'solidity-single-file',
-            contractname:     contractName,
+            sourceCode:       JSON.stringify(jsonInput),
+            codeformat:       'solidity-standard-json-input',
+            contractname:     `${pathKey}:${contractName}`,
             compilerversion:  compilerVersion || 'v0.8.20+commit.a1b79de6',
-            optimizationUsed: '1',
-            runs:             '200',
-            evmversion:       'shanghai',
-            licenseType:      '3'
         };
 
         if (constructorArgs) {
@@ -134,6 +200,17 @@ async function ensureVerificationColumns() {
         { name: 'tw_pr_url',          def: 'TEXT' },
         { name: 'tw_pr_status',       def: "TEXT DEFAULT 'pending'" },
         { name: 'ipfs_logo_url',      def: 'TEXT' },
+        { name: 'ipfs_metadata_url',   def: 'TEXT' },
+        { name: 'dexscreener_status',  def: "TEXT DEFAULT 'pending'" },
+        { name: 'dexscreener_url',     def: 'TEXT' },
+        { name: 'geckoterminal_status',def: "TEXT DEFAULT 'pending'" },
+        { name: 'geckoterminal_url',   def: 'TEXT' },
+        { name: 'coingecko_status',    def: "TEXT DEFAULT 'pending'" },
+        { name: 'coingecko_url',       def: 'TEXT' },
+        { name: 'coinmarketcap_status',def: "TEXT DEFAULT 'pending'" },
+        { name: 'coinmarketcap_url',   def: 'TEXT' },
+        { name: 'coinpaprika_status',  def: "TEXT DEFAULT 'pending'" },
+        { name: 'coinpaprika_url',     def: 'TEXT' }
     ];
     for (const col of cols) {
         try { await db.query(`ALTER TABLE tokens ADD COLUMN ${col.name} ${col.def}`); }
@@ -163,7 +240,7 @@ async function verifyCoreContracts() {
                         process.env.FEE_WALLET || ''
                     ]
                 );
-                await submitVerification(factoryAddr, 'TokenFactory', src, args);
+                await submitVerification(factoryAddr, 'TokenFactory', src, args, 'v0.8.20+commit.a1b79de6', 'contracts/TokenFactory.sol');
             }
         } else {
             console.log('[Verifier] 🏭 Factory already verified ✓');
@@ -186,7 +263,7 @@ async function verifyCoreContracts() {
                         '0x10ED43C718714eb63d5aA57B78B54704E256024E' // Pancake Router
                     ]
                 );
-                await submitVerification(curveAddr, 'BondingCurve', src, args);
+                await submitVerification(curveAddr, 'BondingCurve', src, args, 'v0.8.20+commit.a1b79de6', 'contracts/BondingCurve.sol');
             }
         } else {
             console.log('[Verifier] 📈 BondingCurve already verified ✓');
@@ -201,7 +278,14 @@ async function verifyCoreContracts() {
             console.log('[Verifier] 💧 LiquidityManager not verified. Submitting...');
             const src = readContract('LiquidityManager.flattened.sol');
             if (src) {
-                await submitVerification(liqAddr, 'LiquidityManager', src);
+                const args = abiCoder.encode(
+                    ['address', 'address'],
+                    [
+                        '0x10ED43C718714eb63d5aA57B78B54704E256024E',
+                        process.env.FEE_WALLET || process.env.FEE_WALLET
+                    ]
+                );
+                await submitVerification(liqAddr, 'LiquidityManager', src, args, 'v0.8.20+commit.a1b79de6', 'contracts/LiquidityManager.sol');
             }
         } else {
             console.log('[Verifier] 💧 LiquidityManager already verified ✓');
@@ -214,17 +298,17 @@ async function verifyCoreContracts() {
         const status = await checkVerificationStatus(directFactoryAddr);
         if (!status.verified) {
             console.log('[Verifier] 🚀 DirectFactory not verified. Submitting...');
-            const src = readContract('DirectDexLaunchFactory.flattened.sol');
+            const src = readContract('DirectDexLaunchFactoryV2.flattened.sol');
             if (src) {
                 const args = abiCoder.encode(
                     ['address', 'address', 'address'],
                     [
                         process.env.FEE_WALLET || process.env.FEE_WALLET,
                         '0x10ED43C718714eb63d5aA57B78B54704E256024E', // Pancake Router
-                        process.env.FEE_WALLET || process.env.FEE_WALLET
+                        '0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73'  // Pancake Factory
                     ]
                 );
-                await submitVerification(directFactoryAddr, 'DirectDexLaunchFactory', src, args);
+                await submitVerification(directFactoryAddr, 'DirectDexLaunchFactoryV2', src, args, 'v0.8.20+commit.a1b79de6', 'contracts/DirectDexLaunchFactoryV2.sol');
             }
         } else {
             console.log('[Verifier] 🚀 DirectFactory already verified ✓');
@@ -252,6 +336,7 @@ async function runVerificationCycle() {
                    last_verified_at, tw_pr_status, created_at
             FROM tokens
             WHERE contract_address IS NOT NULL
+              AND launch_type IN ('MEME', 'FAIR', 'FAIR_LAUNCH', 'STANDARD')
               AND (
                   bscscan_verified IS NOT 1
                   OR last_verified_at < datetime('now', '-12 hours')
@@ -312,36 +397,55 @@ async function runVerificationCycle() {
                     continue;
                 }
 
-                let ownerAddr;
-                if (token.launch_type === 'FAIR' || token.launch_type === 'FAIR_LAUNCH') {
-                    ownerAddr = DF_ADDR || '0xbe3EA5f2AE5b278796AbCFbd1078EF88dd0d70F5';
-                } else if (token.launch_type === 'STANDARD') {
-                    ownerAddr = token.creator_address;
-                } else {
-                    ownerAddr = BC_ADDR;
-                }
-                
+                let encodedArgs;
+                let submitContractName = 'TokenTemplate';
+                let submitSrc = tokenTemplateSrc;
+                let submitPathKey = 'contracts/contracts/TokenTemplate.sol';
+
                 const rawSupply = token.total_supply?.toString() || '1000000000';
                 const finalSupply = rawSupply.includes('e') ? BigInt(parseFloat(rawSupply)) : BigInt(rawSupply.replace(/[,_]/g, ''));
 
-                const encodedArgs = abiCoder.encode(
-                    ['string', 'string', 'uint8', 'uint256', 'address', 'address', 'address'],
-                    [
-                        token.name, 
-                        token.symbol, 
-                        parseInt(token.decimals) || 18,
-                        finalSupply,
-                        token.creator_address, 
-                        ownerAddr, 
-                        FEE_ADDR
-                    ]
-                );
+                if (token.launch_type === 'FAIR' || token.launch_type === 'FAIR_LAUNCH') {
+                    const ownerAddr = DF_ADDR || '0xeEBC10420F486F8357c2efaBd6F5F44Ac9a568a9';
+                    // FairLaunchToken has 4 parameters: string name_, string symbol_, uint256 totalSupply_, address factory_
+                    encodedArgs = abiCoder.encode(
+                        ['string', 'string', 'uint256', 'address'],
+                        [token.name, token.symbol, finalSupply, ownerAddr]
+                    );
+                    submitContractName = 'FairLaunchToken';
+                    submitSrc = readContract('DirectDexLaunchFactoryV2.flattened.sol');
+                    submitPathKey = 'contracts/contracts/DirectDexLaunchFactoryV2.sol';
+                } else {
+                    let ownerAddr;
+                    if (token.launch_type === 'STANDARD') {
+                        ownerAddr = token.creator_address;
+                    } else {
+                        ownerAddr = BC_ADDR;
+                    }
+                    // TokenTemplate has 7 parameters: name_, symbol_, decimals_, fixedSupply, _creator, bondingCurve_, feeWallet_
+                    const decimals = parseInt(token.decimals) || 18;
+                    const unscaledSupply = finalSupply / BigInt(10 ** decimals);
+                    encodedArgs = abiCoder.encode(
+                        ['string', 'string', 'uint8', 'uint256', 'address', 'address', 'address'],
+                        [
+                            token.name, 
+                            token.symbol, 
+                            decimals,
+                            unscaledSupply,
+                            token.creator_address, 
+                            ownerAddr, 
+                            FEE_ADDR
+                        ]
+                    );
+                }
 
-                await new Promise(r => setTimeout(r, 1000)); // Rate limit
-                submitResult = await submitVerification(addr, 'TokenTemplate', tokenTemplateSrc, encodedArgs, 'v0.8.20+commit.a1b79de6');
-                if (submitResult.submitted) {
-                    verifyGuid = submitResult.guid;
-                    cntSubmitted++;
+                if (submitSrc) {
+                    await new Promise(r => setTimeout(r, 1000)); // Rate limit
+                    submitResult = await submitVerification(addr, submitContractName, submitSrc, encodedArgs, 'v0.8.20+commit.a1b79de6', submitPathKey);
+                    if (submitResult.submitted) {
+                        verifyGuid = submitResult.guid;
+                        cntSubmitted++;
+                    }
                 }
             }
 
@@ -386,9 +490,65 @@ async function runVerificationCycle() {
                         console.warn('[Verifier]   ⚠ Trust Wallet step failed:', twErr.message);
                     }
                 }
+
+                // ── IPFS Metadata Upload ─────────────────────────────────────
+                if (!token.ipfs_metadata_url) {
+                    console.log(`[Verifier]   📌 Generating & uploading IPFS metadata JSON...`);
+                    try {
+                        const tw = require('./trustWalletService');
+                        const metadataJson = {
+                            name:        token.name,
+                            symbol:      token.symbol,
+                            description: token.description || `${token.name} token launched via B20LAB`,
+                            decimals:    token.decimals || 18,
+                            totalSupply: token.total_supply,
+                            image:       token.ipfs_logo_url || token.logo_url || ''
+                        };
+                        const metaUrl = await tw.uploadMetadataToPinata(metadataJson, token.symbol);
+                        if (metaUrl) {
+                            await db.query(`UPDATE tokens SET ipfs_metadata_url = $1 WHERE id = $2`, [metaUrl, token.id]);
+                            token.ipfs_metadata_url = metaUrl;
+                            console.log(`[Verifier]   ✅ Metadata IPFS URL: ${metaUrl}`);
+                        }
+                    } catch (metaErr) {
+                        console.warn('[Verifier]   ⚠ IPFS metadata upload failed:', metaErr.message);
+                    }
+                }
+
             } else if (submitResult?.submitted) {
                 console.log(`[Verifier]   📤 Verification submitted — GUID: ${verifyGuid}`);
             }
+
+            // ── Index Auto-Discovery Checks ──────────────────────────────────
+            console.log(`[Verifier]   🔍 Checking index status on DexScreener/GeckoTerminal/CoinGecko/Coinpaprika...`);
+            const dexRes = await checkDexScreener(addr);
+            const gtRes  = await checkGeckoTerminal(addr);
+            const cgRes  = await checkCoinGecko(addr);
+            const cpRes  = await checkCoinpaprika(token.symbol, addr);
+
+            console.log(`[Verifier]     DexScreener:   ${dexRes.status}`);
+            console.log(`[Verifier]     GeckoTerminal: ${gtRes.status}`);
+            console.log(`[Verifier]     CoinGecko:     ${cgRes.status}`);
+            console.log(`[Verifier]     Coinpaprika:   ${cpRes.status}`);
+
+            await db.query(`
+                UPDATE tokens SET
+                    dexscreener_status    = $1,
+                    dexscreener_url       = $2,
+                    geckoterminal_status  = $3,
+                    geckoterminal_url     = $4,
+                    coingecko_status      = $5,
+                    coingecko_url         = $6,
+                    coinpaprika_status    = $7,
+                    coinpaprika_url       = $8
+                WHERE id = $9
+            `, [
+                dexRes.status, dexRes.url || token.dexscreener_url || null,
+                gtRes.status,  gtRes.url || token.geckoterminal_url || null,
+                cgRes.status,  cgRes.url || token.coingecko_url || null,
+                cpRes.status,  cpRes.url || token.coinpaprika_url || null,
+                token.id
+            ]);
 
             await new Promise(r => setTimeout(r, 500)); 
 

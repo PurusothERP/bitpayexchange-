@@ -8,7 +8,7 @@ import {
     Download, RefreshCw, ExternalLink, ArrowUpRight,
     TrendingUp, Users, Box, Zap, AlertCircle, Eye, EyeOff, Loader2, DollarSign, PlusCircle, ChevronDown, Trash2, Image as ImageIcon,
     Activity, Database, Globe, Lock, Unlock, Copy, TrendingDown, ArrowRightLeft, CreditCard as CardIcon, Edit3, Save, History, Clock,
-    Sparkles, Star, BarChart3, Info, ShieldCheck, Flame, Leaf, Percent, ShieldAlert, Code
+    Sparkles, Star, BarChart3, Info, ShieldCheck, Flame, Leaf, Percent, ShieldAlert, Code, Briefcase
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -43,6 +43,7 @@ export default function NueraAdminPortal() {
         { id: 'community', label: 'Social Mod', icon: <MessageSquare size={18} />, color: 'text-cyan-600' },
         { id: 'bulletin', label: 'Bulletin CMS', icon: <Megaphone size={18} />, color: 'text-slate-600' },
         { id: 'smart-money-hub', label: 'Smart Money Hub', icon: <TrendingUp size={18} />, color: 'text-teal-600' },
+        { id: 'stocks-hub', label: 'Stock Hub', icon: <Briefcase size={18} />, color: 'text-teal-600' },
         { id: 'lending-borrowing', label: 'Lending & Borrowing', icon: <ArrowRightLeft size={18} />, color: 'text-teal-600' },
         { id: 'yield-ledger', label: 'Yield Intelligence', icon: <Leaf size={18} />, color: 'text-sky-600' },
         { id: 'institutional-futures', label: 'Futures Guard', icon: <Activity size={18} />, color: 'text-sky-600' },
@@ -153,6 +154,7 @@ export default function NueraAdminPortal() {
                         {activeTab === 'governance' && <GovernanceHub key="gov" account={account} />}
                         { activeTab === 'bulletin' && <BulletinCMS key="bull" account={account} /> }
                         {activeTab === 'smart-money-hub' && <SmartMoneyHub account={account} />}
+                        {activeTab === 'stocks-hub' && <StocksHub account={account} />}
                         {activeTab === 'lending-borrowing' && <LendingBorrowingLedger account={account} />}
                         {activeTab === 'yield-ledger' && <YieldLedger account={account} />}
                         {activeTab === 'institutional-futures' && <InstitutionalFutures account={account} />}
@@ -706,7 +708,7 @@ function ConnectedWallets({ account }) {
 }
 
 function APIPanel() {
-    const [subTab, setSubTab] = useState('api'); // 'api' | 'architecture' | 'docs'
+    const [subTab, setSubTab] = useState('api'); // 'api' | 'architecture' | 'keys' | 'docs'
 
     const apiMatrix = [
         { function: '/markets/cg (Global Market)', cg: 'Active (Primary)', cmc: 'Active (Pro API)', usage: '50/50 Algorithmic Split', color: 'bg-emerald-50 text-emerald-600' },
@@ -730,10 +732,11 @@ function APIPanel() {
             <div className="flex gap-4 mb-4 flex-wrap">
                 <button onClick={() => setSubTab('api')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'api' ? 'bg-rose-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}><Database size={12} className="inline mr-2"/> API Routing Matrix</button>
                 <button onClick={() => setSubTab('architecture')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'architecture' ? 'bg-teal-600 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}><Box size={12} className="inline mr-2"/> Technical Architecture</button>
+                <button onClick={() => setSubTab('keys')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'keys' ? 'bg-amber-500 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}><ShieldCheck size={12} className="inline mr-2"/> API Keys</button>
                 <button onClick={() => setSubTab('docs')} className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'docs' ? 'bg-slate-900 text-white shadow-lg' : 'bg-white text-slate-400 border border-slate-200 hover:bg-slate-50'}`}><Download size={12} className="inline mr-2"/> Documents</button>
             </div>
 
-            {subTab === 'api' ? (
+            {subTab === 'api' && (
                 <div className="space-y-6">
                     <div className="bg-white p-8 rounded-[3rem] border border-slate-200/60 shadow-sm">
                         <div className="flex items-center gap-4 mb-8">
@@ -760,7 +763,9 @@ function APIPanel() {
                         </div>
                     </div>
                 </div>
-            ) : (
+            )}
+
+            {subTab === 'architecture' && (
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="bg-white p-10 rounded-[3rem] border border-slate-200/60 shadow-sm flex flex-col justify-center">
@@ -810,6 +815,57 @@ function APIPanel() {
                                         <p className="text-xs font-bold mt-1 text-slate-300">Ethers.js executes router swaps. Fees sent to Treasury. Syncs ledger via background poll.</p>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {subTab === 'keys' && (
+                <div className="space-y-6">
+                    <div className="bg-white p-8 rounded-[3rem] border border-slate-200/60 shadow-sm">
+                        <div className="flex items-center gap-4 mb-8">
+                            <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center"><ShieldCheck size={24} /></div>
+                            <div>
+                                <h3 className="text-xl font-black text-slate-900 uppercase italic">Platform <span className="text-amber-500">API Keys</span></h3>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">All Integrated Service Credentials</p>
+                            </div>
+                        </div>
+                        <div className="space-y-3">
+                            {[
+                                { service: 'OpenAI (GPT-4o-mini)', key: 'sk-proj-Z2safVQXmflfOpW3...RkRQA', fullKey: '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', status: 'Active', color: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-500', usage: 'AI Token Architect · Branding · Chat' },
+                                { service: 'Anthropic (Claude 3.5 Sonnet)', key: 'sk-ant-api03-to...CIR8AAA', fullKey: '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', status: 'Active', color: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-500', usage: 'Backup AI Architecture · Advanced Agentic Coding' },
+                                { service: 'CoinGecko Pro', key: 'CG-wAvFy24FgS5GzRa8AfLiKhPi', fullKey: 'CG-wAvFy24FgS5GzRa8AfLiKhPi', status: 'Active', color: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-500', usage: 'Market Data · Mimic Check · Sentiment' },
+                                { service: 'CoinMarketCap Pro', key: '61a5cf295fde46a39ecb614a63cfd73b', fullKey: '61a5cf295fde46a39ecb614a63cfd73b', status: 'Active', color: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-500', usage: 'Market Data · Alpha Listings · Trending' },
+                                { service: 'Alpha Vantage (Stocks)', key: 'TDA3K3FRBC108P1B', fullKey: 'TDA3K3FRBC108P1B', status: 'Active', color: 'bg-sky-50 text-sky-600', dot: 'bg-sky-500', usage: 'Stocks · Metals · Institutional Data' },
+                                { service: 'Pinata IPFS', key: '600368929133bef8d5a4', fullKey: '600368929133bef8d5a4', status: 'Active', color: 'bg-teal-50 text-teal-600', dot: 'bg-teal-500', usage: 'Token Logo Upload · Metadata Storage' },
+                                { service: 'BSCScan', key: 'JR6CDKYEEM4BGAKMPP13SREPBA3BWG4RTT', fullKey: 'JR6CDKYEEM4BGAKMPP13SREPBA3BWG4RTT', status: 'Active', color: 'bg-amber-50 text-amber-600', dot: 'bg-amber-500', usage: 'Contract Verification · On-Chain Audit' },
+                                { service: 'GitHub Actions (Token Registry)', key: 'ghp_DrNbCmov...tf0RknKk', fullKey: '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', status: 'Active', color: 'bg-slate-50 text-slate-600', dot: 'bg-slate-500', usage: 'TrustWallet PR Sync · Logo Registry' },
+                            ].map((item, i) => (
+                                <div key={i} className="flex items-center gap-5 p-5 bg-slate-50 border border-slate-100 rounded-2xl hover:border-amber-200 hover:bg-amber-50/30 transition-all group">
+                                    <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${item.dot} shadow-lg`} />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-3 flex-wrap">
+                                            <p className="text-[11px] font-black text-slate-900 uppercase tracking-widest">{item.service}</p>
+                                            <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest ${item.color}`}>{item.status}</span>
+                                        </div>
+                                        <p className="text-[10px] font-mono text-slate-500 mt-1 truncate">{item.key}</p>
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">{item.usage}</p>
+                                    </div>
+                                    <button
+                                        onClick={() => navigator.clipboard.writeText(item.fullKey)}
+                                        className="shrink-0 px-4 py-2 bg-white border border-slate-200 hover:bg-amber-500 hover:text-white hover:border-amber-500 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all opacity-0 group-hover:opacity-100"
+                                    >
+                                        Copy
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mt-6 p-5 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3">
+                            <ShieldCheck className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                            <div>
+                                <p className="text-[10px] font-black text-amber-800 uppercase tracking-widest">Security Notice</p>
+                                <p className="text-[10px] font-bold text-amber-700 mt-1">These keys are stored in the backend <span className="font-mono bg-amber-100 px-1 rounded">.env</span> file and are never exposed to the browser. Rotate keys immediately if any service shows unusual usage.</p>
                             </div>
                         </div>
                     </div>
@@ -1985,8 +2041,13 @@ function AddressHub() {
     const entries = [
         { label: 'BSC RPC URL', val: 'https://bsc-dataseed.binance.org' },
         { label: 'Factory Contract', val: process.env.NEXT_PUBLIC_FACTORY_ADDRESS },
+        { label: 'Fair Launch Factory (V2)', val: process.env.NEXT_PUBLIC_DIRECT_FACTORY_ADDRESS },
         { label: 'Liquidity Manager', val: process.env.NEXT_PUBLIC_LIQUIDITY_MANAGER_ADDRESS },
         { label: 'Bonding Curve', val: process.env.NEXT_PUBLIC_BONDING_CURVE_ADDRESS },
+        { label: 'BSCScan API Key', val: 'JR6CDKYEEM4BGAKMPP13SREPBA3BWG4RTT' },
+        { label: 'Pinata API Key', val: '600368929133bef8d5a4' },
+        { label: 'GitHub Username', val: 'NilanRitvik' },
+        { label: 'GitHub Token', val: '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' },
         { label: 'Anthropic AI Key', val: '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' },
         { label: 'Alpha Vantage API Key', val: 'TDA3K3FRBC108P1B' },
         { label: 'CoinGecko API Key', val: 'CG-wAvFy24FgS5GzRa8AfLiKhPi' },
@@ -2121,64 +2182,461 @@ function MemeGovernance({ account }) {
 function SmartMoneyHub({ account }) {
     const [investments, setInvestments] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [subTab, setSubTab] = useState('baskets'); // 'baskets' or 'mex'
+    const [settlingId, setSettlingId] = useState(null);
+    const [successMsg, setSuccessMsg] = useState('');
+    const [errorMsg, setErrorMsg] = useState('');
 
     useEffect(() => {
+        fetchInvestments();
+    }, [account]);
+
+    const fetchInvestments = () => {
+        setLoading(true);
         axios.get(`${API_URL}/admin/smart-money`, { headers: { 'x-wallet-address': account } })
             .then(res => setInvestments(res.data))
             .catch(() => {})
             .finally(() => setLoading(false));
-    }, [account]);
+    };
+
+    const handleSettle = async (id) => {
+        setSettlingId(id);
+        setSuccessMsg('');
+        setErrorMsg('');
+        try {
+            const res = await axios.post(`${API_URL}/admin/smart-money/settle`, { id }, { headers: { 'x-wallet-address': account } });
+            if (res.data?.success) {
+                setSuccessMsg('Investment settled successfully!');
+                fetchInvestments();
+            } else {
+                setErrorMsg(res.data?.error || 'Settle failed');
+            }
+        } catch (e) {
+            setErrorMsg('Failed to settle investment.');
+        } finally {
+            setSettlingId(null);
+        }
+    };
+
+    // Helper to get APY matching the profile page logic
+    const getMexApy = (optionId) => {
+        const apys = {
+            'lending': 6.35,
+            'liquidity': 28.5,
+            'validator': 6.25,
+            'airdrops': 550,
+            'strategies': 87.5,
+            'rwa': 5.75
+        };
+        return apys[optionId] || 8.0;
+    };
+
+    // Filters
+    const basketsOnly = investments.filter(inv => {
+        try {
+            const json = typeof inv.bucket_json === 'string' ? JSON.parse(inv.bucket_json) : inv.bucket_json;
+            return !json || (json.type !== 'StockTrade' && json.type !== 'MexMoney');
+        } catch (e) { return true; }
+    });
+
+    const mexOnly = investments.filter(inv => {
+        try {
+            const json = typeof inv.bucket_json === 'string' ? JSON.parse(inv.bucket_json) : inv.bucket_json;
+            return json && json.type === 'MexMoney';
+        } catch (e) { return false; }
+    });
+
+    const activeList = subTab === 'baskets' ? basketsOnly : mexOnly;
 
     return (
         <div className="space-y-8">
             <div className="bg-white rounded-[3rem] border border-slate-200/60 p-10 shadow-sm">
-                <div className="flex items-center gap-4 mb-10">
-                    <div className="w-12 h-12 bg-teal-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-teal-200/20">
-                        <TrendingUp size={24} />
+                <div className="flex items-center justify-between mb-10">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-teal-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-teal-200/20">
+                            <TrendingUp size={24} />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-slate-900 uppercase italic">Smart Money <span className="text-teal-600">Hub</span></h3>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Oversight of Index Allocations & Yield Programs</p>
+                        </div>
                     </div>
-                    <div>
-                        <h3 className="text-xl font-black text-slate-900 uppercase italic">Smart Money <span className="text-teal-600">Hub</span></h3>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Institutional Bucket Allocations Oversight</p>
-                    </div>
+                    <button onClick={fetchInvestments} className="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl text-slate-600 transition-colors">
+                        <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+                    </button>
                 </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-separate border-spacing-y-3">
-                        <thead>
-                            <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                                <th className="px-6 py-2">Investor Wallet</th>
-                                <th className="px-6 py-2">Bucket Name</th>
-                                <th className="px-6 py-2">Allocation</th>
-                                <th className="px-6 py-2">TX Hash</th>
-                                <th className="px-6 py-2">Time</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {investments.map((inv, i) => (
-                                <tr key={i} className="bg-slate-50 hover:bg-white hover:shadow-xl hover:border-teal-100 border border-transparent rounded-2xl transition-all group">
-                                    <td className="px-6 py-5 first:rounded-l-2xl">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-xs font-black text-slate-800">{inv.wallet_address.slice(0, 8)}...{inv.wallet_address.slice(-6)}</span>
-                                            <button onClick={() => { navigator.clipboard.writeText(inv.wallet_address); alert('Full wallet address copied.'); }} className="p-1 text-slate-300 hover:text-teal-600 opacity-0 group-hover:opacity-100 transition-opacity"><Copy size={12} /></button>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <span className="px-3 py-1 bg-teal-100 text-teal-600 text-[10px] font-black rounded-lg uppercase">{inv.bucket_name}</span>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <span className="text-xs font-black text-slate-900">{inv.invest_amount} USDT</span>
-                                    </td>
-                                    <td className="px-6 py-5">
-                                        <a href={`https://bscscan.com/tx/${inv.tx_hash}`} target="_blank" rel="noopener noreferrer" className="text-xs font-mono font-bold text-teal-600 hover:underline">{inv.tx_hash.slice(0, 12)}...</a>
-                                    </td>
-                                    <td className="px-6 py-5 last:rounded-r-2xl">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase">{new Date(inv.timestamp).toLocaleString()}</span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                {/* Sub Tab Navigation */}
+                <div className="flex gap-4 mb-8">
+                    <button 
+                        onClick={() => setSubTab('baskets')} 
+                        className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'baskets' ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/20' : 'bg-slate-50 text-slate-400 hover:text-slate-900 border border-slate-200/40'}`}
+                    >
+                        Smart Index Baskets ({basketsOnly.length})
+                    </button>
+                    <button 
+                        onClick={() => setSubTab('mex')} 
+                        className={`px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${subTab === 'mex' ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/20' : 'bg-slate-50 text-slate-400 hover:text-slate-900 border border-slate-200/40'}`}
+                    >
+                        MEX Yield Protocol ({mexOnly.length})
+                    </button>
                 </div>
+
+                {successMsg && (
+                    <div className="mb-6 p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-xs font-black uppercase tracking-wider border border-emerald-100 flex items-center gap-2">
+                        <CheckCircle2 size={16} /> {successMsg}
+                    </div>
+                )}
+                {errorMsg && (
+                    <div className="mb-6 p-4 bg-rose-50 text-rose-600 rounded-2xl text-xs font-black uppercase tracking-wider border border-rose-100 flex items-center gap-2">
+                        <AlertCircle size={16} /> {errorMsg}
+                    </div>
+                )}
+
+                {loading ? (
+                    <div className="py-24 text-center">
+                        <Loader2 className="w-10 h-10 text-teal-600 animate-spin mx-auto mb-4" />
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Loading hub records...</p>
+                    </div>
+                ) : activeList.length === 0 ? (
+                    <div className="py-24 text-center bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200">
+                        <TrendingUp className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                        <h4 className="text-sm font-black text-slate-500 uppercase tracking-wider">No Records Found</h4>
+                        <p className="text-[10px] text-slate-400 font-bold mt-1">Deployments will be visible once users complete smart transactions.</p>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-separate border-spacing-y-3">
+                            <thead>
+                                <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                    <th className="px-6 py-2">Investor</th>
+                                    <th className="px-6 py-2">{subTab === 'baskets' ? 'Index Basket' : 'Yield Option'}</th>
+                                    <th className="px-6 py-2">{subTab === 'baskets' ? 'Allocation' : 'USDT Buy Rate'}</th>
+                                    <th className="px-6 py-2">{subTab === 'baskets' ? 'TX Hash' : 'Yield APY / Accrued'}</th>
+                                    <th className="px-6 py-2">Time</th>
+                                    <th className="px-6 py-2 text-right">Status / Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {activeList.map((inv, i) => {
+                                    let details = {};
+                                    try {
+                                        details = typeof inv.bucket_json === 'string' ? JSON.parse(inv.bucket_json) : inv.bucket_json;
+                                    } catch (e) {}
+
+                                    // MEX Money Accrual Calculations
+                                    const apy = getMexApy(details.option);
+                                    const startTime = new Date(inv.timestamp).getTime();
+                                    const elapsedDays = Math.max(0, (Date.now() - startTime) / (1000 * 60 * 60 * 24));
+                                    const principal = parseFloat(inv.invest_amount) || 0;
+                                    const accrued = principal * (apy / 100) * (elapsedDays / 365);
+
+                                    const isSettled = inv.status === 'SETTLED';
+                                    const activePrincipal = isSettled ? 0 : principal;
+                                    const activeAccrued = isSettled ? 0 : accrued;
+
+                                    return (
+                                        <tr key={i} className="bg-slate-50 hover:bg-white hover:shadow-xl hover:border-teal-100 border border-transparent rounded-2xl transition-all group">
+                                            <td className="px-6 py-5 first:rounded-l-2xl">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-black text-slate-800">{inv.wallet_address.slice(0, 8)}...{inv.wallet_address.slice(-6)}</span>
+                                                    <button onClick={() => { navigator.clipboard.writeText(inv.wallet_address); alert('Full wallet address copied.'); }} className="p-1 text-slate-300 hover:text-teal-600 opacity-0 group-hover:opacity-100 transition-opacity"><Copy size={12} /></button>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                {subTab === 'baskets' ? (
+                                                    <span className="px-3 py-1 bg-teal-100 text-teal-600 text-[10px] font-black rounded-lg uppercase">{inv.bucket_name}</span>
+                                                ) : (
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs font-black text-slate-900">{inv.bucket_name}</span>
+                                                        <span className="text-[9px] font-bold text-slate-400">Option: {details.option}</span>
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <span className="text-xs font-black text-slate-900">{activePrincipal.toFixed(2)} USDT</span>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                {subTab === 'baskets' ? (
+                                                    <a href={`https://bscscan.com/tx/${inv.tx_hash}`} target="_blank" rel="noopener noreferrer" className="text-xs font-mono font-bold text-teal-600 hover:underline">{inv.tx_hash.slice(0, 12)}...</a>
+                                                ) : (
+                                                    <div className="flex flex-col">
+                                                        <span className="text-xs font-black text-emerald-500 font-mono">+{activeAccrued.toFixed(4)} USDT</span>
+                                                        <span className="text-[9px] font-bold text-slate-400">APY Protocol: {apy}%</span>
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase">{new Date(inv.timestamp).toLocaleString()}</span>
+                                            </td>
+                                            <td className="px-6 py-5 last:rounded-r-2xl text-right">
+                                                <div className="flex items-center justify-end gap-3">
+                                                    {inv.status === 'ACTIVE' && (
+                                                        <span className="px-2 py-0.5 bg-sky-50 text-sky-600 border border-sky-100 text-[9px] font-black uppercase rounded">Active</span>
+                                                    )}
+                                                    {inv.status === 'PENDING_RETURN' && (
+                                                        <button 
+                                                            onClick={() => handleSettle(inv.id)}
+                                                            disabled={settlingId === inv.id}
+                                                            className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white font-black text-[9px] uppercase tracking-wider rounded-lg transition-all shadow-md active:scale-95 disabled:opacity-50"
+                                                        >
+                                                            {settlingId === inv.id ? 'Settling...' : 'Approve Settlement'}
+                                                        </button>
+                                                    )}
+                                                    {inv.status === 'SETTLED' && (
+                                                        <span className="px-2 py-0.5 bg-slate-100 text-slate-400 border border-slate-200 text-[9px] font-black uppercase rounded">Settled</span>
+                                                    )}
+                                                    {inv.status !== 'PENDING_RETURN' && (
+                                                        <a href={`https://bscscan.com/tx/${inv.tx_hash}`} target="_blank" rel="noopener noreferrer" className="p-2 bg-white border border-slate-200 text-slate-400 hover:text-teal-600 rounded-xl transition-all inline-block shadow-sm">
+                                                            <ExternalLink size={12} />
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function StocksHub({ account }) {
+    const [investments, setInvestments] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [stockPrices, setStockPrices] = useState({});
+    const [settlingId, setSettlingId] = useState(null);
+    const [successMsg, setSuccessMsg] = useState('');
+    const [errorMsg, setErrorMsg] = useState('');
+
+    useEffect(() => {
+        fetchInvestments();
+    }, [account]);
+
+    const fetchInvestments = () => {
+        setLoading(true);
+        axios.get(`${API_URL}/admin/smart-money`, { headers: { 'x-wallet-address': account } })
+            .then(res => {
+                const raw = res.data || [];
+                // Filter to only show Stock positions
+                const stocksOnly = raw.filter(inv => {
+                    try {
+                        const json = typeof inv.bucket_json === 'string' ? JSON.parse(inv.bucket_json) : inv.bucket_json;
+                        return json && json.type === 'StockTrade';
+                    } catch (e) { return false; }
+                });
+                setInvestments(stocksOnly);
+            })
+            .catch(() => {})
+            .finally(() => setLoading(false));
+    };
+
+    // Price fetcher for stocks in admin panel
+    useEffect(() => {
+        if (investments.length === 0) return;
+        const tickers = investments
+            .map(inv => {
+                try {
+                    const json = typeof inv.bucket_json === 'string' ? JSON.parse(inv.bucket_json) : inv.bucket_json;
+                    return json && json.type === 'StockTrade' ? json.ticker : null;
+                } catch (e) { return null; }
+            })
+            .filter(Boolean);
+        const uniqueTickers = [...new Set(tickers)];
+        uniqueTickers.forEach(async (ticker) => {
+            try {
+                const res = await axios.get(`${API_URL}/stocks/price?ticker=${ticker}`);
+                if (res.data?.success && res.data?.data?.price) {
+                    setStockPrices(prev => ({ ...prev, [ticker]: res.data.data.price }));
+                }
+            } catch (e) { console.warn('Failed to fetch admin stock price for', ticker); }
+        });
+    }, [investments]);
+
+    const handleSettle = async (id) => {
+        setSettlingId(id);
+        setSuccessMsg('');
+        setErrorMsg('');
+        try {
+            const res = await axios.post(`${API_URL}/admin/smart-money/settle`, { id }, { headers: { 'x-wallet-address': account } });
+            if (res.data?.success) {
+                setSuccessMsg('Position settled successfully!');
+                fetchInvestments();
+            } else {
+                setErrorMsg(res.data?.error || 'Settle failed');
+            }
+        } catch (e) {
+            setErrorMsg('Failed to settle position.');
+        } finally {
+            setSettlingId(null);
+        }
+    };
+
+    return (
+        <div className="space-y-8">
+            <div className="bg-white rounded-[3rem] border border-slate-200/60 p-10 shadow-sm">
+                <div className="flex items-center justify-between mb-10">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-teal-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-teal-200/20">
+                            <Briefcase size={24} />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-black text-slate-900 uppercase italic">Stock <span className="text-teal-600">Trading Ledger</span></h3>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Oversight of User Stock Positions & Settlements</p>
+                        </div>
+                    </div>
+                    <button onClick={fetchInvestments} className="p-3 bg-slate-50 hover:bg-slate-100 rounded-xl text-slate-600 transition-colors">
+                        <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+                    </button>
+                </div>
+
+                {successMsg && (
+                    <div className="mb-6 p-4 bg-emerald-50 text-emerald-600 rounded-2xl text-xs font-black uppercase tracking-wider border border-emerald-100 flex items-center gap-2">
+                        <CheckCircle2 size={16} /> {successMsg}
+                    </div>
+                )}
+                {errorMsg && (
+                    <div className="mb-6 p-4 bg-rose-50 text-rose-600 rounded-2xl text-xs font-black uppercase tracking-wider border border-rose-100 flex items-center gap-2">
+                        <AlertCircle size={16} /> {errorMsg}
+                    </div>
+                )}
+
+                {loading ? (
+                    <div className="py-24 text-center">
+                        <Loader2 className="w-10 h-10 text-teal-600 animate-spin mx-auto mb-4" />
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Loading Stock Ledger...</p>
+                    </div>
+                ) : investments.length === 0 ? (
+                    <div className="py-24 text-center bg-slate-50/50 rounded-[2rem] border border-dashed border-slate-200">
+                        <Briefcase className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+                        <h4 className="text-sm font-black text-slate-500 uppercase tracking-wider">No Stock Positions Found</h4>
+                        <p className="text-[10px] text-slate-400 font-bold mt-1">Trades will appear once users start investing in stocks.</p>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-separate border-spacing-y-3">
+                            <thead>
+                                <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                    <th className="px-6 py-2">Investor</th>
+                                    <th className="px-6 py-2">Stock</th>
+                                    <th className="px-6 py-2">Action</th>
+                                    <th className="px-6 py-2">Quantity</th>
+                                    <th className="px-6 py-2">Buy Price</th>
+                                    <th className="px-6 py-2">Current Price</th>
+                                    <th className="px-6 py-2">Invested</th>
+                                    <th className="px-6 py-2">Profit / Loss</th>
+                                    <th className="px-6 py-2">Status</th>
+                                    <th className="px-6 py-2 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {investments.map((inv, i) => {
+                                    let details = {};
+                                    try {
+                                        details = typeof inv.bucket_json === 'string' ? JSON.parse(inv.bucket_json) : inv.bucket_json;
+                                    } catch (e) {}
+
+                                    const buyRate = details.entry_price || details.price || details.buying_rate || 0;
+                                    const currentRate = stockPrices[details.ticker] || buyRate;
+                                    
+                                    let pnl = 0;
+                                    if (details.action === 'buy') {
+                                        pnl = (currentRate - buyRate) * (details.quantity || 0) * (details.leverage || 1);
+                                    } else {
+                                        pnl = (buyRate - currentRate) * (details.quantity || 0) * (details.leverage || 1);
+                                    }
+
+                                    const isSettled = inv.status === 'SETTLED';
+                                    const activeQty = isSettled ? 0 : details.quantity;
+                                    const activeBuyRate = isSettled ? 0 : buyRate;
+                                    const activeCurrentRate = isSettled ? 0 : currentRate;
+                                    const activePnl = isSettled ? 0 : pnl;
+                                    const activeInvested = isSettled ? 0 : inv.invest_amount;
+
+                                    return (
+                                        <tr key={i} className="bg-slate-50 hover:bg-white hover:shadow-xl hover:border-teal-100 border border-transparent rounded-2xl transition-all group">
+                                            <td className="px-6 py-5 first:rounded-l-2xl">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-xs font-black text-slate-800">{inv.wallet_address.slice(0, 8)}...{inv.wallet_address.slice(-6)}</span>
+                                                    <button onClick={() => { navigator.clipboard.writeText(inv.wallet_address); alert('Full wallet address copied.'); }} className="p-1 text-slate-300 hover:text-teal-600 opacity-0 group-hover:opacity-100 transition-opacity"><Copy size={12} /></button>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-100 flex items-center justify-center font-black text-xs text-teal-600">
+                                                        {details.ticker}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-xs font-black text-slate-900">{details.ticker}</p>
+                                                        <p className="text-[9px] font-bold text-slate-400">Equity Asset</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded border ${details.action === 'buy' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}>
+                                                    {details.action === 'buy' ? 'BULL' : 'BEAR'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-5 font-black text-xs text-slate-800">
+                                                {activeQty} Units
+                                            </td>
+                                            <td className="px-6 py-5 font-mono text-xs font-bold text-slate-600">
+                                                ${activeBuyRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </td>
+                                            <td className="px-6 py-5 font-mono text-xs font-bold text-teal-600">
+                                                ${activeCurrentRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs font-black text-slate-900">${activeInvested.toLocaleString()}</span>
+                                                    <span className="text-[9px] font-bold text-slate-400">{details.leverage}x Leverage</span>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <span className={`text-xs font-black font-mono ${activePnl >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                    {activePnl >= 0 ? '+' : ''}${activePnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                {inv.status === 'ACTIVE' && (
+                                                    <span className="px-2 py-0.5 bg-sky-50 text-sky-600 border border-sky-100 text-[9px] font-black uppercase rounded">Active</span>
+                                                )}
+                                                {inv.status === 'PENDING_RETURN' && (
+                                                    <span className="px-2 py-0.5 bg-amber-50 text-amber-600 border border-amber-100 text-[9px] font-black uppercase rounded animate-pulse">Pending Return</span>
+                                                )}
+                                                {inv.status === 'SETTLED' && (
+                                                    <span className="px-2 py-0.5 bg-slate-100 text-slate-400 border border-slate-200 text-[9px] font-black uppercase rounded">Settled</span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-5 last:rounded-r-2xl text-right">
+                                                <div className="flex items-center justify-end gap-3">
+                                                    {inv.status === 'PENDING_RETURN' && (
+                                                        <button 
+                                                            onClick={() => handleSettle(inv.id)}
+                                                            disabled={settlingId === inv.id}
+                                                            className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white font-black text-[9px] uppercase tracking-wider rounded-lg transition-all shadow-md active:scale-95 disabled:opacity-50"
+                                                        >
+                                                            {settlingId === inv.id ? 'Settling...' : 'Approve Settlement'}
+                                                        </button>
+                                                    )}
+                                                    {inv.status !== 'PENDING_RETURN' && (
+                                                        <a href={`https://bscscan.com/tx/${inv.tx_hash}`} target="_blank" rel="noopener noreferrer" className="p-2 bg-white border border-slate-200 text-slate-400 hover:text-teal-600 rounded-xl transition-all inline-block shadow-sm">
+                                                            <ExternalLink size={12} />
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
         </div>
     );

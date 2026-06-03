@@ -712,13 +712,98 @@ function TokenDetail() {
 
                                     {/* ── Info Tab ── */}
                                     {activeTab === 'info' && (
-                                        <motion.div key="info" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                                            <h3 className="font-black text-gray-900 mb-2 flex items-center gap-2">
-                                                <Info className="w-4 h-4 text-teal-600" /> About {token.name}
-                                            </h3>
-                                            <p className="text-gray-600 text-sm leading-relaxed mb-5">
-                                                {token.description || `${token.name} ($${token.symbol}) was launched on the B20-LAB Launchpad on BNB Smart Chain. It uses a dynamic bonding curve for fair price discovery. When the curve reaches its 10 BNB target, 9 BNB is sent to Treasury and 1 BNB is used to seed PancakeSwap liquidity permanently.`}
-                                            </p>
+                                        <motion.div key="info" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-6">
+                                            <div>
+                                                <h3 className="font-black text-gray-900 mb-2 flex items-center gap-2">
+                                                    <Info className="w-4 h-4 text-teal-600" /> About {token.name}
+                                                </h3>
+                                                <p className="text-gray-600 text-sm leading-relaxed mb-5">
+                                                    {token.description || `${token.name} ($${token.symbol}) was launched on the B20-LAB Launchpad on BNB Smart Chain. It uses a dynamic bonding curve for fair price discovery. When the curve reaches its 10 BNB target, 9 BNB is sent to Treasury and 1 BNB is used to seed PancakeSwap liquidity permanently.`}
+                                                </p>
+                                            </div>
+
+                                            {/* Auto-Submission Tracker Section */}
+                                            <div className="bg-slate-50 rounded-[2.5rem] border border-black/5 p-6 space-y-6">
+                                                <h4 className="font-black text-slate-800 text-xs uppercase tracking-wider flex items-center gap-2 border-b border-black/5 pb-3">
+                                                    <Zap className="w-4 h-4 text-teal-500 animate-pulse" /> Auto-Submission & Listing Tracker
+                                                </h4>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    {[
+                                                        {
+                                                            name: 'IPFS Metadata',
+                                                            status: token.ipfs_metadata_url ? 'Uploaded' : 'Pending Verification',
+                                                            color: token.ipfs_metadata_url ? 'text-teal-600 bg-teal-50 border-teal-100' : 'text-amber-600 bg-amber-50 border-amber-100',
+                                                            link: token.ipfs_metadata_url,
+                                                            desc: 'Logo & token JSON specifications pinned on IPFS.'
+                                                        },
+                                                        {
+                                                            name: 'BscScan Verification',
+                                                            status: token.bscscan_verified ? 'Verified' : 'Pending',
+                                                            color: token.bscscan_verified ? 'text-teal-600 bg-teal-50 border-teal-100' : 'text-amber-600 bg-amber-50 border-amber-100',
+                                                            link: token.bscscan_verified ? `https://bscscan.com/token/${token.contract_address || address}#code` : null,
+                                                            desc: 'Contract source code verified automatically on BscScan.'
+                                                        },
+                                                        {
+                                                            name: 'Trust Wallet Pull Request',
+                                                            status: token.tw_pr_status === 'submitted' ? 'Submitted' : 'Pending Verify',
+                                                            color: token.tw_pr_status === 'submitted' ? 'text-teal-600 bg-teal-50 border-teal-100' : 'text-amber-600 bg-amber-50 border-amber-100',
+                                                            link: token.tw_pr_url,
+                                                            desc: 'Asset submission committed to Trust Wallet assets GitHub repo.'
+                                                        },
+                                                        {
+                                                            name: 'DexScreener Index',
+                                                            status: token.dexscreener_status === 'indexed' ? 'Indexed' : 'Pending Liquidity',
+                                                            color: token.dexscreener_status === 'indexed' ? 'text-sky-600 bg-sky-50 border-sky-100' : 'text-amber-600 bg-amber-50 border-amber-100',
+                                                            link: token.dexscreener_url,
+                                                            desc: 'PancakeSwap trading pool tracked on DexScreener charts.'
+                                                        },
+                                                        {
+                                                            name: 'GeckoTerminal Index',
+                                                            status: token.geckoterminal_status === 'indexed' ? 'Indexed' : 'Pending Liquidity',
+                                                            color: token.geckoterminal_status === 'indexed' ? 'text-sky-600 bg-sky-50 border-sky-100' : 'text-amber-600 bg-amber-50 border-amber-100',
+                                                            link: token.geckoterminal_url,
+                                                            desc: 'Real-time pool discovery tracked on GeckoTerminal (CoinGecko).'
+                                                        },
+                                                        {
+                                                            name: 'CoinGecko Listing',
+                                                            status: token.coingecko_status === 'indexed' ? 'Indexed' : 'Reviewing',
+                                                            color: token.coingecko_status === 'indexed' ? 'text-purple-600 bg-purple-50 border-purple-100' : 'text-amber-600 bg-amber-50 border-amber-100',
+                                                            link: token.coingecko_url,
+                                                            desc: 'CoinGecko official token page profile indexing status.'
+                                                        },
+                                                        {
+                                                            name: 'Coinpaprika Listing',
+                                                            status: token.coinpaprika_status === 'indexed' ? 'Indexed' : 'Reviewing',
+                                                            color: token.coinpaprika_status === 'indexed' ? 'text-purple-600 bg-purple-50 border-purple-100' : 'text-amber-600 bg-amber-50 border-amber-100',
+                                                            link: token.coinpaprika_url,
+                                                            desc: 'Coinpaprika global crypto data platform listing status.'
+                                                        }
+                                                    ].map((item, idx) => (
+                                                        <div key={idx} className="bg-white p-5 rounded-3xl border border-black/5 flex flex-col justify-between hover:shadow-lg transition-all group">
+                                                            <div>
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                    <span className="text-xs font-black text-slate-800 uppercase tracking-tight">{item.name}</span>
+                                                                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-md border uppercase tracking-tighter ${item.color}`}>
+                                                                        {item.status}
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-[10px] text-gray-400 font-bold leading-normal mb-3">{item.desc}</p>
+                                                            </div>
+                                                            {item.link ? (
+                                                                <a href={item.link} target="_blank" rel="noopener noreferrer" 
+                                                                    className="text-[10px] font-black text-teal-600 hover:text-teal-700 flex items-center gap-1 mt-1 group-hover:translate-x-1 transition-transform">
+                                                                    View Listing <ExternalLink className="w-2.5 h-2.5" />
+                                                                </a>
+                                                            ) : (
+                                                                <span className="text-[10px] font-black text-gray-300 flex items-center gap-1 mt-1">
+                                                                    Auto-Syncing...
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {[
                                                     { label: 'Contract Address', value: shortAddr(token.contract_address || address, 10, 10), copy: token.contract_address || address, link: `https://bscscan.com/token/${token.contract_address || address}` },

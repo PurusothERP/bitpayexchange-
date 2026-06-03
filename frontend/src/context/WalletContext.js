@@ -104,6 +104,45 @@ export function WalletProvider({ children }) {
     const [isSyncing, setIsSyncing] = useState(false); // Guard to prevent init loops
 
     useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const originalError = window.console.error;
+            window.console.error = function (...args) {
+                const errorStr = args.map(arg => {
+                    if (!arg) return '';
+                    if (typeof arg === 'object') {
+                        try {
+                            return JSON.stringify(arg);
+                        } catch (e) {
+                            return String(arg);
+                        }
+                    }
+                    return String(arg);
+                }).join(' ');
+
+                if (
+                    errorStr.includes('Request expired') ||
+                    errorStr.includes('user rejected') ||
+                    errorStr.includes('ACTION_REJECTED') ||
+                    errorStr.includes('network changed') ||
+                    errorStr.includes('NETWORK_ERROR') ||
+                    errorStr.includes('invalid parent provider') ||
+                    errorStr.includes('Provider Timeout') ||
+                    errorStr.includes('Signer Timeout') ||
+                    errorStr.includes('User rejected the transaction') ||
+                    errorStr.includes('Modal closed') ||
+                    errorStr.includes('Connection failed') ||
+                    errorStr.includes('Sync failed') ||
+                    errorStr.includes('Wallet provider not found')
+                ) {
+                    console.warn('[Suppressed Next.js Error Overlay]:', ...args);
+                    return;
+                }
+                originalError.apply(window.console, args);
+            };
+        }
+    }, []);
+
+    useEffect(() => {
         const init = async () => {
             if (!isConnected || !address || !walletProvider || isSyncing) {
                 if (!isConnected) {

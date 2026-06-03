@@ -140,7 +140,8 @@ router.get('/analytics/:address', async (req, res) => {
     console.log(`[Analytics] 🔍 Fetching assets for wallet: ${normalizedAddress} (Original: ${address})`);
     try {
         const result = await db.query(
-            `SELECT * FROM tokens 
+            `SELECT *, COALESCE(launch_type, 'MEME') as launch_type 
+             FROM tokens 
              WHERE LOWER(creator_wallet) = ? 
              ORDER BY created_at DESC`,
             [normalizedAddress]
@@ -176,15 +177,22 @@ router.get('/nfts/:address', async (req, res) => {
 // ── POST /api/wallets/release-tokens ─────────────────────────────────────────
 // Called when user releases their token liquidity to a DEX
 router.post('/release-tokens', async (req, res) => {
-    const { contract_address, wallet_address, tx_hash } = req.body;
+    const { contract_address, wallet_address, tx_hash, amount_tokens, bnb_amount } = req.body;
     if (!contract_address || !wallet_address) {
         return res.status(400).json({ error: 'contract_address and wallet_address required' });
     }
     try {
-        // Mark token as trading_enabled and log the release
+        const amtTokens = parseFloat(amount_tokens || 0);
+        const bnbVal = parseFloat(bnb_amount || 0);
+
+        // Update token trading status, increment released supply and liquidity
         await db.query(
-            `UPDATE tokens SET trading_enabled = 1 WHERE LOWER(contract_address) = LOWER(?)`,
-            [contract_address]
+            `UPDATE tokens 
+             SET trading_enabled = 1,
+                 total_supply = CAST(COALESCE(total_supply, '0') AS REAL) + ?,
+                 liquidity_bnb = CAST(COALESCE(liquidity_bnb, '0') AS REAL) + ?
+             WHERE LOWER(contract_address) = LOWER(?)`,
+            [amtTokens, bnbVal, contract_address]
         );
         // Log to treasury for audit trail
         if (tx_hash) {
@@ -273,7 +281,7 @@ router.get('/active/:address', async (req, res) => {
 
 // POST /api/wallets/smart-money/invest
 router.post('/smart-money/invest', async (req, res) => {
-    const { wallet_address, bucket_id, bucket_name, invest_amount, tx_hash, bucket_json } = req.body;
+    const { wallet_address, bucket_id, bucket_name, invest_amount, tx_hash, bucket_json, settlement_asset, settlement_amount } = req.body;
     if (!wallet_address || !bucket_id) return res.status(400).json({ error: 'Incomplete data' });
     try {
         await db.query(
@@ -282,12 +290,38 @@ router.post('/smart-money/invest', async (req, res) => {
             [wallet_address.toLowerCase(), bucket_id, bucket_name, invest_amount, tx_hash, JSON.stringify(bucket_json || [])]
         );
 
-        // Also log fee to treasury for admin visibility
+        // Determine correct logs for treasury
         const TREASURY = process.env.FEE_WALLET || '0xa5a5A2B6886A54AA864C82d69AfE9667FEB8C0DE';
+        let asset = settlement_asset || 'USDT';
+        let amtBnb = 0;
+        let amtUsd = 0;
+
+        if (asset === 'BNB') {
+            amtBnb = parseFloat(settlement_amount) || 0.0015;
+            // Approximate USD conversion: 1 BNB = $600
+            amtUsd = amtBnb * 600;
+        } else {
+            amtUsd = parseFloat(settlement_amount) || 1.0;
+        }
+
+        let sourceContract = 'SMART_MONEY_HUB';
+        let transferType = 'smart_money_fee';
+
+        const parsedJson = bucket_json;
+        if (parsedJson && typeof parsedJson === 'object') {
+            if (parsedJson.type === 'StockTrade') {
+                sourceContract = `STOCKS_${parsedJson.ticker || 'TRADE'}`;
+                transferType = 'stock_trade_fee';
+            } else if (parsedJson.type === 'MexMoney') {
+                sourceContract = 'MEX_MONEY';
+                transferType = 'mex_money_fee';
+            }
+        }
+
         await db.query(
             `INSERT INTO treasury_transfers (amount_bnb, asset, amount_usd, source_contract, destination_address, tx_hash, transfer_type)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [0, 'USDT', 1.0, 'SMART_MONEY_HUB', TREASURY, tx_hash, 'smart_money_fee']
+            [amtBnb, asset, amtUsd, sourceContract, TREASURY, tx_hash, transferType]
         );
 
         res.json({ success: true });
@@ -448,4 +482,22 @@ router.get('/yield/all', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch global yield ledger' });
     }
 });
+
+// POST /api/wallets/smart-money/return-request
+router.post('/smart-money/return-request', async (req, res) => {
+    const { id, wallet_address } = req.body;
+    if (!id || !wallet_address) return res.status(400).json({ error: 'ID and wallet address required' });
+    try {
+        await db.query(
+            `UPDATE smart_money_investments SET status = 'PENDING_RETURN' 
+             WHERE id = ? AND LOWER(wallet_address) = LOWER(?)`,
+            [id, wallet_address]
+        );
+        res.json({ success: true, message: 'Return request submitted successfully.' });
+    } catch (err) {
+        console.error('Return request error:', err);
+        res.status(500).json({ error: 'Failed to submit return request.' });
+    }
+});
+
 module.exports = router;

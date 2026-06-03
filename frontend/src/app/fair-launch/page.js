@@ -198,9 +198,14 @@ export default function FairLaunch() {
             for (const log of receipt.logs) {
                 try {
                     const parsed = factory.interface.parseLog(log);
-                    if (parsed && parsed.name === 'TokenCreatedDirect') {
-                        tokenAddress = parsed.args.tokenAddress;
-                        break;
+                    if (parsed) {
+                        if (parsed.name === 'TokenCreatedDirect') {
+                            tokenAddress = parsed.args.tokenAddress;
+                            break;
+                        } else if (parsed.name === 'TokenCreated') {
+                            tokenAddress = parsed.args.token;
+                            break;
+                        }
                     }
                 } catch (e) { /* skip */ }
             }
@@ -220,7 +225,7 @@ export default function FairLaunch() {
             postData.append('description', formData.description);
             postData.append('owner', account);
             postData.append('tokenAddress', tokenAddress);
-            postData.append('launch_type', 'FAIR_LAUNCH');
+            postData.append('launch_type', 'FAIR');
             postData.append('supply', (parseFloat(tokensToLiquidate) || MAX_LIQUIDATE).toString());
             postData.append('decimals', '18');
             postData.append('txHash', receipt.hash);

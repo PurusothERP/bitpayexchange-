@@ -15,7 +15,7 @@ const RPCS = [
 ];
 
 const FACTORY = '0x4598AD4E828cb64A53246765f60D9912AEA1b11A';
-const DIRECT_FACTORY = '0xbe3EA5f2AE5b278796AbCFbd1078EF88dd0d70F5';
+const DIRECT_FACTORY = '0xeEBC10420F486F8357c2efaBd6F5F44Ac9a568a9';
 
 async function sync() {
     let currentRpcIdx = 0;

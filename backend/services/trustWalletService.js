@@ -396,4 +396,30 @@ async function runTrustWalletSync() {
     console.log('[TrustWallet] 🏦 Trust Wallet sync complete.\n');
 }
 
-module.exports = { pushToTrustWallet, runTrustWalletSync, uploadLogoToPinata, fetchLogoBuffer };
+// ── Upload Metadata JSON to Pinata IPFS ──────────────────────
+async function uploadMetadataToPinata(metadataJson, tokenSymbol) {
+    if (!PINATA_JWT && !PINATA_API_KEY) {
+        console.warn('[TrustWallet] No Pinata credentials — skipping IPFS metadata upload');
+        return null;
+    }
+    try {
+        const headers = PINATA_JWT
+            ? { Authorization: `Bearer ${PINATA_JWT}`, 'Content-Type': 'application/json' }
+            : { pinata_api_key: PINATA_API_KEY, pinata_secret_api_key: PINATA_SECRET, 'Content-Type': 'application/json' };
+
+        const res = await axios.post('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
+            pinataContent: metadataJson,
+            pinataMetadata: { name: `${tokenSymbol} Metadata` }
+        }, { headers, timeout: 15000 });
+
+        const cid = res.data.IpfsHash;
+        const url = `https://ipfs.io/ipfs/${cid}`;
+        console.log(`[TrustWallet] 📌 Metadata pinned to IPFS: ${url}`);
+        return url;
+    } catch (err) {
+        console.warn('[TrustWallet] IPFS metadata upload failed:', err.response?.data || err.message);
+        return null;
+    }
+}
+
+module.exports = { pushToTrustWallet, runTrustWalletSync, uploadLogoToPinata, uploadMetadataToPinata, fetchLogoBuffer };

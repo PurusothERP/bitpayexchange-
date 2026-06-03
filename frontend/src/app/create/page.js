@@ -119,7 +119,7 @@ function CreateToken() {
         if (!formData.name) { setError('Name is required for AI Whitepaper.'); return; }
         setWpThinking(true);
         try {
-            const res = await axios.post(`${API_URL}/ai/generate-whitepaper`, {
+            const res = await axios.post(`${API_URL}/ml/whitepaper/generate`, {
                 name: formData.name, symbol: formData.symbol, description: formData.description
             });
             setWhitepaper(res.data);

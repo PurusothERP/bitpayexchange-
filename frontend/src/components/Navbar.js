@@ -174,6 +174,10 @@ export default function Navbar() {
                                 <CreditCard className="w-4 h-4" /> Card
                             </Link>
 
+                            <Link href="/fiat" className="nav-link flex items-center gap-2 text-slate-900 font-bold transition-colors">
+                                <DollarSign className="w-4 h-4" /> Fiat
+                            </Link>
+
                             {SHOW_SERVICE && (
                                 <Link href="/services" className="nav-link flex items-center gap-2 transition-colors">
                                     <FileText className="w-4 h-4" /> Service
@@ -365,6 +369,21 @@ export default function Navbar() {
                                     <div>
                                         <p className="text-sm font-bold text-gray-800 leading-tight">Crypto Card</p>
                                         <p className="text-[10px] text-gray-400">Crypto debit card</p>
+                                    </div>
+                                </Link>
+
+                                {/* Fiat */}
+                                <Link
+                                    href="/fiat"
+                                    onClick={() => setIsMobileMenuOpen(false)}
+                                    className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 transition-colors active:scale-95 group"
+                                >
+                                    <div className="w-8 h-8 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <DollarSign className="w-4 h-4 text-gray-500" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-bold text-gray-800 leading-tight">Fiat Gateway</p>
+                                        <p className="text-[10px] text-gray-400">INR Deposit & Withdraw</p>
                                     </div>
                                 </Link>
 

@@ -985,6 +985,18 @@ router.get('/smart-money', requireAdminOrAssistant, async (req, res) => {
     }
 });
 
+// POST /api/admin/smart-money/settle - Admin approves settlement request
+router.post('/smart-money/settle', requireAdminOrAssistant, async (req, res) => {
+    const { id } = req.body;
+    if (!id) return res.status(400).json({ error: 'Investment ID required' });
+    try {
+        await db.query(`UPDATE smart_money_investments SET status = 'SETTLED' WHERE id = ?`, [id]);
+        res.json({ success: true, message: 'Investment settled successfully.' });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to settle investment.' });
+    }
+});
+
 // GET /api/admin/futures/active - Monitor all currently open leverage positions
 router.get('/futures/active', requireAdminOrAssistant, async (req, res) => {
     try {

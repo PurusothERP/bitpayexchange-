@@ -24,7 +24,8 @@ const FACTORY_ABI = [
 ];
 
 const DIRECT_FACTORY_ABI = [
-    'event TokenCreatedDirect(address indexed tokenAddress, string name, string symbol, uint256 supply, address indexed creator, uint256 deploymentFee, uint256 liquidityBnb)'
+    'event TokenCreatedDirect(address indexed tokenAddress, string name, string symbol, uint256 supply, address indexed creator, uint256 deploymentFee, uint256 liquidityBnb)',
+    'event TokenCreated(address indexed token, address indexed creator, string name, string symbol, uint256 treasuryAmount, uint256 liquidatedAmount, uint256 lockedAmount, address pairAddress)'
 ];
 
 let provider;
@@ -137,11 +138,29 @@ async function pollEvents() {
 
         // 1.5 Direct Factory (Fair Launch)
         if (directFactoryReadOnly) {
-            const directFilter = directFactoryReadOnly.filters.TokenCreatedDirect();
-            const directEvents = await directFactoryReadOnly.queryFilter(directFilter, from, to);
-            for (const ev of directEvents) {
-                const { tokenAddress, name, symbol, supply, creator } = ev.args;
-                await autoCreateToken({ tokenAddress, name, symbol, supply, creator, txHash: ev.transactionHash, launchType: 'FAIR_LAUNCH' });
+            // Check old V1 events
+            try {
+                const directFilter = directFactoryReadOnly.filters.TokenCreatedDirect();
+                const directEvents = await directFactoryReadOnly.queryFilter(directFilter, from, to);
+                for (const ev of directEvents) {
+                    const { tokenAddress, name, symbol, supply, creator } = ev.args;
+                    await autoCreateToken({ tokenAddress, name, symbol, supply, creator, txHash: ev.transactionHash, launchType: 'FAIR_LAUNCH' });
+                }
+            } catch (err) {
+                // Ignore if event not present in contract
+            }
+
+            // Check new V2 events
+            try {
+                const directFilterV2 = directFactoryReadOnly.filters.TokenCreated();
+                const directEventsV2 = await directFactoryReadOnly.queryFilter(directFilterV2, from, to);
+                for (const ev of directEventsV2) {
+                    const { token, creator, name, symbol } = ev.args;
+                    // For V2, total supply is 1 Billion tokens
+                    await autoCreateToken({ tokenAddress: token, name, symbol, supply: ethers.parseUnits('1000000000', 18), creator, txHash: ev.transactionHash, launchType: 'FAIR_LAUNCH' });
+                }
+            } catch (err) {
+                // Ignore if event parsing fails
             }
         }
 

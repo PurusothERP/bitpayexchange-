@@ -654,6 +654,21 @@ export const DIRECT_LAUNCH_FACTORY_ABI = [
     "type": "event"
   },
   {
+    "anonymous": false,
+    "inputs": [
+      { "indexed": true,  "internalType": "address", "name": "token", "type": "address" },
+      { "indexed": true,  "internalType": "address", "name": "creator", "type": "address" },
+      { "indexed": false, "internalType": "string",  "name": "name", "type": "string" },
+      { "indexed": false, "internalType": "string",  "name": "symbol", "type": "string" },
+      { "indexed": false, "internalType": "uint256", "name": "treasuryAmount", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "liquidatedAmount", "type": "uint256" },
+      { "indexed": false, "internalType": "uint256", "name": "lockedAmount", "type": "uint256" },
+      { "indexed": false, "internalType": "address", "name": "pairAddress", "type": "address" }
+    ],
+    "name": "TokenCreated",
+    "type": "event"
+  },
+  {
     "inputs": [
       { "internalType": "address", "name": "tokenAddress", "type": "address" },
       { "internalType": "uint256", "name": "tokenAmount",  "type": "uint256" }

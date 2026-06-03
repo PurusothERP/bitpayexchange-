@@ -93,7 +93,18 @@ function normalizeToken(t) {
         target_balance_bnb: 10.0,
         launch_tx_hash: t.tx_hash,
         bsc_verification_link: `https://bscscan.com/token/${t.contract_address}`,
-        time_since_launch: diffDays < 1 ? 'Today' : `${Math.floor(diffDays)} days ago`
+        time_since_launch: diffDays < 1 ? 'Today' : `${Math.floor(diffDays)} days ago`,
+        ipfs_metadata_url: t.ipfs_metadata_url || null,
+        dexscreener_status: t.dexscreener_status || 'pending',
+        dexscreener_url: t.dexscreener_url || null,
+        geckoterminal_status: t.geckoterminal_status || 'pending',
+        geckoterminal_url: t.geckoterminal_url || null,
+        coingecko_status: t.coingecko_status || 'pending',
+        coingecko_url: t.coingecko_url || null,
+        coinmarketcap_status: t.coinmarketcap_status || 'pending',
+        coinmarketcap_url: t.coinmarketcap_url || null,
+        coinpaprika_status: t.coinpaprika_status || 'pending',
+        coinpaprika_url: t.coinpaprika_url || null
     };
 }
 
@@ -596,7 +607,7 @@ router.get('/:address/logo', async (req, res) => {
 // Called by the frontend after on-chain token creation to save metadata + logo
 // IMPORTANT: Must be before /:address route
 router.post('/sync', upload.single('logo'), async (req, res) => {
-    const { name, symbol, decimals, supply, owner, description, tokenAddress, txHash, launch_type } = req.body;
+    const { name, symbol, decimals, supply, owner, description, tokenAddress, txHash, launch_type, treasury_allocation } = req.body;
     if (!owner) {
         console.warn(`[Sync] ⚠️ Token sync for ${symbol} (${tokenAddress}) missing owner/creator address!`);
     }
@@ -661,10 +672,17 @@ router.post('/sync', upload.single('logo'), async (req, res) => {
             }
         }
 
-        // 3. Save to SQLite — use INSERT OR REPLACE to handle duplicates
+        // For FAIR launch tokens: record treasury allocation (10% of 1B = 100M by default)
+        // treasury_allocation = tokens reserved for treasury wallet (not available for DEX release)
+        const TOTAL_FAIR_SUPPLY = 1000000000;
+        const TREASURY_PERCENT = 0.1; // 10%
+        const resolvedTreasuryAlloc = launch_type === 'FAIR'
+            ? (treasury_allocation || Math.floor(TOTAL_FAIR_SUPPLY * TREASURY_PERCENT)).toString()
+            : '0';
+
         const query = `
-            INSERT INTO tokens (name, symbol, contract_address, creator_wallet, logo_url, metadata_url, description, decimals, total_supply, tx_hash, launch_type)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO tokens (name, symbol, contract_address, creator_wallet, logo_url, metadata_url, description, decimals, total_supply, tx_hash, launch_type, treasury_allocation)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(contract_address) DO UPDATE SET
                 name = excluded.name,
                 symbol = excluded.symbol,
@@ -674,7 +692,11 @@ router.post('/sync', upload.single('logo'), async (req, res) => {
                 creator_wallet = excluded.creator_wallet,
                 decimals = excluded.decimals,
                 tx_hash = excluded.tx_hash,
-                launch_type = excluded.launch_type
+                launch_type = excluded.launch_type,
+                treasury_allocation = CASE WHEN excluded.launch_type = 'FAIR' 
+                    THEN excluded.treasury_allocation 
+                    ELSE treasury_allocation 
+                END
         `;
         const values = [
             name || 'Unknown',
@@ -687,7 +709,8 @@ router.post('/sync', upload.single('logo'), async (req, res) => {
             parseInt(decimals) || 18,
             supply || '1000000000',
             txHash || '',
-            launch_type || 'MEME'
+            launch_type || 'MEME',
+            resolvedTreasuryAlloc
         ];
 
         await db.query(query, values);

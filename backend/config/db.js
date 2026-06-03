@@ -171,6 +171,8 @@ const db = {
                 tw_pr_url TEXT,
                 tw_pr_status TEXT DEFAULT 'pending',
                 last_trade_at TIMESTAMP,
+                trading_enabled INTEGER DEFAULT 0,
+                treasury_allocation TEXT DEFAULT '0',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )`,
             `CREATE TABLE IF NOT EXISTS settings (
@@ -252,6 +254,17 @@ const db = {
                 price REAL NOT NULL,
                 tx_hash TEXT UNIQUE NOT NULL,
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`,
+            `CREATE TABLE IF NOT EXISTS whitepapers (
+                id SERIAL PRIMARY KEY,
+                temp_id TEXT UNIQUE,
+                token_name TEXT,
+                token_symbol TEXT,
+                token_address TEXT,
+                content TEXT,
+                is_paid INTEGER DEFAULT 0,
+                tx_hash TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )`
         ];
 
@@ -289,7 +302,9 @@ const db = {
                 { name: 'verification_status', type: 'TEXT DEFAULT "pending"' },
                 { name: 'tw_pr_url', type: 'TEXT' },
                 { name: 'tw_pr_status', type: 'TEXT DEFAULT "pending"' },
-                { name: 'last_trade_at', type: 'DATETIME' }
+                { name: 'last_trade_at', type: 'DATETIME' },
+                { name: 'trading_enabled', type: 'INTEGER DEFAULT 0' },
+                { name: 'treasury_allocation', type: 'TEXT DEFAULT "0"' }
             ];
 
             for (const col of columns) {
@@ -303,6 +318,13 @@ const db = {
                 }
             }
             console.log('[DB] ✅ Tokens Auto-Migration Complete');
+
+            // Auto-Migration: Ensure smart_money_investments has status column
+            try {
+                await db.query(`ALTER TABLE smart_money_investments ADD COLUMN status TEXT DEFAULT 'ACTIVE'`);
+            } catch (e) {
+                // Column already exists
+            }
         } catch (migErr) {
             console.warn('[DB] Auto-Migration Warning:', migErr.message);
         }

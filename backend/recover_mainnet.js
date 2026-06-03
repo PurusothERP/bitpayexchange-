@@ -19,6 +19,7 @@ const MEME_FACTORY_ADDRESSES = [
 ];
 
 const DIRECT_FACTORY_ADDRESSES = [
+    '0xeEBC10420F486F8357c2efaBd6F5F44Ac9a568a9',  // Direct factory V2
     '0xd2f602536605CAed0C30a2DA05B24B8F0E59197E',  // Direct factory (from admin page constants)
     '0xbe3EA5f2AE5b278796AbCFbd1078EF88dd0d70F5',  // Old direct factory
 ];
@@ -31,6 +32,7 @@ const MEME_FACTORY_ABI = [
 
 const DIRECT_FACTORY_ABI = [
     'event TokenCreatedDirect(address indexed tokenAddress, string name, string symbol, uint256 supply, address indexed creator, uint256 deploymentFee, uint256 liquidityBnb)',
+    'event TokenCreated(address indexed token, address indexed creator, string name, string symbol, uint256 treasuryAmount, uint256 liquidatedAmount, uint256 lockedAmount, address pairAddress)',
     'function getAllTokens() view returns (address[])',
 ];
 
@@ -89,18 +91,17 @@ async function scanFactoryLogs(factoryAddr, abi, eventNames, launch_type, curren
             for (const eventName of eventNames) {
                 const logs = await contract.queryFilter(eventName, start, end);
                 for (const log of logs) {
-                    const tokenAddr = log.args.tokenAddress?.toLowerCase();
+                    const tokenAddr = (log.args.tokenAddress || log.args.token)?.toLowerCase();
                     if (!tokenAddr) continue;
 
                     const existing = await db.query('SELECT id FROM tokens WHERE LOWER(contract_address) = ?', [tokenAddr]);
                     if (existing.rows.length === 0) {
                         const name = log.args.name || 'Unknown';
                         const symbol = log.args.symbol || 'UNKN';
-                        const supply = log.args.supply?.toString() || '1000000000';
-                        const creator = log.args.creator?.toLowerCase() || '';
+                        const supply = (log.args.supply || ethers.parseUnits('1000000000', 18)).toString();
+                        const creator = (log.args.creator || '').toLowerCase();
                         const decimals = log.args.decimals ? Number(log.args.decimals) : 18;
-                        const lt = eventName === 'StandardTokenCreated' ? 'STANDARD' :
-                                   eventName === 'TokenCreatedDirect'   ? 'FAIR'     : launch_type;
+                        const lt = eventName === 'StandardTokenCreated' ? 'STANDARD' : 'FAIR';
 
                         try {
                             await db.query(
@@ -201,7 +202,7 @@ async function main() {
         const logCount = await scanFactoryLogs(
             factoryAddr,
             DIRECT_FACTORY_ABI,
-            ['TokenCreatedDirect'],
+            ['TokenCreatedDirect', 'TokenCreated'],
             'FAIR',
             currentBlock
         );

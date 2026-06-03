@@ -126,6 +126,32 @@ router.post('/ai-agent', async (req, res) => {
 });
 
 /**
+ * @route   POST /api/ml/ai-agent-suggest
+ * @desc    Check mimic and suggest 5 tokens based on name/symbol/idea
+ */
+router.post('/ai-agent-suggest', async (req, res) => {
+    const { name, symbol, idea } = req.body;
+    if (!idea && (!name || !symbol)) {
+        return res.status(400).json({ error: 'Token idea or Name/Symbol are required' });
+    }
+    try {
+        // Run mimic check on provided name/symbol if provided
+        let mimicCheck = null;
+        if (name && symbol) {
+            mimicCheck = await mlEngine.detectMimicToken(name, symbol);
+        }
+
+        // Get 5 suggestions from OpenAI
+        const suggestions = await mlEngine.generateAISuggestions(name, symbol, idea);
+
+        res.json({ success: true, data: { mimicCheck, suggestions } });
+    } catch (error) {
+        console.error('[ML Route] AI agent suggest error:', error.message);
+        res.status(500).json({ error: 'AI suggestion failed', details: error.message });
+    }
+});
+
+/**
  * @route   GET /api/ml/market
  * @desc    Get real-time market data for top meme coins
  */
@@ -154,7 +180,13 @@ router.post('/whitepaper/generate', async (req, res) => {
                 `INSERT INTO whitepapers (temp_id, token_name, token_symbol, content) VALUES (?, ?, ?, ?)`,
                 [temp_id, req.body.name, req.body.symbol, result.content]
             );
-            res.json({ success: true, temp_id, content: result.content });
+            res.json({ 
+                success: true, 
+                temp_id, 
+                content: result.content,
+                token_name: req.body.name,
+                token_symbol: req.body.symbol
+            });
         } else {
             res.status(500).json(result);
         }
@@ -240,6 +272,24 @@ router.post('/neura-chat', async (req, res) => {
     } catch (error) {
         console.error('[ML Route] Neura chat error:', error.message);
         res.status(500).json({ error: 'Neura chat failed' });
+    }
+});
+
+/**
+ * @route   POST /api/ml/ai-description
+ * @desc    Generate a 4-5 line token description based on name and symbol
+ */
+router.post('/ai-description', async (req, res) => {
+    const { name, symbol } = req.body;
+    if (!name || !symbol) {
+        return res.status(400).json({ error: 'Name and symbol are required' });
+    }
+    try {
+        const description = await mlEngine.generateAIDescription(name, symbol);
+        res.json({ success: true, description });
+    } catch (error) {
+        console.error('[ML Route] AI description error:', error.message);
+        res.status(500).json({ error: 'AI description failed', details: error.message });
     }
 });
 

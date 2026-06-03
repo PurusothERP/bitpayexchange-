@@ -1671,10 +1671,10 @@ const ExchangeContent = () => {
                     if (amountIn > 0 && toPrice > 0) {
                         if (lastUpdatedField === 'from') {
                             const amountOut = (amountIn * fromPrice) / toPrice;
-                            setToAmount(amountOut.toLocaleString(undefined, { maximumFractionDigits: 4, useGrouping: false }));
+                            setToAmount(amountOut.toLocaleString(undefined, { maximumFractionDigits: 8, useGrouping: false }));
                         } else {
                             const amountOut = (amountIn * toPrice) / fromPrice;
-                            setFromAmount(amountOut.toLocaleString(undefined, { maximumFractionDigits: 6, useGrouping: false }));
+                            setFromAmount(amountOut.toLocaleString(undefined, { maximumFractionDigits: 8, useGrouping: false }));
                         }
                     }
                 } catch(e) {
@@ -2245,7 +2245,17 @@ const ExchangeContent = () => {
                                             <div className="px-4 py-4 mt-2 space-y-3">
                                                 <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500">
                                                     <span>Exchange Rate</span>
-                                                    <span className="text-slate-900">1 {fromToken?.symbol} = {toToken?.current_price && fromToken?.current_price ? (fromToken.current_price / toToken.current_price).toFixed(4) : '0.00'} {toToken?.symbol}</span>
+                                                    <span className="text-slate-900">
+                                                        1 {fromToken?.symbol} = {(() => {
+                                                            if (!toToken?.current_price || !fromToken?.current_price) return '0.00';
+                                                            const rate = fromToken.current_price / toToken.current_price;
+                                                            if (rate > 1000) return rate.toLocaleString(undefined, { maximumFractionDigits: 2 });
+                                                            if (rate > 1) return rate.toFixed(4);
+                                                            if (rate < 0.000001) return rate.toFixed(10);
+                                                            if (rate < 0.001) return rate.toFixed(7);
+                                                            return rate.toFixed(5);
+                                                        })()} {toToken?.symbol}
+                                                    </span>
                                                 </div>
                                                 <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500">
                                                     <span>Network Fee</span>

@@ -400,6 +400,8 @@ router.get('/live', async (req, res) => {
             return merged;
         }, 5 * 60 * 1000); // Cache for 5 minutes
         
+        global.memeTokens = allData;
+        
         // Apply filters
         let result = [...allData];
         
@@ -451,5 +453,45 @@ router.get('/sources', (req, res) => {
         { id: 'flap.sh',      label: 'FLAP',            icon: '🐸', description: 'BNB Chain meme launchpad by FLAP.sh' }
     ]);
 });
+
+// Populate global meme list / cache immediately on startup
+setTimeout(async () => {
+    try {
+        console.log('[MemeAgg] Pre-warming global meme cache on startup...');
+        const raw = [
+            fetchDexScreenerBSC(),
+            fetchBinanceMemes(),
+            fetchCoinGeckoMemes(),
+            fetchFourMeme(),
+            fetchPumpFun(),
+            fetchGeckoTerminal(),
+            fetchFlap()
+        ];
+        const results = await Promise.allSettled(raw);
+        const safe = r => r.status === 'fulfilled' ? r.value : [];
+        const merged = [];
+        const seen = new Set();
+        const rawMerged = [
+            ...safe(results[2]), // cg
+            ...safe(results[0]), // dex
+            ...safe(results[5]), // gecko
+            ...safe(results[3]), // fourMeme
+            ...safe(results[4]), // pump
+            ...safe(results[6]), // flap
+            ...safe(results[1])  // binance
+        ];
+        for (const t of rawMerged) {
+            const key = (t.address || t.id || '').toLowerCase();
+            if (!key || seen.has(key)) continue;
+            seen.add(key);
+            t.image = logoFor(t);
+            merged.push(t);
+        }
+        global.memeTokens = merged;
+        console.log(`[MemeAgg] Global cache warmed with ${merged.length} tokens.`);
+    } catch (e) {
+        console.warn('[MemeAgg] Global cache warming failed:', e.message);
+    }
+}, 5000);
 
 module.exports = router;

@@ -1,45 +1,88 @@
 const express = require('express');
 const axios = require('axios');
 const cryptoFetcher = require('../services/cryptoFetcher');
+const db = require('../config/db');
 const router = express.Router();
+
+async function getBNBPrice() {
+    try {
+        const binanceRes = await axios.get('https://api.binance.com/api/v3/ticker/price?symbol=BNBUSDT');
+        return parseFloat(binanceRes.data.price) || 600.0;
+    } catch(err) {
+        console.warn('[Swap API] BNB price fallback failed:', err.message);
+        return 600.0;
+    }
+}
 
 // Fetch single token price via markets array
 async function getTokenData(id, symbol) {
-    if (symbol.toUpperCase() === 'USDT' || id === 'tether') {
+    const normId = (id || '').toLowerCase();
+    const normSymbol = (symbol || '').toLowerCase();
+
+    if (normSymbol === 'usdt' || normId === 'tether') {
         return { current_price: 1.0, source: 'stablecoin' };
+    }
+
+    // 1. Check meme aggregator global cache first (supporting 2000+ real live price meme tokens)
+    if (global.memeTokens && global.memeTokens.length > 0) {
+        const found = global.memeTokens.find(t => 
+            (t.id && t.id.toLowerCase() === normId) ||
+            (t.address && t.address.toLowerCase() === normId) ||
+            (t.symbol && t.symbol.toLowerCase() === normSymbol) ||
+            (t.address && t.address.toLowerCase() === normSymbol)
+        );
+        if (found) {
+            return {
+                current_price: found.current_price || found.price || 0,
+                source: 'meme_aggregator'
+            };
+        }
+    }
+
+    // 2. Check local database tokens (from launchpad)
+    try {
+        const dbResult = await db.query(
+            `SELECT * FROM tokens WHERE LOWER(contract_address) = LOWER(?) OR UPPER(symbol) = ?`,
+            [normId, normSymbol.toUpperCase()]
+        );
+        if (dbResult && dbResult.rows && dbResult.rows.length > 0) {
+            const lt = dbResult.rows[0];
+            const bnbPrice = await getBNBPrice();
+            const priceUsd = (parseFloat(lt.price_bnb) || 0) * bnbPrice;
+            return {
+                current_price: priceUsd || 0.0001,
+                source: 'launchpad_db'
+            };
+        }
+    } catch (dbErr) {
+        console.warn('[Swap API] Local DB lookup failed:', dbErr.message);
     }
     
     // We fetch a batch using cryptoFetcher
     // If id is provided, fetch by ID. If not, we might fail or try by symbol.
     const validId = id || (symbol === 'BNB' ? 'binancecoin' : null);
     
-    if (!validId) {
-        throw new Error(`Cannot determine ID for token ${symbol}`);
-    }
-
-    try {
-        const data = await cryptoFetcher.getMarkets(null, 1, 1, validId);
-        if (data && data.length > 0) {
-            return {
-                current_price: data[0].current_price,
-                source: 'live_market'
-            };
+    if (validId) {
+        try {
+            const data = await cryptoFetcher.getMarkets(null, 1, 1, validId);
+            if (data && data.length > 0) {
+                return {
+                    current_price: data[0].current_price,
+                    source: 'live_market'
+                };
+            }
+        } catch (e) {
+            console.warn(`[Swap API] Failed to fetch price for ${validId}`, e.message);
         }
-    } catch (e) {
-        console.warn(`[Swap API] Failed to fetch price for ${validId}`, e.message);
     }
 
     // Secondary fallback for BNB if CoinGecko/CMC fails due to slug mismatch or rate limit
     if (symbol === 'BNB' || validId === 'binancecoin') {
-        try {
-            const binanceRes = await axios.get('https://api.binance.com/api/v3/ticker/price?symbol=BNBUSDT');
-            return {
-                current_price: parseFloat(binanceRes.data.price),
-                source: 'binance_api'
-            };
-        } catch(err) {
-            console.warn('[Swap API] Binance fallback failed:', err.message);
-        }
+        const bnbPrice = await getBNBPrice();
+        return {
+            current_price: bnbPrice,
+            source: 'binance_api'
+        };
     }
 
     throw new Error(`Price not found for ${symbol || id}`);

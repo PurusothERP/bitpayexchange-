@@ -7375,15 +7375,16 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                         </button>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-4">
-                        <div className="grid grid-cols-12 gap-6 px-10 py-5 bg-white/50 border border-slate-100 rounded-3xl text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] hidden md:grid">
+                    <div className="grid grid-cols-1 gap-2">
+                        {/* Column Headers */}
+                        <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-[9px] font-black text-slate-400 uppercase tracking-[0.15em] hidden md:grid">
                             <div className="col-span-1">Rank</div>
-                            <div className="col-span-3">Asset Identification</div>
-                            <div className="col-span-1">Network Layer</div>
-                            <div className="col-span-2">Execution Price</div>
-                            <div className="col-span-2">Dynamic (24H)</div>
-                            <div className="col-span-2 text-right">Liquidity Pool</div>
-                            <div className="col-span-1 text-right italic text-teal-600">Action</div>
+                            <div className="col-span-4">Asset</div>
+                            <div className="col-span-1 text-center">Chain</div>
+                            <div className="col-span-2">Price (USD)</div>
+                            <div className="col-span-2">24h Change</div>
+                            <div className="col-span-1 text-right">Liquidity</div>
+                            <div className="col-span-1 text-right">Action</div>
                         </div>
 
                         {isLoading ? (
@@ -7391,103 +7392,121 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                                 <div className="w-16 h-16 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
                                 <p className="text-[11px] font-black text-slate-400 uppercase tracking-[0.4em] animate-pulse">Syncing Mainnet Meme Registry...</p>
                             </div>
-                        ) : filteredMemes.slice(0, visibleCount).map((m, i) => (
-                            <motion.div
-                                key={m.id}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: Math.min(i * 0.01, 0.2) }}
-                                onClick={() => setSelectedMeme(m)}
-                                className="group grid grid-cols-1 md:grid-cols-12 items-center gap-6 px-10 py-6 bg-white hover:bg-slate-50 border border-slate-100 hover:border-orange-200 rounded-[2.5rem] transition-all cursor-pointer relative overflow-hidden shadow-sm hover:shadow-xl hover:shadow-orange-500/5"
-                            >
-                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${m.change >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                                
-                                <div className="col-span-1 text-[10px] font-black text-slate-300">
-                                     #{i + 1}
-                                </div>
+                        ) : filteredMemes.slice(0, visibleCount).map((m, i) => {
+                            const formattedPrice = m.price === 0 ? '0.00' : m.price > 1 
+                                ? m.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 }) 
+                                : m.price < 0.000001 
+                                    ? m.price.toFixed(10)
+                                    : m.price.toFixed(6);
 
-                                <div className="col-span-3 flex items-center gap-5">
-                                    <div className="w-14 h-14 rounded-2xl bg-slate-50 p-2 border border-slate-100 group-hover:border-orange-200 transition-all shadow-sm">
-                                        <img src={m.image || m.logoURI || `https://api.dicebear.com/7.x/identicon/svg?seed=${m.symbol}`} alt="" className="w-full h-full object-contain rounded-xl" onError={e => { e.target.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${m.symbol}`; }} />
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <h3 className="text-sm font-black text-slate-900 uppercase tracking-tighter leading-none mb-1 group-hover:text-orange-500 transition-colors">{m.symbol}</h3>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest truncate max-w-[120px]">{m.name}</p>
-                                    </div>
-                                </div>
+                            const formattedLiquidity = m.liquidity >= 1e6 
+                                ? `$${(m.liquidity / 1e6).toFixed(2)}M` 
+                                : m.liquidity >= 1e3 
+                                    ? `$${(m.liquidity / 1e3).toFixed(1)}K` 
+                                    : `$${m.liquidity.toFixed(0)}`;
 
-                                <div className="col-span-1">
-                                    <div className="flex items-center gap-2">
+                            return (
+                                <motion.div
+                                    key={m.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: Math.min(i * 0.005, 0.15) }}
+                                    onClick={() => setSelectedMeme(m)}
+                                    className="group grid grid-cols-1 md:grid-cols-12 items-center gap-4 px-6 py-3 bg-white hover:bg-slate-50 border border-slate-100 hover:border-slate-200/80 rounded-2xl transition-all cursor-pointer relative overflow-hidden shadow-sm hover:shadow-md"
+                                >
+                                    {/* Accent strip */}
+                                    <div className={`absolute left-0 top-0 bottom-0 w-1 ${m.change >= 0 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                                    
+                                    {/* Rank */}
+                                    <div className="col-span-1 text-[11px] font-bold text-slate-400 font-mono pl-2">
+                                         #{i + 1}
+                                    </div>
+
+                                    {/* Asset (Image + Symbol + Name + Source Badge inline) */}
+                                    <div className="col-span-4 flex items-center gap-3 min-w-0">
+                                        <div className="w-9 h-9 rounded-xl bg-slate-50 p-1.5 border border-slate-100 group-hover:border-orange-200 transition-all shrink-0">
+                                            <img src={m.image || m.logoURI || `https://api.dicebear.com/7.x/identicon/svg?seed=${m.symbol}`} alt="" className="w-full h-full object-contain rounded-lg" onError={e => { e.target.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${m.symbol}`; }} />
+                                        </div>
+                                        <div className="flex flex-col min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <h3 className="text-xs font-black text-slate-900 uppercase tracking-tighter leading-none group-hover:text-orange-500 transition-colors">{m.symbol}</h3>
+                                                {m.source && (
+                                                    <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider shrink-0 ${
+                                                        m.source === 'pump.fun'      ? 'bg-pink-50 text-pink-600 border border-pink-100' :
+                                                        m.source === 'four.meme'     ? 'bg-purple-50 text-purple-600 border border-purple-100' :
+                                                        m.source === 'binance'       ? 'bg-yellow-50 text-yellow-700 border border-yellow-100' :
+                                                        m.source === 'dexscreener'   ? 'bg-cyan-50 text-cyan-600 border border-cyan-100' :
+                                                        m.source === 'geckoterminal' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' :
+                                                        m.source === 'flap.sh'       ? 'bg-lime-50 text-lime-600 border border-lime-100' :
+                                                        m.source === 'b20-launchpad' ? 'bg-orange-50 text-orange-600 border border-orange-100' :
+                                                        'bg-slate-50 text-slate-500 border border-slate-100'
+                                                    }`}>
+                                                        {m.source}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider truncate max-w-[150px] mt-0.5">{m.name}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Chain */}
+                                    <div className="col-span-1 flex justify-center items-center">
                                         <img 
                                             src={
-                                                m.network === 'Solana' || m.network === 'SOLANA' ? 'https://cryptologos.cc/logos/solana-sol-logo.png' :
+                                                m.network === 'Solana' || m.network === 'SOLANA' || m.network === 'SOL' ? 'https://cryptologos.cc/logos/solana-sol-logo.png' :
                                                 m.network === 'BNB' ? 'https://cryptologos.cc/logos/bnb-bnb-logo.png' :
                                                 m.network === 'Base' || m.network === 'BASE' ? 'https://assets.coingecko.com/coins/images/2518/large/base.png' :
                                                 m.network === 'ETH' ? 'https://cryptologos.cc/logos/ethereum-eth-logo.png' :
                                                 m.network === 'Tron' || m.network === 'TRON' ? 'https://cryptologos.cc/logos/tron-trx-logo.png' :
                                                 'https://cryptologos.cc/logos/bnb-bnb-logo.png'
                                             } 
-                                            className="w-5 h-5 rounded-full object-contain border border-slate-100 shadow-sm" 
+                                            className="w-4 h-4 rounded-full object-contain border border-slate-100 shadow-sm" 
                                             alt="" 
                                             title={m.network}
                                         />
                                     </div>
-                                </div>
 
-                                {/* Source Badge */}
-                                {m.source && (
-                                    <div className="hidden md:flex col-span-1 items-center">
-                                        <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest ${
-                                            m.source === 'pump.fun'      ? 'bg-pink-100 text-pink-700' :
-                                            m.source === 'four.meme'     ? 'bg-purple-100 text-purple-700' :
-                                            m.source === 'binance'       ? 'bg-yellow-100 text-yellow-700' :
-                                            m.source === 'dexscreener'   ? 'bg-cyan-100 text-cyan-700' :
-                                            m.source === 'geckoterminal' ? 'bg-emerald-100 text-emerald-700' :
-                                            m.source === 'flap.sh'       ? 'bg-lime-100 text-lime-700' :
-                                            m.source === 'b20-launchpad' ? 'bg-orange-100 text-orange-700' :
-                                            'bg-slate-100 text-slate-500'
-                                        }`}>
-                                            {m.source === 'pump.fun' ? '🚀' : m.source === 'four.meme' ? '4️⃣' : m.source === 'binance' ? '🟡' : m.source === 'dexscreener' ? '📊' : m.source === 'geckoterminal' ? '📈' : m.source === 'flap.sh' ? '🐸' : m.source === 'b20-launchpad' ? '⭐' : '🌐'}
-                                            {' '}{m.source}
-                                        </span>
+                                    {/* Execution Price */}
+                                    <div className="col-span-2">
+                                        <p className="text-[11px] font-bold text-slate-900 font-mono tracking-tighter">
+                                            ${formattedPrice}
+                                        </p>
                                     </div>
-                                )}
 
-                                <div className="col-span-2">
-                                    <p className="text-xs font-black text-slate-900 font-mono tracking-tighter">
-                                        ${m.price.toFixed(10)}
-                                    </p>
-                                </div>
-
-                                <div className="col-span-2">
-                                    <div className={`flex items-center gap-1.5 text-[11px] font-black ${m.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                        {m.change >= 0 ? <ArrowUpRight size={14}/> : <ArrowDownRight size={14}/>}
-                                        {Math.abs(m.change).toFixed(2)}%
+                                    {/* 24h Change */}
+                                    <div className="col-span-2">
+                                        <div className={`flex items-center gap-1 text-[10px] font-black ${m.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {m.change >= 0 ? <ArrowUpRight size={12}/> : <ArrowDownRight size={12}/>}
+                                            {Math.abs(m.change).toFixed(2)}%
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div className="col-span-2 text-right">
-                                    <p className="text-xs font-black text-slate-900 font-mono tracking-tighter">${m.liquidity.toLocaleString()}</p>
-                                    <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Global Index</p>
-                                </div>
+                                    {/* Liquidity Pool */}
+                                    <div className="col-span-1 text-right">
+                                        <p className="text-[11px] font-bold text-slate-700 font-mono tracking-tighter">
+                                            {formattedLiquidity}
+                                        </p>
+                                    </div>
 
-                                <div className="col-span-1 flex justify-end">
-                                    <button 
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setMode('spot');
-                                            setToToken({
-                                                ...m,
-                                                current_price: m.price,
-                                                address: m.contract
-                                            });
-                                        }}
-                                        className="w-12 h-12 bg-slate-900 text-white rounded-2xl flex items-center justify-center hover:bg-orange-500 transition-all shadow-lg hover:shadow-orange-500/30 group/btn"
-                                    >
-                                        <Rocket size={20} className="group-hover/btn:animate-bounce" />
-                                    </button>
-                                </div>
-                            </motion.div>
+                                    {/* Action (Rocket) */}
+                                    <div className="col-span-1 flex justify-end">
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setMode('spot');
+                                                setToToken({
+                                                    ...m,
+                                                    current_price: m.price,
+                                                    address: m.contract
+                                                });
+                                            }}
+                                            className="w-8 h-8 bg-slate-100 hover:bg-orange-500 text-slate-700 hover:text-white rounded-lg flex items-center justify-center transition-all shadow-sm active:scale-95 group/btn"
+                                            title="Swap Token"
+                                        >
+                                            <Rocket size={14} className="group-hover/btn:animate-bounce" />
+                                        </button>
+                                    </div>
+                                </motion.div>
                         ))}
 
                         {filteredMemes.length > visibleCount && (

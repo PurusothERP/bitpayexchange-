@@ -1629,11 +1629,18 @@ const ExchangeContent = () => {
             }
 
             try {
+                // For meme aggregator tokens, prefer address-based lookup
+                const fromId = fromToken.address && fromToken.address !== '0x0000000000000000000000000000000000000000'
+                    ? fromToken.address
+                    : fromToken.id;
+                const toId = toToken.address && toToken.address !== '0x0000000000000000000000000000000000000000'
+                    ? toToken.address
+                    : toToken.id;
                 const res = await axios.get(`${API_URL}/swap/quote`, {
                     params: {
-                        base_token: fromToken.id,
+                        base_token: fromId,
                         base_symbol: fromToken.symbol,
-                        selected_token: toToken.id,
+                        selected_token: toId,
                         selected_symbol: toToken.symbol,
                         amount: amountToQuote,
                         mode: lastUpdatedField === 'from' ? 'exactIn' : 'exactOut'
@@ -1727,7 +1734,14 @@ const ExchangeContent = () => {
 
             // ── Detect asset type & network UPFRONT ──
             const isMeme = fToken.id?.includes('meme-') || tToken.id?.includes('meme-');
-            const isSynthetic = isMeme || fToken.id?.includes('gen-') || tToken.id?.includes('gen-');
+            // Also treat meme aggregator tokens (no real on-chain DEX pool) as synthetic/OTC
+            const isNoOnchainLiquidity = (tok) => {
+                const addr = tok.address || tok.contract || '';
+                return !addr || addr === '0x0000000000000000000000000000000000000000' || addr.length < 10;
+            };
+            const isSynthetic = isMeme || fToken.id?.includes('gen-') || tToken.id?.includes('gen-') ||
+                (fToken.isMemeAgg && isNoOnchainLiquidity(fToken)) ||
+                (tToken.isMemeAgg && isNoOnchainLiquidity(tToken));
             
             const fNet = fToken.network || 'BNB';
             const tNet = tToken.network || 'BNB';
@@ -2149,7 +2163,7 @@ const ExchangeContent = () => {
                                     </div>
                                 </div>
 
-                                <div className="bg-white shadow-xl shadow-slate-200/50 border border-slate-100 rounded-3xl p-6 relative overflow-hidden transition-all duration-500">
+                                <div id="swap-panel" className="bg-white shadow-xl shadow-slate-200/50 border border-slate-100 rounded-3xl p-6 relative overflow-hidden transition-all duration-500">
                                     <div className="flex items-center justify-between mb-6">
                                         <div className="flex gap-4 items-center">
                                             <h2 className="text-xl font-bold text-slate-900 tracking-tight">Swap</h2>
@@ -7494,11 +7508,29 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setMode('spot');
+                                                // Map meme token to a toToken shape the swap/quote API understands
+                                                const addr = m.contract && m.contract !== '0x0000000000000000000000000000000000000000'
+                                                    ? m.contract
+                                                    : null;
                                                 setToToken({
                                                     ...m,
+                                                    id: addr || m.id || m.symbol?.toLowerCase(),
                                                     current_price: m.price,
-                                                    address: m.contract
+                                                    address: addr || '0x0000000000000000000000000000000000000000',
+                                                    symbol: m.symbol,
+                                                    name: m.name,
+                                                    image: m.image,
+                                                    network: m.network || 'BNB',
+                                                    isMemeAgg: true,
+                                                    price_change_percentage_24h: m.change || 0,
+                                                    market_cap: m.mcap || 0,
+                                                    total_volume: m.volume24h || 0,
                                                 });
+                                                // Scroll user up to the swap panel
+                                                setTimeout(() => {
+                                                    const el = document.getElementById('swap-panel');
+                                                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                                }, 100);
                                             }}
                                             className="w-8 h-8 bg-slate-100 hover:bg-orange-500 text-slate-700 hover:text-white rounded-lg flex items-center justify-center transition-all shadow-sm active:scale-95 group/btn"
                                             title="Swap Token"

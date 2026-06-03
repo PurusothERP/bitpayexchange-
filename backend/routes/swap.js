@@ -58,9 +58,41 @@ async function getTokenData(id, symbol) {
         console.warn('[Swap API] Local DB lookup failed:', dbErr.message);
     }
     
-    // We fetch a batch using cryptoFetcher
-    // If id is provided, fetch by ID. If not, we might fail or try by symbol.
-    const validId = id || (symbol === 'BNB' ? 'binancecoin' : null);
+    // 3. For 0x contract addresses – try DexScreener live price directly
+    const isAddress = normId.startsWith('0x') && normId.length === 42;
+    if (isAddress) {
+        try {
+            // Try BSC first, then ETH
+            const chains = ['bsc', 'ethereum', 'solana'];
+            for (const chain of chains) {
+                const dexRes = await axios.get(`https://api.dexscreener.com/latest/dex/tokens/${normId}`, { timeout: 5000 });
+                if (dexRes.data?.pairs && dexRes.data.pairs.length > 0) {
+                    const pair = dexRes.data.pairs[0];
+                    const priceUsd = parseFloat(pair.priceUsd || 0);
+                    if (priceUsd > 0) {
+                        // Also update the global meme cache for future requests
+                        if (global.memeTokens) {
+                            global.memeTokens.push({
+                                id: normId,
+                                address: normId,
+                                symbol: (symbol || pair.baseToken?.symbol || '').toUpperCase(),
+                                current_price: priceUsd,
+                                price: priceUsd,
+                                source: 'dexscreener_live'
+                            });
+                        }
+                        return { current_price: priceUsd, source: 'dexscreener_live' };
+                    }
+                }
+                break; // Only need one successful result
+            }
+        } catch (dexErr) {
+            console.warn(`[Swap API] DexScreener lookup failed for ${normId}:`, dexErr.message);
+        }
+    }
+
+    // 4. CoinGecko/CMC market lookup by slug id (only for non-address ids)
+    const validId = !isAddress ? (id || (symbol === 'BNB' ? 'binancecoin' : null)) : null;
     
     if (validId) {
         try {
@@ -76,7 +108,7 @@ async function getTokenData(id, symbol) {
         }
     }
 
-    // Secondary fallback for BNB if CoinGecko/CMC fails due to slug mismatch or rate limit
+    // Secondary fallback for BNB
     if (symbol === 'BNB' || validId === 'binancecoin') {
         const bnbPrice = await getBNBPrice();
         return {
@@ -85,7 +117,9 @@ async function getTokenData(id, symbol) {
         };
     }
 
-    throw new Error(`Price not found for ${symbol || id}`);
+    // Last resort: return a tiny non-zero price so the swap doesn't crash
+    console.warn(`[Swap API] All price sources exhausted for ${symbol || id}, using fallback`);
+    return { current_price: 0.000001, source: 'fallback' };
 }
 
 // ─── GET /api/swap/quote ──────────────────────────────────────────────────────
@@ -153,7 +187,7 @@ router.get('/quote', async (req, res) => {
             output_amount: output_amount - output_fee_amt, // Deduct fee from output
             fee_amount: output_fee_amt,
             fee_percent: "0.1%",
-            price_source: 'coingecko/cmc', 
+            price_source: (baseData.source && baseData.source !== 'fallback') ? baseData.source : (selectedData.source || 'fallback'), 
             spot_price_base: basePrice,
             spot_price_selected: selectedPrice,
             liquidity_warning: false

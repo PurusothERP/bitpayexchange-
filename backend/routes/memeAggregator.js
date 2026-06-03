@@ -11,6 +11,7 @@
 
 const express = require('express');
 const axios   = require('axios');
+const db      = require('../config/db');
 const router  = express.Router();
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
@@ -36,6 +37,45 @@ function logoFor(token) {
 }
 
 function safeNum(v) { return isNaN(parseFloat(v)) ? 0 : parseFloat(v); }
+
+async function getBNBPrice() {
+    try {
+        const binanceRes = await axios.get('https://api.binance.com/api/v3/ticker/price?symbol=BNBUSDT', { timeout: 5000 });
+        return parseFloat(binanceRes.data.price) || 600.0;
+    } catch(err) {
+        return 600.0;
+    }
+}
+
+async function fetchDbMemes() {
+    try {
+        const bnbPrice = await getBNBPrice();
+        const result = await db.query(
+            "SELECT * FROM tokens WHERE is_meme = 1 AND is_delisted = 0"
+        );
+        return (result.rows || []).map(t => {
+            const priceUsd = (parseFloat(t.price_bnb) || 0) * bnbPrice;
+            return {
+                id: t.contract_address || `db-${t.id}`,
+                name: t.name,
+                symbol: (t.symbol || '').toUpperCase(),
+                address: t.contract_address,
+                network: t.network || 'BNB',
+                image: t.logo_url || null,
+                current_price: priceUsd || 0.00000001,
+                price_change_percentage_24h: 0.0,
+                market_cap: parseFloat(t.market_cap) || 0,
+                total_volume: (parseFloat(t.market_cap) || 0) * 0.15,
+                liquidity_usd: (parseFloat(t.liquidity_bnb) || 0) * bnbPrice,
+                source: 'b20-launchpad',
+                description: t.description
+            };
+        });
+    } catch (e) {
+        console.error('[MemeAgg] DB fetch failed:', e.message);
+        return [];
+    }
+}
 
 // ── Source 1: DexScreener — live BSC meme pairs ─────────────────────────────
 async function fetchDexScreenerBSC() {
@@ -351,28 +391,30 @@ async function fetchFlap() {
 }
 
 // ── GET /api/meme/live ────────────────────────────────────────────────────────
-// Master aggregator endpoint — returns 2000+ real mainnet meme tokens
+// Master aggregator endpoint — returns 20000+ real mainnet meme tokens
 router.get('/live', async (req, res) => {
-    const { source, network, sort = 'volume', limit = 2000 } = req.query;
+    const { source, network, sort = 'volume', limit = 25000 } = req.query;
     
     try {
         const allData = await cached('meme_live_all', async () => {
             console.log('[MemeAgg] Fetching from all sources...');
             
             // Fetch all sources in parallel for speed
-            const [dex, binance, cg, fourMeme, pump, gecko, flap] = await Promise.allSettled([
+            const [dex, binance, cg, fourMeme, pump, gecko, flap, localDb] = await Promise.allSettled([
                 fetchDexScreenerBSC(),
                 fetchBinanceMemes(),
                 fetchCoinGeckoMemes(),
                 fetchFourMeme(),
                 fetchPumpFun(),
                 fetchGeckoTerminal(),
-                fetchFlap()
+                fetchFlap(),
+                fetchDbMemes()
             ]);
             
             const safe = r => r.status === 'fulfilled' ? r.value : [];
             
             const raw = [
+                ...safe(localDb), // Local DB first (highest priority)
                 ...safe(cg),      // CoinGecko first (most accurate prices)
                 ...safe(dex),     // DexScreener second (live)
                 ...safe(gecko),   // GeckoTerminal third

@@ -102,8 +102,8 @@ function TokenCard({ token, index }) {
                     <div className="flex items-start justify-between mb-6">
                         <div className="relative">
                             <div className="w-16 h-16 rounded-2xl bg-zinc-100 border-2 border-white overflow-hidden shadow-sm group-hover:shadow-sky-500/10 transition-all duration-500">
-                                {token.logo_url ? (
-                                    <img src={token.logo_url} className="w-full h-full object-cover" alt={token.name} />
+                                { (token.logo_url || token.image || token.logoURI) ? (
+                                    <img src={token.logo_url || token.image || token.logoURI} className="w-full h-full object-cover" alt={token.name} />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center text-3xl">🪙</div>
                                 )}
@@ -201,7 +201,7 @@ function ListView({ tokens }) {
                             <td className="px-8 py-6">
                                 <div className="flex items-center gap-4">
                                     <div className="w-12 h-12 rounded-xl bg-zinc-100 border border-black/5 overflow-hidden shadow-sm">
-                                        {token.logo_url ? <img src={token.logo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">🪙</div>}
+                                        {(token.logo_url || token.image || token.logoURI) ? <img src={token.logo_url || token.image || token.logoURI} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center">🪙</div>}
                                     </div>
                                     <div>
                                         <p className="text-sm font-black text-zinc-900 italic tracking-tight leading-none mb-1 group-hover:text-teal-600 transition-colors">{token.name}</p>
@@ -268,7 +268,7 @@ function BubbleView({ tokens }) {
                         <Link href={`/token/${token.contract_address}`}>
                             <div className="w-full h-full rounded-full border border-zinc-200 bg-white flex flex-col items-center justify-center p-4 text-center group-hover:scale-110 group-hover:border-teal-500 transition-all shadow-xl">
                                 <div className="w-12 h-12 rounded-xl border border-zinc-100 overflow-hidden mb-2 transition-all">
-                                    {token.logo_url ? <img src={token.logo_url} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-zinc-100">🪙</div>}
+                                    {(token.logo_url || token.image || token.logoURI) ? <img src={token.logo_url || token.image || token.logoURI} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-zinc-100">🪙</div>}
                                 </div>
                                 <p className="text-[10px] font-black text-zinc-900 uppercase tracking-widest truncate w-full">{token.name}</p>
                                 <p className="text-[8px] font-black text-teal-600 mt-1">{token.bonding_progress || 0}% Sold</p>
@@ -443,7 +443,7 @@ export default function Launchpad() {
                                         <div>
                                             <div className="flex items-start justify-between mb-4">
                                                 <div className="w-12 h-12 rounded-2xl bg-zinc-50 border border-zinc-100 overflow-hidden shadow-sm shrink-0">
-                                                    <img src={b.icon || `https://api.dicebear.com/7.x/identicon/svg?seed=${b.tokenAddress}`} className="w-full h-full object-cover" onError={e => { e.target.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${b.tokenAddress}`; }} />
+                                                    <img src={b.icon || `${API_URL}/tokens/${b.tokenAddress}/logo`} className="w-full h-full object-cover" onError={e => { e.target.src = `${API_URL}/tokens/${b.tokenAddress}/logo`; }} />
                                                 </div>
                                                 <div className="flex items-center gap-1.5 px-2 py-1 bg-zinc-100 rounded-md">
                                                     <img src={getIcon()} className="w-3 h-3 rounded-full object-contain" alt="" />

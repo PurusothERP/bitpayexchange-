@@ -326,7 +326,7 @@ router.get('/markets/memes', async (req, res) => {
         try {
             const result = await db.query(
                 `SELECT *, COALESCE(launch_type, 'MEME') as launch_type
-                 FROM tokens WHERE is_delisted = 0 ORDER BY created_at DESC`
+                 FROM tokens WHERE is_delisted = 0 AND COALESCE(launch_type, 'MEME') != 'EXCHANGE_LISTING' ORDER BY created_at DESC`
             );
             localTokens = (result.rows || []).map(t => {
                 const normalized = normalizeToken(t);

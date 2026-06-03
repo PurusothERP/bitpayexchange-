@@ -7507,7 +7507,8 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                                         </button>
                                     </div>
                                 </motion.div>
-                        ))}
+                            );
+                        })}
 
                         {filteredMemes.length > visibleCount && (
                             <button 

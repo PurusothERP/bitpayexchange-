@@ -93,6 +93,8 @@ export default function FairLaunch() {
     const [mimicData, setMimicData] = useState(null);
     const [isMimicChecking, setIsMimicChecking] = useState(false);
     const [isMimicIgnored, setIsMimicIgnored] = useState(false);
+    const [descriptionMode, setDescriptionMode] = useState('manual');
+    const [generatingDesc, setGeneratingDesc] = useState(false);
 
     // Fiat conversion state
     const [selectedFiat, setSelectedFiat] = useState(CURRENCIES[0]);
@@ -154,6 +156,25 @@ export default function FairLaunch() {
         if (!formData.name) return;
         setWpThinking(true);
         setTimeout(() => setWpThinking(false), 2000);
+    };
+
+    const handleGenerateAIDescription = async () => {
+        if (!formData.name || !formData.symbol) {
+            setError('Please provide Protocol Name and Symbol first.');
+            return;
+        }
+        setGeneratingDesc(true);
+        setError('');
+        try {
+            const res = await axios.post(`${API_URL}/ml/ai-description`, { name: formData.name, symbol: formData.symbol });
+            if (res.data.success) {
+                setFormData({ ...formData, description: res.data.description });
+            }
+        } catch (err) {
+            setError(err.response?.data?.error || err.message || 'Failed to generate AI description.');
+        } finally {
+            setGeneratingDesc(false);
+        }
     };
 
     const handleSubmit = async () => {
@@ -495,8 +516,36 @@ export default function FairLaunch() {
                                         </div>
                                     </div>
                                     <div className="space-y-3">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Protocol Description</label>
-                                        <textarea placeholder="Describe the utility of your direct launch asset..." value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full h-32 bg-gray-50 border border-gray-100 rounded-2xl p-6 font-medium text-gray-700 outline-none focus:bg-white focus:border-teal-500/30 transition-all resize-none shadow-sm" />
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Protocol Description</label>
+                                            <div className="flex bg-black/5 rounded-lg p-0.5">
+                                                <button 
+                                                    onClick={() => setDescriptionMode('manual')}
+                                                    className={`px-3 py-1 rounded-md text-[10px] font-black uppercase transition-all ${descriptionMode === 'manual' ? 'bg-white shadow-sm text-teal-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                                >
+                                                    Manual
+                                                </button>
+                                                <button 
+                                                    onClick={() => setDescriptionMode('ai')}
+                                                    className={`px-3 py-1 rounded-md text-[10px] font-black uppercase transition-all ${descriptionMode === 'ai' ? 'bg-white shadow-sm text-teal-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                                >
+                                                    AI Description
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="relative flex flex-col gap-3">
+                                            {descriptionMode === 'ai' && (
+                                                <button
+                                                    onClick={handleGenerateAIDescription}
+                                                    disabled={generatingDesc || !formData.name || !formData.symbol}
+                                                    className="w-full py-4 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200 rounded-2xl text-sm font-black uppercase tracking-widest transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-sm"
+                                                >
+                                                    {generatingDesc ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+                                                    {generatingDesc ? 'Generating AI Description...' : 'Generate 4-5 Lines with AI'}
+                                                </button>
+                                            )}
+                                            <textarea placeholder="Describe the utility of your direct launch asset..." value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} className="w-full h-32 bg-gray-50 border border-gray-100 rounded-2xl p-6 font-medium text-gray-700 outline-none focus:bg-white focus:border-teal-500/30 transition-all resize-none shadow-sm" />
+                                        </div>
                                     </div>
                                     <div className="space-y-3 border-t border-gray-100 pt-6">
                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Initial Liquidity (PancakeSwap Starting Price)</label>

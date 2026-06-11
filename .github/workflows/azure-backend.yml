@@ -1,6 +1,7 @@
 name: Deploy Backend to Azure
 
 on:
+  workflow_dispatch: # ← Run manually from GitHub Actions tab when ready
   push:
     branches: [main]
     paths:
@@ -10,6 +11,8 @@ on:
 jobs:
   deploy-backend:
     runs-on: ubuntu-latest
+    # Skip if Azure credentials are not configured yet
+    if: ${{ secrets.AZURE_CREDENTIALS != '' }}
 
     steps:
       - name: Checkout code
@@ -26,9 +29,19 @@ jobs:
         run: npm ci
         working-directory: backend
 
+      # Step 1 — Login to Azure using Service Principal credentials
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Step 2 — Deploy backend to Azure App Service
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ secrets.AZURE_BACKEND_APP_NAME }}
-          publish-profile: ${{ secrets.AZURE_BACKEND_PUBLISH_PROFILE }}
           package: ./backend
+
+      - name: Azure Logout
+        run: az logout
+        if: always()

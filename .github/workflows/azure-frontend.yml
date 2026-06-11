@@ -1,6 +1,7 @@
 name: Deploy Frontend to Azure
 
 on:
+  workflow_dispatch: # ← Run manually from GitHub Actions tab when ready
   push:
     branches: [main]
     paths:
@@ -10,6 +11,8 @@ on:
 jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
+    # Skip if Azure credentials are not configured yet
+    if: ${{ secrets.AZURE_CREDENTIALS != '' }}
 
     steps:
       - name: Checkout code
@@ -40,9 +43,19 @@ jobs:
           NEXT_PUBLIC_COINMARKETCAP_API_KEY: ${{ secrets.NEXT_PUBLIC_COINMARKETCAP_API_KEY }}
           NEXT_PUBLIC_COINGECKO_API_KEY: ${{ secrets.NEXT_PUBLIC_COINGECKO_API_KEY }}
 
+      # Step 1 — Login to Azure using Service Principal credentials
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      # Step 2 — Deploy Next.js standalone build to Azure App Service
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: ${{ secrets.AZURE_FRONTEND_APP_NAME }}
-          publish-profile: ${{ secrets.AZURE_FRONTEND_PUBLISH_PROFILE }}
           package: ./frontend/.next/standalone
+
+      - name: Azure Logout
+        run: az logout
+        if: always()

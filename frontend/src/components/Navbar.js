@@ -20,7 +20,7 @@ export default function Navbar() {
         TRON: process.env.NEXT_PUBLIC_TREASURY_TRON
     };
     const TREASURY = TREASURY_WALLETS.EVM;
-    const isAdmin = account && Object.values(TREASURY_WALLETS).some(w => w.toLowerCase() === account.toLowerCase());
+    const isAdmin = account && Object.values(TREASURY_WALLETS).some(w => w && w.toLowerCase() === account.toLowerCase());
     const SHOW_SERVICE = false; // Set to true to reveal Service tab in navigation
 
     // ── Auto-Disconnect Session Safety + Live Heartbeat ────────────────────────

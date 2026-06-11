@@ -107,13 +107,43 @@ async function startIndexer() {
     await syncHistoricalEvents(bondingCurveContract, 'Buy', START_BLOCK, handleBuy);
     await syncHistoricalEvents(bondingCurveContract, 'Sell', START_BLOCK, handleSell);
 
-    // Live Listening
-    console.log('[Indexer] Transitioning to Real-Time Surveillance...');
-    factoryContract.on('TokenCreated', handleTokenCreated);
-    bondingCurveContract.on('Buy', handleBuy);
-    bondingCurveContract.on('Sell', handleSell);
-
-    console.log('Indexer is now running (Live + Historical History Active)');
+    // Live Listening via stateless range polling to avoid RPC filter expiration issues
+    console.log('[Indexer] Transitioning to Real-Time Surveillance (Stateless Block Range Polling)...');
+    let lastPolledBlock = await provider.getBlockNumber().catch(() => START_BLOCK);
+    
+    async function poll() {
+        try {
+            const latestBlock = await provider.getBlockNumber();
+            if (latestBlock > lastPolledBlock) {
+                const fromBlock = lastPolledBlock + 1;
+                const toBlock = latestBlock;
+                console.log(`[Indexer] Polling range ${fromBlock} -> ${toBlock}`);
+                
+                const createdLogs = await factoryContract.queryFilter(factoryContract.filters.TokenCreated(), fromBlock, toBlock);
+                for (const log of createdLogs) {
+                    await handleTokenCreated(...log.args, log);
+                }
+                
+                const buyLogs = await bondingCurveContract.queryFilter(bondingCurveContract.filters.Buy(), fromBlock, toBlock);
+                for (const log of buyLogs) {
+                    await handleBuy(...log.args, log);
+                }
+                
+                const sellLogs = await bondingCurveContract.queryFilter(bondingCurveContract.filters.Sell(), fromBlock, toBlock);
+                for (const log of sellLogs) {
+                    await handleSell(...log.args, log);
+                }
+                
+                lastPolledBlock = toBlock;
+            }
+        } catch (e) {
+            console.error('[Indexer] Live Polling Error:', e.message);
+        }
+        setTimeout(poll, 10000); // Poll every 10 seconds
+    }
+    
+    poll();
+    console.log('Indexer is now running (Stateless live polling + Historical History Active)');
 }
 
 if (require.main === module) {

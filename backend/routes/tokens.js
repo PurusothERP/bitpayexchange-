@@ -23,7 +23,16 @@ function normalizeLogo(url, contractAddress) {
     // 1. If there's already a working local URL, pass it through unchanged
     if (url && (url.includes('/logos/') || url.includes('localhost:3001'))) return url;
 
-    // 2. Check if local logo file exists on disk (uploaded with new storage.js)
+    // 2. Non-empty stored URL — use as-is without disk check
+    if (url && url.includes('gateway.pinata.cloud/ipfs/')) {
+        return url.replace('https://gateway.pinata.cloud/ipfs/', 'https://ipfs.io/ipfs/');
+    }
+    if (url && url.startsWith('ipfs://')) {
+        return url.replace('ipfs://', 'https://ipfs.io/ipfs/');
+    }
+    if (url && url.startsWith('http')) return url;
+
+    // 3. Check if local logo file exists on disk (fallback)
     if (contractAddress) {
         const addr = contractAddress.toLowerCase();
         for (const ext of ['.png', '.jpg', '.jpeg', '.webp']) {
@@ -32,17 +41,6 @@ function normalizeLogo(url, contractAddress) {
             }
         }
     }
-
-    // 3. If stored URL is a Pinata URL → rewrite to ipfs.io (better uptime)
-    if (url && url.includes('gateway.pinata.cloud/ipfs/')) {
-        return url.replace('https://gateway.pinata.cloud/ipfs/', 'https://ipfs.io/ipfs/');
-    }
-    if (url && url.startsWith('ipfs://')) {
-        return url.replace('ipfs://', 'https://ipfs.io/ipfs/');
-    }
-
-    // 4. Non-empty stored URL — use as-is (could be any CDN)
-    if (url && url.startsWith('http')) return url;
 
     // 5. No logo: return backend proxy which generates a colourful SVG placeholder
     if (contractAddress) {
@@ -319,14 +317,16 @@ router.get('/markets/cg', async (req, res) => {
 // MERGED: Local MemeHub DB tokens + CoinGecko registry memes.
 // Local tokens always appear first so newly launched coins are immediately visible.
 router.get('/markets/memes', async (req, res) => {
-    const { per_page = 6000, page = 1 } = req.query;
+    const { per_page = 1000, page = 1 } = req.query;
     try {
         // 1. Fetch locally launched MemeHub tokens from the DB
         let localTokens = [];
         try {
+            const limit = Math.min(50000, parseInt(per_page) || 1000);
             const result = await db.query(
                 `SELECT *, COALESCE(launch_type, 'MEME') as launch_type
-                 FROM tokens WHERE is_delisted = 0 AND COALESCE(launch_type, 'MEME') != 'EXCHANGE_LISTING' ORDER BY created_at DESC`
+                 FROM tokens WHERE is_delisted = 0 AND COALESCE(launch_type, 'MEME') != 'EXCHANGE_LISTING' AND COALESCE(is_external, 0) = 0 ORDER BY created_at DESC LIMIT ?`,
+                [limit]
             );
             localTokens = (result.rows || []).map(t => {
                 const normalized = normalizeToken(t);

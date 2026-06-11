@@ -197,7 +197,6 @@ router.get('/revenue/export', requireAdmin, async (req, res) => {
 // GET /api/admin/stats - High-level dashboard metrics
 router.get('/stats', requireAdminOrAssistant, async (req, res) => {
     try {
-        // ── Known fee schedule (must match on-chain values) ───────────────────
         const FEE_MEME      = 0.007;  // MEME bonding curve creation
         const FEE_FAIR      = 0.007;  // Fair launch (direct DEX)
         const FEE_STANDARD  = 0.007;  // Standard token
@@ -206,15 +205,16 @@ router.get('/stats', requireAdminOrAssistant, async (req, res) => {
         const [tCount, wCount, rTreasury, rTrades, dCount, fBreakdown, tokenFees, upgradeFees, yieldStats, stakeStats] = await Promise.all([
             db.query(`SELECT 
                         COUNT(*) as total,
-                        SUM(CASE WHEN launch_type IN ('FAIR','STANDARD','EXCHANGE_LISTING') THEN 1 ELSE 0 END) as launchpad,
+                        SUM(CASE WHEN launch_type IN ('FAIR','STANDARD') THEN 1 ELSE 0 END) as launchpad,
                         SUM(CASE WHEN launch_type = 'STANDARD' THEN 1 ELSE 0 END) as standard,
                         SUM(CASE WHEN launch_type = 'MEME' THEN 1 ELSE 0 END) as meme_count,
                         SUM(CASE WHEN launch_type = 'FAIR' THEN 1 ELSE 0 END) as fair_count
-                      FROM tokens`),
+                      FROM tokens
+                      WHERE COALESCE(is_external, 0) = 0 AND COALESCE(launch_type, 'MEME') != 'EXCHANGE_LISTING'`),
             db.query('SELECT COUNT(*) as total FROM connected_wallets'),
             db.query('SELECT COALESCE(SUM(amount_bnb),0) as total FROM treasury_transfers'),
             db.query('SELECT COALESCE(SUM(fee_bnb),0) as total FROM trades'),
-            db.query('SELECT COUNT(*) as total FROM tokens WHERE is_delisted = 1'),
+            db.query('SELECT COUNT(*) as total FROM tokens WHERE is_delisted = 1 AND COALESCE(is_external, 0) = 0'),
             db.query(`
                 SELECT transfer_type, COALESCE(SUM(amount_bnb),0) as total 
                 FROM treasury_transfers 
@@ -226,7 +226,7 @@ router.get('/stats', requireAdminOrAssistant, async (req, res) => {
                     launch_type,
                     COUNT(*) as cnt
                 FROM tokens 
-                WHERE is_delisted = 0
+                WHERE is_delisted = 0 AND COALESCE(is_external, 0) = 0
                 GROUP BY launch_type
             `),
             // Upgrade fee records
@@ -287,10 +287,10 @@ router.get('/stats', requireAdminOrAssistant, async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch dashboard stats' });
     }
 });
-
-
+ 
+ 
 // ── WALLET & REGISTRY MANAGEMENT ─────────────────────────────────────────────
-
+ 
 // GET /api/admin/wallets - List all connected users and their balances
 router.get('/wallets', requireAdminOrAssistant, async (req, res) => {
     try {
@@ -300,12 +300,15 @@ router.get('/wallets', requireAdminOrAssistant, async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch wallets' });
     }
 });
-
+ 
 // GET /api/admin/tokens/registry - Advanced token management (listing/delisting)
 router.get('/tokens/registry', requireAdminOrAssistant, async (req, res) => {
     try {
-        // Returns both local DB tokens and top Market tokens for visibility control
-        const result = await db.query('SELECT * FROM tokens ORDER BY created_at DESC');
+        const result = await db.query(`
+            SELECT * FROM tokens 
+            WHERE COALESCE(is_external, 0) = 0 AND COALESCE(launch_type, 'MEME') != 'EXCHANGE_LISTING'
+            ORDER BY created_at DESC
+        `);
         res.json(result.rows);
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch token registry' });
@@ -411,12 +414,13 @@ router.get('/listing-stats', requireAdminOrAssistant, async (req, res) => {
     }
 });
 
-// GET /api/admin/listed-tokens  — All listed tokens for contract address view panel
 router.get('/listed-tokens', requireAdminOrAssistant, async (req, res) => {
     try {
         const result = await db.query(
             `SELECT contract_address, name, symbol, logo_url, is_delisted, launch_type, created_at
-             FROM tokens ORDER BY created_at DESC`
+             FROM tokens 
+             WHERE COALESCE(is_external, 0) = 0 AND COALESCE(launch_type, 'MEME') != 'EXCHANGE_LISTING'
+             ORDER BY created_at DESC`
         );
         res.json(result.rows);
     } catch (err) {
@@ -805,7 +809,7 @@ router.get('/meme-tokens', requireAdminOrAssistant, async (req, res) => {
             SELECT t.name, t.symbol, t.contract_address, COALESCE(c.is_visible, 1) as is_visible, 'LOCAL' as source
             FROM tokens t
             LEFT JOIN admin_meme_controls c ON UPPER(t.symbol) = UPPER(c.symbol)
-            WHERE t.launch_type = 'MEME'
+            WHERE t.launch_type = 'MEME' AND COALESCE(t.is_external, 0) = 0
         `);
         
         // 2. Fetch external memes from TokenRegistry

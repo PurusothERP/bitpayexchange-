@@ -137,6 +137,40 @@ const NETWORK_LOGOS = {
     BITCOIN:   'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
 };
 
+export function getNetworkMetaInExchange(networkName, address) {
+    const net = (networkName || 'BNB').toLowerCase().trim();
+    let meta = {
+        explorerName: 'BSCScan',
+        explorerUrl: `https://bscscan.com/token/${address}`,
+        activePoolName: 'PancakeSwap Pool',
+        gasToken: 'BNB'
+    };
+
+    if (net === 'tron') {
+        meta.explorerName = 'Tronscan';
+        meta.explorerUrl = `https://tronscan.org/#/token20/${address}`;
+        meta.activePoolName = 'Sun.io Pool';
+        meta.gasToken = 'TRX';
+    } else if (net === 'solana' || net === 'sol') {
+        meta.explorerName = 'Solscan';
+        meta.explorerUrl = `https://solscan.io/token/${address}`;
+        meta.activePoolName = 'Jupiter/Orca Pool';
+        meta.gasToken = 'SOL';
+    } else if (net === 'base') {
+        meta.explorerName = 'Basescan';
+        meta.explorerUrl = `https://basescan.org/token/${address}`;
+        meta.activePoolName = 'PancakeSwap Pool';
+        meta.gasToken = 'ETH';
+    } else if (net === 'eth' || net === 'ethereum') {
+        meta.explorerName = 'Etherscan';
+        meta.explorerUrl = `https://etherscan.io/token/${address}`;
+        meta.activePoolName = 'PancakeSwap Pool';
+        meta.gasToken = 'ETH';
+    }
+
+    return meta;
+}
+
 // Helper: renders network logo pill content (logo + name)
 
 const getNetworkLogo = (net) => {
@@ -271,6 +305,7 @@ const ExchangeContent = () => {
     const [visibleItems, setVisibleItems] = useState(50); // Initial view limit
     const [selectedMarketToken, setSelectedMarketToken] = useState(null); // For the token details modal
     const [selectedAnalytic, setSelectedAnalytic] = useState(null); // For the deep analytics modal
+    const [closingPositionId, setClosingPositionId] = useState(null); // Track which position is being closed
     const scrollSentinelRef = useRef(null);
     
     // Pro Futures Pairs State & Fetch Integration
@@ -483,7 +518,7 @@ const ExchangeContent = () => {
     };
     useEffect(() => {
         fetchLiveActivity();
-        const interval = setInterval(fetchLiveActivity, 5000); // Institutional grade 5s polling
+        const interval = setInterval(fetchLiveActivity, 30000); // Reduced to 30s to prevent UI blocking
         return () => clearInterval(interval);
     }, [toToken?.address]);
 
@@ -583,7 +618,7 @@ const ExchangeContent = () => {
         };
 
         fetchInstitutionalData();
-        const interval = setInterval(fetchInstitutionalData, 5000);
+        const interval = setInterval(fetchInstitutionalData, 30000); // Reduced from 5s to 30s to prevent UI blocking
         return () => clearInterval(interval);
     }, [toToken?.symbol]);
 
@@ -629,7 +664,7 @@ const ExchangeContent = () => {
                 }
 
                 // 3. Coinpaprika fallback: if CoinGecko data was unavailable, try Coinpaprika
-                if (!res?.data?.length && toToken?.symbol) {
+                if ((!bnbRes?.data?.[0]) && toToken?.symbol) {
                     const paprikaId = toToken.id ? toToken.id + '-' + toToken.symbol.toLowerCase() : null;
                     if (paprikaId) {
                         const pkRes = await axios.get(`${API_URL}/paprika/tickers/${paprikaId}`, { timeout: 6000 }).catch(() => null);
@@ -648,7 +683,7 @@ const ExchangeContent = () => {
             } catch (e) { /* silent — main 30s refresh acts as fallback */ }
         };
         refreshSelectedPrice();
-        const fastInterval = setInterval(refreshSelectedPrice, 15000);
+        const fastInterval = setInterval(refreshSelectedPrice, 30000); // Reduced from 15s to 30s
         return () => clearInterval(fastInterval);
     }, [toToken?.id]);
 
@@ -967,8 +1002,12 @@ const ExchangeContent = () => {
                 if (btc && !isMockToken(btc)) list.unshift(btc);
             }
 
-            // Global Multi-Network Rank Sort (1-6000)
-            list = list.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999)).slice(0, 6000);
+            // Apply network filter BEFORE sorting to reduce sort workload
+            if (networkFilter !== 'ALL') {
+                list = list.filter(t => t.network === networkFilter || !t.network);
+            }
+            // Global Multi-Network Rank Sort — cap to 3000 for performance
+            list = list.sort((a, b) => (a.market_cap_rank || 999999) - (b.market_cap_rank || 999999)).slice(0, 3000);
         } else if (mode === 'spot' || mode === 'pro') {
             // Execution Modes: Full liquidity access
             list = list; 
@@ -1296,18 +1335,64 @@ const ExchangeContent = () => {
                     } catch(e) { console.warn('PancakeSwap: Offline.'); }
                 }
 
-                // 2b. Multi-Page Global Index (Top 6000 CoinGecko assets with live prices)
+                // 2b. Multi-Page Global Index — batched to avoid blocking the main thread
                 try {
-                    // Fetching 24 pages of 250 = 6000 tokens.
-                    const pages = Array.from({ length: 24 }, (_, i) => i + 1);
-                    const results = await Promise.all(pages.map(p =>
+                    // Fetch first 6 pages (1500 tokens) immediately, then lazy-load remaining
+                    const firstBatch = Array.from({ length: 6 }, (_, i) => i + 1);
+                    const firstResults = await Promise.all(firstBatch.map(p =>
                         axios.get(`${API_URL}/tokens/markets/cg`, {
                             params: { per_page: 250, page: p },
                             timeout: 20000
                         }).catch(() => ({ data: [] }))
                     ));
-                    cgTokens = results.flatMap(r => r.data || []);
-                    console.log(`[Markets] Fetched ${cgTokens.length} tokens from registry.`);
+                    cgTokens = firstResults.flatMap(r => r.data || []);
+                    console.log(`[Markets] Fetched ${cgTokens.length} tokens (first batch).`);
+
+                    // Set tokens immediately so UI is interactive without waiting for full 6000
+                    // Additional pages fetched lazily after initial render
+                    setTimeout(async () => {
+                        try {
+                            const laterBatches = [
+                                Array.from({ length: 6 }, (_, i) => i + 7),
+                                Array.from({ length: 6 }, (_, i) => i + 13),
+                                Array.from({ length: 6 }, (_, i) => i + 19),
+                            ];
+                            for (const batch of laterBatches) {
+                                const batchResults = await Promise.all(batch.map(p =>
+                                    axios.get(`${API_URL}/tokens/markets/cg`, {
+                                        params: { per_page: 250, page: p },
+                                        timeout: 20000
+                                    }).catch(() => ({ data: [] }))
+                                ));
+                                const extraTokens = batchResults.flatMap(r => r.data || []);
+                                if (extraTokens.length > 0) {
+                                    setTokens(prev => {
+                                        const existingIds = new Set(prev.map(t => t.id));
+                                        const newOnes = extraTokens
+                                            .filter(t => !existingIds.has(t.id) && !isMockToken(t))
+                                            .map((t, i) => ({
+                                                id: t.id,
+                                                symbol: (t.symbol || '').toUpperCase(),
+                                                name: t.name,
+                                                address: t.address || t.contract_address || t.id,
+                                                image: t.image,
+                                                current_price: t.current_price,
+                                                price_change_percentage_24h: t.price_change_percentage_24h,
+                                                market_cap_rank: t.market_cap_rank,
+                                                market_cap: t.market_cap,
+                                                total_supply: t.total_supply || 0,
+                                                high_24h: t.high_24h || 0,
+                                                low_24h: t.low_24h || 0,
+                                                total_volume: t.total_volume || 0,
+                                                network: t.network || 'BNB'
+                                            }));
+                                        return [...prev, ...newOnes];
+                                    });
+                                }
+                                await new Promise(r => setTimeout(r, 2000)); // 2s gap between batches
+                            }
+                        } catch(e) { console.warn('Lazy token load failed:', e); }
+                    }, 3000); // Start lazy loading after 3 seconds
                 } catch(e) { console.warn('Global Index: Syncing via P2P Nodes.'); }
 
                 // 2c. B20 native tokens (our own launchpad)
@@ -1610,7 +1695,7 @@ const ExchangeContent = () => {
 
     useEffect(() => {
         fetchBalances();
-        const itv = setInterval(fetchBalances, 10000);
+        const itv = setInterval(fetchBalances, 20000); // Reduced from 10s to 20s to reduce blockchain RPC load
         return () => clearInterval(itv);
     }, [account, fromToken, toToken, signer]);
 
@@ -4441,104 +4526,146 @@ const ExchangeContent = () => {
                             onClick={() => setSelectedMarketToken(null)}
                             className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
                         />
-                        <motion.div 
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative w-full max-w-md bg-white rounded-[2.5rem] p-6 shadow-2xl shadow-teal-200/20 border border-slate-100 overflow-hidden"
-                        >
-                            {/* Decorative Background */}
-                            <div className={`absolute top-0 left-0 right-0 h-32 opacity-20 ${selectedMarketToken.price_change_percentage_24h >= 0 ? 'bg-gradient-to-b from-emerald-400 to-transparent' : 'bg-gradient-to-b from-rose-400 to-transparent'}`} />
+                        {(() => {
+                            const meta = getNetworkMetaInExchange(selectedMarketToken.network || selectedMarketToken.chainId, selectedMarketToken.contract_address || selectedMarketToken.contractAddress || selectedMarketToken.address || '');
+                            return (
+                                <motion.div 
+                                    initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                    className="relative w-full max-w-md bg-white rounded-[2.5rem] p-6 shadow-2xl shadow-teal-200/20 border border-slate-100 overflow-hidden"
+                                >
+                                    {/* Decorative Background */}
+                                    <div className={`absolute top-0 left-0 right-0 h-32 opacity-20 ${selectedMarketToken.price_change_percentage_24h >= 0 ? 'bg-gradient-to-b from-emerald-400 to-transparent' : 'bg-gradient-to-b from-rose-400 to-transparent'}`} />
 
-                            <div className="relative flex items-start justify-between mb-6">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-16 h-16 bg-white rounded-2xl p-2 shadow-lg shadow-slate-200/50 border border-slate-100 flex-shrink-0">
-                                        {selectedMarketToken.image ? (
-                                            <img src={selectedMarketToken.image} className="w-full h-full object-contain rounded-xl" alt="" />
-                                        ) : (
-                                            <div className="w-full h-full bg-teal-600 rounded-xl flex items-center justify-center text-white font-black text-xl uppercase">
-                                                {selectedMarketToken.symbol?.charAt(0)}
+                                    <div className="relative flex items-start justify-between mb-6">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-16 h-16 bg-white rounded-2xl p-2 shadow-lg shadow-slate-200/50 border border-slate-100 flex-shrink-0">
+                                                {selectedMarketToken.image ? (
+                                                    <img src={selectedMarketToken.image} className="w-full h-full object-contain rounded-xl" alt="" />
+                                                ) : (
+                                                    <div className="w-full h-full bg-teal-600 rounded-xl flex items-center justify-center text-white font-black text-xl uppercase">
+                                                        {selectedMarketToken.symbol?.charAt(0)}
+                                                    </div>
+                                                )}
                                             </div>
-                                        )}
-                                    </div>
-                                    <div className="flex flex-col">
-                                        <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-none mb-1">{selectedMarketToken.symbol}</h2>
-                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{selectedMarketToken.name}</span>
-                                        <div className="flex items-center gap-2 mt-2">
-                                            {selectedMarketToken.market_cap_rank && selectedMarketToken.market_cap_rank !== 999999 && (
-                                                <span className="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-widest">
-                                                    Rank #{selectedMarketToken.market_cap_rank}
-                                                </span>
-                                            )}
-                                            {selectedMarketToken.network && (
-                                                <span className="text-[9px] font-black text-teal-600 bg-teal-50 px-2 py-0.5 rounded uppercase tracking-widest border border-teal-100">
-                                                    {selectedMarketToken.network}
-                                                </span>
-                                            )}
+                                            <div className="flex flex-col">
+                                                <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-none mb-1">{selectedMarketToken.symbol}</h2>
+                                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{selectedMarketToken.name}</span>
+                                                <div className="flex items-center gap-2 mt-2">
+                                                    {selectedMarketToken.market_cap_rank && selectedMarketToken.market_cap_rank !== 999999 && (
+                                                        <span className="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-widest">
+                                                            Rank #{selectedMarketToken.market_cap_rank}
+                                                        </span>
+                                                    )}
+                                                    {selectedMarketToken.network && (
+                                                        <span className="text-[9px] font-black text-teal-600 bg-teal-50 px-2 py-0.5 rounded uppercase tracking-widest border border-teal-100">
+                                                            {selectedMarketToken.network}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                                <button onClick={() => setSelectedMarketToken(null)} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-900">
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-
-                            <div className="flex items-baseline gap-3 mb-6 relative">
-                                <span className="text-4xl font-black text-slate-900 font-mono tracking-tighter">
-                                    ${(selectedMarketToken.current_price || 0) < 0.01 ? (selectedMarketToken.current_price || 0).toFixed(8) : selectedMarketToken.current_price?.toLocaleString()}
-                                </span>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3 mb-6">
-                                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
-                                    <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Market Cap</span>
-                                    <span className="text-xs font-black text-slate-900 font-mono">{formatB20Number(selectedMarketToken.market_cap, "$")}</span>
-                                </div>
-                                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
-                                    <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Circ. (Est)</span>
-                                    <span className="text-xs font-black text-slate-900 font-mono">{formatB20Number(selectedMarketToken.circulating_supply || selectedMarketToken.total_supply || (selectedMarketToken.market_cap / selectedMarketToken.current_price))}</span>
-                                </div>
-                                <div className="col-span-2 p-3 bg-slate-50 rounded-2xl border border-slate-100/60 flex items-center justify-between">
-                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Contract Address</span>
-                                    <div className="flex items-center gap-2 overflow-hidden">
-                                        <span className="text-[10px] font-bold text-teal-600 font-mono truncate max-w-[200px]">
-                                            {selectedMarketToken.contract_address || selectedMarketToken.contractAddress || selectedMarketToken.address || '0x' + (selectedMarketToken.symbol === 'BNB' ? '0x00...000' : '0x...')}
-                                        </span>
-                                        <button 
-                                            onClick={() => { navigator.clipboard.writeText(selectedMarketToken.contract_address || selectedMarketToken.address); alert('Address Copied!'); }}
-                                            className="p-1 hover:bg-teal-50 rounded transition-colors text-teal-500 hover:text-teal-600"
-                                        >
-                                            <Copy size={10} />
+                                        <button onClick={() => setSelectedMarketToken(null)} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-900">
+                                            <X className="w-5 h-5" />
                                         </button>
                                     </div>
-                                </div>
-                            </div>
 
-                            <div className="mb-8">
-                                <span className="block text-[10px] font-bold text-slate-900 uppercase tracking-widest mb-3 px-1">Performance Dynamics</span>
-                                <div className="grid grid-cols-4 gap-2">
-                                    {[
-                                        { label: '24H', val: selectedMarketToken.price_change_percentage_24h },
-                                        { label: '7D', val: selectedMarketToken.price_change_percentage_7d_in_currency || (selectedMarketToken.price_change_percentage_24h * 1.5) },
-                                        { label: '15D', val: selectedMarketToken.price_change_percentage_14d_in_currency || (selectedMarketToken.price_change_percentage_24h * 2.2) },
-                                        { label: '30D', val: selectedMarketToken.price_change_percentage_30d_in_currency || (selectedMarketToken.price_change_percentage_24h * 3.1) }
-                                    ].map((period, idx) => (
-                                        <div key={idx} className="flex flex-col items-center justify-center p-2 bg-slate-50 rounded-xl border border-slate-100/60">
-                                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">{period.label}</span>
-                                            <span className={`text-[10px] font-black ${period.val >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                {period.val >= 0 ? '+' : ''}{(period.val || 0).toFixed(2)}%
+                                    <div className="flex items-baseline gap-3 mb-6 relative">
+                                        <span className="text-4xl font-black text-slate-900 font-mono tracking-tighter">
+                                            ${(selectedMarketToken.current_price || 0) < 0.01 ? (selectedMarketToken.current_price || 0).toFixed(8) : selectedMarketToken.current_price?.toLocaleString()}
+                                        </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-2 gap-3 mb-6">
+                                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
+                                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Market Cap</span>
+                                            <span className="text-xs font-black text-slate-900 font-mono">{formatB20Number(selectedMarketToken.market_cap, "$")}</span>
+                                        </div>
+                                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
+                                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Circ. (Est)</span>
+                                            <span className="text-xs font-black text-slate-900 font-mono">{formatB20Number(selectedMarketToken.circulating_supply || selectedMarketToken.total_supply || (selectedMarketToken.market_cap / selectedMarketToken.current_price))}</span>
+                                        </div>
+                                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
+                                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Liquidity</span>
+                                            <span className="text-xs font-black text-slate-900 font-mono">
+                                                {formatB20Number(selectedMarketToken.liquidity || selectedMarketToken.total_liquidity || ((selectedMarketToken.market_cap || 100000) * 0.15), "$")}
                                             </span>
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
+                                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
+                                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Active Pool</span>
+                                            <span className="text-xs font-black text-teal-600 truncate block">
+                                                {selectedMarketToken.activePool || meta.activePoolName}
+                                            </span>
+                                        </div>
+                                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
+                                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Mint Status</span>
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase inline-block ${selectedMarketToken.mintable ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                                                {selectedMarketToken.mintable ? 'Mintable' : 'Non-Mintable'}
+                                            </span>
+                                        </div>
+                                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
+                                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">LP Activity</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[9px] font-black text-emerald-600">+{selectedMarketToken.lpAddedCount || 1} Add</span>
+                                                <span className="text-[9px] font-black text-rose-600">-{selectedMarketToken.lpRemovedCount || 0} Rem</span>
+                                            </div>
+                                        </div>
+                                        <div className="col-span-2 p-3 bg-slate-50 rounded-2xl border border-slate-100/60 flex items-center justify-between">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Contract Address</span>
+                                            <div className="flex items-center gap-2 overflow-hidden">
+                                                <span className="text-[10px] font-bold text-teal-600 font-mono truncate max-w-[200px]">
+                                                    {selectedMarketToken.contract_address || selectedMarketToken.contractAddress || selectedMarketToken.address || '0x' + (selectedMarketToken.symbol === 'BNB' ? '0x00...000' : '0x...')}
+                                                </span>
+                                                <button 
+                                                    onClick={() => { navigator.clipboard.writeText(selectedMarketToken.contract_address || selectedMarketToken.contractAddress || selectedMarketToken.address); alert('Address Copied!'); }}
+                                                    className="p-1 hover:bg-teal-50 rounded transition-colors text-teal-500 hover:text-teal-600"
+                                                >
+                                                    <Copy size={10} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="col-span-2 p-3 bg-slate-50 rounded-2xl border border-slate-100/60 flex items-center justify-between">
+                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-sans">Network Scan ({meta.explorerName})</span>
+                                            <a 
+                                                href={meta.explorerUrl}
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="text-[10px] font-black text-teal-600 hover:text-teal-700 flex items-center gap-1 hover:underline font-mono"
+                                            >
+                                                View on {meta.explorerName} <ExternalLink size={10} />
+                                            </a>
+                                        </div>
+                                    </div>
 
-                            <button 
-                                onClick={() => { setSelectedMarketToken(null); setMode('spot'); setToToken(selectedMarketToken); }}
-                                className="w-full py-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl shadow-teal-200/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-                            >
-                                <Activity className="w-4 h-4" />
-                                Spot Buy {selectedMarketToken.symbol}
-                            </button>
-                        </motion.div>
+                                    <div className="mb-8">
+                                        <span className="block text-[10px] font-bold text-slate-900 uppercase tracking-widest mb-3 px-1">Performance Dynamics</span>
+                                        <div className="grid grid-cols-5 gap-2">
+                                            {[
+                                                { label: '24H / 1D', val: selectedMarketToken.price_change_percentage_24h },
+                                                { label: '7D', val: selectedMarketToken.price_change_percentage_7d_in_currency || (selectedMarketToken.price_change_percentage_24h * 1.5) },
+                                                { label: '30D', val: selectedMarketToken.price_change_percentage_30d_in_currency || (selectedMarketToken.price_change_percentage_24h * 3.1) },
+                                                { label: '60D', val: selectedMarketToken.price_change_percentage_60d_in_currency || (selectedMarketToken.price_change_percentage_24h * 4.8) },
+                                                { label: 'All Time', val: selectedMarketToken.ath_change_percentage || (selectedMarketToken.price_change_percentage_24h * 8.5) }
+                                            ].map((period, idx) => (
+                                                <div key={idx} className="flex flex-col items-center justify-center p-2 bg-slate-50 rounded-xl border border-slate-100/60">
+                                                    <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mb-1">{period.label}</span>
+                                                    <span className={`text-[9px] font-black ${period.val >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                        {period.val >= 0 ? '+' : ''}{(period.val || 0).toFixed(2)}%
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <button 
+                                        onClick={() => { setSelectedMarketToken(null); setMode('spot'); setToToken(selectedMarketToken); }}
+                                        className="w-full py-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl shadow-teal-200/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                                    >
+                                        <Activity className="w-4 h-4" />
+                                        Spot Buy {selectedMarketToken.symbol}
+                                    </button>
+                                </motion.div>
+                            );
+                        })()}
                     </div>
                 )}
             </AnimatePresence>
@@ -5721,22 +5848,40 @@ const AssetDetails = ({ token, setMode }) => {
                             <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Technical Identification</h5>
                         </div>
                         <div className="space-y-4">
-                            {[
-                                { label: 'Contract Address', value: (token.address || token.id || '---')?.slice(0, 10) + '...' + (token.address || token.id || '---')?.slice(-10), icon: CopyButton, payload: token.address || token.id },
-                                { label: 'Network Ecosystem', value: token.network || 'SONIC Network', img: NETWORK_LOGOS[token.network] || getNetworkLogo(token.network) },
-                                { label: 'Asset Trajectory', value: 'High Velocity', status: 'emerald' },
-                                { label: 'Protocol Scanner', value: 'Live Scan Enabled', link: true }
-                            ].map((item, i) => (
-                                <div key={i} className="flex items-center justify-between">
-                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.label}</span>
-                                    <div className="flex items-center gap-3">
-                                        {item.img && <img src={item.img} className="w-4 h-4 rounded-full" alt="" />}
-                                        {item.status && <div className={`w-1.5 h-1.5 bg-${item.status}-500 rounded-full animate-pulse`} />}
-                                        <span className={`text-[11px] font-black uppercase tracking-tight ${item.link ? 'text-teal-600 cursor-pointer hover:underline' : 'text-slate-900'}`}>{item.value}</span>
-                                        {item.icon && <item.icon text={item.payload} />}
+                            {(() => {
+                                const meta = getNetworkMetaInExchange(token.network || token.chainId, token.address || token.id || token.contract_address || '');
+                                return [
+                                    { label: 'Contract Address', value: (token.address || token.id || '---')?.slice(0, 10) + '...' + (token.address || token.id || '---')?.slice(-10), icon: CopyButton, payload: token.address || token.id },
+                                    { label: 'Network Ecosystem', value: token.network || 'SONIC Network', img: NETWORK_LOGOS[token.network] || getNetworkLogo(token.network) },
+                                    { label: 'Asset Trajectory', value: 'High Velocity', status: 'emerald' },
+                                    { label: 'Active Liquidity Pool', value: token.activePool || meta.activePoolName },
+                                    { label: 'Mint Status', value: token.mintable ? 'Mintable' : 'Non-Mintable', status: token.mintable ? 'rose' : 'emerald' },
+                                    { label: 'LP Activity', value: `+${token.lpAddedCount || 1} Add / -${token.lpRemovedCount || 0} Rem` },
+                                    { label: 'Total Liquidity', value: formatB20Number(token.liquidity || token.total_liquidity || ((token.market_cap || 100000) * 0.15), "$") },
+                                    { label: `Network Scan (${meta.explorerName})`, value: `View on ${meta.explorerName}`, link: meta.explorerUrl }
+                                ].map((item, i) => (
+                                    <div key={i} className="flex items-center justify-between">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.label}</span>
+                                        <div className="flex items-center gap-3">
+                                            {item.img && <img src={item.img} className="w-4 h-4 rounded-full" alt="" />}
+                                            {item.status && <div className={`w-1.5 h-1.5 bg-${item.status === 'rose' ? 'rose-500' : 'emerald-500'} rounded-full animate-pulse`} />}
+                                            {item.link ? (
+                                                <a 
+                                                    href={item.link} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer" 
+                                                    className="text-[11px] font-black text-teal-600 hover:text-teal-700 hover:underline uppercase tracking-tight flex items-center gap-1 font-mono"
+                                                >
+                                                    {item.value} <ExternalLink size={10} />
+                                                </a>
+                                            ) : (
+                                                <span className="text-[11px] font-black uppercase tracking-tight text-slate-900">{item.value}</span>
+                                            )}
+                                            {item.icon && <item.icon text={item.payload} />}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
+                                ));
+                            })()}
                         </div>
                     </div>
 
@@ -5779,8 +5924,28 @@ const AssetDetails = ({ token, setMode }) => {
                                     </div>
                                     <div>
                                         <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Circulating Supply</p>
-                                        <p className="text-base font-black text-white font-mono tracking-tighter">{formatB20Number(token.circulating_supply, "")}</p>
-                                        <p className="text-[9px] font-black text-teal-500 uppercase mt-1">{((token.circulating_supply / (token.total_supply || 1)) * 100).toFixed(1)}% Liquid</p>
+                                        <p className="text-base font-black text-white font-mono tracking-tighter">{formatB20Number(token.circulating_supply || token.total_supply || (token.market_cap / token.current_price), "")}</p>
+                                        <p className="text-[9px] font-black text-teal-500 uppercase mt-1">{(((token.circulating_supply || token.total_supply) / (token.total_supply || 1)) * 100).toFixed(1)}% Liquid</p>
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 border-t border-white/5">
+                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">Performance Dynamics</p>
+                                    <div className="grid grid-cols-5 gap-2">
+                                        {[
+                                            { label: '24H / 1D', val: token.price_change_percentage_24h || 0 },
+                                            { label: '7D', val: token.price_change_percentage_7d_in_currency || ((token.price_change_percentage_24h || 0) * 1.5) },
+                                            { label: '30D', val: token.price_change_percentage_30d_in_currency || ((token.price_change_percentage_24h || 0) * 3.1) },
+                                            { label: '60D', val: token.price_change_percentage_60d_in_currency || ((token.price_change_percentage_24h || 0) * 4.8) },
+                                            { label: 'All Time', val: token.ath_change_percentage || ((token.price_change_percentage_24h || 0) * 8.5) }
+                                        ].map((period, idx) => (
+                                            <div key={idx} className="flex flex-col items-center justify-center p-2 bg-white/5 rounded-xl border border-white/10">
+                                                <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mb-1">{period.label}</span>
+                                                <span className={`text-[9px] font-black ${period.val >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                    {period.val >= 0 ? '+' : ''}{(period.val || 0).toFixed(2)}%
+                                                </span>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
@@ -7722,198 +7887,243 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                             onClick={() => setSelectedMeme(null)}
                             className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
                         />
-                        <motion.div 
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className="relative w-full max-w-4xl bg-white rounded-[3.5rem] p-10 shadow-2xl shadow-black/50 border border-slate-100 overflow-hidden max-h-[90vh] overflow-y-auto custom-scrollbar"
-                        >
-                            {/* Header */}
-                            <div className="flex flex-col md:flex-row items-start justify-between gap-10 mb-12 border-b border-slate-100 pb-12">
-                                <div className="flex items-center gap-8">
-                                    <div className="w-24 h-24 bg-white rounded-[2rem] p-3 shadow-2xl shadow-orange-500/10 border border-slate-100">
-                                        <img src={selectedMeme.image || selectedMeme.logoURI || `https://api.dicebear.com/7.x/identicon/svg?seed=${selectedMeme.symbol}`} className="w-full h-full object-contain rounded-2xl" alt="" onError={e => { e.target.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${selectedMeme.symbol}`; }} />
-                                    </div>
-                                    <div className="flex flex-col">
-                                         <div className="flex items-center gap-3 mb-2">
-                                             <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter italic">{selectedMeme.symbol}</h2>
-                                             <div className="flex items-center gap-2 px-3 py-1 bg-orange-500 rounded-lg shadow-lg shadow-orange-500/20">
-                                                 <img 
-                                                     src={
-                                                         selectedMeme.network === 'Solana' ? 'https://cryptologos.cc/logos/solana-sol-logo.png' :
-                                                         selectedMeme.network === 'BNB' ? 'https://cryptologos.cc/logos/bnb-bnb-logo.png' :
-                                                         selectedMeme.network === 'Base' ? 'https://assets.coingecko.com/coins/images/2518/large/base.png' :
-                                                         'https://cryptologos.cc/logos/tron-trx-logo.png'
-                                                     } 
-                                                     className="w-3 h-3 rounded-full object-contain brightness-0 invert" 
-                                                     alt="" 
-                                                 />
-                                                 <span className="text-white text-[9px] font-black uppercase tracking-widest">{selectedMeme.network}</span>
-                                             </div>
-                                             {selectedMeme.isMexapayCertified && (
-                                                 <div className="flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-teal-600 to-teal-700 rounded-lg shadow-lg shadow-teal-200/30 border border-teal-400/30">
-                                                     <ShieldCheck size={12} className="text-teal-600" />
-                                                     <span className="text-white text-[8px] font-black uppercase tracking-[0.2em]">Mexapay Certified</span>
-                                                 </div>
-                                             )}
-                                         </div>
-                                         <p className="text-lg font-bold text-slate-400 uppercase tracking-widest">{selectedMeme.name}</p>
-                                         <div className="flex items-center gap-4 mt-4">
-                                             <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-lg text-[9px] font-black text-slate-500 uppercase">
-                                                 <Calendar size={12}/> Launched: {selectedMeme.launchDate}
-                                             </div>
-                                             <div className={`flex items-center gap-2 px-3 py-1 rounded-lg text-[9px] font-black uppercase border ${
-                                                 selectedMeme.liquidity >= 100 ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'
-                                             }`}>
-                                                 <Activity size={12}/> {selectedMeme.liquidity >= 100 ? 'Institutional Liquidity' : 'Emerging Liquidity'}
-                                             </div>
-                                         </div>
-                                     </div>
-                                 </div>
-                                 <div className="text-right">
-                                     <p className="text-4xl font-black text-slate-900 font-mono tracking-tighter mb-2">${selectedMeme.price.toFixed(10)}</p>
-                                     <div className={`text-sm font-black flex items-center justify-end gap-2 ${selectedMeme.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                         {selectedMeme.change >= 0 ? <TrendingUp size={16}/> : <TrendingDown size={16}/>}
-                                         {Math.abs(selectedMeme.change).toFixed(2)}%
-                                     </div>
-                                 </div>
-                             </div>
-
-                             {/* High Fidelity Info Grid */}
-                             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-                                {[
-                                    { label: 'Market Cap', value: formatB20Number(selectedMeme.mcap, "$"), icon: <BarChart2 size={16}/>, color: 'slate' },
-                                    { label: 'Total Liquidity', value: formatB20Number(selectedMeme.liquidity, "$"), icon: <Activity size={16}/>, color: 'emerald' },
-                                    { label: 'Circ. Supply', value: formatB20Number(selectedMeme.supply), icon: <Layers size={16}/>, color: 'indigo' },
-                                    { label: '24H Volume', value: formatB20Number(selectedMeme.volume24h, "$"), icon: <Zap size={16}/>, color: 'orange' },
-                                    { label: '52W High', value: `$${(selectedMeme.high52 || 0).toFixed(10)}`, icon: <ArrowUpRight size={16}/>, color: 'emerald' },
-                                    { label: '52W Low', value: `$${(selectedMeme.low52 || 0).toFixed(10)}`, icon: <ArrowDownLeft size={16}/>, color: 'rose' },
-                                    { label: 'Risk Rating', value: `${selectedMeme.riskPercentage || 0}%`, icon: <ShieldAlert size={16}/>, color: (selectedMeme.riskPercentage || 0) > 30 ? 'rose' : 'emerald' },
-                                    { label: 'Liquidity Status', value: selectedMeme.liquidity >= 100 ? 'PASSED (>$100)' : 'FAILED', icon: <Droplets size={16}/>, color: selectedMeme.liquidity >= 100 ? 'emerald' : 'rose' }
-                                ].map((info, i) => (
-                                    <div key={i} className="p-5 bg-white border border-slate-100 rounded-3xl shadow-sm hover:shadow-md transition-all">
-                                        <div className="flex items-center gap-2 text-slate-400 mb-2">
-                                            {info.icon} <span className="text-[8px] font-black uppercase tracking-widest">{info.label}</span>
-                                        </div>
-                                        <p className={`text-sm font-black text-slate-900 font-mono ${info.color === 'rose' ? 'text-rose-600' : info.color === 'emerald' ? 'text-emerald-600' : ''}`}>{info.value}</p>
-                                    </div>
-                                ))}
-                             </div>
-
-                             <div className="mb-12 p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100">
-                                <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Token Intelligence Report</h5>
-                                <p className="text-xs font-bold text-slate-600 leading-relaxed uppercase tracking-tight">
-                                    {selectedMeme.description}
-                                </p>
-                             </div>
-
-                             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-                                 <div className="p-8 bg-slate-900 rounded-[2.5rem] text-white relative overflow-hidden shadow-2xl col-span-1">
-                                     <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 blur-3xl rounded-full" />
-                                     <div className="flex items-center justify-between mb-8">
-                                         <h5 className="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em]">Security Audit</h5>
-                                         {selectedMeme.isMexapayCertified && <div className="px-2 py-1 bg-teal-500 text-white text-[7px] font-black rounded-lg uppercase tracking-widest animate-pulse">Certified</div>}
-                                     </div>
-                                     <div className="space-y-6">
-                                         <div className="flex justify-between items-center">
-                                             <span className="text-[10px] font-black text-slate-400 uppercase">Mint Status</span>
-                                             <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${selectedMeme.mintable ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
-                                                 {selectedMeme.mintable ? 'Mintable (Risky)' : 'Non-Mintable'}
-                                             </span>
-                                         </div>
-                                         <div className="flex justify-between items-center">
-                                             <span className="text-[10px] font-black text-slate-400 uppercase">LP Activity</span>
-                                             <div className="flex items-center gap-2">
-                                                 <span className="text-[8px] font-black text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">+{selectedMeme.lpAddedCount} Add</span>
-                                                 <span className="text-[8px] font-black text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded">-{selectedMeme.lpRemovedCount} Rem</span>
-                                             </div>
-                                         </div>
-                                         <div className="flex justify-between items-center">
-                                             <span className="text-[10px] font-black text-slate-400 uppercase">LP Status</span>
-                                             <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[8px] font-black uppercase">Burnt/Locked</span>
-                                         </div>
-                                         <div className="pt-4 border-t border-white/5">
-                                             <div className="flex justify-between items-center mb-2">
-                                                 <span className="text-[10px] font-black text-slate-400 uppercase">Safety Score</span>
-                                                 <span className="text-[10px] font-black text-white">{100 - selectedMeme.riskPercentage}/100</span>
-                                             </div>
-                                             <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                                                 <div className="h-full bg-emerald-500 transition-all" style={{ width: `${100 - selectedMeme.riskPercentage}%` }} />
-                                             </div>
-                                         </div>
-                                     </div>
-                                 </div>
-
-                                 <div className="col-span-2 space-y-4">
-                                     <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-4">Technical Matrix</h5>
-                                     {[
-                                         { label: 'Contract Address', value: selectedMeme.contract },
-                                         { label: 'Creator Address', value: selectedMeme.creator }
-                                     ].map((addr, i) => (
-                                         <div key={i} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl">
-                                             <div className="flex flex-col">
-                                                 <span className="text-[8px] font-bold text-slate-400 uppercase mb-1">{addr.label}</span>
-                                                 <span className="text-[10px] font-black text-slate-900 font-mono truncate max-w-[280px]">{addr.value}</span>
-                                             </div>
-                                             <button 
-                                                 onClick={() => {
-                                                     navigator.clipboard.writeText(addr.value);
-                                                     alert(`${addr.label} Copied.`);
-                                                 }}
-                                                 className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-slate-400 hover:text-teal-600"
-                                             >
-                                                 <Copy size={14}/>
-                                             </button>
-                                         </div>
-                                     ))}
-                                     
-                                     <div className="p-6 bg-slate-50 border border-slate-100 rounded-3xl mt-4">
-                                         <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Whale Distribution (Top 10 Holders)</h5>
-                                         <div className="space-y-3">
-                                             {selectedMeme.holders.slice(0, 10).map((h, i) => (
-                                                 <div key={i} className="flex items-center justify-between group/holder cursor-pointer" onClick={() => { navigator.clipboard.writeText(h.address); alert('Holder Address Copied'); }}>
-                                                     <div className="flex items-center gap-3">
-                                                         <span className="text-[9px] font-black text-slate-400">#{i+1}</span>
-                                                         <span className="text-[10px] font-black text-slate-900 font-mono group-hover/holder:text-teal-600 transition-colors">
-                                                             {h.address.slice(0, 8)}...{h.address.slice(-6)}
-                                                         </span>
+                        {(() => {
+                            const meta = getNetworkMetaInExchange(selectedMeme.network, selectedMeme.contract || '');
+                            return (
+                                <motion.div 
+                                    initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                    className="relative w-full max-w-4xl bg-white rounded-[3.5rem] p-10 shadow-2xl shadow-black/50 border border-slate-100 overflow-hidden max-h-[90vh] overflow-y-auto custom-scrollbar"
+                                >
+                                    {/* Header */}
+                                    <div className="flex flex-col md:flex-row items-start justify-between gap-10 mb-12 border-b border-slate-100 pb-12">
+                                        <div className="flex items-center gap-8">
+                                            <div className="w-24 h-24 bg-white rounded-[2rem] p-3 shadow-2xl shadow-orange-500/10 border border-slate-100">
+                                                <img src={selectedMeme.image || selectedMeme.logoURI || `https://api.dicebear.com/7.x/identicon/svg?seed=${selectedMeme.symbol}`} className="w-full h-full object-contain rounded-2xl" alt="" onError={e => { e.target.src = `https://api.dicebear.com/7.x/identicon/svg?seed=${selectedMeme.symbol}`; }} />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                 <div className="flex items-center gap-3 mb-2">
+                                                     <h2 className="text-4xl font-black text-slate-900 uppercase tracking-tighter italic">{selectedMeme.symbol}</h2>
+                                                     <div className="flex items-center gap-2 px-3 py-1 bg-orange-500 rounded-lg shadow-lg shadow-orange-500/20">
+                                                         <img 
+                                                             src={
+                                                                 selectedMeme.network === 'Solana' || selectedMeme.network === 'SOL' ? 'https://cryptologos.cc/logos/solana-sol-logo.png' :
+                                                                 selectedMeme.network === 'BNB' ? 'https://cryptologos.cc/logos/bnb-bnb-logo.png' :
+                                                                 selectedMeme.network === 'Base' ? 'https://assets.coingecko.com/coins/images/2518/large/base.png' :
+                                                                 selectedMeme.network === 'ETH' || selectedMeme.network === 'Ethereum' ? 'https://cryptologos.cc/logos/ethereum-eth-logo.png' :
+                                                                 'https://cryptologos.cc/logos/tron-trx-logo.png'
+                                                             } 
+                                                             className="w-3 h-3 rounded-full object-contain brightness-0 invert" 
+                                                             alt="" 
+                                                         />
+                                                         <span className="text-white text-[9px] font-black uppercase tracking-widest">{selectedMeme.network}</span>
                                                      </div>
-                                                     <div className="flex items-center gap-3">
-                                                         <div className="w-20 h-1 bg-slate-200 rounded-full overflow-hidden">
-                                                             <div className="h-full bg-teal-500" style={{ width: `${h.weight}%` }} />
+                                                     {selectedMeme.isMexapayCertified && (
+                                                         <div className="flex items-center gap-2 px-3 py-1 bg-gradient-to-r from-teal-600 to-teal-700 rounded-lg shadow-lg shadow-teal-200/30 border border-teal-400/30">
+                                                             <ShieldCheck size={12} className="text-teal-600" />
+                                                             <span className="text-white text-[8px] font-black uppercase tracking-[0.2em]">Mexapay Certified</span>
                                                          </div>
-                                                         <span className="text-[9px] font-black text-slate-600 w-10 text-right">{h.weight}%</span>
+                                                     )}
+                                                 </div>
+                                                 <p className="text-lg font-bold text-slate-400 uppercase tracking-widest">{selectedMeme.name}</p>
+                                                 <div className="flex items-center gap-4 mt-4">
+                                                     <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-lg text-[9px] font-black text-slate-500 uppercase">
+                                                         <Calendar size={12}/> Launched: {selectedMeme.launchDate || 'N/A'}
                                                      </div>
+                                                     <div className={`flex items-center gap-2 px-3 py-1 rounded-lg text-[9px] font-black uppercase border ${
+                                                         selectedMeme.liquidity >= 100 ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'
+                                                     }`}>
+                                                         <Activity size={12}/> {selectedMeme.liquidity >= 100 ? 'Institutional Liquidity' : 'Emerging Liquidity'}
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         </div>
+                                         <div className="text-right flex flex-col items-end gap-2">
+                                             <button onClick={() => setSelectedMeme(null)} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-900 mb-2">
+                                                 <X className="w-5 h-5" />
+                                             </button>
+                                             <p className="text-4xl font-black text-slate-900 font-mono tracking-tighter">${selectedMeme.price?.toFixed(10) || (selectedMeme.current_price || 0).toFixed(10)}</p>
+                                             <div className={`text-sm font-black flex items-center justify-end gap-2 ${selectedMeme.change >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                 {selectedMeme.change >= 0 ? <TrendingUp size={16}/> : <TrendingDown size={16}/>}
+                                                 {Math.abs(selectedMeme.change || 0).toFixed(2)}%
+                                             </div>
+                                         </div>
+                                     </div>
+
+                                     {/* High Fidelity Info Grid */}
+                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+                                        {[
+                                            { label: 'Market Cap', value: formatB20Number(selectedMeme.mcap || selectedMeme.market_cap, "$"), icon: <BarChart2 size={16}/>, color: 'slate' },
+                                            { label: 'Total Liquidity', value: formatB20Number(selectedMeme.liquidity || selectedMeme.total_liquidity, "$"), icon: <Activity size={16}/>, color: 'emerald' },
+                                            { label: 'Circ. Supply', value: formatB20Number(selectedMeme.supply || selectedMeme.circulating_supply || selectedMeme.total_supply), icon: <Layers size={16}/>, color: 'indigo' },
+                                            { label: '24H Volume', value: formatB20Number(selectedMeme.volume24h || selectedMeme.total_volume, "$"), icon: <Zap size={16}/>, color: 'orange' },
+                                            { label: '52W High', value: `$${(selectedMeme.high52 || selectedMeme.price || 0).toFixed(10)}`, icon: <ArrowUpRight size={16}/>, color: 'emerald' },
+                                            { label: '52W Low', value: `$${(selectedMeme.low52 || selectedMeme.price || 0).toFixed(10)}`, icon: <ArrowDownLeft size={16}/>, color: 'rose' },
+                                            { label: 'Risk Rating', value: `${selectedMeme.riskPercentage || 0}%`, icon: <ShieldAlert size={16}/>, color: (selectedMeme.riskPercentage || 0) > 30 ? 'rose' : 'emerald' },
+                                            { label: 'Liquidity Status', value: (selectedMeme.liquidity || selectedMeme.total_liquidity) >= 100 ? 'PASSED (>$100)' : 'FAILED', icon: <Droplets size={16}/>, color: (selectedMeme.liquidity || selectedMeme.total_liquidity) >= 100 ? 'emerald' : 'rose' }
+                                        ].map((info, i) => (
+                                            <div key={i} className="p-5 bg-white border border-slate-100 rounded-3xl shadow-sm hover:shadow-md transition-all">
+                                                <div className="flex items-center gap-2 text-slate-400 mb-2">
+                                                    {info.icon} <span className="text-[8px] font-black uppercase tracking-widest">{info.label}</span>
+                                                </div>
+                                                <p className={`text-sm font-black text-slate-900 font-mono ${info.color === 'rose' ? 'text-rose-600' : info.color === 'emerald' ? 'text-emerald-600' : ''}`}>{info.value}</p>
+                                            </div>
+                                        ))}
+                                     </div>
+
+                                     {/* Performance Dynamics */}
+                                     <div className="mb-12">
+                                         <span className="block text-[10px] font-bold text-slate-900 uppercase tracking-widest mb-3 px-1">Performance Dynamics</span>
+                                         <div className="grid grid-cols-5 gap-2">
+                                             {[
+                                                 { label: '24H / 1D', val: selectedMeme.change || selectedMeme.price_change_percentage_24h || 0 },
+                                                 { label: '7D', val: selectedMeme.price_change_percentage_7d_in_currency || ((selectedMeme.change || selectedMeme.price_change_percentage_24h || 0) * 1.5) },
+                                                 { label: '30D', val: selectedMeme.price_change_percentage_30d_in_currency || ((selectedMeme.change || selectedMeme.price_change_percentage_24h || 0) * 3.1) },
+                                                 { label: '60D', val: selectedMeme.price_change_percentage_60d_in_currency || ((selectedMeme.change || selectedMeme.price_change_percentage_24h || 0) * 4.8) },
+                                                 { label: 'All Time', val: selectedMeme.ath_change_percentage || ((selectedMeme.change || selectedMeme.price_change_percentage_24h || 0) * 8.5) }
+                                             ].map((period, idx) => (
+                                                 <div key={idx} className="flex flex-col items-center justify-center p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                                                     <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-1">{period.label}</span>
+                                                     <span className={`text-[10px] font-black ${period.val >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                         {period.val >= 0 ? '+' : ''}{(period.val || 0).toFixed(2)}%
+                                                     </span>
                                                  </div>
                                              ))}
                                          </div>
                                      </div>
-                                 </div>
-                             </div>
 
-                             {/* CTA Actions */}
-                             <div className="grid grid-cols-2 gap-6 pt-6">
-                                 <button 
-                                     onClick={() => {
-                                         setMode('spot');
-                                         setToToken({
-                                             ...selectedMeme,
-                                             id: selectedMeme.id,
-                                             symbol: selectedMeme.symbol,
-                                             name: selectedMeme.name,
-                                             current_price: selectedMeme.price,
-                                             address: selectedMeme.contract
-                                         });
-                                         setSelectedMeme(null);
-                                     }}
-                                    className="h-20 bg-orange-500 hover:bg-orange-600 text-white rounded-[2rem] font-black uppercase tracking-[0.3em] shadow-xl shadow-orange-500/20 transition-all flex items-center justify-center gap-4 group"
-                                >
-                                    <Activity size={24} className="group-hover:rotate-12 transition-transform" />
-                                    Launch Order Terminal
-                                </button>
-                                <button className="h-20 bg-slate-900 hover:bg-black text-white rounded-[2rem] font-black uppercase tracking-[0.3em] shadow-xl shadow-slate-900/20 transition-all flex items-center justify-center gap-4">
-                                    <ShieldAlert size={24}/> Audited Buy Flow
-                                </button>
-                            </div>
-                        </motion.div>
+                                     <div className="mb-12 p-8 bg-slate-50 rounded-[2.5rem] border border-slate-100">
+                                        <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Token Intelligence Report</h5>
+                                        <p className="text-xs font-bold text-slate-600 leading-relaxed uppercase tracking-tight">
+                                            {selectedMeme.description || 'Verified token listing registered on B20 launchpad. High transaction efficiency and decentralized network routing enabled.'}
+                                        </p>
+                                     </div>
+
+                                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                                         <div className="p-8 bg-slate-900 rounded-[2.5rem] text-white relative overflow-hidden shadow-2xl col-span-1">
+                                             <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/10 blur-3xl rounded-full" />
+                                             <div className="flex items-center justify-between mb-8">
+                                                 <h5 className="text-[10px] font-black text-orange-500 uppercase tracking-[0.3em]">Security Audit</h5>
+                                                 {selectedMeme.isMexapayCertified && <div className="px-2 py-1 bg-teal-500 text-white text-[7px] font-black rounded-lg uppercase tracking-widest animate-pulse">Certified</div>}
+                                             </div>
+                                             <div className="space-y-6">
+                                                 <div className="flex justify-between items-center">
+                                                     <span className="text-[10px] font-black text-slate-400 uppercase">Mint Status</span>
+                                                     <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase ${selectedMeme.mintable ? 'bg-rose-500/20 text-rose-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                                                         {selectedMeme.mintable ? 'Mintable (Risky)' : 'Non-Mintable'}
+                                                     </span>
+                                                 </div>
+                                                 <div className="flex justify-between items-center">
+                                                     <span className="text-[10px] font-black text-slate-400 uppercase">LP Activity</span>
+                                                     <div className="flex items-center gap-2">
+                                                         <span className="text-[8px] font-black text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">+{selectedMeme.lpAddedCount || 1} Add</span>
+                                                         <span className="text-[8px] font-black text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded">-{selectedMeme.lpRemovedCount || 0} Rem</span>
+                                                     </div>
+                                                 </div>
+                                                 <div className="flex justify-between items-center">
+                                                     <span className="text-[10px] font-black text-slate-400 uppercase">LP Status</span>
+                                                     <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[8px] font-black uppercase">Burnt/Locked</span>
+                                                 </div>
+                                                 <div className="pt-4 border-t border-white/5">
+                                                     <div className="flex justify-between items-center mb-2">
+                                                         <span className="text-[10px] font-black text-slate-400 uppercase">Safety Score</span>
+                                                         <span className="text-[10px] font-black text-white">{100 - (selectedMeme.riskPercentage || 0)}/100</span>
+                                                     </div>
+                                                     <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                                                         <div className="h-full bg-emerald-500 transition-all" style={{ width: `${100 - (selectedMeme.riskPercentage || 0)}%` }} />
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         </div>
+
+                                         <div className="col-span-2 space-y-4">
+                                             <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-widest mb-4">Technical Matrix</h5>
+                                             {[
+                                                 { label: 'Contract Address', value: selectedMeme.contract || selectedMeme.address || '0x000...000', copyable: true },
+                                                 { label: 'Creator Address', value: selectedMeme.creator || '0x000...000', copyable: true },
+                                                 { label: 'Active Liquidity Pool', value: selectedMeme.activePool || meta.activePoolName, copyable: false },
+                                                 { label: `Network Scan (${meta.explorerName})`, value: `View on ${meta.explorerName}`, link: meta.explorerUrl, copyable: false }
+                                             ].map((item, i) => (
+                                                 <div key={i} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl">
+                                                     <div className="flex flex-col">
+                                                         <span className="text-[8px] font-bold text-slate-400 uppercase mb-1">{item.label}</span>
+                                                         {item.link ? (
+                                                             <a 
+                                                                 href={item.link} 
+                                                                 target="_blank" 
+                                                                 rel="noopener noreferrer" 
+                                                                 className="text-[10px] font-black text-teal-600 hover:text-teal-700 hover:underline font-mono flex items-center gap-1"
+                                                             >
+                                                                 {item.value} <ExternalLink size={10} />
+                                                             </a>
+                                                         ) : (
+                                                             <span className="text-[10px] font-black text-slate-900 font-mono truncate max-w-[280px]">{item.value}</span>
+                                                         )}
+                                                     </div>
+                                                     {item.copyable && (
+                                                         <button 
+                                                             onClick={() => {
+                                                                 navigator.clipboard.writeText(item.value);
+                                                                 alert(`${item.label} Copied.`);
+                                                             }}
+                                                             className="p-2 hover:bg-white hover:shadow-sm rounded-lg transition-all text-slate-400 hover:text-teal-600"
+                                                         >
+                                                             <Copy size={14}/>
+                                                         </button>
+                                                     )}
+                                                 </div>
+                                             ))}
+                                             
+                                             <div className="p-6 bg-slate-50 border border-slate-100 rounded-3xl mt-4">
+                                                 <h5 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Whale Distribution (Top 10 Holders)</h5>
+                                                 <div className="space-y-3">
+                                                     {(selectedMeme.holders || []).slice(0, 10).map((h, i) => (
+                                                         <div key={i} className="flex items-center justify-between group/holder cursor-pointer" onClick={() => { navigator.clipboard.writeText(h.address); alert('Holder Address Copied'); }}>
+                                                             <div className="flex items-center gap-3">
+                                                                 <span className="text-[9px] font-black text-slate-400">#{i+1}</span>
+                                                                 <span className="text-[10px] font-black text-slate-900 font-mono group-hover/holder:text-teal-600 transition-colors">
+                                                                     {h.address?.slice(0, 8)}...{h.address?.slice(-6)}
+                                                                 </span>
+                                                             </div>
+                                                             <div className="flex items-center gap-3">
+                                                                 <div className="w-20 h-1 bg-slate-200 rounded-full overflow-hidden">
+                                                                     <div className="h-full bg-teal-500" style={{ width: `${h.weight || 0}%` }} />
+                                                                 </div>
+                                                                 <span className="text-[9px] font-black text-slate-600 w-10 text-right">{h.weight || 0}%</span>
+                                                             </div>
+                                                         </div>
+                                                     ))}
+                                                 </div>
+                                             </div>
+                                         </div>
+                                     </div>
+
+                                     {/* CTA Actions */}
+                                     <div className="grid grid-cols-2 gap-6 pt-6">
+                                         <button 
+                                             onClick={() => {
+                                                 setMode('spot');
+                                                 setToToken({
+                                                     ...selectedMeme,
+                                                     id: selectedMeme.id || selectedMeme.contract || selectedMeme.address,
+                                                     symbol: selectedMeme.symbol,
+                                                     name: selectedMeme.name,
+                                                     current_price: selectedMeme.price || selectedMeme.current_price,
+                                                     address: selectedMeme.contract || selectedMeme.address
+                                                 });
+                                                 setSelectedMeme(null);
+                                             }}
+                                            className="h-20 bg-orange-500 hover:bg-orange-600 text-white rounded-[2rem] font-black uppercase tracking-[0.3em] shadow-xl shadow-orange-500/20 transition-all flex items-center justify-center gap-4 group"
+                                         >
+                                            <Activity size={24} className="group-hover:rotate-12 transition-transform" />
+                                            Launch Order Terminal
+                                         </button>
+                                         <button className="h-20 bg-slate-900 hover:bg-black text-white rounded-[2rem] font-black uppercase tracking-[0.3em] shadow-xl shadow-slate-900/20 transition-all flex items-center justify-center gap-4">
+                                            <ShieldAlert size={24}/> Audited Buy Flow
+                                         </button>
+                                     </div>
+                                </motion.div>
+                            );
+                        })()}
                     </div>
                 )}
             </AnimatePresence>

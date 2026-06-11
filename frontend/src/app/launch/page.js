@@ -9,7 +9,7 @@ import {
     Loader2, Info, Users, Wallet, Share2, Star, TrendingDown, Globe, Droplets, Cpu,
     Coins, DollarSign, Grid3X3
 } from 'lucide-react';
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import axios from 'axios';
 
@@ -78,8 +78,7 @@ function TokenCard({ token, index }) {
     const progress = token.bonding_progress || 0;
     const addr = token.contract_address || '';
     
-    // Mock Trend
-    const isUp = index % 2 === 0;
+    const priceChange = token.price_change_percentage_24h;
 
     const getNetworkIcon = (net) => {
         const n = String(net || 'BNB').toUpperCase();
@@ -115,12 +114,14 @@ function TokenCard({ token, index }) {
                             )}
                         </div>
                         <div className="text-right">
+                            {priceChange != null ? (
                             <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                                isUp ? 'bg-sky-500/10 text-sky-600' : 'bg-teal-500/10 text-teal-600'
+                                priceChange >= 0 ? 'bg-sky-500/10 text-sky-600' : 'bg-teal-500/10 text-teal-600'
                             }`}>
-                                {isUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                                {isUp ? '+12.4%' : '-2.1%'}
+                                {priceChange >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                                {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(1)}%
                             </div>
+                        ) : null}
                             <p className="text-[9px] text-zinc-400 font-bold uppercase tracking-widest mt-2">{timeAgo(token.created_at)} AGO</p>
                         </div>
                     </div>
@@ -170,7 +171,7 @@ function TokenCard({ token, index }) {
                                 </div>
                             ))}
                             <div className="w-8 h-8 rounded-full border-2 border-white bg-teal-500 flex items-center justify-center text-[10px] font-black text-white">
-                                +{Math.floor(Math.random() * 50)}
+                                +{token.holders || 0}
                             </div>
                         </div>
                         <div className="flex items-center gap-2 text-zinc-400 font-black text-[10px] uppercase tracking-widest group-hover:text-teal-600 transition-colors">
@@ -299,6 +300,8 @@ export default function Launchpad() {
     const [search, setSearch] = useState('');
     const [bnbPrice, setBnbPrice] = useState(600);
     const [dexBoosts, setDexBoosts] = useState([]);
+    const [visibleItems, setVisibleItems] = useState(24);
+    const scrollSentinelRef = useRef(null);
 
     useEffect(() => {
         const fetchDexBoosts = async () => {
@@ -321,7 +324,7 @@ export default function Launchpad() {
             
         const fetchTokens = async () => {
             try {
-                const res = await axios.get(`${API_URL}/tokens/markets/memes`, { params: { per_page: 6000 } });
+                const res = await axios.get(`${API_URL}/tokens/markets/memes`, { params: { per_page: 10000 } });
                 setTokens(Array.isArray(res.data) ? res.data : []);
             } catch (err) { 
                 console.error('Fetch failed:', err); 
@@ -331,7 +334,7 @@ export default function Launchpad() {
         };
 
         fetchTokens();
-        const interval = setInterval(fetchTokens, 5000); // 5s Real-time polling
+        const interval = setInterval(fetchTokens, 60000); // 60s polling to prevent UI freeze
         return () => clearInterval(interval);
     }, []);
 
@@ -363,7 +366,29 @@ export default function Launchpad() {
             );
         }
         return list;
-    }, [tokens, view, launchType, search]);
+    }, [tokens, view, launchType, search, networkFilter]);
+
+    // Reset pagination on filter change
+    useEffect(() => {
+        setVisibleItems(24);
+    }, [view, launchType, networkFilter, search]);
+
+    // Infinite Scroll Intersection Observer
+    useEffect(() => {
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && filtered.length > visibleItems) {
+                setVisibleItems(prev => prev + 24);
+            }
+        }, { threshold: 0.1, rootMargin: '200px' }); 
+
+        if (scrollSentinelRef.current) {
+            observer.observe(scrollSentinelRef.current);
+        }
+
+        return () => {
+            observer.disconnect();
+        };
+    }, [filtered.length, visibleItems]);
 
     return (
         <main className="min-h-screen bg-[#FDFDFD] selection:bg-teal-500 selection:text-white pb-32">
@@ -552,8 +577,7 @@ export default function Launchpad() {
                     <div className="inline-flex p-1.5 bg-zinc-50 border border-black/5 rounded-2xl">
                         {[
                             { id: 'grid', icon: <LayoutGrid className="w-4 h-4" /> },
-                            { id: 'list', icon: <List className="w-4 h-4" /> },
-                            { id: 'bubbles', icon: <Sparkles className="w-4 h-4" /> }
+                            { id: 'list', icon: <List className="w-4 h-4" /> }
                         ].map(mode => (
                             <button
                                 key={mode.id}
@@ -581,11 +605,16 @@ export default function Launchpad() {
                         <>
                             {viewMode === 'grid' && (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                                    {filtered.map((t, i) => <TokenCard key={t.contract_address} token={t} index={i} />)}
+                                    {filtered.slice(0, visibleItems).map((t, i) => <TokenCard key={t.contract_address} token={t} index={i} />)}
                                 </div>
                             )}
-                            {viewMode === 'list' && <ListView tokens={filtered} />}
-                            {viewMode === 'bubbles' && <BubbleView tokens={filtered} />}
+                            {viewMode === 'list' && <ListView tokens={filtered.slice(0, visibleItems)} />}
+
+                            {filtered.length > visibleItems && (
+                                <div ref={scrollSentinelRef} className="h-20 flex items-center justify-center mt-12">
+                                    <Loader2 className="w-8 h-8 text-teal-600 animate-spin" />
+                                </div>
+                            )}
                         </>
                     ) : (
                         <div className="py-40 text-center">

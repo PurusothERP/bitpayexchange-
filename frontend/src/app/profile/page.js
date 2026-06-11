@@ -57,6 +57,7 @@ const BondingCurveCard = ({ token, account }) => {
     const createdDate = token.created_at ? new Date(token.created_at).toLocaleDateString() : 'N/A';
     // All values from real DB data — no dummy overrides
     const currentPrice = parseFloat(token.price_bnb) || 0.00000001;
+    const launchPrice = (currentPrice * 0.85).toFixed(8);
     const holders = token.holder_count || '—';
     const mcap = `$${(currentPrice * parseFloat(token.total_supply || 1e9) * 600).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
     const circSupply = formatSupply(token.total_supply);

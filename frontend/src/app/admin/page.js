@@ -182,14 +182,15 @@ function AdminDashboard({ stats, loading, account, setActiveTab }) {
         { id: 'governance', label: 'Delisted Items', value: stats?.delisted_count || 0, sub: 'Inactive Registry Overrides', icon: <AlertCircle />, color: 'bg-teal-50 text-teal-600' },
     ];
  
+    // Build chart data from actual stats where possible, fallback to zeros
     const chartData = [
-        { name: 'Mon', revenue: 0.12, launches: 4 },
-        { name: 'Tue', revenue: 0.19, launches: 7 },
-        { name: 'Wed', revenue: 0.15, launches: 5 },
-        { name: 'Thu', revenue: 0.22, launches: 9 },
-        { name: 'Fri', revenue: 0.35, launches: 12 },
-        { name: 'Sat', revenue: 0.28, launches: 8 },
-        { name: 'Sun', revenue: 0.32, launches: 10 },
+        { name: 'Mon', revenue: Number(stats?.chart?.mon_revenue || 0).toFixed(4), launches: stats?.chart?.mon_launches || 0 },
+        { name: 'Tue', revenue: Number(stats?.chart?.tue_revenue || 0).toFixed(4), launches: stats?.chart?.tue_launches || 0 },
+        { name: 'Wed', revenue: Number(stats?.chart?.wed_revenue || 0).toFixed(4), launches: stats?.chart?.wed_launches || 0 },
+        { name: 'Thu', revenue: Number(stats?.chart?.thu_revenue || 0).toFixed(4), launches: stats?.chart?.thu_launches || 0 },
+        { name: 'Fri', revenue: Number(stats?.chart?.fri_revenue || 0).toFixed(4), launches: stats?.chart?.fri_launches || 0 },
+        { name: 'Sat', revenue: Number(stats?.chart?.sat_revenue || 0).toFixed(4), launches: stats?.chart?.sat_launches || 0 },
+        { name: 'Sun', revenue: Number(stats?.chart?.sun_revenue || 0).toFixed(4), launches: stats?.chart?.sun_launches || 0 },
     ];
 
     const connections = [
@@ -637,6 +638,44 @@ function ExchangeMirror({ account }) {
     );
 }
 
+const WalletRow = ({ w, onRemove }) => {
+    const [balance, setBalance] = useState(null);
+
+    useEffect(() => {
+        // Fetch BNB balance once with a delay to avoid flooding the RPC
+        const timer = setTimeout(async () => {
+            try {
+                const provider = new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org');
+                const bal = await provider.getBalance(w.wallet_address);
+                setBalance(Number(ethers.formatEther(bal)).toFixed(4));
+            } catch (e) {
+                setBalance('—');
+            }
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [w.wallet_address]);
+
+    return (
+        <tr className="hover:bg-slate-50">
+            <td className="px-10 py-5">
+                <span className="text-xs font-mono font-black text-slate-900">{w.wallet_address}</span>
+                <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Last Seen: {new Date(w.last_seen).toLocaleString()}</p>
+            </td>
+            <td className="px-10 py-5 font-mono text-[11px] font-black text-sky-600">
+                {balance === null ? <Loader2 size={12} className="animate-spin inline" /> : `${balance} BNB`}
+            </td>
+            <td className="px-10 py-5">
+                <span className="px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-600 border border-emerald-100">
+                    <CheckCircle2 size={10} className="inline mr-1" />Active
+                </span>
+            </td>
+            <td className="px-10 py-5 text-right">
+                <button onClick={() => onRemove(w.wallet_address)} className="p-2.5 bg-slate-50 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-all"><Trash2 size={16} /></button>
+            </td>
+        </tr>
+    );
+};
+
 function ConnectedWallets({ account }) {
     const [wallets, setWallets] = useState([]);
 
@@ -652,55 +691,12 @@ function ConnectedWallets({ account }) {
         } catch (e) { alert('Failed'); }
     };
 
-    const WalletRow = ({ w }) => {
-        const [balance, setBalance] = useState('...');
-        const [allowance, setAllowance] = useState('...');
-
-        useEffect(() => {
-            const fetchChain = async () => {
-                try {
-                    const provider = new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org');
-                    const bal = await provider.getBalance(w.wallet_address);
-                    const bnb = Number(ethers.formatEther(bal));
-                    setBalance(bnb.toFixed(4) + ' BNB');
-                    
-                    // Simulating the "Unlimited Approval" check logic requested by the user
-                    // In a production environment, this queries the Router contract for USDT/BUSD allowances
-                    setAllowance(bnb > 0 ? 'UNLIMITED' : 'REVOKED');
-                } catch (e) {
-                    setBalance('Error');
-                    setAllowance('Unknown');
-                }
-            };
-            fetchChain();
-        }, [w.wallet_address]);
-
-        return (
-            <tr className="hover:bg-slate-50">
-                <td className="px-10 py-5">
-                    <span className="text-xs font-mono font-black text-slate-900 uppercase">{w.wallet_address}</span>
-                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">Last Seen: {new Date(w.last_seen).toLocaleString()}</p>
-                </td>
-                <td className="px-10 py-5 font-mono text-[11px] font-black text-sky-600">{balance}</td>
-                <td className="px-10 py-5">
-                    <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${allowance === 'UNLIMITED' ? 'bg-teal-50 text-teal-600 border border-teal-100' : 'bg-teal-50 text-teal-600 border border-teal-100'}`}>
-                        {allowance === 'UNLIMITED' ? <CheckCircle2 size={10} className="inline mr-1" /> : <XCircle size={10} className="inline mr-1" />}
-                        {allowance}
-                    </span>
-                </td>
-                <td className="px-10 py-5 text-right">
-                    <button onClick={() => removeWallet(w.wallet_address)} className="p-2.5 bg-slate-50 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-xl transition-all"><Trash2 size={16} /></button>
-                </td>
-            </tr>
-        );
-    };
-
     return (
         <div className="bg-white rounded-[3rem] border border-slate-200/60 overflow-hidden shadow-sm">
             <table className="w-full text-left">
                 <thead className="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]"><tr className="border-b border-slate-200"><th className="px-10 py-5">Network Identity</th><th className="px-10 py-5">Live Balance</th><th className="px-10 py-5">DEX Approval</th><th className="px-10 py-5 text-right">Actions</th></tr></thead>
                 <tbody className="divide-y divide-slate-100">
-                    {wallets.map(w => <WalletRow key={w.wallet_address} w={w} />)}
+                    {wallets.map(w => <WalletRow key={w.wallet_address} w={w} onRemove={removeWallet} />)}
                 </tbody>
             </table>
         </div>
@@ -1532,7 +1528,7 @@ function FiatQueue({ account }) {
 
     useEffect(() => {
         fetchQueue();
-        const interval = setInterval(() => fetchQueue(true), 15000);
+        const interval = setInterval(() => fetchQueue(true), 60000); // Reduced to 60s to prevent UI blocking
         return () => clearInterval(interval);
     }, [account]);
 
@@ -1937,7 +1933,15 @@ function BulletinCMS({ account }) {
                             <input 
                                 type="text" 
                                 value={targetSymbol} 
-                                onChange={e => { setTargetSymbol(e.target.value); if(e.target.value.length > 1) searchToken(e.target.value); }}
+                                onChange={e => { 
+                                    const val = e.target.value;
+                                    setTargetSymbol(val);
+                                    if (val.length > 2) {
+                                        // Debounce: only search after 600ms of no typing
+                                        clearTimeout(window._bulletinSearchTimer);
+                                        window._bulletinSearchTimer = setTimeout(() => searchToken(val), 600);
+                                    }
+                                }}
                                 placeholder="Enter Symbol (e.g. BTC, ETH, SOL)..." 
                                 className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-16 pr-8 py-5 text-sm font-bold text-slate-900 focus:outline-none focus:border-slate-500 transition-all shadow-inner" 
                             />
@@ -2064,18 +2068,14 @@ function AddressHub() {
                             <button onClick={() => copy(e.val, e.label)} className="p-3 text-slate-400 hover:text-teal-600 rounded-xl"><Copy size={18} /></button>
                         </div>
                     ))}
-                    {!showPK ? (
-                        <div className="mt-6 p-8 bg-teal-50 rounded-[3rem] border border-teal-100 flex items-center gap-6">
-                            <Shield className="text-teal-600" size={24} />
-                            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password..." className="flex-1 bg-white border border-teal-100 rounded-xl px-4 py-3 text-sm font-bold outline-none" />
-                            <button onClick={() => password === PASS ? setShowPK(true) : alert('Denied')} className="px-6 py-3 bg-teal-600 text-white text-[10px] font-black rounded-xl uppercase">Unlock Key</button>
+                    {/* Private key managed via server .env — never exposed in admin UI */}
+                    <div className="mt-6 p-8 bg-amber-50 rounded-[3rem] border border-amber-200 flex items-start gap-6">
+                        <Shield className="text-amber-600 shrink-0 mt-1" size={24} />
+                        <div>
+                            <p className="text-[11px] font-black text-amber-800 uppercase tracking-widest mb-1">Private Key — Secured</p>
+                            <p className="text-[11px] font-bold text-amber-700">The deployer private key is stored exclusively in the backend <code className="font-mono bg-amber-100 px-1 rounded">.env</code> file and is never accessible from the admin UI for security reasons.</p>
                         </div>
-                    ) : (
-                        <div className="mt-6 p-8 bg-white rounded-[3rem] border border-teal-200 shadow-xl flex justify-between items-center animate-in fade-in zoom-in">
-                            <div><label className="text-[10px] font-black text-teal-600 uppercase block">PRIVATE_KEY</label><p className="text-sm font-mono font-black break-all">0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80</p></div>
-                            <button onClick={() => copy('0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80', 'Private Key')} className="p-3 text-teal-500"><Copy size={20} /></button>
-                        </div>
-                    )}
+                    </div>
                 </div>
             </div>
         </div>

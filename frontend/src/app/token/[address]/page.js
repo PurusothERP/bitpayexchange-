@@ -89,10 +89,73 @@ function BondingSegments({ progress }) {
     );
 }
 
+export function getNetworkMeta(networkVal, address) {
+    const net = (networkVal || 'BNB').toLowerCase().trim();
+    
+    // Default fallback values (BNB / PancakeSwap / BSCScan)
+    let meta = {
+        dexName: 'PancakeSwap',
+        dexUrl: `https://pancakeswap.finance/swap?outputCurrency=${address}&chain=bsc`,
+        explorerName: 'BSCScan',
+        networkName: 'BNB Smart Chain (BSC)',
+        tokenStandard: 'BEP-20',
+        decimals: '18',
+        gasToken: 'BNB',
+        getTokenUrl: (addr) => `https://bscscan.com/token/${addr}`,
+        getTxUrl: (tx) => `https://bscscan.com/tx/${tx}`
+    };
+
+    if (net === 'tron') {
+        meta.dexName = 'Sun.io';
+        meta.dexUrl = `https://sun.io/#/home?tokenAddress=${address}`;
+        meta.explorerName = 'Tronscan';
+        meta.networkName = 'TRON Network';
+        meta.tokenStandard = 'TRC-20';
+        meta.decimals = '6';
+        meta.gasToken = 'TRX';
+        meta.getTokenUrl = (addr) => `https://tronscan.org/#/token20/${addr}`;
+        meta.getTxUrl = (tx) => `https://tronscan.org/#/transaction/${tx}`;
+    } else if (net === 'solana' || net === 'sol') {
+        meta.dexName = 'Jupiter';
+        meta.dexUrl = `https://jup.ag/swap/SOL-${address}`;
+        meta.explorerName = 'Solscan';
+        meta.networkName = 'Solana';
+        meta.tokenStandard = 'SPL Token';
+        meta.decimals = '9';
+        meta.gasToken = 'SOL';
+        meta.getTokenUrl = (addr) => `https://solscan.io/token/${addr}`;
+        meta.getTxUrl = (tx) => `https://solscan.io/tx/${tx}`;
+    } else if (net === 'base') {
+        meta.dexName = 'PancakeSwap';
+        meta.dexUrl = `https://pancakeswap.finance/swap?outputCurrency=${address}&chain=base`;
+        meta.explorerName = 'Basescan';
+        meta.networkName = 'Base Network';
+        meta.tokenStandard = 'ERC-20';
+        meta.decimals = '18';
+        meta.gasToken = 'ETH';
+        meta.getTokenUrl = (addr) => `https://basescan.org/token/${addr}`;
+        meta.getTxUrl = (tx) => `https://basescan.org/tx/${tx}`;
+    } else if (net === 'eth' || net === 'ethereum') {
+        meta.dexName = 'PancakeSwap';
+        meta.dexUrl = `https://pancakeswap.finance/swap?outputCurrency=${address}&chain=eth`;
+        meta.explorerName = 'Etherscan';
+        meta.networkName = 'Ethereum Mainnet';
+        meta.tokenStandard = 'ERC-20';
+        meta.decimals = '18';
+        meta.gasToken = 'ETH';
+        meta.getTokenUrl = (addr) => `https://etherscan.io/token/${addr}`;
+        meta.getTxUrl = (tx) => `https://etherscan.io/tx/${tx}`;
+    }
+
+    return meta;
+}
+
 function ShareButtons({ token, address }) {
     const url = typeof window !== 'undefined' ? window.location.href : '';
     const text = `🚀 Check out ${token?.name || ''} ($${token?.symbol || ''}) on B20-LAB Launchpad!`;
     const encoded = encodeURIComponent(text + '\n' + url);
+    const meta = getNetworkMeta(token?.network, address);
+
     return (
         <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Share:</span>
@@ -112,25 +175,25 @@ function ShareButtons({ token, address }) {
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500 hover:bg-teal-600 text-white text-xs font-bold rounded-xl transition-colors">
                 <Send className="w-3 h-3" /> Telegram
             </a>
-            <a href={`https://bscscan.com/token/${address}`} target="_blank" rel="noopener noreferrer"
+            <a href={meta.getTokenUrl(address)} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-teal-500 hover:bg-teal-600 text-white text-xs font-bold rounded-xl transition-colors">
-                <ExternalLink className="w-3 h-3" /> BSCScan
+                <ExternalLink className="w-3 h-3" /> {meta.explorerName}
             </a>
-            <a href={`https://pancakeswap.finance/swap?outputCurrency=${address}&chain=bsc`} target="_blank" rel="noopener noreferrer"
+            <a href={meta.dexUrl} target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1fc7d4] hover:bg-[#1ab8c4] text-white text-xs font-bold rounded-xl transition-colors">
-                🥞 PancakeSwap
+                {meta.dexName === 'PancakeSwap' ? '🥞 ' : ''}{meta.dexName}
             </a>
         </div>
     );
 }
 
 // ── Custom Tooltip for chart ──────────────────────────────────────────────────
-function PriceTooltip({ active, payload, label }) {
+function PriceTooltip({ active, payload, label, gasToken = 'BNB' }) {
     if (!active || !payload?.length) return null;
     return (
         <div className="bg-white border border-black/10 rounded-xl p-3 shadow-lg text-xs">
             <p className="text-gray-400 mb-1">{label}</p>
-            <p className="font-black text-gray-900">{Number(payload[0]?.value || 0).toFixed(10)} BNB</p>
+            <p className="font-black text-gray-900">{Number(payload[0]?.value || 0).toFixed(10)} {gasToken}</p>
         </div>
     );
 }
@@ -466,6 +529,7 @@ function TokenDetail() {
     );
 
     const priceBnb    = market?.priceBnb ?? parseFloat(token.price_bnb || 0.0000001);
+    const meta        = getNetworkMeta(token?.network, token?.contract_address || address);
     const rawTotalSupply = Number(token.total_supply || 1_000_000_000);
     const totalSupply = rawTotalSupply > 1e15 ? rawTotalSupply / 1e18 : rawTotalSupply;
     const progress    = parseFloat(market?.progress ?? 0);
@@ -495,68 +559,59 @@ function TokenDetail() {
 
                 {/* ── Token Header ─────────────────────────────────────── */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                    className="bg-white border border-black/8 rounded-3xl p-6 mb-6 shadow-sm">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-                        <div className="relative shrink-0">
-                            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-teal-600 to-teal-700 border-2 border-teal-200 shadow-xl flex items-center justify-center overflow-hidden">
-                                {token.logo_url
-                                    ? <img src={token.logo_url} alt={token.name} className="w-full h-full object-cover"
-                                        onError={e => { e.target.onerror = null; e.target.parentElement.innerHTML = '<span class="text-4xl">🪙</span>'; }} />
-                                    : <span className="text-4xl">🪙</span>}
-                            </div>
-                            {market?.isRegistered && (
-                                <div className="absolute -top-1 -right-1 w-6 h-6 bg-sky-500 rounded-full border-2 border-white shadow flex items-center justify-center">
-                                    <Zap className="w-3 h-3 text-white" />
+                    className="bg-white border border-black/8 rounded-[2rem] p-6 shadow-sm mb-6 relative overflow-hidden">
+                    <div className="flex flex-col md:flex-row gap-6 justify-between items-start md:items-center">
+                        <div className="flex items-center gap-4">
+                            {token.logo_url ? (
+                                <img src={token.logo_url} alt={token.name} className="w-16 h-16 rounded-[1.5rem] object-cover shadow-md border border-black/5" />
+                            ) : (
+                                <div className="w-16 h-16 bg-gradient-to-tr from-teal-500 to-emerald-400 text-white rounded-[1.5rem] flex items-center justify-center font-black text-2xl shadow-md">
+                                    {token.symbol?.slice(0, 2).toUpperCase()}
                                 </div>
                             )}
-                        </div>
-
-                        <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-3 flex-wrap mb-1">
-                                <h1 className="text-3xl font-black text-gray-900">{token.name}</h1>
-                                <span className="text-sm font-extrabold text-teal-600 bg-teal-50 border border-teal-200 px-3 py-1 rounded-full">${token.symbol}</span>
-                                {(market?.migrated || token.launch_type === 'FAIR_LAUNCH' || token.launch_type === 'STANDARD') && (
-                                    <span className="text-xs font-extrabold text-sky-600 bg-sky-50 border border-sky-200 px-2.5 py-1 rounded-full flex items-center gap-1">
-                                        <ArrowRightLeft className="w-3 h-3" /> DEX Listed
+                            <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <h1 className="text-2xl font-black text-gray-900 tracking-tight">{token.name}</h1>
+                                    <span className="px-2.5 py-0.5 bg-sky-500/10 text-sky-600 text-[10px] font-black rounded-lg border border-sky-500/20 uppercase tracking-wider">
+                                        ${token.symbol}
                                     </span>
-                                )}
-                                {market?.isRegistered && !market?.migrated && token.launch_type !== 'FAIR_LAUNCH' && token.launch_type !== 'STANDARD' && (
-                                    <span className="text-xs font-bold text-teal-600 bg-teal-50 border border-teal-200 px-2.5 py-1 rounded-full flex items-center gap-1">
-                                        <Flame className="w-3 h-3" /> Bonding Curve
+                                    {token.is_meme ? (
+                                        <span className="px-2.5 py-0.5 bg-teal-500/10 text-teal-600 text-[10px] font-black rounded-lg border border-teal-500/20 uppercase tracking-wider">
+                                            MEME
+                                        </span>
+                                    ) : (
+                                        <span className="px-2.5 py-0.5 bg-purple-500/10 text-purple-600 text-[10px] font-black rounded-lg border border-purple-500/20 uppercase tracking-wider">
+                                            NEWLY LAUNCHED TOKEN
+                                        </span>
+                                    )}
+                                    {token.is_upgraded && (
+                                        <span className="px-2.5 py-0.5 bg-teal-500 text-white text-[10px] font-black rounded-lg uppercase tracking-wider flex items-center gap-1 shadow-sm">
+                                            <Flame className="w-3 h-3 fill-current" /> Upgraded
+                                        </span>
+                                    )}
+                                    {token.is_delisted && (
+                                        <span className="text-xs font-black bg-black text-white px-2.5 py-1 rounded-full border border-black uppercase tracking-tighter shadow-lg shadow-black/20">
+                                            Offline / Delisted
+                                        </span>
+                                    )}
+                                    {token.delisting_soon && !token.is_delisted && (
+                                        <span className="text-xs font-black bg-red-100 text-red-600 px-2.5 py-1 rounded-full border border-red-200 uppercase tracking-tighter animate-pulse">
+                                            ⚠️ Delisting Soon (Inactive)
+                                        </span>
+                                    )}
+                                    <StatusUpgradeButton token={token} account={account} />
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Contract:</span>
+                                    <span className="font-mono text-xs text-gray-600 bg-black/5 border border-black/8 px-2.5 py-1 rounded-lg">
+                                        {shortAddr(token.contract_address || address, 8, 8)}
                                     </span>
-                                )}
-                                {token.trust_status && (
-                                    <span className={`text-xs font-black px-2.5 py-1 rounded-full border uppercase tracking-tighter ${
-                                        token.trust_status === 'Premium Token' ? 'bg-teal-500/10 text-teal-600 border-teal-500/20' :
-                                        token.trust_status === 'Highly Trusted' ? 'bg-sky-500/10 text-sky-600 border-sky-500/20' :
-                                        token.trust_status === 'Scam' ? 'bg-red-500 text-white border-red-500' :
-                                        'bg-teal-500/10 text-teal-600 border-teal-500/20'
-                                    }`}>
-                                        {token.trust_status}
-                                    </span>
-                                )}
-                                {token.is_delisted && (
-                                    <span className="text-xs font-black bg-black text-white px-2.5 py-1 rounded-full border border-black uppercase tracking-tighter shadow-lg shadow-black/20">
-                                        Offline / Delisted
-                                    </span>
-                                )}
-                                {token.delisting_soon && !token.is_delisted && (
-                                    <span className="text-xs font-black bg-red-100 text-red-600 px-2.5 py-1 rounded-full border border-red-200 uppercase tracking-tighter animate-pulse">
-                                        ⚠️ Delisting Soon (Inactive)
-                                    </span>
-                                )}
-                                <StatusUpgradeButton token={token} account={account} />
-                            </div>
-                            <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-xs text-gray-400 font-bold uppercase tracking-wider">Contract:</span>
-                                <span className="font-mono text-xs text-gray-600 bg-black/5 border border-black/8 px-2.5 py-1 rounded-lg">
-                                    {shortAddr(token.contract_address || address, 8, 8)}
-                                </span>
-                                <CopyBtn text={token.contract_address || address} label="address" />
-                                <a href={`https://bscscan.com/token/${token.contract_address || address}`} target="_blank" rel="noopener noreferrer"
-                                    className="text-teal-600 hover:text-teal-600 transition-colors">
-                                    <ExternalLink className="w-3.5 h-3.5" />
-                                </a>
+                                    <CopyBtn text={token.contract_address || address} label="address" />
+                                    <a href={meta.getTokenUrl(token.contract_address || address)} target="_blank" rel="noopener noreferrer"
+                                        className="text-teal-600 hover:text-teal-600 transition-colors">
+                                        <ExternalLink className="w-3.5 h-3.5" />
+                                    </a>
+                                </div>
                             </div>
                         </div>
 
@@ -566,7 +621,7 @@ function TokenDetail() {
                             <div className={`text-xl font-black flex items-center justify-end gap-1 transition-colors duration-500 ${market?.trend === 'up' ? 'text-sky-500' : market?.trend === 'down' ? 'text-red-500' : 'text-gray-900'}`}>
                                 {formatPrice(priceBnb)}
                             </div>
-                            <p className="text-xs text-gray-400 mb-2">BNB</p>
+                            <p className="text-xs text-gray-400 mb-2">{meta.gasToken}</p>
                             <div className="flex items-center justify-end gap-1">
                                 {change24h < 0 ? <ArrowDownRight className="w-3.5 h-3.5 text-red-500" /> : <ArrowUpRight className="w-3.5 h-3.5 text-sky-500" />}
                                 <span className={`text-xs font-black ${change24h < 0 ? 'text-red-600' : 'text-sky-600'}`}>
@@ -578,13 +633,13 @@ function TokenDetail() {
 
                     <div className="mt-4 pt-4 border-t border-black/5 flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
                         <ShareButtons token={token} address={token.contract_address || address} />
-                        {/* PancakeSwap Quick Trade Button */}
+                        {/* Dynamic Quick Trade Button */}
                         <a
-                            href={`https://pancakeswap.finance/swap?outputCurrency=${token.contract_address || address}&chain=bsc`}
+                            href={meta.dexUrl}
                             target="_blank" rel="noopener noreferrer"
                             className="shrink-0 flex items-center gap-2 px-4 py-2 bg-[#1fc7d4]/10 hover:bg-[#1fc7d4]/20 border border-[#1fc7d4]/30 text-[#1ab8c4] font-black text-xs rounded-xl transition-colors"
                         >
-                            🥞 Trade on PancakeSwap
+                            {meta.dexName === 'PancakeSwap' ? '🥞 ' : ''}Trade on {meta.dexName}
                         </a>
                     </div>
                 </motion.div>
@@ -592,11 +647,11 @@ function TokenDetail() {
                 {/* ── Stats Strip ─────────────────────────────────────── */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
                     {[
-                        { label: 'Market Cap',      value: `${(priceBnb * totalSupply).toFixed(4)} BNB`,      icon: <DollarSign className="w-4 h-4" />, color: 'text-teal-600 bg-teal-50 border-teal-100' },
+                        { label: 'Market Cap',      value: `${(priceBnb * totalSupply).toFixed(4)} ${meta.gasToken}`,      icon: <DollarSign className="w-4 h-4" />, color: 'text-teal-600 bg-teal-50 border-teal-100' },
                         { label: 'Total Supply',   value: formatSupply(rawTotalSupply),                          icon: <TrendingUp className="w-4 h-4" />, color: 'text-teal-600 bg-teal-50 border-teal-100' },
                         { label: 'Sold',            value: formatSupply(market?.supplyTraded ?? 0),            icon: <ArrowUpRight className="w-4 h-4" />, color: 'text-teal-600 bg-teal-50 border-teal-100' },
-                        { label: 'BNB in Curve',   value: `${market?.collateralBnb?.toFixed(4) ?? '0.0000'} BNB`, icon: <Hash className="w-4 h-4" />, color: 'text-sky-600 bg-sky-50 border-sky-100' },
-                        { label: '24h Volume',      value: `${volume24h.toFixed(4)} BNB`,                     icon: <Activity className="w-4 h-4" />, color: 'text-teal-600 bg-teal-50 border-teal-100' },
+                        { label: `${meta.gasToken} in Curve`,   value: `${market?.collateralBnb?.toFixed(4) ?? '0.0000'} ${meta.gasToken}`, icon: <Hash className="w-4 h-4" />, color: 'text-sky-600 bg-sky-50 border-sky-100' },
+                        { label: '24h Volume',      value: `${volume24h.toFixed(4)} ${meta.gasToken}`,                     icon: <Activity className="w-4 h-4" />, color: 'text-teal-600 bg-teal-50 border-teal-100' },
                         { label: 'Trades (24h)',    value: tradeStats?.total_trades ?? 0,                      icon: <BarChart3 className="w-4 h-4" />, color: 'text-purple-500 bg-purple-50 border-purple-100' },
                     ].map((s, i) => (
                         <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
@@ -656,7 +711,7 @@ function TokenDetail() {
                                                             <CartesianGrid strokeDasharray="3 3" stroke="#00000008" vertical={false} />
                                                             <XAxis dataKey="time" stroke="#00000020" fontSize={10} tickLine={false} axisLine={false} />
                                                             <YAxis hide domain={['dataMin * 0.98', 'dataMax * 1.02']} />
-                                                            <Tooltip content={<PriceTooltip />} />
+                                                            <Tooltip content={<PriceTooltip gasToken={meta.gasToken} />} />
                                                             <Area isAnimationActive={false} type="monotone" dataKey="price" stroke="#f43f5e" strokeWidth={2.5} fill="url(#priceGrad)" dot={false} />
                                                         </AreaChart>
                                                     </ResponsiveContainer>
@@ -673,8 +728,8 @@ function TokenDetail() {
 
                                             <div className="mt-4 grid grid-cols-3 gap-3">
                                                 {[
-                                                    { label: 'Current Price', value: <span className="flex items-center justify-center gap-1">{formatPrice(priceBnb)} BNB</span> },
-                                                    { label: 'BNB Raised',    value: (market?.collateralBnb ?? 0).toFixed(4) + ' BNB' },
+                                                    { label: 'Current Price', value: <span className="flex items-center justify-center gap-1">{formatPrice(priceBnb)} {meta.gasToken}</span> },
+                                                    { label: `${meta.gasToken} Raised`,    value: (market?.collateralBnb ?? 0).toFixed(4) + ' ' + meta.gasToken },
                                                     { label: '24h Change',    value: `${change24h >= 0 ? '+' : ''}${change24h.toFixed(2)}%`, color: change24h < 0 ? 'text-red-600' : 'text-sky-600' },
                                                 ].map((s, i) => (
                                                     <div key={i} className="bg-black/3 rounded-xl p-3 text-center">
@@ -697,7 +752,7 @@ function TokenDetail() {
                                                             }))}>
                                                                 <XAxis dataKey="time" hide />
                                                                 <YAxis hide />
-                                                                <Tooltip formatter={v => [v.toFixed(6) + ' BNB']} />
+                                                                <Tooltip formatter={v => [v.toFixed(6) + ' ' + meta.gasToken]} />
                                                                 <Bar dataKey="bnb" radius={[3, 3, 0, 0]}
                                                                     fill="#10b981"
                                                                     label={false}
@@ -718,7 +773,7 @@ function TokenDetail() {
                                                     <Info className="w-4 h-4 text-teal-600" /> About {token.name}
                                                 </h3>
                                                 <p className="text-gray-600 text-sm leading-relaxed mb-5">
-                                                    {token.description || `${token.name} ($${token.symbol}) was launched on the B20-LAB Launchpad on BNB Smart Chain. It uses a dynamic bonding curve for fair price discovery. When the curve reaches its 10 BNB target, 9 BNB is sent to Treasury and 1 BNB is used to seed PancakeSwap liquidity permanently.`}
+                                                    {token.description || `${token.name} ($${token.symbol}) was launched on the B20-LAB Launchpad on ${meta.networkName}. It uses a dynamic bonding curve for fair price discovery. When the curve reaches its 10 ${meta.gasToken} target, 9 ${meta.gasToken} is sent to Treasury and 1 ${meta.gasToken} is used to seed ${meta.dexName} liquidity permanently.`}
                                                 </p>
                                             </div>
 
@@ -737,11 +792,11 @@ function TokenDetail() {
                                                             desc: 'Logo & token JSON specifications pinned on IPFS.'
                                                         },
                                                         {
-                                                            name: 'BscScan Verification',
+                                                            name: `${meta.explorerName} Verification`,
                                                             status: token.bscscan_verified ? 'Verified' : 'Pending',
                                                             color: token.bscscan_verified ? 'text-teal-600 bg-teal-50 border-teal-100' : 'text-amber-600 bg-amber-50 border-amber-100',
-                                                            link: token.bscscan_verified ? `https://bscscan.com/token/${token.contract_address || address}#code` : null,
-                                                            desc: 'Contract source code verified automatically on BscScan.'
+                                                            link: token.bscscan_verified ? `${meta.getTokenUrl(token.contract_address || address)}#code` : null,
+                                                            desc: `Contract source code verified automatically on ${meta.explorerName}.`
                                                         },
                                                         {
                                                             name: 'Trust Wallet Pull Request',
@@ -755,7 +810,7 @@ function TokenDetail() {
                                                             status: token.dexscreener_status === 'indexed' ? 'Indexed' : 'Pending Liquidity',
                                                             color: token.dexscreener_status === 'indexed' ? 'text-sky-600 bg-sky-50 border-sky-100' : 'text-amber-600 bg-amber-50 border-amber-100',
                                                             link: token.dexscreener_url,
-                                                            desc: 'PancakeSwap trading pool tracked on DexScreener charts.'
+                                                            desc: `${meta.dexName} trading pool tracked on DexScreener charts.`
                                                         },
                                                         {
                                                             name: 'GeckoTerminal Index',
@@ -806,14 +861,14 @@ function TokenDetail() {
 
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 {[
-                                                    { label: 'Contract Address', value: shortAddr(token.contract_address || address, 10, 10), copy: token.contract_address || address, link: `https://bscscan.com/token/${token.contract_address || address}` },
-                                                    { label: 'Transaction Hash', value: shortAddr(token.tx_hash, 10, 10), copy: token.tx_hash, link: `https://bscscan.com/tx/${token.tx_hash}` },
+                                                    { label: 'Contract Address', value: shortAddr(token.contract_address || address, 10, 10), copy: token.contract_address || address, link: meta.getTokenUrl(token.contract_address || address) },
+                                                    { label: 'Transaction Hash', value: shortAddr(token.tx_hash, 10, 10), copy: token.tx_hash, link: token.tx_hash ? meta.getTxUrl(token.tx_hash) : null },
                                                     { label: 'Created Date', value: createdStr },
                                                     { label: 'Total Trades', value: `${tradeStats?.total_trades || 0} (${tradeStats?.buys || 0} buys / ${tradeStats?.sells || 0} sells)` },
                                                     { label: 'Total Supply', value: formatSupply(totalSupply) },
-                                                    { label: 'Network', value: 'BNB Smart Chain (BSC)' },
-                                                    { label: 'Standard', value: 'BEP-20' },
-                                                    { label: 'Decimals', value: '18' },
+                                                    { label: 'Network', value: meta.networkName },
+                                                    { label: 'Standard', value: meta.tokenStandard },
+                                                    { label: 'Decimals', value: meta.decimals },
                                                 ].map((d, i) => (
                                                     <div key={i} className="bg-black/3 rounded-xl p-3">
                                                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">{d.label}</p>
@@ -866,11 +921,11 @@ function TokenDetail() {
                                                                 <span className="font-mono text-gray-500">{shortAddr(trade.trader_wallet, 6, 4)}</span>
                                                             </div>
                                                             <div className="text-right">
-                                                                <p className="font-black text-gray-900">{parseFloat(trade.amount_bnb || 0).toFixed(6)} BNB</p>
+                                                                <p className="font-black text-gray-900">{parseFloat(trade.amount_bnb || 0).toFixed(6)} {meta.gasToken}</p>
                                                                 <p className="text-gray-400">{timeAgo(trade.timestamp)}</p>
                                                             </div>
                                                             {trade.tx_hash && trade.tx_hash !== 'unknown' && (
-                                                                <a href={`https://bscscan.com/tx/${trade.tx_hash.replace('_fee', '')}`}
+                                                                <a href={meta.getTxUrl(trade.tx_hash.replace('_fee', ''))}
                                                                     target="_blank" rel="noopener noreferrer"
                                                                     className="text-teal-600 hover:text-teal-600 ml-2">
                                                                     <ExternalLink className="w-3 h-3" />
@@ -932,11 +987,11 @@ function TokenDetail() {
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-4 overflow-hidden">
                                                             {[
                                                                 { l: 'Contract', v: shortAddr(token.contract_address || address, 10, 10), raw: token.contract_address || address },
-                                                                { l: 'Network', v: 'BNB Smart Chain (BSC)' },
-                                                                { l: 'Token Standard', v: 'BEP-20 Institutional' },
+                                                                { l: 'Network', v: meta.networkName },
+                                                                { l: 'Token Standard', v: `${meta.tokenStandard} Institutional` },
                                                                 { l: 'Total Supply', v: formatSupply(rawTotalSupply) },
-                                                                { l: 'Current Price', v: `${priceBnb.toFixed(10)} BNB` },
-                                                                { l: 'Market Cap', v: `${(priceBnb * totalSupply).toFixed(4)} BNB` },
+                                                                { l: 'Current Price', v: `${priceBnb.toFixed(10)} ${meta.gasToken}` },
+                                                                { l: 'Market Cap', v: `${(priceBnb * totalSupply).toFixed(4)} ${meta.gasToken}` },
                                                                 { l: 'Audit Status', v: '✅ VERIFIED BY NEXUS AI' },
                                                                 { l: 'Launch Type', v: token.launch_type || 'BONDING_CURVE' }
                                                             ].map((d, i) => (
@@ -958,7 +1013,7 @@ function TokenDetail() {
                                                         <p className="text-[11px] text-gray-700 leading-[1.8] font-medium text-justify">
                                                             {token.name} (${token.symbol}) represents a high-velocity opportunity on the B20-LAB Launchpad. 
                                                             Nexus AI has evaluated the underlying code and market sentiment, determining a robust branding profile. 
-                                                            The contract address ({shortAddr(token.contract_address || address, 6, 4)}) is fully verified on BSC, with {formatSupply(rawTotalSupply)} tokens in native circulation. 
+                                                            The contract address ({shortAddr(token.contract_address || address, 6, 4)}) is fully verified on {meta.explorerName}, with {formatSupply(rawTotalSupply)} tokens in native circulation. 
                                                             Current market dynamics suggest a {aiAnalysis.sentiment?.label || 'Bullish'} trend with a premium score of {aiAnalysis.score?.memorability}/100 for memorability. 
                                                             This protocol is strategically positioned for the current cycle's liquidity inflow.
                                                         </p>
@@ -1091,22 +1146,22 @@ function TokenDetail() {
                                 <div className="text-center">
                                     <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Achieved</p>
                                     <p className="font-black text-gray-900">{market?.collateralBnb?.toFixed(4) ?? '0.0000'}</p>
-                                    <p className="text-[10px] text-gray-400">BNB</p>
+                                    <p className="text-[10px] text-gray-400">{meta.gasToken}</p>
                                 </div>
                                 <div className="text-center border-x border-black/5">
                                     <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Target</p>
                                     <p className="text-[10px] text-gray-400 font-bold uppercase mb-0.5">Remaining</p>
                                     <p className="font-black text-gray-900">{Math.max(0, (market?.migrationThreshold ?? 10) - (market?.collateralBnb ?? 0)).toFixed(4)}</p>
-                                    <p className="text-[10px] text-gray-400">BNB</p>
+                                    <p className="text-[10px] text-gray-400">{meta.gasToken}</p>
                                 </div>
                             </div>
                             {(market?.migrated || token.launch_type === 'FAIR_LAUNCH' || token.launch_type === 'STANDARD') ? (
                                 <div className="mt-4 p-3 bg-sky-50 border border-sky-200 rounded-xl text-xs font-bold text-sky-700 flex items-center gap-2">
-                                    <ArrowRightLeft className="w-4 h-4" /> ✅ Available on PancakeSwap DEX!
+                                    <ArrowRightLeft className="w-4 h-4" /> ✅ Available on {meta.dexName} DEX!
                                 </div>
                             ) : (
                                 <div className="mt-4 p-3 bg-teal-50 border border-teal-100 rounded-xl text-xs text-teal-600 font-semibold leading-relaxed">
-                                    💡 <strong>Auto-migration:</strong> At 10 BNB target, 9 BNB goes to Treasury and 1 BNB seeds the DEX. Total target: <strong>{market?.migrationThreshold ?? 10} BNB</strong>. Current: <strong>{market?.collateralBnb?.toFixed(4) ?? '0'} BNB</strong>
+                                    💡 <strong>Auto-migration:</strong> At 10 {meta.gasToken} target, 9 {meta.gasToken} goes to Treasury and 1 {meta.gasToken} seeds the DEX. Total target: <strong>{market?.migrationThreshold ?? 10} {meta.gasToken}</strong>. Current: <strong>{market?.collateralBnb?.toFixed(4) ?? '0'} {meta.gasToken}</strong>
                                 </div>
                             )}
                         </div>
@@ -1129,8 +1184,8 @@ function TokenDetail() {
                             <div className="p-5 space-y-4">
                                 {(market?.migrated || token.launch_type === 'FAIR_LAUNCH' || token.launch_type === 'STANDARD') && (
                                     <div className="p-3 bg-sky-50 border border-sky-200 rounded-xl text-xs font-bold text-sky-700">
-                                        ✅ Token available on PancakeSwap. <a href={`https://pancakeswap.finance/swap?outputCurrency=${token.contract_address || address}`}
-                                            target="_blank" rel="noopener noreferrer" className="underline">Trade on PancakeSwap ↗</a>
+                                        ✅ Token available on {meta.dexName}. <a href={meta.dexUrl}
+                                            target="_blank" rel="noopener noreferrer" className="underline">Trade on {meta.dexName} ↗</a>
                                     </div>
                                 )}
                                 {token.is_delisted && (
@@ -1141,12 +1196,12 @@ function TokenDetail() {
                                 )}
                                 <div>
                                     <div className="flex items-center justify-between mb-2">
-                                        <p className="text-xs font-bold text-gray-400 uppercase">{side === 'buy' ? 'Pay (BNB)' : `Sell (${token.symbol})`}</p>
+                                        <p className="text-xs font-bold text-gray-400 uppercase">{side === 'buy' ? `Pay (${meta.gasToken})` : `Sell (${token.symbol})`}</p>
                                     </div>
                                     <div className="flex items-center gap-2 bg-black/3 border border-black/8 rounded-xl px-4 py-3">
                                         <input type="number" step="0.001" min="0" placeholder="0.0" value={amount} onChange={e => setAmount(e.target.value)}
                                             className="flex-1 bg-transparent font-black text-gray-900 text-lg outline-none" />
-                                        <span className="text-xs font-bold text-gray-500 shrink-0">{side === 'buy' ? 'BNB' : token.symbol}</span>
+                                        <span className="text-xs font-bold text-gray-500 shrink-0">{side === 'buy' ? meta.gasToken : token.symbol}</span>
                                     </div>
                                     <div className="flex gap-2 mt-2">
                                         {(side === 'buy' ? ['0.01', '0.05', '0.1', '0.5'] : ['100K', '500K', '1M']).map((v, i) => {
@@ -1189,7 +1244,7 @@ function TokenDetail() {
 
                                 <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
                                     onClick={(!account) ? connectWallet : (market?.migrated || token.launch_type === 'FAIR_LAUNCH' || token.launch_type === 'STANDARD') 
-                                        ? () => window.open(`https://pancakeswap.finance/swap?outputCurrency=${address}&chain=bsc`, '_blank')
+                                        ? () => window.open(meta.dexUrl, '_blank')
                                         : handleTrade}
                                     disabled={tradeStatus === 'pending' || token.is_delisted || (account && (!amount || parseFloat(amount) <= 0) && !(market?.migrated || token.launch_type === 'FAIR_LAUNCH' || token.launch_type === 'STANDARD'))}
                                     className={`w-full py-4 font-black rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed shadow-xl transition-all text-white ${side === 'buy'
@@ -1200,7 +1255,7 @@ function TokenDetail() {
                                         ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Processing…</span>
                                         : !account ? '🔗 Connect Wallet'
                                         : token.is_delisted ? '🚫 Asset Delisted'
-                                        : (market?.migrated || token.launch_type === 'FAIR_LAUNCH' || token.launch_type === 'STANDARD') ? 'Trade on PancakeSwap ↗'
+                                        : (market?.migrated || token.launch_type === 'FAIR_LAUNCH' || token.launch_type === 'STANDARD') ? `Trade on ${meta.dexName} ↗`
                                         : side === 'buy' ? `🟢 Buy ${token.symbol}` : `🔴 Sell ${token.symbol}`}
                                 </motion.button>
 
@@ -1210,17 +1265,17 @@ function TokenDetail() {
                             </div>
                         </div>
 
-                        {/* Market stats card */}
+                        {/* Market statistics card */}
                         <div className="bg-white border border-black/8 rounded-2xl p-5 shadow-sm">
                             <h3 className="font-black text-gray-900 text-sm mb-4 flex items-center gap-2">
                                 <BarChart3 className="w-4 h-4 text-teal-600" /> Market Statistics
                             </h3>
                             {[
-                                { label: '24h Volume',   value: `${volume24h.toFixed(6)} BNB` },
+                                { label: '24h Volume',   value: `${volume24h.toFixed(6)} ${meta.gasToken}` },
                                 { label: '24h Buys',     value: tradeStats?.buys || 0 },
                                 { label: '24h Sells',    value: tradeStats?.sells || 0 },
                                 { label: 'Total Trades', value: tradeStats?.total_trades || 0 },
-                                { label: 'Total Fees',   value: `${parseFloat(tradeStats?.total_fees_bnb || 0).toFixed(6)} BNB` },
+                                { label: 'Total Fees',   value: `${parseFloat(tradeStats?.total_fees_bnb || 0).toFixed(6)} ${meta.gasToken}` },
                             ].map((s, i) => (
                                 <div key={i} className="flex justify-between items-center py-2 border-b border-black/5 last:border-0 text-sm">
                                     <span className="text-gray-500">{s.label}</span>

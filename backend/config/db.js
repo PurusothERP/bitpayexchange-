@@ -265,6 +265,26 @@ const db = {
                 is_paid INTEGER DEFAULT 0,
                 tx_hash TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`,
+            `CREATE TABLE IF NOT EXISTS staking_records (
+                id SERIAL PRIMARY KEY,
+                wallet_address TEXT NOT NULL,
+                token_address TEXT NOT NULL,
+                token_symbol TEXT,
+                token_name TEXT,
+                amount_tokens REAL NOT NULL,
+                period_days INTEGER NOT NULL,
+                apr REAL,
+                expected_reward REAL,
+                tx_hash TEXT UNIQUE NOT NULL,
+                start_date TIMESTAMP,
+                end_date TIMESTAMP,
+                status TEXT DEFAULT 'active',
+                release_requested_at TIMESTAMP,
+                released_at TIMESTAMP,
+                admin_note TEXT,
+                total_payout REAL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )`
         ];
 

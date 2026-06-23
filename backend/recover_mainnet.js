@@ -21,7 +21,7 @@ const MEME_FACTORY_ADDRESSES = [
 const DIRECT_FACTORY_ADDRESSES = [
     '0xeEBC10420F486F8357c2efaBd6F5F44Ac9a568a9',  // Direct factory V2
     '0xd2f602536605CAed0C30a2DA05B24B8F0E59197E',  // Direct factory (from admin page constants)
-    '0xbe3EA5f2AE5b278796AbCFbd1078EF88dd0d70F5',  // Old direct factory
+    '0xBF64c60ba9C7D903Ba5Df7efc8949f0e7B3C7832',  // Old direct factory
 ];
 
 const MEME_FACTORY_ABI = [

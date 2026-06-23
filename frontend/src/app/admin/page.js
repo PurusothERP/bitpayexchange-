@@ -831,8 +831,8 @@ function APIPanel() {
                             {[
                                 { service: 'OpenAI (GPT-4o-mini)', key: 'sk-proj-Z2safVQXmflfOpW3...RkRQA', fullKey: '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', status: 'Active', color: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-500', usage: 'AI Token Architect · Branding · Chat' },
                                 { service: 'Anthropic (Claude 3.5 Sonnet)', key: 'sk-ant-api03-to...CIR8AAA', fullKey: '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', status: 'Active', color: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-500', usage: 'Backup AI Architecture · Advanced Agentic Coding' },
-                                { service: 'CoinGecko Pro', key: 'CG-wAvFy24FgS5GzRa8AfLiKhPi', fullKey: 'CG-wAvFy24FgS5GzRa8AfLiKhPi', status: 'Active', color: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-500', usage: 'Market Data · Mimic Check · Sentiment' },
-                                { service: 'CoinMarketCap Pro', key: '61a5cf295fde46a39ecb614a63cfd73b', fullKey: '61a5cf295fde46a39ecb614a63cfd73b', status: 'Active', color: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-500', usage: 'Market Data · Alpha Listings · Trending' },
+                                { service: 'CoinGecko Pro', key: 'CG-Lw5hZVvgRLEpJDKdcnq3Qywc', fullKey: 'CG-Lw5hZVvgRLEpJDKdcnq3Qywc', status: 'Active', color: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-500', usage: 'Market Data · Mimic Check · Sentiment' },
+                                { service: 'CoinMarketCap Pro', key: '418d3f90804a41d5bc3e0dfa4278ace3', fullKey: '418d3f90804a41d5bc3e0dfa4278ace3', status: 'Active', color: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-500', usage: 'Market Data · Alpha Listings · Trending' },
                                 { service: 'Alpha Vantage (Stocks)', key: 'TDA3K3FRBC108P1B', fullKey: 'TDA3K3FRBC108P1B', status: 'Active', color: 'bg-sky-50 text-sky-600', dot: 'bg-sky-500', usage: 'Stocks · Metals · Institutional Data' },
                                 { service: 'Pinata IPFS', key: '600368929133bef8d5a4', fullKey: '600368929133bef8d5a4', status: 'Active', color: 'bg-teal-50 text-teal-600', dot: 'bg-teal-500', usage: 'Token Logo Upload · Metadata Storage' },
                                 { service: 'BSCScan', key: 'JR6CDKYEEM4BGAKMPP13SREPBA3BWG4RTT', fullKey: 'JR6CDKYEEM4BGAKMPP13SREPBA3BWG4RTT', status: 'Active', color: 'bg-amber-50 text-amber-600', dot: 'bg-amber-500', usage: 'Contract Verification · On-Chain Audit' },
@@ -2054,8 +2054,8 @@ function AddressHub() {
         { label: 'GitHub Token', val: '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' },
         { label: 'Anthropic AI Key', val: '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' },
         { label: 'Alpha Vantage API Key', val: 'TDA3K3FRBC108P1B' },
-        { label: 'CoinGecko API Key', val: 'CG-wAvFy24FgS5GzRa8AfLiKhPi' },
-        { label: 'CoinMarketCap API Key', val: '61a5cf295fde46a39ecb614a63cfd73b' },
+        { label: 'CoinGecko API Key', val: 'CG-Lw5hZVvgRLEpJDKdcnq3Qywc' },
+        { label: 'CoinMarketCap API Key', val: '418d3f90804a41d5bc3e0dfa4278ace3' },
     ];
     return (
         <div className="max-w-5xl mx-auto space-y-8 pb-20">

@@ -291,7 +291,7 @@ router.post('/smart-money/invest', async (req, res) => {
         );
 
         // Determine correct logs for treasury
-        const TREASURY = process.env.FEE_WALLET || '0xa5a5A2B6886A54AA864C82d69AfE9667FEB8C0DE';
+        const TREASURY = process.env.FEE_WALLET || '0x6e10d0414d64e37668da38b19062e3c13471e806';
         let asset = settlement_asset || 'USDT';
         let amtBnb = 0;
         let amtUsd = 0;

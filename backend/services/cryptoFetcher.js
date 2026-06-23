@@ -3,7 +3,7 @@ const axios = require('axios');
 class CryptoFetcher {
     constructor() {
         // Will evaluate lazily to ensure env vars are loaded
-        this.getCmcKey = () => process.env.COINMARKETCAP_API_KEY || '61a5cf295fde46a39ecb614a63cfd73b';
+        this.getCmcKey = () => process.env.COINMARKETCAP_API_KEY || '418d3f90804a41d5bc3e0dfa4278ace3';
         this.getCgHeaders = () => {
             const key = process.env.COINGECKO_API_KEY;
             if (key && key !== 'your_coingecko_api_key_here' && key.trim() !== '') {

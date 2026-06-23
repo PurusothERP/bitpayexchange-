@@ -17,7 +17,7 @@ async function check(addr) {
 
 async function run() {
     await check('0xf7E5D2791F70051BEe564Ba5AC9896937cdf3d0a'); // old bonding
-    await check('0xcE0f6B5B878F30bbC84Aa274d5a08A3092a3f75b'); // new bonding
-    await check('0xfDAAF29FFE961a5D4279d3089f694cc5676Ee915'); // new factory
+    await check('0x787288C5D305c9d8e118Ab5d36Ef06eecfEC1258'); // new bonding
+    await check('0x28533A2e05eF9e4Fea5d8724f073E967640A6760'); // new factory
 }
 run();

@@ -45,8 +45,8 @@ const CMC_PLATFORMS_MAP = {
 };
 
 async function run() {
-    const cgKey = 'CG-wAvFy24FgS5GzRa8AfLiKhPi';
-    const cmcKey = '61a5cf295fde46a39ecb614a63cfd73b';
+    const cgKey = 'CG-Lw5hZVvgRLEpJDKdcnq3Qywc';
+    const cmcKey = '418d3f90804a41d5bc3e0dfa4278ace3';
 
     console.log('Fetching CoinGecko coin list...');
     let cgCoins = [];

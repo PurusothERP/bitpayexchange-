@@ -60,7 +60,7 @@ async function run() {
     // 2. TokenFactory
     const tfArgs = abiCoder.encode(
         ['address', 'address', 'address'], 
-        ['0xcE0f6B5B878F30bbC84Aa274d5a08A3092a3f75b', feeWallet, owner]
+        ['0x787288C5D305c9d8e118Ab5d36Ef06eecfEC1258', feeWallet, owner]
     ).slice(2);
     // 3. DirectDexLaunchFactory
     const dlfArgs = abiCoder.encode(
@@ -68,9 +68,9 @@ async function run() {
         [feeWallet, router, owner]
     ).slice(2);
 
-    await doVerify('0xcE0f6B5B878F30bbC84Aa274d5a08A3092a3f75b', 'BondingCurve', 'contracts/contracts/BondingCurve.flattened.sol', bcArgs);
-    await doVerify('0xfDAAF29FFE961a5D4279d3089f694cc5676Ee915', 'TokenFactory', 'contracts/contracts/TokenFactory.flattened.sol', tfArgs);
-    await doVerify('0xbe3EA5f2AE5b278796AbCFbd1078EF88dd0d70F5', 'DirectDexLaunchFactory', 'contracts/contracts/DirectDexLaunchFactory.flattened.sol', dlfArgs);
+    await doVerify('0x787288C5D305c9d8e118Ab5d36Ef06eecfEC1258', 'BondingCurve', 'contracts/contracts/BondingCurve.flattened.sol', bcArgs);
+    await doVerify('0x28533A2e05eF9e4Fea5d8724f073E967640A6760', 'TokenFactory', 'contracts/contracts/TokenFactory.flattened.sol', tfArgs);
+    await doVerify('0xBF64c60ba9C7D903Ba5Df7efc8949f0e7B3C7832', 'DirectDexLaunchFactory', 'contracts/contracts/DirectDexLaunchFactory.flattened.sol', dlfArgs);
 }
 
 run();

@@ -4,8 +4,8 @@ const { ethers } = require('ethers');
 const provider = new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org');
 
 const TREASURY = process.env.FEE_WALLET;
-const FACTORY = '0xfDAAF29FFE961a5D4279d3089f694cc5676Ee915';
-const BONDING = '0xcE0f6B5B878F30bbC84Aa274d5a08A3092a3f75b';
+const FACTORY = '0x28533A2e05eF9e4Fea5d8724f073E967640A6760';
+const BONDING = '0x787288C5D305c9d8e118Ab5d36Ef06eecfEC1258';
 
 async function checkFees() {
     console.log(`Checking balances for Treasury Wallet: ${TREASURY}`);

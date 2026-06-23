@@ -1,5 +1,5 @@
 async function testCGPlatforms() {
-    const apiKey = 'CG-wAvFy24FgS5GzRa8AfLiKhPi';
+    const apiKey = 'CG-Lw5hZVvgRLEpJDKdcnq3Qywc';
     const url = 'https://api.coingecko.com/api/v3/coins/list?include_platform=true';
     
     try {

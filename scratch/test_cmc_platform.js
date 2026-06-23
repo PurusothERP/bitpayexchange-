@@ -1,5 +1,5 @@
 async function testCMCPlatform() {
-    const apiKey = '61a5cf295fde46a39ecb614a63cfd73b';
+    const apiKey = '418d3f90804a41d5bc3e0dfa4278ace3';
     const url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/map?limit=200';
     
     try {

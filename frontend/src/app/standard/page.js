@@ -49,7 +49,7 @@ export default function StandardAsset() {
 
     
 
-    const FEE_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || '0xa5a5A2B6886A54AA864C82d69AfE9667FEB8C0dE';
+    const FEE_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || '0x6e10d0414d64e37668da38b19062e3c13471e806';
     const isTreasury = account?.toLowerCase() === FEE_WALLET.toLowerCase();
     const effectiveFee = isTreasury ? 0 : TOTAL_FEE;
 

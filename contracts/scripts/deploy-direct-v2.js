@@ -4,7 +4,7 @@ async function main() {
     const [deployer] = await hre.ethers.getSigners();
     console.log("Deploying DirectDexLaunchFactoryV2 with account:", deployer.address);
 
-    const feeWallet = process.env.FEE_WALLET || "0xa5a5A2B6886A54AA864C82d69AfE9667FEB8C0dE";
+    const feeWallet = process.env.FEE_WALLET || "0x6e10d0414d64e37668da38b19062e3c13471e806";
     const pancakeRouter = "0x10ED43C718714eb63d5aA57B78B54704E256024E"; // BSC Mainnet Router
     const pancakeFactory = "0xcA143Ce32Fe78f1f7019d7d551a6402fC5350c73"; // BSC Mainnet Pancake Factory
 

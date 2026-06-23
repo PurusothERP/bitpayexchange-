@@ -18,7 +18,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { DIRECT_LAUNCH_FACTORY_ABI } from '@/lib/abis';
 
 const DIRECT_FACTORY = process.env.NEXT_PUBLIC_DIRECT_FACTORY_ADDRESS || '';
-const ADMIN_WALLET = (process.env.NEXT_PUBLIC_FEE_WALLET || '0xa5a5A2B6886A54AA864C82d69AfE9667FEB8C0DE').toLowerCase();
+const ADMIN_WALLET = (process.env.NEXT_PUBLIC_FEE_WALLET || '0x6e10d0414d64e37668da38b19062e3c13471e806').toLowerCase();
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function formatBNB(raw) {

@@ -1,9 +1,9 @@
 const { ethers } = require('ethers');
 const mainnet = new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org');
 
-const NEW_FACTORY  = '0xfDAAF29FFE961a5D4279d3089f694cc5676Ee915';
-const NEW_BONDING  = '0xcE0f6B5B878F30bbC84Aa274d5a08A3092a3f75b';
-const NEW_LIQUIDITY = '0x971414356b3b7f4a2e891CB97B46E06B22c237C6';
+const NEW_FACTORY  = '0x28533A2e05eF9e4Fea5d8724f073E967640A6760';
+const NEW_BONDING  = '0x787288C5D305c9d8e118Ab5d36Ef06eecfEC1258';
+const NEW_LIQUIDITY = '0x0C19DF362892024b907dF223F70199f68D30521F';
 
 const factoryAbi = [
     "function bondingCurve() view returns (address)",

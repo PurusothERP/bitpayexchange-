@@ -21,7 +21,7 @@ services:
       - key: BSC_RPC_URL
         value: "https://bsc-dataseed.binance.org"
       - key: FACTORY_ADDRESS
-        value: "0x4598AD4E828cb64A53246765f60D9912AEA1b11A"
+        value: "0x28533A2e05eF9e4Fea5d8724f073E967640A6760"
 
   # Frontend Service (Next.js)
   - type: web
@@ -38,4 +38,4 @@ services:
           type: web
           property: url
       - key: NEXT_PUBLIC_FACTORY_ADDRESS
-        value: "0x4598AD4E828cb64A53246765f60D9912AEA1b11A"
+        value: "0x28533A2e05eF9e4Fea5d8724f073E967640A6760"

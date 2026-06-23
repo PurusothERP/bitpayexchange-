@@ -1,6 +1,6 @@
 async function testCG() {
     const url = 'https://demo-api.coingecko.com/api/v3/coins/list?include_platform=true';
-    const apiKey = 'CG-wAvFy24FgS5GzRa8AfLiKhPi';
+    const apiKey = 'CG-Lw5hZVvgRLEpJDKdcnq3Qywc';
     
     console.log('Fetching CoinGecko coin list...');
     try {

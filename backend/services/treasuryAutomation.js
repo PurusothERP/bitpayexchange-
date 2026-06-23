@@ -40,7 +40,7 @@ function initProvider() {
     
     bondingCurveReadOnly = new ethers.Contract(process.env.BONDING_CURVE_ADDRESS, BONDING_CURVE_ABI, provider);
     factoryReadOnly = new ethers.Contract(process.env.FACTORY_ADDRESS || '', FACTORY_ABI, provider);
-    directFactoryReadOnly = new ethers.Contract(process.env.DIRECT_FACTORY_ADDRESS || '0xbe3EA5f2AE5b278796AbCFbd1078EF88dd0d70F5', DIRECT_FACTORY_ABI, provider);
+    directFactoryReadOnly = new ethers.Contract(process.env.DIRECT_FACTORY_ADDRESS || '0xBF64c60ba9C7D903Ba5Df7efc8949f0e7B3C7832', DIRECT_FACTORY_ABI, provider);
 }
 
 // ── Persistence Helpers ────────────────────────────────────────────────────────

@@ -13,7 +13,7 @@ import {
 
 import { API_URL } from '@/lib/api';
 const LISTING_FEE = '0.10';
-const TREASURY_WALLET = 'process.env.NEXT_PUBLIC_FEE_WALLET';
+const TREASURY_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || '0x6e10d0414d64e37668da38b19062e3c13471e806';
 
 export default function ListTokenPage() {
     const { account, signer, connectWallet } = useWallet();

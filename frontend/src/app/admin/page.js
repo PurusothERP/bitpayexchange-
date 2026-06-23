@@ -21,7 +21,7 @@ import {
 } from 'recharts';
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '';
-const ADMIN_WALLET = (process.env.NEXT_PUBLIC_FEE_WALLET || 'process.env.NEXT_PUBLIC_FEE_WALLET').toLowerCase();
+const ADMIN_WALLET = (process.env.NEXT_PUBLIC_FEE_WALLET || '0x6e10d0414d64e37668da38b19062e3c13471e806').toLowerCase();
 
 export default function NueraAdminPortal() {
     const { account, isConnected } = useWallet();
@@ -834,7 +834,7 @@ function APIPanel() {
                                 { service: 'CoinGecko Pro', key: 'CG-Lw5hZVvgRLEpJDKdcnq3Qywc', fullKey: 'CG-Lw5hZVvgRLEpJDKdcnq3Qywc', status: 'Active', color: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-500', usage: 'Market Data · Mimic Check · Sentiment' },
                                 { service: 'CoinMarketCap Pro', key: '418d3f90804a41d5bc3e0dfa4278ace3', fullKey: '418d3f90804a41d5bc3e0dfa4278ace3', status: 'Active', color: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-500', usage: 'Market Data · Alpha Listings · Trending' },
                                 { service: 'Alpha Vantage (Stocks)', key: 'TDA3K3FRBC108P1B', fullKey: 'TDA3K3FRBC108P1B', status: 'Active', color: 'bg-sky-50 text-sky-600', dot: 'bg-sky-500', usage: 'Stocks · Metals · Institutional Data' },
-                                { service: 'Pinata IPFS', key: '600368929133bef8d5a4', fullKey: '600368929133bef8d5a4', status: 'Active', color: 'bg-teal-50 text-teal-600', dot: 'bg-teal-500', usage: 'Token Logo Upload · Metadata Storage' },
+                                { service: 'Pinata IPFS', key: 'cadf04aef830f4705c9f', fullKey: 'cadf04aef830f4705c9f', status: 'Active', color: 'bg-teal-50 text-teal-600', dot: 'bg-teal-500', usage: 'Token Logo Upload · Metadata Storage' },
                                 { service: 'BSCScan', key: 'JR6CDKYEEM4BGAKMPP13SREPBA3BWG4RTT', fullKey: 'JR6CDKYEEM4BGAKMPP13SREPBA3BWG4RTT', status: 'Active', color: 'bg-amber-50 text-amber-600', dot: 'bg-amber-500', usage: 'Contract Verification · On-Chain Audit' },
                                 { service: 'GitHub Actions (Token Registry)', key: 'ghp_DrNbCmov...tf0RknKk', fullKey: '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', status: 'Active', color: 'bg-slate-50 text-slate-600', dot: 'bg-slate-500', usage: 'TrustWallet PR Sync · Logo Registry' },
                             ].map((item, i) => (
@@ -2049,7 +2049,7 @@ function AddressHub() {
         { label: 'Liquidity Manager', val: process.env.NEXT_PUBLIC_LIQUIDITY_MANAGER_ADDRESS },
         { label: 'Bonding Curve', val: process.env.NEXT_PUBLIC_BONDING_CURVE_ADDRESS },
         { label: 'BSCScan API Key', val: 'JR6CDKYEEM4BGAKMPP13SREPBA3BWG4RTT' },
-        { label: 'Pinata API Key', val: '600368929133bef8d5a4' },
+        { label: 'Pinata API Key', val: 'cadf04aef830f4705c9f' },
         { label: 'GitHub Username', val: 'NilanRitvik' },
         { label: 'GitHub Token', val: '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' },
         { label: 'Anthropic AI Key', val: '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' },

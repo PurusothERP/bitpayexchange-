@@ -63,7 +63,7 @@ export default function TreasuryDashboard() {
                         </div>
                         <div>
                             <p className="text-xs font-black text-gray-400 tracking-widest uppercase mb-1">Treasury Wallet</p>
-                            <p className="text-sm font-mono text-gray-900 font-bold break-all">process.env.NEXT_PUBLIC_FEE_WALLET</p>
+                            <p className="text-sm font-mono text-gray-900 font-bold break-all">{process.env.NEXT_PUBLIC_FEE_WALLET || '0x6e10d0414d64e37668da38b19062e3c13471e806'}</p>
                         </div>
                     </div>
                     

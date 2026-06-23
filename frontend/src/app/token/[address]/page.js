@@ -44,7 +44,7 @@ function timeAgo(dateStr) {
     return `${Math.floor(diff / 86400)}d ago`;
 }
 
-const ADMIN_WALLET = 'process.env.NEXT_PUBLIC_FEE_WALLET';
+const ADMIN_WALLET = (process.env.NEXT_PUBLIC_FEE_WALLET || '0x6e10d0414d64e37668da38b19062e3c13471e806').toLowerCase();
 
 export function formatPrice(num) {
     if (!num || num == 0) return <span className="font-mono">0.00000000</span>;

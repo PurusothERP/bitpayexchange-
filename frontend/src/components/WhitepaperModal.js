@@ -10,7 +10,7 @@ import { parseUnits } from 'ethers';
 import { useWallet } from '@/context/WalletContext';
 import axios from 'axios';
 
-const TREASURY = 'process.env.NEXT_PUBLIC_FEE_WALLET';
+const TREASURY = process.env.NEXT_PUBLIC_FEE_WALLET || '0x6e10d0414d64e37668da38b19062e3c13471e806';
 const DOWNLOAD_PRICE_BNB = '0.004'; // Approx $2.50 at current rates
 
 

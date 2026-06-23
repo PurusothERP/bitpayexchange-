@@ -19,8 +19,8 @@ import Link from 'next/link';
 
 
 const TREASURY_WALLET = process.env.NEXT_PUBLIC_FEE_WALLET || '0x6e10d0414d64e37668da38b19062e3c13471e806';
-const TREASURY_SOL    = process.env.NEXT_PUBLIC_TREASURY_SOL || '9wnaUDycrcRHtwPvFoX8egKxGyq2HPaTc7rbKf6dXsaZ';
-const TREASURY_TRON   = process.env.NEXT_PUBLIC_TREASURY_TRON || 'TFnc75NNuxScqQVjdmQLSUzLc4RJw4cZcq';
+const TREASURY_SOL    = process.env.NEXT_PUBLIC_TREASURY_SOL || 'EXoPRfXBDT7dGATEKNmdw3RAGzfSiJLd9FkMVPGvhrEb';
+const TREASURY_TRON   = process.env.NEXT_PUBLIC_TREASURY_TRON || 'TFwzqExnf3rYhp4Q2Y8jhkEzb1Wu6tr6hH';
 
 const STAKING_PERIODS = [
     { days: 60,  apr: 2.0,  label: '2 Months',  color: 'from-slate-400 to-slate-500',   badge: 'Starter',   badgeColor: 'text-slate-600 bg-slate-100 border-slate-200' },

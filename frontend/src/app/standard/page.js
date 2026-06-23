@@ -115,7 +115,7 @@ export default function StandardAsset() {
             });
 
             // 3. Execute Transaction
-            setError('Tez Exchange transaction completed, we are deploying your token...');
+            setError('Bitpay Exchange transaction completed, we are deploying your token...');
             
             const tx = await factoryContract.createTokenStandard(
                 formData.name,

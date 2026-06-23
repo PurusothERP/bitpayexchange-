@@ -518,7 +518,7 @@ const StakingCard = ({ stake }) => {
     const periodDays = stake.pool_name?.includes('90') ? 90 : stake.pool_name?.includes('180') ? 180 : 30;
     const expectedReturn = invested * (apy / 100) * (periodDays / 365);
     const releaseDate = new Date(new Date(stake.timestamp).getTime() + periodDays * 24 * 60 * 60 * 1000);
-    const cTokenSymbol = `c${stake.token_symbol || 'TEZ'}`;
+    const cTokenSymbol = `c${stake.token_symbol || 'BPT'}`;
     const tokenAddress = stake.token_address || '0xstaking_token_contract_address';
 
     return (
@@ -1135,7 +1135,7 @@ export default function ProfilePage() {
 
     const allocationData = [
         { name: 'Spot (BNB)', value: bnbVal || 1, raw: bnbBalance ? `${formatBNB(bnbBalance)} BNB` : '0.00 BNB', color: '#009393' },
-        { name: 'Staking', value: stakedVal || 1, raw: `${totalStakedAmount.toFixed(2)} TEZ`, color: '#8b5cf6' },
+        { name: 'Staking', value: stakedVal || 1, raw: `${totalStakedAmount.toFixed(2)} BPT`, color: '#8b5cf6' },
         { name: 'Yield Vaults', value: yieldVal || 1, raw: `$${yieldVal.toLocaleString()}`, color: '#0ea5e9' },
         { name: 'Mex Money', value: mexVal || 1, raw: `$${mexVal.toLocaleString()}`, color: '#10b981' },
         { name: 'Stocks Portfolio', value: stocksVal || 1, raw: `$${stocksVal.toLocaleString()}`, color: '#f59e0b' },
@@ -1153,7 +1153,7 @@ export default function ProfilePage() {
 
             <section className="pt-32 pb-24 px-4 md:px-8 max-w-6xl mx-auto">
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-12">
-                    <h1 className="text-4xl md:text-5xl font-black mb-2 tracking-tighter">TEZ EXCHANGE <span className="text-teal-600 italic">PROFILE</span></h1>
+                    <h1 className="text-4xl md:text-5xl font-black mb-2 tracking-tighter">BITPAY EXCHANGE <span className="text-teal-600 italic">PROFILE</span></h1>
                     <p className="text-gray-500 font-bold uppercase text-[10px] tracking-[0.2em]">Institutional Asset Management Dashboard</p>
                 </motion.div>
 

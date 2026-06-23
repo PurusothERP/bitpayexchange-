@@ -14,7 +14,7 @@ export default function Footer() {
                                 <Logo className="w-full h-full" />
                             </div>
                             <span className="text-xl font-black tracking-tighter text-gray-900 text-premium-gradient">
-                                Tez Exchange
+                                Bitpay Exchange
                             </span>
                         </Link>
                         <p className="text-gray-600 text-sm max-w-xs mx-auto md:mx-0">
@@ -33,18 +33,18 @@ export default function Footer() {
 
                     {/* Powered By */}
                     <div className="space-y-4 text-sm text-gray-600 flex flex-col items-center md:items-end">
-                        <h4 className="text-gray-900 font-bold mb-4">Powered by Tez Exchange</h4>
-                        <a href="https://www.tezexchange.io" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-teal-600 transition-colors">
-                            <Globe className="w-4 h-4" /> www.tezexchange.io
+                        <h4 className="text-gray-900 font-bold mb-4">Powered by Bitpay Exchange</h4>
+                        <a href="https://www.Bitpays.io" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-teal-600 transition-colors">
+                            <Globe className="w-4 h-4" /> www.Bitpays.io
                         </a>
-                        <a href="mailto:support@tezexchange.io" className="flex items-center gap-2 hover:text-teal-600 transition-colors">
-                            <Mail className="w-4 h-4" /> support@tezexchange.io
+                        <a href="mailto:Support@bitpays.io" className="flex items-center gap-2 hover:text-teal-600 transition-colors">
+                            <Mail className="w-4 h-4" /> Support@bitpays.io
                         </a>
                     </div>
                 </div>
 
                 <div className="mt-12 pt-8 border-t border-black/5 text-center text-xs text-gray-500">
-                    <p>&copy; {new Date().getFullYear()} Tez Exchange. All rights reserved.</p>
+                    <p>&copy; {new Date().getFullYear()} Bitpay Exchange. All rights reserved.</p>
                 </div>
             </div>
         </footer>

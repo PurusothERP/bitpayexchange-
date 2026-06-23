@@ -311,7 +311,7 @@ export default function FiatPage() {
                     </motion.div>
                     
                     <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 bg-gradient-to-b from-white to-white/40 bg-clip-text text-transparent italic">
-                        TEZ EXCHANGE <span className="font-sans" style={{color:'#009393'}}>FIAT PORTAL</span>
+                        BITPAY EXCHANGE <span className="font-sans" style={{color:'#009393'}}>FIAT PORTAL</span>
                     </h1>
                     
                     <p className="text-gray-400 font-medium max-w-2xl mx-auto text-lg leading-relaxed">
@@ -591,7 +591,7 @@ export default function FiatPage() {
                                                             <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-4 flex items-start gap-3">
                                                                 <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0 mt-0.5" />
                                                                 <p className="text-[11px] text-yellow-200 font-semibold leading-relaxed">
-                                                                    ⚠️ Please verify your UPI ID / Bank details carefully. <span className="font-black text-yellow-300">Any mismatch — Tez Exchange is not responsible</span> for incorrect transfers.
+                                                                    ⚠️ Please verify your UPI ID / Bank details carefully. <span className="font-black text-yellow-300">Any mismatch — Bitpay Exchange is not responsible</span> for incorrect transfers.
                                                                 </p>
                                                             </div>
 

@@ -129,7 +129,7 @@ export default function NueraAdminPortal() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-sm shadow-teal-200/20"
-                            title="Open Tez Exchange"
+                            title="Open Bitpay Exchange"
                         >
                             <ArrowRightLeft size={13} />
                             Exchange
@@ -579,7 +579,7 @@ function RevenueLedger({ stats, account }) {
 
                             {/* Footer */}
                             <div className="px-8 py-5 border-t border-slate-100 bg-slate-50/50">
-                                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest text-center">Tez Exchange · Nexus Nuera Admin · Verified Ledger</p>
+                                <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest text-center">Bitpay Exchange · Nexus Nuera Admin · Verified Ledger</p>
                             </div>
                         </motion.div>
                     </>
@@ -765,7 +765,7 @@ function APIPanel() {
                 <div className="space-y-6">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div className="bg-white p-10 rounded-[3rem] border border-slate-200/60 shadow-sm flex flex-col justify-center">
-                            <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tight mb-2">Tez Exchange <span className="text-teal-600">Core</span></h3>
+                            <h3 className="text-2xl font-black text-slate-900 uppercase italic tracking-tight mb-2">Bitpay Exchange <span className="text-teal-600">Core</span></h3>
                             <p className="text-[11px] font-bold text-slate-500 uppercase tracking-widest leading-relaxed">
                                 A high-performance hybrid institutional protocol merging decentralized smart contracts with high-fidelity off-chain ledgers and dynamic API load-balancing.
                             </p>
@@ -886,7 +886,7 @@ function APIPanel() {
                                 </div>
                                 <div>
                                     <h4 className="text-base font-black text-slate-900 uppercase italic tracking-tight">Technical Blueprint</h4>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Tez Exchange Institutional Architecture</p>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Bitpay Exchange Institutional Architecture</p>
                                     <p className="text-[9px] font-bold text-slate-400 mt-2">Full product module breakdown, tech stack, fee model, and security persistence logic.</p>
                                 </div>
                                 <a

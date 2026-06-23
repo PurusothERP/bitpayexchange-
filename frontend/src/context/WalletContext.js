@@ -53,9 +53,9 @@ const arbitrumMainnet = {
 
 // 3. Create a metadata object
 const metadata = {
-    name: 'Tez Exchange Intelligence',
-    description: 'Tez Exchange Institutional Trading & Yield Hub',
-    url: typeof window !== 'undefined' ? window.location.origin : 'https://tezexchange.io',
+    name: 'Bitpay Exchange Intelligence',
+    description: 'Bitpay Exchange Institutional Trading & Yield Hub',
+    url: typeof window !== 'undefined' ? window.location.origin : 'https://Bitpays.io',
     icons: ['https://b20-frontend.onrender.com/logo.png']
 };
 

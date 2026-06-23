@@ -102,7 +102,7 @@ export default function ListTokenPage() {
                         <Plus className="w-3 h-3" /> Professional Listing Portal
                     </motion.span>
                     <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter mb-6">
-                        List Your <span className="bg-gradient-to-r from-teal-600 to-teal-700 bg-clip-text text-transparent">Token</span> on Tez Exchange
+                        List Your <span className="bg-gradient-to-r from-teal-600 to-teal-700 bg-clip-text text-transparent">Token</span> on Bitpay Exchange
                     </h1>
                     <p className="text-white/40 text-sm font-bold uppercase tracking-[0.2em] max-w-2xl mx-auto">
                         Complete the form below, pay the listing fee, and our team will verify and list your token within 24 hours.
@@ -126,7 +126,7 @@ export default function ListTokenPage() {
                         {/* Left: Benefits */}
                         <div className="lg:col-span-4 space-y-6">
                             <div className="p-8 bg-white/[0.03] border border-white/10 rounded-[3rem] space-y-8">
-                                <h2 className="text-xl font-black uppercase tracking-tight">Why List on <span className="text-teal-500">Tez Exchange?</span></h2>
+                                <h2 className="text-xl font-black uppercase tracking-tight">Why List on <span className="text-teal-500">Bitpay Exchange?</span></h2>
                                 {[
                                     { icon: <Zap className="w-5 h-5" />, title: 'Instant Liquidity', desc: 'Direct connection to major BSC pools for seamless trading volume.' },
                                     { icon: <ShieldCheck className="w-5 h-5" />, title: 'Verified Trust Badge', desc: 'B20 Verified badge enhances project credibility and investor confidence.' },
@@ -266,7 +266,7 @@ export default function ListTokenPage() {
                                     </button>
 
                                     <p className="text-center text-[10px] text-white/25 font-bold uppercase tracking-widest">
-                                        Fee is non-refundable. Tez Exchange reserves the right to reject any application.
+                                        Fee is non-refundable. Bitpay Exchange reserves the right to reject any application.
                                     </p>
                                 </form>
                             </div>

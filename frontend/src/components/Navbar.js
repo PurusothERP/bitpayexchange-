@@ -82,7 +82,7 @@ export default function Navbar() {
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-2xl font-black tracking-tighter text-gray-900 text-premium-gradient drop-shadow-md whitespace-nowrap leading-none">
-                                    TEZ EXCHANGE
+                                    BITPAY EXCHANGE
                                 </span>
                                 <span className="text-[10px] font-black uppercase tracking-[0.2em] leading-tight mt-0.5" style={{color:'#009393'}}>
                                     Intelligence Hub

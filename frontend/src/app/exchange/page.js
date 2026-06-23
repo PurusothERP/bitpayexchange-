@@ -2078,7 +2078,7 @@ const ExchangeContent = () => {
                     <div className="flex flex-col items-center lg:items-start shrink-0">
                         <div className="flex items-center gap-4 mb-3">
                             <h1 className="text-4xl md:text-[3.5rem] font-black tracking-tighter text-slate-900 leading-[0.9] flex flex-col">
-                                <span className="opacity-40 text-sm tracking-[0.4em] mb-2 uppercase font-black">Tez Exchange</span>
+                                <span className="opacity-40 text-sm tracking-[0.4em] mb-2 uppercase font-black">Bitpay Exchange</span>
                                 <span>CRYPTO <span className="text-teal-600 relative">
                                     EXCHANGE
                                     <div className="absolute -bottom-2 left-0 w-full h-1 bg-teal-600/20 rounded-full" />
@@ -2456,7 +2456,7 @@ const ExchangeContent = () => {
                                         <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-[10px] font-black uppercase tracking-widest mb-8">
                                             <Sparkles size={12} className="text-teal-400" /> AI-Driven Fiat Bridge
                                         </div>
-                                        <h2 className="text-4xl font-black italic tracking-tighter mb-4">TEZ <span className="text-teal-400">FIAT</span></h2>
+                                        <h2 className="text-4xl font-black italic tracking-tighter mb-4">BITPAY <span className="text-teal-400">FIAT</span></h2>
                                         <p className="text-slate-400 font-medium leading-relaxed">
                                             Institutional grade INR to Crypto bridge. 
                                             Instant settlements, best-in-class rates, 
@@ -3670,129 +3670,6 @@ const ExchangeContent = () => {
                                     <path d="M63.04 39.741c-2.002 8.043-10.22 12.946-18.261 10.943L41.365 58.33l-4.896-1.22 3.33-13.355c-1.29-.323-2.61-.634-3.924-.937l-3.354 13.45-4.897-1.222 3.414-13.702c-1.066-.242-2.112-.475-3.136-.717L22.95 56.622l-4.896-1.222 3.333-13.364c-.84-.19-1.666-.375-2.457-.573l-.003-.01-6.75-1.685 1.282-5.143s3.632.833 3.555.885c1.983.495 2.342-1.808 2.342-1.808l-5.626-22.56c-.156-.39-.548-.975-1.436-1.196.066-.016-3.555-.885-3.555-.885l2.42-9.71L18.423 2.11c.84.21 1.667.433 2.476.66l3.355-13.454 4.896 1.222-3.33 13.363c1.314.333 2.593.65 3.844.954l3.354-13.45 4.897 1.222-3.416 13.705c8.39 1.583 14.673 5.92 16.4 14.856.035.176.05.353.076.52.004.015.01.03.013.046 1.39 11.16-5.462 17.155-13.844 19.24 6.643 1.91 11.64 5.934 13.366 12.83zm-11.96-12.913c-1.523-6.115-10.158-7.534-15.823-8.95l-3.04 12.19c5.664 1.416 20.386 4.214 18.862-3.24zm3.042 12.21c-1.663-6.674-12.015-8.243-18.665-9.904l-3.362 13.488c6.65 1.661 23.69 4.793 22.027-3.584z" fill="currentColor"/>
                                 </svg>
                             </div>
-                            {/* ── INSTITUTIONAL INTELLIGENCE HUD ── */}
-                            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 px-4">
-                                {/* Market Sentiment HUD */}
-                                <div className="bg-white/90 backdrop-blur-3xl border border-slate-200/60 rounded-[1.5rem] p-5 shadow-xl relative overflow-hidden group">
-                                    <div className="absolute top-0 right-0 p-4 opacity-30 group-hover:opacity-100 transition-opacity">
-                                        <Brain className="w-4 h-4 text-teal-600 animate-pulse" />
-                                    </div>
-                                    <div className="space-y-5 relative z-10">
-                                        <div className="flex items-center justify-between">
-                                            <div className="space-y-0.5">
-                                                <div className="flex items-center gap-1.5 text-teal-600 mb-1">
-                                                    <div className="w-1 h-1 bg-teal-600 rounded-full animate-ping" />
-                                                    <span className="text-[8px] font-black uppercase tracking-[0.2em]">Live Pulse</span>
-                                                </div>
-                                                <h2 className="text-sm font-black text-slate-900 tracking-tight uppercase">Sentiment <span className="text-teal-600">Index</span></h2>
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="text-3xl font-black text-slate-900 tracking-tighter leading-none">74.2</div>
-                                                <span className="text-[8px] font-black text-emerald-500 uppercase">+12.4%</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden p-0.5 border border-slate-200">
-                                                <motion.div 
-                                                    initial={{ width: 0 }} animate={{ width: '74.2%' }}
-                                                    className="h-full bg-gradient-to-r from-teal-400 to-indigo-600 rounded-full"
-                                                />
-                                            </div>
-                                            <div className="flex justify-between text-[7px] font-black text-slate-400 uppercase tracking-widest">
-                                                <span>Fear</span>
-                                                <span className="text-teal-600">Neutral</span>
-                                                <span>Greed</span>
-                                            </div>
-                                        </div>
-
-                                        <div className="flex items-center gap-4 pt-4 border-t border-slate-100">
-                                            <div className="flex-1 space-y-1">
-                                                <div className="flex justify-between items-center text-[8px] font-bold">
-                                                    <span className="text-slate-400">SOCIAL</span>
-                                                    <span className="text-emerald-500">+85%</span>
-                                                </div>
-                                                <div className="flex justify-between items-center text-[8px] font-bold">
-                                                    <span className="text-slate-400">WHALES</span>
-                                                    <span className="text-teal-600">HIGH</span>
-                                                </div>
-                                            </div>
-                                            <div className="w-px h-6 bg-slate-100" />
-                                            <div className="flex-1">
-                                                <p className="text-[7px] font-black text-teal-800 leading-tight uppercase opacity-70">Meme divergence detected. Accumulate dips.</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Liquidity Heatmap HUD */}
-                                <div className="lg:col-span-3 bg-slate-900 rounded-[1.5rem] p-5 shadow-xl relative overflow-hidden border border-white/5">
-                                    <div className="absolute inset-0 opacity-5 bg-[radial-gradient(circle_at_50%_50%,#009393,transparent_70%)]" />
-                                    <div className="flex items-center justify-between mb-4 relative z-10">
-                                        <div className="flex items-center gap-4">
-                                            <div className="space-y-0.5">
-                                                <div className="flex items-center gap-1.5 text-teal-500">
-                                                    <Zap size={10} className="animate-pulse" />
-                                                    <span className="text-[8px] font-black uppercase tracking-[0.2em]">Institutional</span>
-                                                </div>
-                                                <h2 className="text-sm font-black text-white tracking-tight uppercase">Liquidity <span className="text-teal-500 italic">Nexus</span></h2>
-                                            </div>
-                                            <div className="h-6 w-px bg-white/10 mx-2" />
-                                            <div>
-                                                <p className="text-[12px] font-black text-white tracking-tighter">$14.2B <span className="text-emerald-500 text-[8px]">+2.4%</span></p>
-                                                <p className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Global Pool</p>
-                                            </div>
-                                        </div>
-                                        
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex items-center gap-3 text-[8px] font-black uppercase tracking-widest text-white/30">
-                                                <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-rose-500 rounded-full" /> SELL</div>
-                                                <div className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-teal-500 rounded-full" /> ACC</div>
-                                            </div>
-                                            <div className="bg-white/5 px-3 py-1.5 rounded-lg border border-white/10">
-                                                <span className="text-[8px] font-black text-white uppercase tracking-widest flex items-center gap-1.5">
-                                                    <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" /> SYNC
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <div className="grid grid-cols-8 gap-1.5 relative z-10">
-                                        {['AI', 'RWA', 'MEME', 'INFRA', 'DEFI', 'L1', 'L2', 'GAME'].map((sector, sIdx) => (
-                                            <div key={sector} className="space-y-1.5">
-                                                <div className="grid grid-cols-3 gap-1">
-                                                    {[...Array(3)].map((_, i) => {
-                                                        const intensity = mounted ? Math.abs(Math.sin((sIdx + 1) * (i + 1) * 0.5)) : 0.5;
-                                                        const isSell = intensity < 0.2;
-                                                        const isBuy = intensity > 0.7;
-                                                        return (
-                                                            <div 
-                                                                key={i}
-                                                                className="h-6 rounded-md border border-white/5 relative overflow-hidden group/cell"
-                                                                style={{ 
-                                                                    backgroundColor: isBuy ? `rgba(13, 148, 136, ${0.4 + intensity * 0.5})` : 
-                                                                                     isSell ? `rgba(244, 63, 94, 0.15)` : 
-                                                                                     `rgba(255, 255, 255, 0.05)` 
-                                                                }}
-                                                            >
-                                                                {isBuy && <div className="absolute inset-0 bg-white/10 animate-pulse" />}
-                                                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity bg-slate-900/90">
-                                                                    <span className="text-[5px] font-black text-white">{(intensity * 100).toFixed(0)}%</span>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                                <p className="text-[6px] font-black text-slate-500 text-center uppercase tracking-tighter">{sector}</p>
-                                                <p className="text-[5px] font-black text-teal-500/60 text-center uppercase tracking-tighter mt-0.5">
-                                                    ${(mounted ? Math.abs(Math.sin(sIdx + 1)) * 500 + 100 : 250).toFixed(0)}M
-                                                </p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
                             {/* ── INSTITUTIONAL TICKER ── */}
 
                             <div className="relative overflow-hidden py-4 -mx-4">
@@ -4196,7 +4073,7 @@ const ExchangeContent = () => {
                                             </div>
                                             
                                             <div className="space-y-4">
-                                                <h2 className="text-5xl font-black text-white tracking-tighter leading-[0.9]">TEZ PROTOCOL<br/><span className="text-teal-500 italic">GENESIS ASSET</span></h2>
+                                                <h2 className="text-5xl font-black text-white tracking-tighter leading-[0.9]">BITPAY PROTOCOL<br/><span className="text-teal-500 italic">GENESIS ASSET</span></h2>
                                                 <p className="text-slate-400 text-lg font-medium leading-relaxed max-w-md">
                                                     Deploying institutional-grade liquidity sync across the global nexus. Experience zero-slippage execution on the BSC mainnet.
                                                 </p>
@@ -10036,7 +9913,7 @@ const StocksTerminal = ({ setMode, setToToken, binancePing, krakenStatus }) => {
                                     <FileText size={12} className="text-teal-600" /> Asset Description
                                 </h4>
                                 <p className="text-xs font-bold text-slate-500 leading-relaxed uppercase">
-                                    {fundamentals?.description || "Description pending institutional audit. This asset represents a tokenized global equity index within the Tez Exchange ecosystem, maintained via high-frequency oracles and liquidity pools."}
+                                    {fundamentals?.description || "Description pending institutional audit. This asset represents a tokenized global equity index within the Bitpay Exchange ecosystem, maintained via high-frequency oracles and liquidity pools."}
                                 </p>
                             </div>
                             <div className="lg:col-span-4 bg-slate-50 rounded-3xl p-6 border border-slate-100">

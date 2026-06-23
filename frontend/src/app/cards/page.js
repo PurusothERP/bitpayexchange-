@@ -124,11 +124,11 @@ export default function CardsPage() {
                         className="inline-flex items-center gap-3 px-6 py-2 bg-white shadow-xl shadow-gray-200/50 rounded-full border border-gray-100 mb-8"
                     >
                         <CreditCard className="w-4 h-4 text-teal-600" />
-                        <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Tez Cards • The Future of Spending</span>
+                        <span className="text-[10px] font-black text-gray-900 uppercase tracking-widest">Bitpay Cards • The Future of Spending</span>
                     </motion.div>
                     
                     <h1 className="text-5xl md:text-8xl font-black text-gray-900 tracking-tighter mb-8 leading-none">
-                        TEZ <span className="text-teal-600">CARD</span>
+                        BITPAY <span className="text-teal-600">CARD</span>
                     </h1>
                     <p className="text-lg md:text-2xl font-bold text-gray-400 uppercase tracking-[0.2em] max-w-3xl mx-auto leading-relaxed">
                         Spend your digital assets anywhere in the physical world. Instant loads, global reach.
@@ -143,11 +143,11 @@ export default function CardsPage() {
                         colorClass="bg-teal-500"
                         image="/assets/tezcard_platinum.png"
                         features={[
-                            "Instant Loading from Tez Exchange",
+                            "Instant Loading from Bitpay Exchange",
                             "Universal Online Purchase Support",
                             "Free Virtual Card Creation",
                             "1.5% Standard Transaction Fee",
-                            "Connects directly with Tez Wallet"
+                            "Connects directly with Bitpay Wallet"
                         ]}
                     />
                     <CardVariant 
@@ -177,7 +177,7 @@ export default function CardsPage() {
                                 </div>
                                 <h3 className="text-3xl font-black text-white uppercase tracking-tighter">Instant Loading</h3>
                                 <p className="text-gray-400 font-bold leading-relaxed uppercase text-xs tracking-widest">
-                                    Sell crypto on Tez Exchange and your funds are instantly available on your Tez card. No waiting for banking cycles.
+                                    Sell crypto on Bitpay Exchange and your funds are instantly available on your Bitpay card. No waiting for banking cycles.
                                 </p>
                             </div>
                             <div className="space-y-6">

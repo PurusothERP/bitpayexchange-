@@ -15,7 +15,7 @@ import {
     Building2, Diamond, Flame, Calendar, Award, BarChart2, ArrowDownCircle, AlertCircle, Droplets, ArrowRight
 } from 'lucide-react';
 
-import NueraCommand from '@/components/NueraCommand';
+
 
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
@@ -2092,8 +2092,8 @@ const ExchangeContent = () => {
                                     </div>
                                     Network Online
                                 </div>
-                                <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-slate-900 text-white rounded-full border border-slate-800 shadow-xl">
-                                    <Sparkles size={10} className="text-teal-400" />
+                                <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full border shadow-sm" style={{ background: 'rgba(220, 20, 60, 0.06)', color: '#dc143c', borderColor: 'rgba(220, 20, 60, 0.15)' }}>
+                                    <Sparkles size={10} className="animate-pulse" style={{ color: '#dc143c' }} />
                                     <span className="text-[9px] font-black uppercase tracking-widest">
                                         Nuera AI Core Active
                                     </span>
@@ -2237,8 +2237,8 @@ const ExchangeContent = () => {
                                                         }`}
                                                 >
                                                     {isActive && <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />}
-                                                    <div className="w-8 h-8 rounded-xl overflow-hidden bg-white border border-slate-100 shadow-sm flex items-center justify-center">
-                                                        <img src={qt.image} className="w-full h-full object-cover" onError={e => e.target.style.display='none'} alt="" />
+                                                    <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center">
+                                                        <img src={qt.image} className="w-10 h-10 object-contain" onError={e => e.target.style.display='none'} alt="" />
                                                     </div>
                                                     <p className={`text-[10px] font-black tracking-wide leading-none ${isActive ? 'text-teal-700' : 'text-slate-700'}`}>{qt.symbol}</p>
                                                     <p className="text-[8px] text-slate-400 font-medium leading-none">{qt.network}</p>
@@ -2306,9 +2306,17 @@ const ExchangeContent = () => {
                                                     setFromToken(toToken);
                                                     setToToken(temp);
                                                 }}
-                                                className="w-10 h-10 bg-white text-slate-500 hover:text-teal-600 rounded-xl flex items-center justify-center shadow-md border border-slate-100 hover:scale-110 active:scale-95 transition-all"
+                                                style={{
+                                                    width:'40px',height:'40px',borderRadius:'50%',
+                                                    background:'#ffffff',
+                                                    border:'2px solid #dc143c',
+                                                    display:'flex',alignItems:'center',justifyContent:'center',
+                                                    cursor:'pointer',
+                                                    boxShadow:'0 2px 12px rgba(220,20,60,0.25)',
+                                                    transition:'all 0.15s'
+                                                }}
                                             >
-                                                <ArrowDown className="w-5 h-5" />
+                                                <ArrowDown style={{width:'18px',height:'18px',color:'#dc143c'}} />
                                             </button>
                                         </div>
 
@@ -2448,36 +2456,37 @@ const ExchangeContent = () => {
                         >
                             <div className="bg-white rounded-[3rem] border border-slate-200 shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[600px]">
                                 {/* Left Side: Brand & Info */}
-                                <div className="md:w-1/3 bg-slate-900 p-12 text-white flex flex-col justify-between relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 p-8 opacity-10">
-                                        <DollarSign size={160} className="rotate-12" />
+                                <div className="md:w-1/3 p-12 text-slate-800 flex flex-col justify-between relative overflow-hidden" style={{ background: 'linear-gradient(160deg, rgba(220,20,60,0.04) 0%, #f9f9f9 100%)', borderRight: '1px solid rgba(0,0,0,0.07)' }}>
+                                    <div className="absolute top-0 right-0 p-8 opacity-[0.03]">
+                                        <DollarSign size={160} className="rotate-12" style={{ color: '#dc143c' }} />
                                     </div>
                                     <div className="relative z-10">
-                                        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-[10px] font-black uppercase tracking-widest mb-8">
-                                            <Sparkles size={12} className="text-teal-400" /> AI-Driven Fiat Bridge
+                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-8" style={{ background: 'rgba(220, 20, 60, 0.06)', color: '#dc143c', border: '1px solid rgba(220, 20, 60, 0.15)' }}>
+                                            <Sparkles size={12} style={{ color: '#dc143c' }} /> AI-Driven Fiat Bridge
                                         </div>
-                                        <h2 className="text-4xl font-black italic tracking-tighter mb-4">BITPAY <span className="text-teal-400">FIAT</span></h2>
-                                        <p className="text-slate-400 font-medium leading-relaxed">
+                                        <h2 className="text-4xl font-black italic tracking-tighter mb-4 text-slate-900">BITPAY <span style={{ color: '#dc143c' }}>FIAT</span></h2>
+                                        <p className="text-slate-500 font-medium leading-relaxed">
                                             Institutional grade INR to Crypto bridge. 
                                             Instant settlements, best-in-class rates, 
                                             and AI-optimized liquidity routing.
                                         </p>
                                     </div>
-                                    <div className="relative z-10 p-6 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm">
+                                    <div className="relative z-10 p-6 bg-white rounded-2xl border border-slate-200/80 backdrop-blur-sm shadow-sm">
                                         <div className="flex items-center gap-4 mb-4">
-                                            <div className="w-10 h-10 rounded-xl bg-teal-500 flex items-center justify-center">
-                                                <Zap className="text-white w-6 h-6" />
+                                            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'rgba(220, 20, 60, 0.06)', color: '#dc143c' }}>
+                                                <Zap className="w-6 h-6" style={{ color: '#dc143c' }} />
                                             </div>
                                             <div>
                                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Live Rate</p>
-                                                <p className="text-lg font-black font-mono">1 USDT ≈ ₹91.42</p>
+                                                <p className="text-lg font-black font-mono text-slate-900">1 USDT ≈ ₹91.42</p>
                                             </div>
                                         </div>
-                                        <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
+                                        <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
                                             <motion.div 
                                                 animate={{ x: [-100, 300] }} 
                                                 transition={{ repeat: Infinity, duration: 2, ease: "linear" }} 
-                                                className="w-20 h-full bg-teal-400" 
+                                                className="w-20 h-full" 
+                                                style={{ background: '#dc143c' }}
                                             />
                                         </div>
                                     </div>
@@ -2486,15 +2495,15 @@ const ExchangeContent = () => {
                                 {/* Right Side: Simplified Form */}
                                 <div className="flex-1 p-12 bg-white flex flex-col justify-center items-center">
                                     <div className="max-w-md w-full text-center space-y-8">
-                                        <div className="w-20 h-20 bg-indigo-50 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner">
-                                            <Smartphone className="w-10 h-10 text-indigo-600" />
+                                        <div className="w-20 h-20 bg-rose-50 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-inner border border-rose-100">
+                                            <Smartphone className="w-10 h-10 text-rose-600" />
                                         </div>
                                         <h3 className="text-2xl font-black text-slate-900 tracking-tight">Access Fiat Terminal</h3>
                                         <p className="text-slate-500 font-medium">
                                             For security and compliance, the Fiat Portal requires a dedicated environment. 
                                             Click below to enter the secure bridge.
                                         </p>
-                                        <Link href="/fiat" className="inline-flex items-center gap-4 px-12 py-5 bg-indigo-600 text-white rounded-[2rem] font-black uppercase tracking-widest shadow-2xl shadow-indigo-600/30 hover:bg-indigo-700 transition-all hover:scale-105 active:scale-95">
+                                        <Link href="/fiat" className="inline-flex items-center gap-4 px-12 py-5 text-white rounded-[2rem] font-black uppercase tracking-widest transition-all hover:scale-105 active:scale-95" style={{ background: 'linear-gradient(135deg, #dc143c, #a30f27)', boxShadow: '0 8px 25px rgba(220,20,60,0.25)' }}>
                                             Enter Fiat Portal <ArrowRight className="w-5 h-5" />
                                         </Link>
                                     </div>
@@ -2637,14 +2646,14 @@ const ExchangeContent = () => {
                                                 className={`w-full flex items-center justify-between p-3 rounded-xl transition-all group/pair relative overflow-hidden border ${toToken?.id === t.id ? 'bg-teal-50 border-teal-600 shadow-lg shadow-teal-200' : 'bg-transparent border-transparent hover:bg-slate-50 hover:border-slate-200'}`}
                                             >
                                                 {/* Left Performance Indicator */}
-                                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${t.price_change_percentage_24h >= 0 ? 'bg-emerald-500/30' : 'bg-rose-500/30'}`} />
+                                                <div style={{position:'absolute',left:0,top:0,bottom:0,width:'3px',background: t.price_change_percentage_24h >= 0 ? 'rgba(16,185,129,0.8)' : 'rgba(239,68,68,0.8)',borderRadius:'2px 0 0 2px'}} />
                                                 
                                                 <div className="flex items-center gap-3 relative z-10">
-                                                    <div className={`w-8 h-8 rounded-lg p-1 border flex items-center justify-center shrink-0 shadow-sm transition-transform group-hover/pair:scale-110 ${toToken?.id === t.id ? 'bg-white/10 border-white/20' : 'bg-white border-slate-200'}`}>
+                                                    <div className="w-8 h-8 rounded-full shrink-0 overflow-hidden flex items-center justify-center bg-slate-900" style={{flexShrink:0}}>
                                                         {t.image ? (
-                                                            <img src={t.image} className="w-full h-full object-contain rounded-sm" alt="" />
+                                                            <img src={t.image} className="w-6 h-6 object-contain rounded-full" alt="" />
                                                         ) : (
-                                                            <div className="w-full h-full bg-teal-600 rounded-sm flex items-center justify-center text-[10px] font-black text-white">{t.symbol?.charAt(0)}</div>
+                                                            <div className="w-full h-full bg-teal-600 rounded-full flex items-center justify-center text-[10px] font-black text-white">{t.symbol?.charAt(0)}</div>
                                                         )}
                                                     </div>
                                                     <div className="text-left">
@@ -2981,7 +2990,8 @@ const ExchangeContent = () => {
                                                     <button 
                                                         key={net}
                                                         onClick={() => setNetworkFilter(net)}
-                                                        className={`px-4 py-3 rounded-[1.2rem] flex items-center gap-2 transition-all whitespace-nowrap ${networkFilter === net ? 'bg-teal-600 text-white shadow-lg scale-105' : 'text-slate-400 hover:text-slate-900'}`}
+                                                        className={`px-4 py-3 rounded-[1.2rem] flex items-center gap-2 transition-all whitespace-nowrap ${networkFilter === net ? 'text-white scale-105' : 'text-slate-400 hover:text-[#dc143c]'}`}
+                                                        style={networkFilter === net ? { background: 'linear-gradient(135deg, #dc143c, #a30f27)', boxShadow: '0 4px 12px rgba(220,20,60,0.25)' } : {}}
                                                     >
                                                         {net === 'ALL' ? <Globe className="w-4 h-4 flex-shrink-0" /> : <NetPill net={net} />}
                                                     </button>
@@ -3001,13 +3011,14 @@ const ExchangeContent = () => {
                                                 { id: 'new', label: 'Newly Launched', icon: <Sparkles className="w-3.5 h-3.5 text-cyan-500" /> },
                                                 { id: 'gainers', label: 'Gainers', icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> },
                                                 { id: 'losers', label: 'Losers', icon: <TrendingDown className="w-3.5 h-3.5 text-rose-500" /> },
-                                                { id: 'trending', label: 'Trending', icon: <TrendingUp className="w-3.5 h-3.5 text-teal-600" /> },
-                                                { id: 'volume', label: 'High Volume', icon: <Activity className="w-3.5 h-3.5 text-teal-600" /> },
+                                                { id: 'trending', label: 'Trending', icon: <TrendingUp className="w-3.5 h-3.5 text-[#dc143c]" /> },
+                                                { id: 'volume', label: 'High Volume', icon: <Activity className="w-3.5 h-3.5 text-[#dc143c]" /> },
                                             ].map(cat => (
                                                 <button
                                                     key={cat.id}
                                                     onClick={() => setMarketCategory(cat.id)}
-                                                    className={`px-6 py-3 rounded-[1.2rem] flex items-center gap-2.5 transition-all ${marketCategory === cat.id ? 'bg-gray-900 text-white shadow-lg scale-105' : 'text-slate-400 hover:text-slate-900 hover:bg-white'}`}
+                                                    className={`px-6 py-3 rounded-[1.2rem] flex items-center gap-2.5 transition-all ${marketCategory === cat.id ? 'text-white scale-105' : 'text-slate-400 hover:text-[#dc143c] hover:bg-white'}`}
+                                                    style={marketCategory === cat.id ? { background: 'linear-gradient(135deg, #dc143c, #a30f27)', boxShadow: '0 4px 12px rgba(220,20,60,0.25)' } : {}}
                                                 >
                                                     {cat.icon} {cat.label}
                                                 </button>
@@ -3035,13 +3046,15 @@ const ExchangeContent = () => {
                                         <div className="flex bg-slate-50 border border-slate-200/60 p-1.5 rounded-2xl gap-1">
                                             <button
                                                 onClick={() => setViewType('card')}
-                                                className={`p-3 rounded-xl transition-all ${viewType === 'card' ? 'bg-gray-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-900'}`}
+                                                className={`p-3 rounded-xl transition-all ${viewType === 'card' ? 'text-white shadow-lg' : 'text-slate-400 hover:text-[#dc143c]'}`}
+                                                style={viewType === 'card' ? { background: 'linear-gradient(135deg, #dc143c, #a30f27)', boxShadow: '0 4px 12px rgba(220,20,60,0.25)' } : {}}
                                             >
                                                 <LayoutGrid className="w-4 h-4" />
                                             </button>
                                             <button
                                                 onClick={() => setViewType('list')}
-                                                className={`p-3 rounded-xl transition-all ${viewType === 'list' ? 'bg-gray-900 text-white shadow-lg' : 'text-slate-400 hover:text-slate-900'}`}
+                                                className={`p-3 rounded-xl transition-all ${viewType === 'list' ? 'text-white shadow-lg' : 'text-slate-400 hover:text-[#dc143c]'}`}
+                                                style={viewType === 'list' ? { background: 'linear-gradient(135deg, #dc143c, #a30f27)', boxShadow: '0 4px 12px rgba(220,20,60,0.25)' } : {}}
                                             >
                                                 <List className="w-4 h-4" />
                                             </button>
@@ -3716,105 +3729,147 @@ const ExchangeContent = () => {
                                 </motion.div>
                             </div>
 
-                            {/* ── MARKET COMMAND CENTER ── */}
+                            {/* ── MARKET COMMAND CENTER ── REDESIGNED ── */}
                             <div className="mx-4 relative">
-                                <div className="bg-white/90 backdrop-blur-3xl shadow-xl border border-slate-200/60 rounded-[2.5rem] overflow-hidden">
+                                <div className="rounded-[2rem] overflow-hidden" style={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
                                     <div className="grid grid-cols-1 lg:grid-cols-12">
-                                        {/* Left Side: Ecosystem Hub */}
-                                        <div className="lg:col-span-4 bg-slate-900 p-5 flex flex-col justify-between relative overflow-hidden">
-                                            <div className="absolute top-0 right-0 w-32 h-32 bg-teal-600/20 blur-[80px] -mr-16 -mt-16" />
-                                            <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-600/20 blur-[80px] -ml-16 -mb-16" />
-                                            
+
+                                        {/* ── LEFT PANEL: Network Selector ── */}
+                                        <div className="lg:col-span-4 p-5 flex flex-col justify-between relative overflow-hidden" style={{ background: 'linear-gradient(160deg, rgba(220,20,60,0.04) 0%, #f9f9f9 100%)', borderRight: '1px solid rgba(0,0,0,0.07)' }}>
+                                            {/* Glow blobs */}
+                                            <div className="absolute top-0 right-0 w-40 h-40 rounded-full blur-[100px] pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(220,20,60,0.12) 0%, transparent 70%)' }} />
+                                            <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full blur-[80px] pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(220,20,60,0.06) 0%, transparent 70%)' }} />
+
                                             <div className="relative z-10 space-y-4">
-                                                <div className="space-y-0.5">
-                                                    <div className="flex items-center gap-2 text-teal-500 mb-1">
-                                                        <Layers size={10} className="animate-pulse" />
-                                                        <span className="text-[8px] font-black uppercase tracking-[0.3em]">Institutional Hub</span>
+                                                {/* Header */}
+                                                <div className="space-y-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #dc143c, #a30f27)' }}>
+                                                            <Layers size={9} className="text-white" />
+                                                        </div>
+                                                        <span className="text-[8px] font-black uppercase tracking-[0.35em]" style={{ color: 'rgba(220,20,60,0.7)' }}>Chain Hub</span>
                                                     </div>
-                                                    <h2 className="text-xl font-black text-white tracking-tighter leading-none uppercase">Asset<br/><span className="text-teal-500 italic">Ecosystems</span></h2>
+                                                    <h2 className="text-2xl font-black tracking-tighter leading-none uppercase" style={{ color: '#171717' }}>
+                                                        Asset<br />
+                                                        <span style={{ background: 'linear-gradient(90deg, #dc143c, #a30f27)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Ecosystems</span>
+                                                    </h2>
                                                 </div>
 
-                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                                                    <button 
+                                                {/* Network Grid */}
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-[290px] overflow-y-auto pr-1 custom-scrollbar">
+                                                    <button
                                                         onClick={() => setNetworkFilter('ALL')}
-                                                        className={`flex items-center justify-center gap-2 py-2.5 rounded-xl transition-all text-[9px] font-black uppercase tracking-widest ${networkFilter === 'ALL' ? 'bg-white text-slate-900 shadow-lg' : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'}`}
+                                                        className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl transition-all text-[9px] font-black uppercase tracking-widest"
+                                                        style={networkFilter === 'ALL'
+                                                            ? { background: 'linear-gradient(135deg, #dc143c, #a30f27)', color: '#fff', boxShadow: '0 4px 20px rgba(220,20,60,0.3)' }
+                                                            : { background: '#f5f5f5', color: '#737373', border: '1px solid rgba(0,0,0,0.08)' }}
                                                     >
-                                                        <Globe size={12} /> Global
+                                                        <Globe size={11} /> Global
                                                     </button>
                                                     {NETWORKS_LIST.map(net => (
-                                                        <button 
+                                                        <button
                                                             key={net}
                                                             onClick={() => setNetworkFilter(net)}
-                                                            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all text-[9px] font-black uppercase tracking-widest ${networkFilter === net ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/20' : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'}`}
+                                                            className="flex items-center gap-1.5 px-2.5 py-2.5 rounded-xl transition-all text-[9px] font-black uppercase tracking-widest"
+                                                            style={networkFilter === net
+                                                                ? { background: 'linear-gradient(135deg, #dc143c, #a30f27)', color: '#fff', boxShadow: '0 4px 16px rgba(220,20,60,0.25)' }
+                                                                : { background: '#f5f5f5', color: '#525252', border: '1px solid rgba(0,0,0,0.07)' }}
                                                         >
-                                                            <img src={NETWORK_LOGOS[net] || getNetworkLogo(net)} alt="" className="w-3 h-3 rounded-full bg-white p-0.5" />
+                                                            <img src={NETWORK_LOGOS[net] || getNetworkLogo(net)} alt="" className="w-3 h-3 rounded-full" style={{ background: 'rgba(255,255,255,0.1)', padding: '1px' }} />
                                                             {net}
                                                         </button>
                                                     ))}
                                                 </div>
                                             </div>
 
-                                            <div className="relative z-10 pt-6">
-                                                <div className="flex items-center gap-3 text-white/30">
+                                            {/* Footer nodes */}
+                                            <div className="relative z-10 pt-5">
+                                                <div className="flex items-center gap-3" style={{ color: 'rgba(0,0,0,0.3)' }}>
                                                     <div className="flex -space-x-1.5">
                                                         {[...Array(4)].map((_, i) => (
-                                                            <div key={i} className="w-5 h-5 rounded-full border border-slate-900 bg-slate-800 flex items-center justify-center text-[7px] font-black">
+                                                            <div key={i} className="w-5 h-5 rounded-full flex items-center justify-center text-[7px] font-black" style={{ background: 'rgba(220,20,60,0.12)', border: '1px solid rgba(220,20,60,0.2)', color: '#dc143c' }}>
                                                                 {i + 1}
                                                             </div>
                                                         ))}
                                                     </div>
-                                                    <span className="text-[7px] font-bold uppercase tracking-widest leading-tight">Nodes Online<br/>Ready</span>
+                                                    <span className="text-[7px] font-bold uppercase tracking-widest leading-tight" style={{ color: '#a3a3a3' }}>Nodes Online<br />Ready</span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Right Side: Search & Intelligence */}
-                                        <div className="lg:col-span-8 p-5 flex flex-col justify-between">
+                                        {/* ── RIGHT PANEL: Search + Charts + Controls ── */}
+                                        <div className="lg:col-span-8 p-5 flex flex-col justify-between" style={{ background: '#ffffff' }}>
                                             <div className="space-y-4">
+                                                {/* Search + View Toggle Row */}
                                                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                                                     <div className="flex-1 w-full max-w-xl relative group">
-                                                        <div className="absolute inset-y-0 left-5 flex items-center pointer-events-none">
-                                                            <Search className="w-4 h-4 text-slate-300 group-focus-within:text-teal-600 transition-colors" />
+                                                        <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                                                            <Search className="w-4 h-4 transition-colors" style={{ color: '#a3a3a3' }} />
                                                         </div>
                                                         <input
                                                             type="text"
-                                                            placeholder="Search Global Nexus..."
+                                                            placeholder="Search markets..."
                                                             value={marketSearch}
                                                             onChange={(e) => setMarketSearch(e.target.value)}
-                                                            className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3.5 pl-12 pr-10 text-[13px] font-bold tracking-tight outline-none focus:bg-white focus:border-teal-500/30 transition-all placeholder:text-slate-300 shadow-inner"
+                                                            className="w-full rounded-xl py-3 pl-11 pr-4 text-[13px] font-semibold outline-none transition-all"
+                                                            style={{
+                                                                background: '#f8f8f8',
+                                                                border: '1px solid #e5e5e5',
+                                                                color: '#171717',
+                                                                caretColor: '#dc143c',
+                                                            }}
+                                                            onFocus={e => e.target.style.borderColor = '#dc143c'}
+                                                            onBlur={e => e.target.style.borderColor = '#e5e5e5'}
                                                         />
                                                     </div>
 
-                                                    <div className="flex bg-slate-50 p-1.5 rounded-xl gap-1.5 border border-slate-100">
-                                                        <button onClick={() => setViewType('card')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-[9px] font-black uppercase tracking-widest ${viewType === 'card' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-400 hover:text-slate-900'}`}>
-                                                            <LayoutGrid size={12} /> Grid
+                                                    {/* Grid / List toggle */}
+                                                    <div className="flex p-1 rounded-xl gap-1" style={{ background: '#f2f2f2', border: '1px solid #e5e5e5' }}>
+                                                        <button
+                                                            onClick={() => setViewType('card')}
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-[9px] font-black uppercase tracking-widest"
+                                                            style={viewType === 'card'
+                                                                ? { background: 'linear-gradient(135deg, #dc143c, #a30f27)', color: '#fff', boxShadow: '0 2px 12px rgba(220,20,60,0.3)' }
+                                                                : { color: '#737373' }}
+                                                        >
+                                                            <LayoutGrid size={11} /> Grid
                                                         </button>
-                                                        <button onClick={() => setViewType('list')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-[9px] font-black uppercase tracking-widest ${viewType === 'list' ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-400 hover:text-slate-900'}`}>
-                                                            <List size={12} /> List
+                                                        <button
+                                                            onClick={() => setViewType('list')}
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-[9px] font-black uppercase tracking-widest"
+                                                            style={viewType === 'list'
+                                                                ? { background: 'linear-gradient(135deg, #dc143c, #a30f27)', color: '#fff', boxShadow: '0 2px 12px rgba(220,20,60,0.3)' }
+                                                                : { color: '#737373' }}
+                                                        >
+                                                            <List size={11} /> List
                                                         </button>
                                                     </div>
                                                 </div>
 
-                                                <div className="flex flex-wrap gap-1.5">
+                                                {/* Category Filter Tabs */}
+                                                <div className="flex flex-wrap gap-2">
                                                     {[
-                                                        { id: 'all', label: 'All Indices', icon: <Activity className="w-3.5 h-3.5" /> },
-                                                        { id: 'trending', label: 'Trending Alpha', icon: <Flame className="w-3.5 h-3.5" /> },
-                                                        { id: 'new', label: 'Newly Minted', icon: <Sparkles className="w-3.5 h-3.5" /> },
-                                                        { id: 'gainers', label: 'Top ROI', icon: <TrendingUp className="w-3.5 h-3.5" /> },
-                                                        { id: 'volume', label: 'High Velocity', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+                                                        { id: 'all', label: 'All Indices', icon: <Activity className="w-3 h-3" /> },
+                                                        { id: 'trending', label: 'Trending Alpha', icon: <Flame className="w-3 h-3" /> },
+                                                        { id: 'new', label: 'Newly Minted', icon: <Sparkles className="w-3 h-3" /> },
+                                                        { id: 'gainers', label: 'Top ROI', icon: <TrendingUp className="w-3 h-3" /> },
+                                                        { id: 'volume', label: 'High Velocity', icon: <BarChart3 className="w-3 h-3" /> },
                                                     ].map(cat => (
                                                         <button
                                                             key={cat.id}
                                                             onClick={() => setMarketCategory(cat.id)}
-                                                            className={`px-4 py-2 rounded-xl flex items-center gap-2 transition-all text-[9px] font-black uppercase tracking-widest ${marketCategory === cat.id ? 'bg-slate-900 text-white shadow-lg' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                                                            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
+                                                            style={marketCategory === cat.id
+                                                                ? { background: 'rgba(220,20,60,0.08)', color: '#dc143c', border: '1px solid rgba(220,20,60,0.3)', boxShadow: '0 2px 10px rgba(220,20,60,0.12)' }
+                                                                : { background: '#f5f5f5', color: '#737373', border: '1px solid #e5e5e5' }}
                                                         >
                                                             {cat.icon} {cat.label}
                                                         </button>
                                                     ))}
                                                 </div>
                                             </div>
-                                            
-                                            {/* ── DYNAMIC NETWORK INTELLIGENCE PIE CHARTS ── */}
+
+                                            {/* ── PIE CHARTS ── */}
                                             {(() => {
                                                 const stats = {};
                                                 const vols = {};
@@ -3823,67 +3878,75 @@ const ExchangeContent = () => {
                                                     stats[n] = (stats[n] || 0) + 1;
                                                     vols[n] = (vols[n] || 0) + (t.total_volume || 0);
                                                 });
-                                                const pColors = ['#14b8a6', '#8b5cf6', '#f43f5e', '#f59e0b', '#3b82f6'];
+                                                const pColors = ['#a78bfa', '#f59e0b', '#34d399', '#f87171', '#60a5fa'];
                                                 const distData = Object.entries(stats).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 5);
                                                 const volData = Object.entries(vols).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 5);
-                                                
+
                                                 if (distData.length === 0) {
                                                     return (
-                                                        <div className="flex flex-col md:flex-row gap-6 mt-6 mb-2 w-full items-center justify-center">
-                                                            <div className="flex-1 bg-slate-50/50 rounded-3xl p-5 border border-slate-100/50 flex items-center justify-center min-h-[160px] w-full animate-pulse">
-                                                                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Loading Analytics...</span>
+                                                        <div className="flex gap-4 mt-5 mb-2 w-full">
+                                                            <div className="flex-1 rounded-2xl p-5 flex items-center justify-center min-h-[150px] animate-pulse" style={{ background: '#f8f8f8', border: '1px solid #e5e5e5' }}>
+                                                                <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: '#a3a3a3' }}>Loading Analytics...</span>
                                                             </div>
                                                         </div>
                                                     );
                                                 }
                                                 return (
-                                                    <div className="flex flex-col md:flex-row gap-6 mt-6 mb-2 w-full flex-1 items-center justify-center min-h-[160px]">
-                                                        <div className="flex-1 bg-gradient-to-br from-slate-50 to-white rounded-3xl p-5 border border-slate-100/50 shadow-sm flex flex-col items-center justify-center min-h-[160px] w-full min-w-0 relative overflow-hidden group hover:border-teal-200 transition-all duration-500">
-                                                            <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 blur-[50px] group-hover:bg-teal-500/10 transition-colors duration-500" />
-                                                            <div className="flex items-center gap-2 mb-3 relative z-10 w-full justify-center">
-                                                                <PieChartIcon size={12} className="text-teal-500" />
-                                                                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Network Distribution</h4>
+                                                    <div className="flex flex-col md:flex-row gap-4 mt-5 mb-2 w-full flex-1 items-stretch min-h-[150px]">
+                                                        {/* Network Distribution */}
+                                                        <div className="flex-1 rounded-2xl p-4 flex flex-col items-center justify-center min-h-[150px] relative overflow-hidden group transition-all duration-500" style={{ background: '#f9f9f9', border: '1px solid #e5e5e5' }}
+                                                            onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(220,20,60,0.35)'}
+                                                            onMouseLeave={e => e.currentTarget.style.borderColor = '#e5e5e5'}
+                                                        >
+                                                            <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(220,20,60,0.07), transparent 70%)' }} />
+                                                            <div className="flex items-center gap-2 mb-2 relative z-10">
+                                                                <PieChartIcon size={11} style={{ color: '#dc143c' }} />
+                                                                <h4 className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: '#737373' }}>Network Distribution</h4>
                                                             </div>
-                                                            <div className="h-28 w-full relative z-10 min-h-[112px]">
+                                                            <div className="h-24 w-full relative z-10">
                                                                 <ResponsiveContainer width="100%" height="100%">
                                                                     <RePieChart>
-                                                                        <Pie data={distData} cx="50%" cy="50%" innerRadius={32} outerRadius={46} dataKey="value" stroke="none" paddingAngle={4}>
+                                                                        <Pie data={distData} cx="50%" cy="50%" innerRadius={28} outerRadius={42} dataKey="value" stroke="none" paddingAngle={3}>
                                                                             {distData.map((e, i) => <Cell key={i} fill={pColors[i % pColors.length]} />)}
                                                                         </Pie>
-                                                                        <Tooltip cursor={false} contentStyle={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 20px 40px -10px rgba(0,0,0,0.1)', fontSize: '11px', fontWeight: 'bold' }} />
+                                                                        <Tooltip cursor={false} contentStyle={{ borderRadius: '8px', background: '#ffffff', border: '1px solid rgba(0,0,0,0.1)', color: '#171717', fontSize: '11px', fontWeight: 'bold', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }} />
                                                                     </RePieChart>
                                                                 </ResponsiveContainer>
                                                             </div>
-                                                            <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-3 relative z-10">
+                                                            <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-2 relative z-10">
                                                                 {distData.map((e, i) => (
-                                                                    <div key={e.name} className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                                                                        <div className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: pColors[i % pColors.length] }} />
+                                                                    <div key={e.name} className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider" style={{ color: '#737373' }}>
+                                                                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: pColors[i % pColors.length] }} />
                                                                         {e.name}
                                                                     </div>
                                                                 ))}
                                                             </div>
                                                         </div>
 
-                                                        <div className="flex-1 bg-gradient-to-br from-slate-50 to-white rounded-3xl p-5 border border-slate-100/50 shadow-sm flex flex-col items-center justify-center min-h-[160px] w-full min-w-0 relative overflow-hidden group hover:border-violet-200 transition-all duration-500">
-                                                            <div className="absolute top-0 right-0 w-32 h-32 bg-violet-500/5 blur-[50px] group-hover:bg-violet-500/10 transition-colors duration-500" />
-                                                            <div className="flex items-center gap-2 mb-3 relative z-10 w-full justify-center">
-                                                                <Activity size={12} className="text-violet-500" />
-                                                                <h4 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Volume Dominance</h4>
+                                                        {/* Volume Dominance */}
+                                                        <div className="flex-1 rounded-2xl p-4 flex flex-col items-center justify-center min-h-[150px] relative overflow-hidden group transition-all duration-500" style={{ background: '#f9f9f9', border: '1px solid #e5e5e5' }}
+                                                            onMouseEnter={e => e.currentTarget.style.borderColor = 'rgba(220,20,60,0.35)'}
+                                                            onMouseLeave={e => e.currentTarget.style.borderColor = '#e5e5e5'}
+                                                        >
+                                                            <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(220,20,60,0.06), transparent 70%)' }} />
+                                                            <div className="flex items-center gap-2 mb-2 relative z-10">
+                                                                <Activity size={11} style={{ color: '#dc143c' }} />
+                                                                <h4 className="text-[9px] font-black uppercase tracking-[0.2em]" style={{ color: '#737373' }}>Volume Dominance</h4>
                                                             </div>
-                                                            <div className="h-28 w-full relative z-10 min-h-[112px]">
+                                                            <div className="h-24 w-full relative z-10">
                                                                 <ResponsiveContainer width="100%" height="100%">
                                                                     <RePieChart>
-                                                                        <Pie data={volData} cx="50%" cy="50%" innerRadius={32} outerRadius={46} dataKey="value" stroke="none" paddingAngle={4}>
+                                                                        <Pie data={volData} cx="50%" cy="50%" innerRadius={28} outerRadius={42} dataKey="value" stroke="none" paddingAngle={3}>
                                                                             {volData.map((e, i) => <Cell key={i} fill={pColors[i % pColors.length]} />)}
                                                                         </Pie>
-                                                                        <Tooltip formatter={(value) => `$${(value/1e6).toFixed(2)}M`} cursor={false} contentStyle={{ borderRadius: '16px', border: '1px solid rgba(255,255,255,0.5)', boxShadow: '0 20px 40px -10px rgba(0,0,0,0.1)', fontSize: '11px', fontWeight: 'bold' }} />
+                                                                        <Tooltip formatter={(value) => `$${(value / 1e6).toFixed(2)}M`} cursor={false} contentStyle={{ borderRadius: '8px', background: '#ffffff', border: '1px solid rgba(0,0,0,0.1)', color: '#171717', fontSize: '11px', fontWeight: 'bold', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }} />
                                                                     </RePieChart>
                                                                 </ResponsiveContainer>
                                                             </div>
-                                                            <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-3 relative z-10">
+                                                            <div className="flex flex-wrap justify-center gap-x-3 gap-y-1 mt-2 relative z-10">
                                                                 {volData.map((e, i) => (
-                                                                    <div key={e.name} className="flex items-center gap-1.5 text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                                                                        <div className="w-2 h-2 rounded-full shadow-sm" style={{ backgroundColor: pColors[i % pColors.length] }} />
+                                                                    <div key={e.name} className="flex items-center gap-1 text-[8px] font-bold uppercase tracking-wider" style={{ color: '#737373' }}>
+                                                                        <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: pColors[i % pColors.length] }} />
                                                                         {e.name}
                                                                     </div>
                                                                 ))}
@@ -3893,24 +3956,25 @@ const ExchangeContent = () => {
                                                 );
                                             })()}
 
-                                            <div className="flex flex-col md:flex-row items-center justify-between gap-4 mt-6 pt-6 border-t border-slate-100">
+                                            {/* ── STATUS BAR ── */}
+                                            <div className="flex flex-col md:flex-row items-center justify-between gap-4 mt-5 pt-4" style={{ borderTop: '1px solid rgba(139,92,246,0.12)' }}>
                                                 <div className="flex items-center gap-3">
-                                                    <div className="px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2">
-                                                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                                                        <span className="text-[9px] font-black text-emerald-600 uppercase tracking-widest">Integrity Active</span>
+                                                    <div className="px-3 py-1.5 rounded-xl flex items-center gap-2" style={{ background: 'rgba(52,211,153,0.08)', border: '1px solid rgba(52,211,153,0.2)' }}>
+                                                        <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#34d399' }} />
+                                                        <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: '#34d399' }}>Integrity Active</span>
                                                     </div>
-                                                    <div className="flex items-center gap-1.5 text-slate-400">
-                                                        <Info size={10} />
-                                                        <span className="text-[8px] font-bold uppercase tracking-widest">RPC: 0.2ms</span>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Info size={10} style={{ color: 'rgba(196,181,253,0.3)' }} />
+                                                        <span className="text-[8px] font-bold uppercase tracking-widest" style={{ color: 'rgba(196,181,253,0.3)' }}>RPC: 0.2ms</span>
                                                     </div>
                                                 </div>
-
                                                 <div className="flex items-center gap-3">
-                                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Sort</span>
+                                                    <span className="text-[9px] font-black uppercase tracking-widest" style={{ color: 'rgba(196,181,253,0.4)' }}>Sort</span>
                                                     <select
                                                         value={marketSort}
                                                         onChange={(e) => setMarketSort(e.target.value)}
-                                                        className="bg-white border border-slate-200 rounded-xl px-4 py-1.5 text-[9px] font-black uppercase tracking-widest outline-none cursor-pointer hover:border-teal-500 transition-colors shadow-sm"
+                                                        className="rounded-xl px-4 py-1.5 text-[9px] font-black uppercase tracking-widest outline-none cursor-pointer transition-all"
+                                                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(139,92,246,0.2)', color: '#c4b5fd' }}
                                                     >
                                                         <option value="rank_asc">Rank: Low to High</option>
                                                         <option value="rank_desc">Rank: High to Low</option>
@@ -3924,6 +3988,7 @@ const ExchangeContent = () => {
                                                 </div>
                                             </div>
                                         </div>
+
                                     </div>
                                 </div>
                             </div>
@@ -4394,158 +4459,108 @@ const ExchangeContent = () => {
                 setSearchTerm={setSearchTerm} 
             />
 
-            {/* Token Details Modal - Global Presence */}
+            {/* Token Details Modal - Compact Dark Side Panel */}
             <AnimatePresence>
                 {selectedMarketToken && (
-                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-                        <motion.div 
-                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                            onClick={() => setSelectedMarketToken(null)}
-                            className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
-                        />
-                        {(() => {
-                            const meta = getNetworkMetaInExchange(selectedMarketToken.network || selectedMarketToken.chainId, selectedMarketToken.contract_address || selectedMarketToken.contractAddress || selectedMarketToken.address || '');
+                    <div className="fixed inset-0 z-[200] flex items-start justify-end p-3 pt-16">
+                        <motion.div initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}} onClick={()=>setSelectedMarketToken(null)} className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"/>
+                        {(()=>{
+                            const meta = getNetworkMetaInExchange(selectedMarketToken.network||selectedMarketToken.chainId, selectedMarketToken.contract_address||selectedMarketToken.contractAddress||selectedMarketToken.address||'');
                             return (
-                                <motion.div 
-                                    initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                                    className="relative w-full max-w-md bg-white rounded-[2.5rem] p-6 shadow-2xl shadow-teal-200/20 border border-slate-100 overflow-hidden"
-                                >
-                                    {/* Decorative Background */}
-                                    <div className={`absolute top-0 left-0 right-0 h-32 opacity-20 ${selectedMarketToken.price_change_percentage_24h >= 0 ? 'bg-gradient-to-b from-emerald-400 to-transparent' : 'bg-gradient-to-b from-rose-400 to-transparent'}`} />
-
-                                    <div className="relative flex items-start justify-between mb-6">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-16 h-16 bg-white rounded-2xl p-2 shadow-lg shadow-slate-200/50 border border-slate-100 flex-shrink-0">
-                                                {selectedMarketToken.image ? (
-                                                    <img src={selectedMarketToken.image} className="w-full h-full object-contain rounded-xl" alt="" />
-                                                ) : (
-                                                    <div className="w-full h-full bg-teal-600 rounded-xl flex items-center justify-center text-white font-black text-xl uppercase">
-                                                        {selectedMarketToken.symbol?.charAt(0)}
+                                <motion.div initial={{opacity:0,x:60}} animate={{opacity:1,x:0}} exit={{opacity:0,x:60}} className="relative w-full max-w-[280px] overflow-y-auto max-h-[calc(100vh-76px)] rounded-2xl shadow-2xl" style={{background:'linear-gradient(160deg,#0f172a 0%,#0d1b3e 100%)',border:'1px solid rgba(99,102,241,0.2)'}}>
+                                    <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-2xl" style={{background:(selectedMarketToken.price_change_percentage_24h||0)>=0?'linear-gradient(90deg,#10b981,#34d399)':'linear-gradient(90deg,#f43f5e,#fb7185)'}}/>
+                                    <div className="p-4">
+                                        {/* Header */}
+                                        <div className="flex items-start justify-between mb-3">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center overflow-hidden" style={{background:'rgba(99,102,241,0.15)',border:'1px solid rgba(99,102,241,0.25)'}}>
+                                                    {selectedMarketToken.image?<img src={selectedMarketToken.image} className="w-full h-full object-contain rounded-lg" alt=""/>:<span className="text-white font-black text-sm uppercase">{selectedMarketToken.symbol?.charAt(0)}</span>}
+                                                </div>
+                                                <div>
+                                                    <h2 className="text-sm font-black uppercase tracking-tight leading-none mb-0.5" style={{color:'#f1f5f9'}}>{selectedMarketToken.symbol}</h2>
+                                                    <span className="text-[9px] font-semibold" style={{color:'rgba(148,163,184,0.55)'}}>{selectedMarketToken.name}</span>
+                                                    <div className="flex items-center gap-1 mt-0.5">
+                                                        {selectedMarketToken.market_cap_rank&&selectedMarketToken.market_cap_rank!==999999&&<span className="text-[7px] font-black px-1.5 py-0.5 rounded" style={{background:'rgba(255,255,255,0.06)',color:'rgba(148,163,184,0.7)'}}>#{selectedMarketToken.market_cap_rank}</span>}
+                                                        {selectedMarketToken.network&&<span className="text-[7px] font-black px-1.5 py-0.5 rounded" style={{background:'rgba(99,102,241,0.15)',color:'#818cf8',border:'1px solid rgba(99,102,241,0.25)'}}>{selectedMarketToken.network}</span>}
                                                     </div>
-                                                )}
-                                            </div>
-                                            <div className="flex flex-col">
-                                                <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tighter leading-none mb-1">{selectedMarketToken.symbol}</h2>
-                                                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{selectedMarketToken.name}</span>
-                                                <div className="flex items-center gap-2 mt-2">
-                                                    {selectedMarketToken.market_cap_rank && selectedMarketToken.market_cap_rank !== 999999 && (
-                                                        <span className="text-[9px] font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded uppercase tracking-widest">
-                                                            Rank #{selectedMarketToken.market_cap_rank}
-                                                        </span>
-                                                    )}
-                                                    {selectedMarketToken.network && (
-                                                        <span className="text-[9px] font-black text-teal-600 bg-teal-50 px-2 py-0.5 rounded uppercase tracking-widest border border-teal-100">
-                                                            {selectedMarketToken.network}
-                                                        </span>
-                                                    )}
                                                 </div>
                                             </div>
+                                            <button onClick={()=>setSelectedMarketToken(null)} className="p-1.5 rounded-lg" style={{background:'rgba(255,255,255,0.06)',color:'rgba(148,163,184,0.7)'}}>
+                                                <X className="w-3.5 h-3.5"/>
+                                            </button>
                                         </div>
-                                        <button onClick={() => setSelectedMarketToken(null)} className="p-2 bg-slate-50 hover:bg-slate-100 rounded-full transition-colors text-slate-400 hover:text-slate-900">
-                                            <X className="w-5 h-5" />
-                                        </button>
-                                    </div>
-
-                                    <div className="flex items-baseline gap-3 mb-6 relative">
-                                        <span className="text-4xl font-black text-slate-900 font-mono tracking-tighter">
-                                            ${(selectedMarketToken.current_price || 0) < 0.01 ? (selectedMarketToken.current_price || 0).toFixed(8) : selectedMarketToken.current_price?.toLocaleString()}
-                                        </span>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-3 mb-6">
-                                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
-                                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Market Cap</span>
-                                            <span className="text-xs font-black text-slate-900 font-mono">{formatB20Number(selectedMarketToken.market_cap, "$")}</span>
-                                        </div>
-                                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
-                                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Circ. (Est)</span>
-                                            <span className="text-xs font-black text-slate-900 font-mono">{formatB20Number(selectedMarketToken.circulating_supply || selectedMarketToken.total_supply || (selectedMarketToken.market_cap / selectedMarketToken.current_price))}</span>
-                                        </div>
-                                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
-                                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Liquidity</span>
-                                            <span className="text-xs font-black text-slate-900 font-mono">
-                                                {formatB20Number(selectedMarketToken.liquidity || selectedMarketToken.total_liquidity || ((selectedMarketToken.market_cap || 100000) * 0.15), "$")}
+                                        {/* Price */}
+                                        <div className="flex items-baseline gap-2 mb-3">
+                                            <span className="text-xl font-black tracking-tighter font-mono" style={{color:'#f1f5f9'}}>
+                                                ${(selectedMarketToken.current_price||0)<0.01?(selectedMarketToken.current_price||0).toFixed(8):selectedMarketToken.current_price?.toLocaleString()}
+                                            </span>
+                                            <span className={`text-[10px] font-black ${(selectedMarketToken.price_change_percentage_24h||0)>=0?'text-emerald-400':'text-rose-400'}`}>
+                                                {(selectedMarketToken.price_change_percentage_24h||0)>=0?'+':''}{(selectedMarketToken.price_change_percentage_24h||0).toFixed(2)}%
                                             </span>
                                         </div>
-                                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
-                                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Active Pool</span>
-                                            <span className="text-xs font-black text-teal-600 truncate block">
-                                                {selectedMarketToken.activePool || meta.activePoolName}
-                                            </span>
-                                        </div>
-                                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
-                                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Mint Status</span>
-                                            <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase inline-block ${selectedMarketToken.mintable ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
-                                                {selectedMarketToken.mintable ? 'Mintable' : 'Non-Mintable'}
-                                            </span>
-                                        </div>
-                                        <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100/60">
-                                            <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">LP Activity</span>
-                                            <div className="flex items-center gap-2">
-                                                <span className="text-[9px] font-black text-emerald-600">+{selectedMarketToken.lpAddedCount || 1} Add</span>
-                                                <span className="text-[9px] font-black text-rose-600">-{selectedMarketToken.lpRemovedCount || 0} Rem</span>
-                                            </div>
-                                        </div>
-                                        <div className="col-span-2 p-3 bg-slate-50 rounded-2xl border border-slate-100/60 flex items-center justify-between">
-                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Contract Address</span>
-                                            <div className="flex items-center gap-2 overflow-hidden">
-                                                <span className="text-[10px] font-bold text-teal-600 font-mono truncate max-w-[200px]">
-                                                    {selectedMarketToken.contract_address || selectedMarketToken.contractAddress || selectedMarketToken.address || '0x' + (selectedMarketToken.symbol === 'BNB' ? '0x00...000' : '0x...')}
-                                                </span>
-                                                <button 
-                                                    onClick={() => { navigator.clipboard.writeText(selectedMarketToken.contract_address || selectedMarketToken.contractAddress || selectedMarketToken.address); alert('Address Copied!'); }}
-                                                    className="p-1 hover:bg-teal-50 rounded transition-colors text-teal-500 hover:text-teal-600"
-                                                >
-                                                    <Copy size={10} />
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <div className="col-span-2 p-3 bg-slate-50 rounded-2xl border border-slate-100/60 flex items-center justify-between">
-                                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest font-sans">Network Scan ({meta.explorerName})</span>
-                                            <a 
-                                                href={meta.explorerUrl}
-                                                target="_blank" 
-                                                rel="noopener noreferrer"
-                                                className="text-[10px] font-black text-teal-600 hover:text-teal-700 flex items-center gap-1 hover:underline font-mono"
-                                            >
-                                                View on {meta.explorerName} <ExternalLink size={10} />
-                                            </a>
-                                        </div>
-                                    </div>
-
-                                    <div className="mb-8">
-                                        <span className="block text-[10px] font-bold text-slate-900 uppercase tracking-widest mb-3 px-1">Performance Dynamics</span>
-                                        <div className="grid grid-cols-5 gap-2">
+                                        {/* Stats Grid */}
+                                        <div className="grid grid-cols-2 gap-1.5 mb-3">
                                             {[
-                                                { label: '24H / 1D', val: selectedMarketToken.price_change_percentage_24h },
-                                                { label: '7D', val: selectedMarketToken.price_change_percentage_7d_in_currency || (selectedMarketToken.price_change_percentage_24h * 1.5) },
-                                                { label: '30D', val: selectedMarketToken.price_change_percentage_30d_in_currency || (selectedMarketToken.price_change_percentage_24h * 3.1) },
-                                                { label: '60D', val: selectedMarketToken.price_change_percentage_60d_in_currency || (selectedMarketToken.price_change_percentage_24h * 4.8) },
-                                                { label: 'All Time', val: selectedMarketToken.ath_change_percentage || (selectedMarketToken.price_change_percentage_24h * 8.5) }
-                                            ].map((period, idx) => (
-                                                <div key={idx} className="flex flex-col items-center justify-center p-2 bg-slate-50 rounded-xl border border-slate-100/60">
-                                                    <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mb-1">{period.label}</span>
-                                                    <span className={`text-[9px] font-black ${period.val >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                                        {period.val >= 0 ? '+' : ''}{(period.val || 0).toFixed(2)}%
-                                                    </span>
+                                                {label:'Market Cap',val:formatB20Number(selectedMarketToken.market_cap,"$")},
+                                                {label:'Circ. Supply',val:formatB20Number(selectedMarketToken.circulating_supply||selectedMarketToken.total_supply||(selectedMarketToken.market_cap/selectedMarketToken.current_price))},
+                                                {label:'Liquidity',val:formatB20Number(selectedMarketToken.liquidity||selectedMarketToken.total_liquidity||((selectedMarketToken.market_cap||100000)*0.15),"$")},
+                                                {label:'Active Pool',val:selectedMarketToken.activePool||meta.activePoolName,accent:true},
+                                                {label:'Mint Status',val:selectedMarketToken.mintable?'Mintable':'Non-Mintable',badge:selectedMarketToken.mintable?'rose':'emerald'},
+                                                {label:'LP Activity',val:`+${selectedMarketToken.lpAddedCount||1} / -${selectedMarketToken.lpRemovedCount||0}`},
+                                            ].map((item,i)=>(
+                                                <div key={i} className="p-2 rounded-lg" style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)'}}>
+                                                    <span className="block text-[7px] font-bold uppercase tracking-widest mb-0.5" style={{color:'rgba(148,163,184,0.45)'}}>{item.label}</span>
+                                                    {item.badge
+                                                        ?<span className={`text-[8px] font-black uppercase px-1.5 py-0.5 rounded ${item.badge==='rose'?'text-rose-400 bg-rose-500/10':'text-emerald-400 bg-emerald-500/10'}`}>{item.val}</span>
+                                                        :<span className="text-[10px] font-black truncate block" style={{color:item.accent?'#34d399':'#e2e8f0'}}>{item.val}</span>
+                                                    }
                                                 </div>
                                             ))}
                                         </div>
+                                        {/* Contract + Explorer */}
+                                        <div className="space-y-1.5 mb-3">
+                                            <div className="flex items-center justify-between px-2.5 py-2 rounded-lg" style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)'}}>
+                                                <span className="text-[7px] font-bold uppercase tracking-widest" style={{color:'rgba(148,163,184,0.45)'}}>Contract</span>
+                                                <div className="flex items-center gap-1">
+                                                    <span className="text-[8px] font-bold font-mono" style={{color:'#34d399'}}>{(()=>{const a=selectedMarketToken.contract_address||selectedMarketToken.contractAddress||selectedMarketToken.address||'';return a.length>10?`${a.slice(0,5)}...${a.slice(-4)}`:a||'N/A';})()}</span>
+                                                    <button onClick={()=>{navigator.clipboard.writeText(selectedMarketToken.contract_address||selectedMarketToken.contractAddress||selectedMarketToken.address||'');}} style={{color:'rgba(148,163,184,0.5)'}}><Copy size={8}/></button>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center justify-between px-2.5 py-2 rounded-lg" style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)'}}>
+                                                <span className="text-[7px] font-bold uppercase tracking-widest" style={{color:'rgba(148,163,184,0.45)'}}>Explorer</span>
+                                                <a href={meta.explorerUrl} target="_blank" rel="noopener noreferrer" className="text-[8px] font-black flex items-center gap-1" style={{color:'#818cf8'}}>{meta.explorerName}<ExternalLink size={8}/></a>
+                                            </div>
+                                        </div>
+                                        {/* Performance */}
+                                        <div className="mb-3">
+                                            <span className="text-[7px] font-black uppercase tracking-widest block mb-1.5" style={{color:'rgba(148,163,184,0.45)'}}>Performance</span>
+                                            <div className="grid grid-cols-5 gap-1">
+                                                {[
+                                                    {label:'24H',val:selectedMarketToken.price_change_percentage_24h},
+                                                    {label:'7D',val:selectedMarketToken.price_change_percentage_7d_in_currency||(selectedMarketToken.price_change_percentage_24h*1.5)},
+                                                    {label:'30D',val:selectedMarketToken.price_change_percentage_30d_in_currency||(selectedMarketToken.price_change_percentage_24h*3.1)},
+                                                    {label:'60D',val:selectedMarketToken.price_change_percentage_60d_in_currency||(selectedMarketToken.price_change_percentage_24h*4.8)},
+                                                    {label:'ATH',val:selectedMarketToken.ath_change_percentage||(selectedMarketToken.price_change_percentage_24h*8.5)}
+                                                ].map((p,idx)=>(
+                                                    <div key={idx} className="flex flex-col items-center p-1.5 rounded-lg" style={{background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.05)'}}>
+                                                        <span className="text-[6px] font-bold uppercase mb-0.5" style={{color:'rgba(148,163,184,0.4)'}}>{p.label}</span>
+                                                        <span className={`text-[8px] font-black ${(p.val||0)>=0?'text-emerald-400':'text-rose-400'}`}>{(p.val||0)>=0?'+':''}{(p.val||0).toFixed(1)}%</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        {/* Buy Button */}
+                                        <button onClick={()=>{setSelectedMarketToken(null);setMode('spot');setToToken(selectedMarketToken);}} className="w-full py-2.5 font-black text-xs uppercase tracking-widest rounded-xl transition-all active:scale-[0.98] flex items-center justify-center gap-2" style={{background:'linear-gradient(135deg,#0d9488,#0f766e)',color:'#fff',boxShadow:'0 4px 20px rgba(13,148,136,0.3)'}}>
+                                            <Activity className="w-3.5 h-3.5"/>Spot Buy {selectedMarketToken.symbol}
+                                        </button>
                                     </div>
-
-                                    <button 
-                                        onClick={() => { setSelectedMarketToken(null); setMode('spot'); setToToken(selectedMarketToken); }}
-                                        className="w-full py-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-sm uppercase tracking-widest rounded-2xl shadow-xl shadow-teal-200/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
-                                    >
-                                        <Activity className="w-4 h-4" />
-                                        Spot Buy {selectedMarketToken.symbol}
-                                    </button>
                                 </motion.div>
                             );
                         })()}
                     </div>
                 )}
             </AnimatePresence>
+
 
             <AnimatePresence>
                 {selectedAnalytic && (
@@ -4562,7 +4577,7 @@ const ExchangeContent = () => {
                 .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.02); }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.1); border-radius: 10px; }
             `}</style>
-            <NueraCommand onCommand={handleNueraCommand} />
+
         </main>
     );
 }
@@ -5629,15 +5644,15 @@ const AssetDetails = ({ token, setMode }) => {
             className="bg-white border border-slate-200 rounded-[2.5rem] shadow-[0_40px_80px_-15px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col w-full relative"
         >
             {/* Top Security Banner */}
-            <div className="bg-slate-900 px-8 py-2 flex items-center justify-between">
+            <div className="px-8 py-2.5 flex items-center justify-between border-b border-slate-100" style={{ background: 'linear-gradient(135deg, rgba(220,20,60,0.04) 0%, #ffffff 100%)' }}>
                 <div className="flex items-center gap-2">
-                    <ShieldCheck size={12} className="text-emerald-400" />
-                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Institutional Asset Verified // Protocol v2.4</span>
+                    <ShieldCheck size={12} style={{ color: '#dc143c' }} />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: 'rgba(220,20,60,0.8)' }}>Institutional Asset Verified // Protocol v2.4</span>
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1.5">
-                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Network Live</span>
+                        <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#dc143c' }} />
+                        <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#dc143c' }}>Network Live</span>
                     </div>
                 </div>
             </div>
@@ -5704,12 +5719,12 @@ const AssetDetails = ({ token, setMode }) => {
                         <p className="text-2xl font-black text-slate-900 font-mono tracking-tighter">{formatB20Number(token.total_volume, "$")}</p>
                         <p className="mt-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest">High Liquidity Index</p>
                     </div>
-                    <div className="flex-1 p-6 bg-teal-600 border border-teal-500 rounded-3xl shadow-xl shadow-teal-200/10 text-white min-w-[220px]">
-                        <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest mb-2">Nuera Sentiment</p>
+                    <div className="flex-1 p-6 rounded-3xl shadow-xl shadow-rose-200/10 text-white min-w-[220px]" style={{ background: 'linear-gradient(135deg, #dc143c, #a30f27)' }}>
+                        <p className="text-[10px] font-black uppercase tracking-widest mb-2" style={{ color: 'rgba(255,255,255,0.7)' }}>Nuera Sentiment</p>
                         <p className="text-2xl font-black tracking-tighter uppercase italic truncate">Strong Buy</p>
                         <div className="mt-2 flex items-center gap-1.5">
                             <div className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                            <span className="text-[10px] font-black text-teal-600 uppercase">94.2% Alpha Conviction</span>
+                            <span className="text-[10px] font-black uppercase" style={{ color: 'rgba(255,255,255,0.8)' }}>94.2% Alpha Conviction</span>
                         </div>
                     </div>
                 </div>
@@ -5763,50 +5778,50 @@ const AssetDetails = ({ token, setMode }) => {
                     </div>
 
                     {/* Volatility & Performance */}
-                    <div className="bg-slate-900 rounded-[2rem] p-8 shadow-2xl relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-6 opacity-10">
-                            <Zap size={64} className="text-white" />
+                    <div className="bg-slate-50 border border-slate-100 rounded-[2rem] p-8 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-6 opacity-[0.03]">
+                            <Zap size={64} style={{ color: '#dc143c' }} />
                         </div>
                         <div className="relative z-10 space-y-8">
-                            <div className="flex items-center gap-3 border-b border-white/5 pb-4">
-                                <div className="p-2 bg-teal-500/20 text-teal-500 rounded-xl border border-teal-500/30">
+                            <div className="flex items-center gap-3 border-b border-slate-200 pb-4">
+                                <div className="p-2 rounded-xl border animate-pulse" style={{ background: 'rgba(220,20,60,0.06)', color: '#dc143c', borderColor: 'rgba(220,20,60,0.15)' }}>
                                     <Activity size={16} />
                                 </div>
-                                <h5 className="text-[11px] font-black text-white uppercase tracking-[0.2em]">Market Performance Matrix</h5>
+                                <h5 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em]">Market Performance Matrix</h5>
                             </div>
                             
                             <div className="space-y-6">
                                 <div className="flex items-center justify-between">
                                     <div className="text-left">
                                         <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">24H High</p>
-                                        <p className="text-lg font-black text-white font-mono tracking-tighter">${token.high_24h > 0 ? token.high_24h.toLocaleString() : (token.current_price * 1.05).toLocaleString()}</p>
+                                        <p className="text-lg font-black text-slate-900 font-mono tracking-tighter">${token.high_24h > 0 ? token.high_24h.toLocaleString() : (token.current_price * 1.05).toLocaleString()}</p>
                                     </div>
                                     <div className="flex-1 px-8">
-                                        <div className="h-1 bg-white/5 rounded-full relative">
-                                            <div className="absolute h-full bg-teal-500 rounded-full" style={{ width: '70%' }} />
-                                            <div className="absolute top-1/2 left-[70%] -translate-y-1/2 w-2 h-2 bg-white rounded-full shadow-lg" />
+                                        <div className="h-1 bg-slate-200 rounded-full relative">
+                                            <div className="absolute h-full rounded-full" style={{ width: '70%', background: '#dc143c' }} />
+                                            <div className="absolute top-1/2 left-[70%] -translate-y-1/2 w-2 h-2 bg-rose-600 rounded-full shadow-lg" />
                                         </div>
                                     </div>
                                     <div className="text-right">
                                         <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">24H Low</p>
-                                        <p className="text-lg font-black text-white font-mono tracking-tighter">${token.low_24h > 0 ? token.low_24h.toLocaleString() : (token.current_price * 0.95).toLocaleString()}</p>
+                                        <p className="text-lg font-black text-slate-900 font-mono tracking-tighter">${token.low_24h > 0 ? token.low_24h.toLocaleString() : (token.current_price * 0.95).toLocaleString()}</p>
                                     </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-6 pt-4 border-t border-white/5">
+                                <div className="grid grid-cols-2 gap-6 pt-4 border-t border-slate-200">
                                     <div>
                                         <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">All-Time High</p>
-                                        <p className="text-base font-black text-white font-mono tracking-tighter">${token.ath?.toLocaleString() || (token.current_price * 1.8).toLocaleString()}</p>
-                                        <p className="text-[9px] font-black text-rose-500 uppercase mt-1">-{token.ath_change_percentage?.toFixed(1) || '12.4'}% Retracement</p>
+                                        <p className="text-base font-black text-slate-900 font-mono tracking-tighter">${token.ath?.toLocaleString() || (token.current_price * 1.8).toLocaleString()}</p>
+                                        <p className="text-[9px] font-black text-rose-600 uppercase mt-1">-{token.ath_change_percentage?.toFixed(1) || '12.4'}% Retracement</p>
                                     </div>
                                     <div>
                                         <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Circulating Supply</p>
-                                        <p className="text-base font-black text-white font-mono tracking-tighter">{formatB20Number(token.circulating_supply || token.total_supply || (token.market_cap / token.current_price), "")}</p>
-                                        <p className="text-[9px] font-black text-teal-500 uppercase mt-1">{(((token.circulating_supply || token.total_supply) / (token.total_supply || 1)) * 100).toFixed(1)}% Liquid</p>
+                                        <p className="text-base font-black text-slate-900 font-mono tracking-tighter">{formatB20Number(token.circulating_supply || token.total_supply || (token.market_cap / token.current_price), "")}</p>
+                                        <p className="text-[9px] font-black text-[#dc143c] uppercase mt-1">{(((token.circulating_supply || token.total_supply) / (token.total_supply || 1)) * 100).toFixed(1)}% Liquid</p>
                                     </div>
                                 </div>
 
-                                <div className="pt-4 border-t border-white/5">
+                                <div className="pt-4 border-t border-slate-200">
                                     <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">Performance Dynamics</p>
                                     <div className="grid grid-cols-5 gap-2">
                                         {[
@@ -5816,9 +5831,9 @@ const AssetDetails = ({ token, setMode }) => {
                                             { label: '60D', val: token.price_change_percentage_60d_in_currency || ((token.price_change_percentage_24h || 0) * 4.8) },
                                             { label: 'All Time', val: token.ath_change_percentage || ((token.price_change_percentage_24h || 0) * 8.5) }
                                         ].map((period, idx) => (
-                                            <div key={idx} className="flex flex-col items-center justify-center p-2 bg-white/5 rounded-xl border border-white/10">
+                                            <div key={idx} className="flex flex-col items-center justify-center p-2 bg-slate-100 rounded-xl border border-slate-200/60">
                                                 <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest mb-1">{period.label}</span>
-                                                <span className={`text-[9px] font-black ${period.val >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                <span className={`text-[9px] font-black ${period.val >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
                                                     {period.val >= 0 ? '+' : ''}{(period.val || 0).toFixed(2)}%
                                                 </span>
                                             </div>
@@ -6854,58 +6869,76 @@ const DiscoveryPopup = ({ isOpen, onClose, results, onSelect }) => {
 
 const TokenSelector = ({ isOpen, onClose, onSelect, tokens, searchTerm, setSearchTerm }) => {
     if (!isOpen) return null;
+    const filtered = tokens.filter(t =>
+        (t.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) ||
+        (t.symbol || '').toLowerCase().includes((searchTerm || '').toLowerCase())
+    );
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 backdrop-blur-xl bg-white/40">
-            <motion.div 
-                initial={{ opacity: 1, scale: 1 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0 }}
-                className="w-full max-w-[600px] bg-white rounded-2xl shadow-4xl shadow-gray-200 border border-slate-200/60 overflow-hidden flex flex-col max-h-[80vh] font-sans"
-            >
-                <div className="p-8 border-b border-gray-50">
-                    <div className="flex items-center justify-between mb-8">
-                        <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter">Select Asset</h3>
-                        <button onClick={onClose} className="w-10 h-10 rounded-full hover:bg-slate-50 flex items-center justify-center transition-colors">
-                            <X className="w-5 h-5 text-slate-400" />
+        <div style={{position:'fixed',inset:0,zIndex:200,display:'flex',alignItems:'center',justifyContent:'center',padding:'24px',background:'rgba(0,0,0,0.45)',backdropFilter:'blur(16px)'}}>
+            <div style={{width:'100%',maxWidth:'540px',background:'#ffffff',border:'1px solid rgba(0,0,0,0.08)',borderRadius:'12px',overflow:'hidden',display:'flex',flexDirection:'column',maxHeight:'80vh',boxShadow:'0 20px 60px rgba(0,0,0,0.15)'}}>
+                {/* Header */}
+                <div style={{padding:'20px 20px 14px',borderBottom:'1px solid rgba(0,0,0,0.07)',background:'#fafafa'}}>
+                    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:'14px'}}>
+                        <h3 style={{fontSize:'13px',fontWeight:900,color:'#171717',letterSpacing:'0.1em',textTransform:'uppercase',margin:0}}>Select Asset</h3>
+                        <button onClick={onClose} style={{width:'28px',height:'28px',borderRadius:'50%',border:'1px solid rgba(0,0,0,0.12)',background:'transparent',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',flexShrink:0}}>
+                            <X style={{width:'14px',height:'14px',color:'#737373'}} />
                         </button>
                     </div>
-                    <div className="relative">
-                        <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                        <input 
+                    <div style={{position:'relative'}}>
+                        <Search style={{position:'absolute',left:'12px',top:'50%',transform:'translateY(-50%)',width:'14px',height:'14px',color:'#a3a3a3',pointerEvents:'none'}} />
+                        <input
                             type="text"
-                            placeholder="Search by name or address..."
+                            placeholder="Search by name or symbol..."
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-16 pr-8 py-5 bg-slate-50 rounded-2xl border border-slate-200/60 outline-none focus:border-teal-500/50 transition-all font-bold text-sm"
+                            onChange={e => setSearchTerm(e.target.value)}
+                            autoFocus
+                            style={{width:'100%',paddingLeft:'38px',paddingRight:'12px',paddingTop:'10px',paddingBottom:'10px',background:'#f8f8f8',border:'1px solid #e5e5e5',borderRadius:'6px',outline:'none',fontSize:'12px',fontWeight:600,color:'#171717',boxSizing:'border-box'}}
                         />
                     </div>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
-                    {tokens.filter(t => (t.name || '').toLowerCase().includes((searchTerm || '').toLowerCase()) || (t.symbol || '').toLowerCase().includes((searchTerm || '').toLowerCase())).map((t, i) => (
-                        <div 
-                            key={`${t.id || t.address}-${i}`}
-                            onClick={() => { onSelect(t); onClose(); }}
-                            className="flex items-center justify-between p-4 hover:bg-slate-50 rounded-2xl cursor-pointer transition-all border border-transparent hover:border-slate-200/60 group"
-                        >
-                            <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 bg-white rounded-xl p-1 shadow-sm">
-                                    {t.image ? <img src={t.image} className="w-full h-full object-contain rounded-lg" alt="" /> : null}
+                {/* Token List */}
+                <div style={{flex:1,overflowY:'auto',padding:'8px',background:'#ffffff'}}>
+                    {filtered.length === 0 && (
+                        <div style={{padding:'32px',textAlign:'center',color:'#a3a3a3',fontSize:'12px'}}>No tokens found</div>
+                    )}
+                    {filtered.map((t, i) => {
+                        const price = t.current_price;
+                        const change = t.price_change_percentage_24h;
+                        const hasPrice = price != null && price > 0;
+                        const isUp = (change || 0) >= 0;
+                        return (
+                            <div
+                                key={`${t.id || t.address}-${i}`}
+                                onClick={() => { onSelect(t); onClose(); }}
+                                style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 12px',borderRadius:'8px',cursor:'pointer',borderBottom:'1px solid rgba(0,0,0,0.04)',transition:'background 0.1s'}}
+                                onMouseEnter={e => { e.currentTarget.style.background='#fef2f4'; e.currentTarget.style.borderColor='rgba(220,20,60,0.1)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background='transparent'; e.currentTarget.style.borderColor='rgba(0,0,0,0.04)'; }}
+                            >
+                                <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+                                    <div style={{width:'36px',height:'36px',borderRadius:'50%',overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,background:'#f8f8f8',border:'1px solid #e5e5e5'}}>
+                                        {t.image
+                                            ? <img src={t.image} style={{width:'30px',height:'30px',objectFit:'contain',borderRadius:'50%'}} alt="" onError={e => { e.target.style.display='none'; }}/>
+                                            : <span style={{fontSize:'14px',fontWeight:900,color:'#dc143c'}}>{(t.symbol||'?').charAt(0)}</span>
+                                        }
+                                    </div>
+                                    <div>
+                                        <p style={{fontSize:'12px',fontWeight:900,color:'#171717',textTransform:'uppercase',letterSpacing:'0.04em',margin:0}}>{t.symbol}</p>
+                                        <p style={{fontSize:'10px',fontWeight:500,color:'#a3a3a3',marginTop:'2px',margin:0}}>{t.name}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p className="font-black text-slate-900 uppercase text-xs">{t.symbol}</p>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.name}</p>
+                                <div style={{textAlign:'right'}}>
+                                    <p style={{fontSize:'12px',fontWeight:700,color:hasPrice?'#171717':'#a3a3a3',margin:0}}>
+                                        {hasPrice ? `$${price < 0.001 ? price.toFixed(6) : price < 1 ? price.toFixed(4) : price.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}` : '—'}
+                                    </p>
+                                    <p style={{fontSize:'10px',fontWeight:700,color:change==null?'#a3a3a3':isUp?'#10b981':'#ef4444',marginTop:'2px',margin:0}}>
+                                        {change != null ? `${isUp?'+':''}${change.toFixed(2)}%` : '—'}
+                                    </p>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <p className="font-black text-slate-900 text-xs">${t.current_price?.toLocaleString()}</p>
-                                <p className={`text-[10px] font-bold ${t.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                    {t.price_change_percentage_24h?.toFixed(2)}%
-                                </p>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
-            </motion.div>
+            </div>
         </div>
     );
 };
@@ -7272,42 +7305,60 @@ const MemeTerminal = ({ setMode, setToToken }) => {
     return (
         <div className="max-w-[1400px] mx-auto px-4 pb-32">
             <TrendingTicker />
-            {/* Header Section */}
-            <div className="relative mb-12 p-12 bg-slate-900 rounded-[3rem] overflow-hidden shadow-2xl">
-                <div className="absolute top-0 right-0 w-[50%] h-full bg-gradient-to-l from-orange-500/20 to-transparent blur-3xl -z-10" />
-                <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl" />
-                
-                <div className="flex flex-col md:flex-row items-center justify-between gap-10">
-                    <div className="flex-1 text-center md:text-left">
-                        <div className="flex items-center justify-center md:justify-start gap-3 mb-6">
-                            <div className="p-3 bg-orange-500 rounded-2xl shadow-lg shadow-orange-500/30">
-                                <Flame className="w-8 h-8 text-white animate-pulse" />
-                            </div>
-                            <span className="px-4 py-1.5 bg-orange-500/10 border border-orange-500/20 rounded-full text-[10px] font-black text-orange-500 uppercase tracking-[0.4em]">Alpha Intelligence</span>
-                        </div>
-                        <h1 className="text-5xl md:text-6xl font-black text-white italic tracking-tighter mb-4">MEME <span className="text-orange-500">TERMINAL</span></h1>
-                        <p className="text-slate-400 font-bold uppercase tracking-widest text-xs max-w-xl leading-relaxed mb-6">
-                            Aggregating real-time liquidity from Raydium, PancakeSwap, SunSwap, and Base. Institutional-grade meme forensics & audit verification.
-                        </p>
-                        <div className="inline-flex items-center gap-3 px-6 py-3 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm">
-                            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                            <span className="text-[10px] font-black text-emerald-400 uppercase tracking-widest">Safety Protocol: Assets with \u003c$100 Liquidity filtered by default</span>
-                        </div>
-                    </div>
-                    
-                    <div className="flex flex-wrap justify-center gap-4">
-                        {[
-                            { label: 'Total Memes', value: '22,480', icon: <Layers size={14}/> },
-                            { label: '24H Volume', value: '$1.42B', icon: <Activity size={14}/> },
-                            { label: 'New Listings', value: '482', icon: <PlusCircle size={14}/> }
-                        ].map((s, i) => (
-                            <div key={i} className="p-6 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-xl min-w-[160px] text-center">
-                                <div className="flex items-center justify-center gap-2 text-slate-500 mb-2">
-                                    {s.icon} <span className="text-[9px] font-black uppercase tracking-widest">{s.label}</span>
+            {/* ── MEME TERMINAL HEADER — REDESIGNED ── */}
+            <div className="relative mb-12 rounded-[2.5rem] overflow-hidden" style={{ background: '#ffffff', border: '1px solid rgba(0,0,0,0.08)', boxShadow: '0 4px 24px rgba(0,0,0,0.08)' }}>
+                {/* Animated gradient border top */}
+                <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: 'linear-gradient(90deg, transparent, #dc143c, #a30f27, transparent)' }} />
+                {/* Glow orbs */}
+                <div className="absolute top-[-40%] right-[-10%] w-[500px] h-[500px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(220,20,60,0.06) 0%, transparent 65%)' }} />
+                <div className="absolute bottom-[-30%] left-[-5%] w-[400px] h-[400px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(220,20,60,0.04) 0%, transparent 65%)' }} />
+                <div className="relative z-10 p-10 md:p-14">
+                    <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-10">
+                        {/* Left: Branding */}
+                        <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="relative">
+                                    <div className="absolute inset-0 rounded-xl blur-md" style={{ background: 'linear-gradient(135deg, #dc143c, #a30f27)', opacity: 0.4 }} />
+                                    <div className="relative w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #dc143c, #a30f27)' }}>
+                                        <Flame className="w-5 h-5 text-white" />
+                                    </div>
                                 </div>
-                                <p className="text-2xl font-black text-white italic tracking-tight">{s.value}</p>
+                                <div className="flex items-center gap-2 px-4 py-1.5 rounded-full" style={{ background: 'rgba(220,20,60,0.06)', border: '1px solid rgba(220,20,60,0.15)' }}>
+                                    <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#dc143c' }} />
+                                    <span className="text-[9px] font-black uppercase tracking-[0.4em]" style={{ color: '#dc143c' }}>Meme Intelligence</span>
+                                </div>
                             </div>
-                        ))}
+                            <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-4 leading-none">
+                                <span style={{ color: '#171717' }}>MEME </span>
+                                <span style={{ background: 'linear-gradient(90deg, #dc143c 0%, #a30f27 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>TERMINAL</span>
+                            </h1>
+                            <p className="text-sm font-medium max-w-lg leading-relaxed mb-8 text-slate-500">
+                                Real-time liquidity aggregation across Raydium, PancakeSwap, SunSwap &amp; Base. Institutional-grade forensics &amp; audit verification engine.
+                            </p>
+                            <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-xl" style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
+                                <ShieldCheck className="w-4 h-4" style={{ color: '#10b981' }} />
+                                <span className="text-[10px] font-black uppercase tracking-widest" style={{ color: '#10b981' }}>Safety Protocol: Assets with &lt;$100 Liquidity filtered by default</span>
+                            </div>
+                        </div>
+                        {/* Right: Stat Cards */}
+                        <div className="flex flex-col sm:flex-row lg:flex-col xl:flex-row gap-4">
+                            {[
+                                { label: 'Total Memes', value: '22,480', icon: <Layers size={16}/>, accent: '#dc143c', glow: 'rgba(220,20,60,0.08)', border: 'rgba(220,20,60,0.15)' },
+                                { label: '24H Volume', value: '$1.42B', icon: <Activity size={16}/>, accent: '#dc143c', glow: 'rgba(220,20,60,0.08)', border: 'rgba(220,20,60,0.15)' },
+                                { label: 'New Listings', value: '482', icon: <PlusCircle size={16}/>, accent: '#dc143c', glow: 'rgba(220,20,60,0.08)', border: 'rgba(220,20,60,0.15)' }
+                            ].map((s, i) => (
+                                <div key={i} className="relative rounded-2xl p-5 min-w-[150px] group transition-all duration-300" style={{ background: '#f9f9f9', border: `1px solid ${s.border}` }}>
+                                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" style={{ background: `radial-gradient(circle at 50% 0%, ${s.glow}, transparent 70%)` }} />
+                                    <div className="flex items-center gap-2 mb-3 relative z-10">
+                                        <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: s.glow, color: s.accent }}>
+                                            {s.icon}
+                                        </div>
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{s.label}</span>
+                                    </div>
+                                    <p className="text-2xl font-black tracking-tight relative z-10" style={{ color: s.accent }}>{s.value}</p>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -7315,7 +7366,7 @@ const MemeTerminal = ({ setMode, setToToken }) => {
             {/* ── Source Filter Tabs ─────────────────────────────────────── */}
             <div className="mb-8">
                 <div className="flex items-center gap-3 mb-4">
-                    <span className="px-3 py-1 bg-orange-500/10 text-orange-600 text-[9px] font-black uppercase tracking-[0.25em] rounded-full border border-orange-500/20">Live Sources</span>
+                    <span className="px-3 py-1 bg-rose-50 text-rose-600 text-[9px] font-black uppercase tracking-[0.25em] rounded-full border border-rose-100">Live Sources</span>
                     <span className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{aggStats.total.toLocaleString()} tokens aggregated</span>
                 </div>
                 <div className="flex flex-wrap gap-3">
@@ -7325,9 +7376,10 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                             onClick={() => { setSource(s.id); setVisibleCount(50); }}
                             className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${
                                 source === s.id
-                                ? 'bg-slate-900 text-white border-slate-900 shadow-xl scale-105'
-                                : 'bg-white text-slate-500 border-slate-100 hover:border-orange-300 hover:bg-orange-50/40'
+                                ? 'text-white scale-105'
+                                : 'bg-white text-slate-500 border-slate-100 hover:border-red-200 hover:bg-red-50/40'
                             }`}
+                            style={source === s.id ? { background: 'linear-gradient(135deg, #dc143c, #a30f27)', border: 'none', boxShadow: '0 4px 15px rgba(220,20,60,0.25)' } : {}}
                         >
                             <span>{s.icon}</span>
                             {s.label}
@@ -7344,7 +7396,7 @@ const MemeTerminal = ({ setMode, setToToken }) => {
             {/* Controls Bar - Redesigned for Professional Alpha */}
             <div className="flex flex-col gap-6 mb-12">
                 <div className="flex flex-col xl:flex-row items-center justify-between gap-6 bg-white/80 backdrop-blur-xl p-6 rounded-[3rem] border border-slate-200 shadow-2xl shadow-slate-200/40 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-teal-600 to-fuchsia-500 opacity-30" />
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#dc143c] via-rose-500 to-[#a30f27] opacity-35" />
                     
                     {/* Network Selection with Logos */}
                     <div className="flex flex-wrap items-center justify-center gap-3">
@@ -7361,9 +7413,10 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                                 onClick={() => setNetwork(net.id)}
                                 className={`flex items-center gap-3 px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${
                                     network === net.id 
-                                    ? 'bg-slate-900 text-white border-slate-900 shadow-xl shadow-slate-900/20 scale-105' 
-                                    : 'bg-white text-slate-500 border-slate-100 hover:border-orange-200 hover:bg-orange-50/30'
+                                    ? 'text-white scale-105' 
+                                    : 'bg-white text-slate-500 border-slate-100 hover:border-red-200 hover:bg-red-50/40'
                                 }`}
+                                style={network === net.id ? { background: 'linear-gradient(135deg, #dc143c, #a30f27)', border: 'none', boxShadow: '0 4px 15px rgba(220,20,60,0.25)' } : {}}
                             >
                                 <img src={net.img} className="w-4 h-4 rounded-full object-contain" alt="" />
                                 {net.label}
@@ -7374,14 +7427,14 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                     {/* Enhanced Search Engine */}
                     <div className="flex-1 w-full max-w-2xl relative group">
                         <div className="absolute inset-y-0 left-6 flex items-center pointer-events-none">
-                            <Search className="w-5 h-5 text-slate-400 group-focus-within:text-orange-500 transition-colors" />
+                            <Search className="w-5 h-5 text-slate-400 group-focus-within:text-[#dc143c] transition-colors" />
                         </div>
                         <input 
                             type="text"
                             placeholder="SEARCH ALPHA ASSETS (E.G. PEPE, DOGE, SHIB...)"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-[2rem] py-5 pl-16 pr-8 text-xs font-black uppercase tracking-[0.2em] placeholder:text-slate-300 focus:bg-white focus:border-orange-500/50 focus:ring-4 focus:ring-orange-500/5 transition-all outline-none"
+                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-[2rem] py-5 pl-16 pr-8 text-xs font-black uppercase tracking-[0.2em] placeholder:text-slate-300 focus:bg-white focus:border-[#dc143c]/50 focus:ring-4 focus:ring-[#dc143c]/5 transition-all outline-none"
                         />
                         <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-2">
                             <span className="px-2 py-1 bg-slate-200 text-slate-500 rounded text-[8px] font-black uppercase">⌘ K</span>
@@ -7396,20 +7449,21 @@ const MemeTerminal = ({ setMode, setToToken }) => {
                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Intelligence Classification</span>
                     </div>
                     {[
-                        { id: 'volume',    label: 'Top Volume',    icon: <Flame size={14}/>,      color: 'orange' },
-                        { id: 'mcap',      label: 'Market Cap',    icon: <Award size={14}/>,      color: 'indigo' },
-                        { id: 'change',    label: 'Top Gainers',   icon: <TrendingUp size={14}/>, color: 'emerald' },
-                        { id: 'new',       label: 'Newly Listed',  icon: <Zap size={14}/>,        color: 'rose' },
-                        { id: 'liquidity', label: 'Deep Liquidity',icon: <ShieldAlert size={14}/>,color: 'amber' }
+                        { id: 'volume',    label: 'Top Volume',    icon: <Flame size={14}/> },
+                        { id: 'mcap',      label: 'Market Cap',    icon: <Award size={14}/> },
+                        { id: 'change',    label: 'Top Gainers',   icon: <TrendingUp size={14}/> },
+                        { id: 'new',       label: 'Newly Listed',  icon: <Zap size={14}/> },
+                        { id: 'liquidity', label: 'Deep Liquidity',icon: <ShieldAlert size={14}/> }
                     ].map(f => (
                         <button 
                             key={f.id}
                             onClick={() => setFilter(f.id)}
                             className={`flex items-center gap-2.5 px-6 py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${
                                 filter === f.id 
-                                ? `bg-${f.color}-500 text-white shadow-lg shadow-${f.color}-500/20 scale-105` 
+                                ? 'text-white scale-105' 
                                 : 'text-slate-400 hover:text-slate-900 bg-white border border-slate-100 hover:shadow-md'
                             }`}
+                            style={filter === f.id ? { background: 'linear-gradient(135deg, #dc143c, #a30f27)', boxShadow: '0 4px 15px rgba(220,20,60,0.25)' } : {}}
                         >
                             {f.icon} {f.label}
                         </button>

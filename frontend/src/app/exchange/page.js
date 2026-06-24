@@ -250,6 +250,7 @@ const TokenLogoWithNetBadge = ({ token, size = 'md', darkBg = false }) => {
 };
 
 const ExchangeContent = () => {
+    const pageTransition = { duration: 0.08, ease: 'easeOut' };
     const { account, signer, connectWallet, walletProvider } = useWallet();
     const [mode, setMode] = useState('markets');
     const [mounted, setMounted] = useState(false);
@@ -257,6 +258,17 @@ const ExchangeContent = () => {
     
     useEffect(() => {
         setMounted(true);
+    }, []);
+
+    useEffect(() => {
+        const handleModeEvent = (e) => {
+            const targetMode = e.detail;
+            if (targetMode && ['markets', 'spot', 'pro', 'meme-futures', 'stocks', 'fiat', 'smart-money', 'mex-money', 'web3', 'meme', 'list', 'b20ai'].includes(targetMode)) {
+                setMode(targetMode);
+            }
+        };
+        window.addEventListener('exchange-mode-change', handleModeEvent);
+        return () => window.removeEventListener('exchange-mode-change', handleModeEvent);
     }, []);
 
     const searchParams = useSearchParams();
@@ -2265,7 +2277,7 @@ const ExchangeContent = () => {
                 </div>
                 <AnimatePresence mode="wait">
                     {mode === 'spot' && (
-                        <motion.div 
+                        <motion.div transition={pageTransition} 
                             key="spot"
                             initial={{ opacity: 0, scale: 0.98 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -2680,7 +2692,7 @@ const ExchangeContent = () => {
                     )}
 
                     {mode === 'fiat' && (
-                        <motion.div 
+                        <motion.div transition={pageTransition} 
                             key="fiat"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -2746,7 +2758,7 @@ const ExchangeContent = () => {
                     )}
 
                     {mode === 'pro' && (
-                        <motion.div 
+                        <motion.div transition={pageTransition} 
                             key="pro"
                             initial={{ opacity: 0, scale: 0.98 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -3180,7 +3192,7 @@ const ExchangeContent = () => {
                     )}
 
                     {mode === 'web3' && (
-                        <motion.div 
+                        <motion.div transition={pageTransition} 
                             key="web3"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -3482,7 +3494,7 @@ const ExchangeContent = () => {
                     )}
 
                     {mode === 'heatmap' && (
-                        <motion.div
+                        <motion.div transition={pageTransition}
                             key="heatmap"
                             initial={{ opacity: 0, scale: 0.98 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -3903,7 +3915,7 @@ const ExchangeContent = () => {
                         </motion.div>
                     )}
                     {mode === 'markets' && (
-                        <motion.div 
+                        <motion.div transition={pageTransition} 
                             key="markets"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -4561,7 +4573,7 @@ const ExchangeContent = () => {
 
 
                     {mode === 'list' && (
-                        <motion.div 
+                        <motion.div transition={pageTransition} 
                             key="list" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }}
                             className="max-w-[1200px] mx-auto"
                         >
@@ -4570,7 +4582,7 @@ const ExchangeContent = () => {
                     )}
 
                     {mode === 'bonding' && (
-                        <motion.div 
+                        <motion.div transition={pageTransition} 
                             key="bonding" initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 1.02 }}
                             className="max-w-[1600px] mx-auto"
                         >
@@ -4591,7 +4603,7 @@ const ExchangeContent = () => {
                     )}
 
                     {mode === 'staking' && (
-                        <motion.div 
+                        <motion.div transition={pageTransition} 
                             key="staking" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }}
                             className="max-w-[1200px] mx-auto"
                         >
@@ -4611,19 +4623,19 @@ const ExchangeContent = () => {
                         </motion.div>
                     )}
                     {mode === 'community' && (
-                        <motion.div key="community" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="max-w-[1200px] mx-auto">
+                        <motion.div transition={pageTransition} key="community" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="max-w-[1200px] mx-auto">
                             <CommunityPortal />
                         </motion.div>
                     )}
 
                     {mode === 'announcements' && (
-                        <motion.div key="announcements" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="max-w-[1200px] mx-auto">
+                        <motion.div transition={pageTransition} key="announcements" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="max-w-[1200px] mx-auto">
                             <AnnouncementsPortal setMode={setMode} setToToken={setToToken} tokens={activeTokens} />
                         </motion.div>
                     )}
 
                     {mode === 'b20ai' && (
-                        <motion.div key="b20ai" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="w-full">
+                        <motion.div transition={pageTransition} key="b20ai" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="w-full">
                             <B20AIPanel setMode={setMode} setToToken={setToToken} />
                         </motion.div>
                     )}
@@ -4652,31 +4664,31 @@ const ExchangeContent = () => {
                     )}
 
                     {mode === 'nft' && (
-                        <motion.div key="nft" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="w-full">
+                        <motion.div transition={pageTransition} key="nft" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="w-full">
                             <NftTerminal setMode={setMode} />
                         </motion.div>
                     )}
 
                     {mode === 'mex-money' && (
-                        <motion.div key="mex-money" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="w-full">
+                        <motion.div transition={pageTransition} key="mex-money" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="w-full">
                             <MexMoneyTerminal setMode={setMode} />
                         </motion.div>
                     )}
 
                     {mode === 'stocks' && (
-                        <motion.div key="stocks" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="w-full">
+                        <motion.div transition={pageTransition} key="stocks" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="w-full">
                             <StocksTerminal setMode={setMode} setToToken={setToToken} binancePing={binancePing} krakenStatus={krakenStatus} />
                         </motion.div>
                     )}
 
                     {mode === 'smart-money' && (
-                        <motion.div key="smart-money" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="max-w-[1400px] mx-auto">
+                        <motion.div transition={pageTransition} key="smart-money" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="max-w-[1400px] mx-auto">
                             <SmartMoneyPortal account={account} signer={signer} tokens={activeTokens} />
                         </motion.div>
                     )}
 
                     {mode === 'meme' && (
-                        <motion.div key="meme" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="w-full">
+                        <motion.div transition={pageTransition} key="meme" initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="w-full">
                             <MemeTerminal setMode={setMode} setToToken={setToToken} />
                         </motion.div>
                     )}

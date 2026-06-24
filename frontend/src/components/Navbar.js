@@ -5,12 +5,14 @@ import { useState, useEffect } from 'react';
 import { useWallet } from '@/context/WalletContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import axios from 'axios';
 import { Wallet, Rocket, Activity, Image as ImageIcon, Menu, X, FileText, ArrowRightLeft, ChevronDown, Coins, ShieldCheck, Shield, Sparkles, DollarSign, CreditCard, Lock, Brain, LayoutGrid, TrendingUp, BarChart3, Zap, Target, Flame, Building2, Globe, PlusCircle, Diamond } from 'lucide-react';
 import Logo from './Logo';
 
 export default function Navbar() {
     const { account, connectWallet, disconnectWallet, isConnecting } = useWallet();
+    const pathname = usePathname();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isCreateDropdownOpen, setIsCreateDropdownOpen] = useState(false);
     const [isExchangeDropdownOpen, setIsExchangeDropdownOpen] = useState(false);
@@ -72,15 +74,27 @@ export default function Navbar() {
         setIsMobileMenuOpen(!isMobileMenuOpen);
     };
 
+    const handleExchangeLinkClick = (e, href) => {
+        if (pathname === '/exchange') {
+            const url = new URL(href, window.location.origin);
+            const queryMode = url.searchParams.get('mode');
+            if (queryMode) {
+                e.preventDefault();
+                setIsExchangeDropdownOpen(false);
+                window.history.pushState(null, '', href);
+                window.dispatchEvent(new CustomEvent('exchange-mode-change', { detail: queryMode }));
+            }
+        } else {
+            setIsExchangeDropdownOpen(false);
+        }
+    };
+
     return (
         <nav className="fixed top-0 left-0 right-0 z-[1000] border-b border-black/5 paw-pattern/80 backdrop-blur-xl">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
                     <div className="flex items-center gap-8">
                         <Link href="/exchange" className="flex items-center gap-2 group shrink-0">
-                            <div className="w-12 h-12 shrink-0 flex items-center justify-center transform group-hover:scale-110 transition-transform duration-300">
-                                <Logo className="w-full h-full" />
-                            </div>
                             <div className="flex flex-col">
                                 <span className="text-2xl font-black tracking-tighter text-gray-900 text-premium-gradient drop-shadow-md whitespace-nowrap leading-none">
                                     BITPAY EXCHANGE
@@ -201,7 +215,7 @@ export default function Navbar() {
                                                         <Link 
                                                             key={idx}
                                                             href={item.href}
-                                                            onClick={() => setIsExchangeDropdownOpen(false)}
+                                                            onClick={(e) => handleExchangeLinkClick(e, item.href)}
                                                             className="flex items-center gap-3 p-2 bg-slate-50/20 hover:bg-[#dc143c] border border-slate-100/40 hover:border-[#dc143c] rounded-xl transition-all duration-200 group active:scale-[0.98]"
                                                         >
                                                             <div className="w-9 h-9 rounded-lg bg-white border border-slate-100 text-slate-500 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent transition-all flex items-center justify-center shrink-0">
@@ -233,7 +247,7 @@ export default function Navbar() {
                                                         <Link 
                                                             key={idx}
                                                             href={item.href}
-                                                            onClick={() => setIsExchangeDropdownOpen(false)}
+                                                            onClick={(e) => handleExchangeLinkClick(e, item.href)}
                                                             className="flex items-center gap-3 p-2 bg-slate-50/20 hover:bg-[#dc143c] border border-slate-100/40 hover:border-[#dc143c] rounded-xl transition-all duration-200 group active:scale-[0.98]"
                                                         >
                                                             <div className="w-9 h-9 rounded-lg bg-white border border-slate-100 text-slate-500 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent transition-all flex items-center justify-center shrink-0">
@@ -265,7 +279,7 @@ export default function Navbar() {
                                                         <Link 
                                                             key={idx}
                                                             href={item.href}
-                                                            onClick={() => setIsExchangeDropdownOpen(false)}
+                                                            onClick={(e) => handleExchangeLinkClick(e, item.href)}
                                                             className="flex items-center gap-3 p-2 bg-slate-50/20 hover:bg-[#dc143c] border border-slate-100/40 hover:border-[#dc143c] rounded-xl transition-all duration-200 group active:scale-[0.98]"
                                                         >
                                                             <div className="w-9 h-9 rounded-lg bg-white border border-slate-100 text-slate-500 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent transition-all flex items-center justify-center shrink-0">

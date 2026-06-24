@@ -340,18 +340,18 @@ function AIDataTab({ tokens }) {
                     <SectionTitle icon={Flame} title="Hot Coins" sub="Ranked by 24h volume" />
                     <div className="space-y-2">
                         {hot.slice(0,hotExpanded?20:4).map((t,i)=>(
-                            <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl transition-all" style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)'}}>
+                            <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl transition-all" style={{background:'rgba(15,23,42,0.02)',border:'1px solid rgba(15,23,42,0.05)'}}>
                                 <span className="text-[9px] font-black w-4" style={{color:'#a855f7'}}>#{i+1}</span>
-                                {t.image ? <img src={t.image} className="w-8 h-8 rounded-full" style={{border:'1px solid rgba(255,255,255,0.1)'}} alt="" onError={e=>e.target.style.display='none'} /> : null}
+                                {t.image ? <img src={t.image} className="w-8 h-8 rounded-full" style={{border:'1px solid rgba(15,23,42,0.1)'}} alt="" onError={e=>e.target.style.display='none'} /> : null}
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-black" style={{color:'#f1f5f9'}}>{t.symbol?.toUpperCase()}</p>
-                                    <p className="text-[9px] truncate" style={{color:'rgba(148,163,184,0.55)'}}>{fmtB(t.total_volume)} vol</p>
+                                    <p className="text-xs font-black text-slate-900">{t.symbol?.toUpperCase()}</p>
+                                    <p className="text-[9px] truncate text-slate-500 font-bold">{fmtB(t.total_volume)} vol</p>
                                 </div>
-                                <p className={`text-[10px] font-black ${isPos(t.price_change_percentage_24h)?'text-emerald-400':'text-rose-400'}`}>{fmtP(t.price_change_percentage_24h)}</p>
+                                <p className={`text-[10px] font-black ${isPos(t.price_change_percentage_24h)?'text-emerald-600':'text-rose-600'}`}>{fmtP(t.price_change_percentage_24h)}</p>
                             </div>
                         ))}
                     </div>
-                    <button onClick={()=>setHotExpanded(e=>!e)} className="w-full mt-3 py-2 text-[9px] font-black flex items-center justify-center gap-1 rounded-xl transition-all" style={{border:'1px solid rgba(255,255,255,0.08)',color:'rgba(148,163,184,0.6)'}}>
+                    <button onClick={()=>setHotExpanded(e=>!e)} className="w-full mt-3 py-2 text-[9px] font-black flex items-center justify-center gap-1 rounded-xl transition-all" style={{border:'1px solid rgba(15,23,42,0.08)',color:'rgba(71,85,105,0.85)'}}>
                         {hotExpanded?<><ChevronUp className="w-3 h-3"/>Show Less</>:<><ChevronDown className="w-3 h-3"/>Show More (up to 20)</>}
                     </button>
                 </Card>
@@ -456,14 +456,14 @@ function AIDataTab({ tokens }) {
                                         </div>
                                     </div>
                                 )}
-                                <p className="text-[8px] font-black truncate leading-none" style={{color:'#f1f5f9'}}>{t.symbol?.toUpperCase()?.slice(0,5)}</p>
-                                <p className={`text-[7px] font-bold mt-0.5 ${chg>=0?'text-emerald-300':'text-rose-300'}`}>{fmtP(chg)}</p>
+                                <p className="text-[8px] font-black truncate leading-none text-slate-950">{t.symbol?.toUpperCase()?.slice(0,5)}</p>
+                                <p className={`text-[7px] font-bold mt-0.5 ${chg>=0?'text-emerald-950':'text-rose-950'}`}>{fmtP(chg)}</p>
                             </div>
                         );
                     })}
                 </div>
                 {heatmap.length > 48 && (
-                    <button onClick={()=>setHeatExpanded(e=>!e)} className="w-full mt-4 py-2.5 text-[10px] font-black flex items-center justify-center gap-1 rounded-xl transition-all" style={{border:'1px solid rgba(255,255,255,0.08)',color:'rgba(148,163,184,0.6)'}}>
+                    <button onClick={()=>setHeatExpanded(e=>!e)} className="w-full mt-4 py-2.5 text-[10px] font-black flex items-center justify-center gap-1 rounded-xl transition-all" style={{border:'1px solid rgba(15,23,42,0.08)',color:'rgba(71,85,105,0.85)'}}>
                         {heatExpanded?<><ChevronUp className="w-4 h-4"/>Collapse Grid</>:<><ChevronDown className="w-4 h-4"/>View Next 100 Tokens</>}
                     </button>
                 )}
@@ -478,13 +478,13 @@ function AIDataTab({ tokens }) {
                             const chg=Number(t.price_change_percentage_24h||0);
                             return (
                                 <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl transition-all" style={{background:'rgba(52,211,153,0.05)',border:'1px solid rgba(52,211,153,0.1)'}}>
-                                    <span className="text-[9px] font-black w-4" style={{color:'#34d399'}}>#{i+1}</span>
+                                    <span className="text-[9px] font-black w-4" style={{color:'#10b981'}}>#{i+1}</span>
                                     {t.image ? <img src={t.image} className="w-8 h-8 rounded-full" style={{border:'1px solid rgba(52,211,153,0.2)'}} alt="" onError={e=>e.target.style.display='none'} /> : null}
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-black" style={{color:'#f1f5f9'}}>{t.symbol?.toUpperCase()}</p>
-                                        <p className="text-[9px] truncate" style={{color:'rgba(148,163,184,0.55)'}}>${fmt(t.current_price,4)}</p>
+                                        <p className="text-xs font-black text-slate-900">{t.symbol?.toUpperCase()}</p>
+                                        <p className="text-[9px] truncate text-slate-500 font-bold">${fmt(t.current_price,4)}</p>
                                     </div>
-                                    <p className="text-[10px] font-black text-emerald-400">{fmtP(chg)}</p>
+                                    <p className="text-[10px] font-black text-emerald-600">{fmtP(chg)}</p>
                                 </div>
                             );
                         })}
@@ -497,13 +497,13 @@ function AIDataTab({ tokens }) {
                             const chg=Number(t.price_change_percentage_24h||0);
                             return (
                                 <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl transition-all" style={{background:'rgba(248,113,113,0.05)',border:'1px solid rgba(248,113,113,0.1)'}}>
-                                    <span className="text-[9px] font-black w-4" style={{color:'#f87171'}}>#{i+1}</span>
+                                    <span className="text-[9px] font-black w-4" style={{color:'#ef4444'}}>#{i+1}</span>
                                     {t.image ? <img src={t.image} className="w-8 h-8 rounded-full" style={{border:'1px solid rgba(248,113,113,0.2)'}} alt="" onError={e=>e.target.style.display='none'} /> : null}
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-black" style={{color:'#f1f5f9'}}>{t.symbol?.toUpperCase()}</p>
-                                        <p className="text-[9px] truncate" style={{color:'rgba(148,163,184,0.55)'}}>${fmt(t.current_price,4)}</p>
+                                        <p className="text-xs font-black text-slate-900">{t.symbol?.toUpperCase()}</p>
+                                        <p className="text-[9px] truncate text-slate-500 font-bold">${fmt(t.current_price,4)}</p>
                                     </div>
-                                    <p className="text-[10px] font-black text-rose-400">{fmtP(chg)}</p>
+                                    <p className="text-[10px] font-black text-rose-600">{fmtP(chg)}</p>
                                 </div>
                             );
                         })}
@@ -511,7 +511,7 @@ function AIDataTab({ tokens }) {
                 </Card>
             </div>
             {(movers.length > 5 || losers.length > 5) && (
-                <button onClick={()=>setMoverExpanded(e=>!e)} className="w-full py-2.5 text-[10px] font-black flex items-center justify-center gap-1 rounded-xl transition-all" style={{border:'1px solid rgba(255,255,255,0.08)',color:'rgba(148,163,184,0.6)'}}>
+                <button onClick={()=>setMoverExpanded(e=>!e)} className="w-full py-2.5 text-[10px] font-black flex items-center justify-center gap-1 rounded-xl transition-all" style={{border:'1px solid rgba(15,23,42,0.08)',color:'rgba(71,85,105,0.85)'}}>
                     {moverExpanded?<><ChevronUp className="w-4 h-4"/>Collapse List</>:<><ChevronDown className="w-4 h-4"/>View Top 20</>}
                 </button>
             )}

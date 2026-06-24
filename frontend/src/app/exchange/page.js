@@ -2155,9 +2155,9 @@ const ExchangeContent = () => {
 
             <div className="fixed top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-teal-600 via-teal-500 to-emerald-500 z-[100] shadow-sm" />
 
-            <div className="pt-24 pb-24 px-4 md:px-8 max-w-[1700px] mx-auto">
+            <div className="pt-24 pb-4 px-4 md:px-8 max-w-[1700px] mx-auto">
                 {/* ── REDESIGNED BRAND & STATUS HEADER ── */}
-                <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 mb-8 border-b border-slate-200/60 px-4">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 mb-2 border-b border-slate-200/60 px-4">
                     <div className="flex flex-col items-center md:items-start text-center md:text-left">
                         <span className="text-[9px] font-black tracking-[0.4em] uppercase text-slate-400 mb-1.5 leading-none">
                             Institutional Platform

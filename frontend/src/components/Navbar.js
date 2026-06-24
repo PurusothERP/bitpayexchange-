@@ -73,7 +73,7 @@ export default function Navbar() {
     };
 
     return (
-        <nav className="fixed top-0 left-0 right-0 z-50 border-b border-black/5 paw-pattern/80 backdrop-blur-xl">
+        <nav className="fixed top-0 left-0 right-0 z-[1000] border-b border-black/5 paw-pattern/80 backdrop-blur-xl">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
                     <div className="flex items-center gap-8">
@@ -182,15 +182,15 @@ export default function Navbar() {
                                             animate={{ opacity: 1, y: 0, scale: 1 }}
                                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                             transition={{ duration: 0.2 }}
-                                            className="absolute top-full left-1/2 -translate-x-1/2 w-[980px] bg-white/98 backdrop-blur-3xl border border-rose-500/10 shadow-[0_25px_60px_-15px_rgba(220,20,60,0.12)] rounded-[2rem] p-6 z-50 mt-3 overflow-hidden grid grid-cols-3 gap-6"
+                                            className="absolute top-full left-1/2 -translate-x-1/2 w-[980px] bg-white/98 backdrop-blur-3xl border border-rose-500/10 shadow-[0_25px_60px_-15px_rgba(220,20,60,0.12)] rounded-[2rem] p-6 z-[1100] mt-3 overflow-hidden grid grid-cols-3 gap-6"
                                         >
                                             {/* Column 1: Trade Core */}
-                                            <div className="space-y-4">
-                                                <div className="flex items-center gap-2 border-b border-rose-50 pb-3 mb-1">
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-2 border-b border-rose-50 pb-2.5 mb-1">
                                                     <TrendingUp className="w-4 h-4 text-[#dc143c]" />
                                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Trade Core</span>
                                                 </div>
-                                                <div className="flex flex-col gap-2">
+                                                <div className="flex flex-col gap-1.5">
                                                     {[
                                                         { label: 'Markets', desc: 'Real-time token trackers & data', href: '/exchange?mode=markets', icon: LayoutGrid },
                                                         { label: 'Spot Exchange', desc: 'Professional Spot Trading Terminal', href: '/exchange?mode=spot', icon: TrendingUp },
@@ -202,16 +202,14 @@ export default function Navbar() {
                                                             key={idx}
                                                             href={item.href}
                                                             onClick={() => setIsExchangeDropdownOpen(false)}
-                                                            className="flex items-start gap-3.5 p-3 bg-slate-50/40 hover:bg-[#dc143c] border border-slate-100/70 hover:border-[#dc143c] rounded-2xl transition-all duration-350 group shadow-[0_2px_4px_rgba(0,0,0,0.02)] hover:shadow-lg hover:shadow-rose-500/15 active:scale-[0.98]"
+                                                            className="flex items-center gap-3 p-2 bg-slate-50/20 hover:bg-[#dc143c] border border-slate-100/40 hover:border-[#dc143c] rounded-xl transition-all duration-200 group active:scale-[0.98]"
                                                         >
-                                                            <div className="p-2.5 rounded-xl bg-white border border-slate-100 text-slate-500 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent transition-all duration-300 shrink-0">
+                                                            <div className="w-9 h-9 rounded-lg bg-white border border-slate-100 text-slate-500 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent transition-all flex items-center justify-center shrink-0">
                                                                 <item.icon className="w-4 h-4" />
                                                             </div>
                                                             <div className="min-w-0">
-                                                                <p className="text-xs font-black uppercase text-slate-800 group-hover:text-white transition-colors tracking-tight leading-none">{item.label}</p>
-                                                                <span className="inline-block mt-2 px-2 py-0.5 bg-rose-50/50 text-[#dc143c] border border-rose-100/50 rounded-md text-[8px] font-bold uppercase tracking-wider group-hover:bg-white/10 group-hover:text-white/90 group-hover:border-transparent transition-all leading-none">
-                                                                    {item.desc}
-                                                                </span>
+                                                                <p className="text-[11px] font-black uppercase text-slate-800 group-hover:text-white transition-colors tracking-tight leading-none">{item.label}</p>
+                                                                <p className="text-[8px] font-bold text-slate-400 group-hover:text-white/70 transition-colors uppercase tracking-wider mt-1 leading-none truncate">{item.desc}</p>
                                                             </div>
                                                         </Link>
                                                     ))}
@@ -219,12 +217,12 @@ export default function Navbar() {
                                             </div>
 
                                             {/* Column 2: Yield & Assets */}
-                                            <div className="space-y-4">
-                                                <div className="flex items-center gap-2 border-b border-rose-50 pb-3 mb-1">
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-2 border-b border-rose-50 pb-2.5 mb-1">
                                                     <Lock className="w-4 h-4 text-[#dc143c]" />
                                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Yield & Assets</span>
                                                 </div>
-                                                <div className="flex flex-col gap-2">
+                                                <div className="flex flex-col gap-1.5">
                                                     {[
                                                         { label: 'MEX Yield Program', desc: 'Passive stable earnings on RWA debt', href: '/exchange?mode=mex-money', icon: DollarSign },
                                                         { label: 'Smart Money Index', desc: 'Diversified 10-token index buckets', href: '/exchange?mode=smart-money', icon: Target },
@@ -236,16 +234,14 @@ export default function Navbar() {
                                                             key={idx}
                                                             href={item.href}
                                                             onClick={() => setIsExchangeDropdownOpen(false)}
-                                                            className="flex items-start gap-3.5 p-3 bg-slate-50/40 hover:bg-[#dc143c] border border-slate-100/70 hover:border-[#dc143c] rounded-2xl transition-all duration-350 group shadow-[0_2px_4px_rgba(0,0,0,0.02)] hover:shadow-lg hover:shadow-rose-500/15 active:scale-[0.98]"
+                                                            className="flex items-center gap-3 p-2 bg-slate-50/20 hover:bg-[#dc143c] border border-slate-100/40 hover:border-[#dc143c] rounded-xl transition-all duration-200 group active:scale-[0.98]"
                                                         >
-                                                            <div className="p-2.5 rounded-xl bg-white border border-slate-100 text-slate-500 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent transition-all duration-300 shrink-0">
+                                                            <div className="w-9 h-9 rounded-lg bg-white border border-slate-100 text-slate-500 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent transition-all flex items-center justify-center shrink-0">
                                                                 <item.icon className="w-4 h-4" />
                                                             </div>
                                                             <div className="min-w-0">
-                                                                <p className="text-xs font-black uppercase text-slate-800 group-hover:text-white transition-colors tracking-tight leading-none">{item.label}</p>
-                                                                <span className="inline-block mt-2 px-2 py-0.5 bg-rose-50/50 text-[#dc143c] border border-rose-100/50 rounded-md text-[8px] font-bold uppercase tracking-wider group-hover:bg-white/10 group-hover:text-white/90 group-hover:border-transparent transition-all leading-none">
-                                                                    {item.desc}
-                                                                </span>
+                                                                <p className="text-[11px] font-black uppercase text-slate-800 group-hover:text-white transition-colors tracking-tight leading-none">{item.label}</p>
+                                                                <p className="text-[8px] font-bold text-slate-400 group-hover:text-white/70 transition-colors uppercase tracking-wider mt-1 leading-none truncate">{item.desc}</p>
                                                             </div>
                                                         </Link>
                                                     ))}
@@ -253,12 +249,12 @@ export default function Navbar() {
                                             </div>
 
                                             {/* Column 3: Intelligence & Portals */}
-                                            <div className="space-y-4">
-                                                <div className="flex items-center gap-2 border-b border-rose-50 pb-3 mb-1">
+                                            <div className="space-y-3">
+                                                <div className="flex items-center gap-2 border-b border-rose-50 pb-2.5 mb-1">
                                                     <Globe className="w-4 h-4 text-[#dc143c]" />
                                                     <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Intelligence & Portals</span>
                                                 </div>
-                                                <div className="flex flex-col gap-2">
+                                                <div className="flex flex-col gap-1.5">
                                                     {[
                                                         { label: 'Web3 Portal', desc: 'Interact with dApps and smart contracts', href: '/exchange?mode=web3', icon: Globe },
                                                         { label: 'Meme Hub', desc: 'Trending coins, launches & sentiment', href: '/exchange?mode=meme', icon: Flame },
@@ -270,16 +266,14 @@ export default function Navbar() {
                                                             key={idx}
                                                             href={item.href}
                                                             onClick={() => setIsExchangeDropdownOpen(false)}
-                                                            className="flex items-start gap-3.5 p-3 bg-slate-50/40 hover:bg-[#dc143c] border border-slate-100/70 hover:border-[#dc143c] rounded-2xl transition-all duration-350 group shadow-[0_2px_4px_rgba(0,0,0,0.02)] hover:shadow-lg hover:shadow-rose-500/15 active:scale-[0.98]"
+                                                            className="flex items-center gap-3 p-2 bg-slate-50/20 hover:bg-[#dc143c] border border-slate-100/40 hover:border-[#dc143c] rounded-xl transition-all duration-200 group active:scale-[0.98]"
                                                         >
-                                                            <div className="p-2.5 rounded-xl bg-white border border-slate-100 text-slate-500 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent transition-all duration-300 shrink-0">
+                                                            <div className="w-9 h-9 rounded-lg bg-white border border-slate-100 text-slate-500 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent transition-all flex items-center justify-center shrink-0">
                                                                 <item.icon className="w-4 h-4" />
                                                             </div>
                                                             <div className="min-w-0">
-                                                                <p className="text-xs font-black uppercase text-slate-800 group-hover:text-white transition-colors tracking-tight leading-none">{item.label}</p>
-                                                                <span className="inline-block mt-2 px-2 py-0.5 bg-rose-50/50 text-[#dc143c] border border-rose-100/50 rounded-md text-[8px] font-bold uppercase tracking-wider group-hover:bg-white/10 group-hover:text-white/90 group-hover:border-transparent transition-all leading-none">
-                                                                    {item.desc}
-                                                                </span>
+                                                                <p className="text-[11px] font-black uppercase text-slate-800 group-hover:text-white transition-colors tracking-tight leading-none">{item.label}</p>
+                                                                <p className="text-[8px] font-bold text-slate-400 group-hover:text-white/70 transition-colors uppercase tracking-wider mt-1 leading-none truncate">{item.desc}</p>
                                                             </div>
                                                         </Link>
                                                     ))}

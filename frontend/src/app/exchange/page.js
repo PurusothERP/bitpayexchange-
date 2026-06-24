@@ -253,6 +253,7 @@ const ExchangeContent = () => {
     const { account, signer, connectWallet, walletProvider } = useWallet();
     const [mode, setMode] = useState('markets');
     const [mounted, setMounted] = useState(false);
+    const [isPortalDropdownOpen, setIsPortalDropdownOpen] = useState(false);
     
     useEffect(() => {
         setMounted(true);
@@ -264,7 +265,7 @@ const ExchangeContent = () => {
     // Synchronize mode with query parameters
     useEffect(() => {
         const queryMode = searchParams.get('mode');
-        if (queryMode && ['markets', 'spot', 'pro', 'meme-futures', 'stocks', 'fiat', 'smart-money', 'mex-money'].includes(queryMode)) {
+        if (queryMode && ['markets', 'spot', 'pro', 'meme-futures', 'stocks', 'fiat', 'smart-money', 'mex-money', 'web3', 'meme', 'list', 'b20ai'].includes(queryMode)) {
             setMode(queryMode);
         }
     }, [searchParams]);
@@ -280,6 +281,77 @@ const ExchangeContent = () => {
     // Token State
     const [fromToken, setFromToken] = useState({ id: 'binancecoin', symbol: 'BNB', name: 'Binance Coin', address: '0x0000000000000000000000000000000000000000', image: 'https://assets.coingecko.com/coins/images/825/small/binance-coin-logo.png' });
     const [toToken, setToToken] = useState({ id: 'tether', symbol: 'USDT', name: 'Tether', address: '0x55d398326f99059fF775485246999027B3197955', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', network: 'BEP-20' });
+    
+    // Spot Trading states
+    const [spotSide, setSpotSide] = useState('buy');
+    const [spotSearch, setSpotSearch] = useState('');
+    const [spotOrderType, setSpotOrderType] = useState('market');
+    const [spotActiveTab, setSpotActiveTab] = useState('chart');
+
+    const activeSpotToken = spotSide === 'buy' ? toToken : fromToken;
+
+    const selectSpotPair = (tradingToken, side) => {
+        const usdtToken = { id: 'tether', symbol: 'USDT', name: 'Tether', address: '0x55d398326f99059fF775485246999027B3197955', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', network: 'BEP-20' };
+        if (side === 'buy') {
+            setFromToken(usdtToken);
+            setToToken(tradingToken);
+        } else {
+            setFromToken(tradingToken);
+            setToToken(usdtToken);
+        }
+        setFromAmount('');
+        setToAmount('');
+    };
+
+    const handleSpotSideChange = (newSide) => {
+        if (newSide === spotSide) return;
+        setSpotSide(newSide);
+        // Swap fromToken and toToken
+        const temp = fromToken;
+        setFromToken(toToken);
+        setToToken(temp);
+        setFromAmount('');
+        setToAmount('');
+    };
+
+    const handleSelectTradingToken = async (tok) => {
+        const usdtToken = { id: 'tether', symbol: 'USDT', name: 'Tether', address: '0x55d398326f99059fF775485246999027B3197955', image: 'https://assets.coingecko.com/coins/images/325/small/tether.png', network: 'BEP-20' };
+        let activeTok = tok;
+        // Fetch fresh spot price dynamically when selected
+        try {
+            const res = await axios.get(`${API_URL}/tokens/markets/cg`, {
+                params: { ids: tok.id, per_page: 1, page: 1 },
+                timeout: 5000
+            });
+            if (res?.data?.length > 0) {
+                const live = res.data[0];
+                activeTok = {
+                    ...tok,
+                    current_price: live.current_price || tok.current_price,
+                    price_change_percentage_24h: live.price_change_percentage_24h || tok.price_change_percentage_24h,
+                    high_24h: live.high_24h || tok.high_24h,
+                    low_24h: live.low_24h || tok.low_24h,
+                    market_cap: live.market_cap || tok.market_cap,
+                    total_volume: live.total_volume || tok.total_volume,
+                    image: live.image || tok.image,
+                    ath: live.ath || tok.ath,
+                    circulating_supply: live.circulating_supply || tok.circulating_supply,
+                };
+            }
+        } catch (e) {
+            console.warn('Failed to fetch dynamic spot token details', e);
+        }
+
+        if (spotSide === 'buy') {
+            setFromToken(usdtToken);
+            setToToken(activeTok);
+        } else {
+            setFromToken(activeTok);
+            setToToken(usdtToken);
+        }
+        setFromAmount('');
+        setToAmount('');
+    };
     
     // Futures State
     const [leverage, setLeverage] = useState(10);
@@ -2072,106 +2144,307 @@ const ExchangeContent = () => {
             <div className="fixed top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-teal-600 via-teal-500 to-emerald-500 z-[100] shadow-sm" />
 
             <div className="pt-24 pb-24 px-4 md:px-8 max-w-[1700px] mx-auto">
-                {/* ── PREMIUM INSTITUTIONAL HEADER ── */}
-                <div className="flex flex-col lg:flex-row items-center lg:items-end justify-between gap-8 mb-16 px-4">
-                    
-                    <div className="flex flex-col items-center lg:items-start shrink-0">
-                        <div className="flex items-center gap-4 mb-3">
-                            <h1 className="text-4xl md:text-[3.5rem] font-black tracking-tighter text-slate-900 leading-[0.9] flex flex-col">
-                                <span className="opacity-40 text-sm tracking-[0.4em] mb-2 uppercase font-black">Bitpay Exchange</span>
-                                <span>CRYPTO <span className="text-teal-600 relative">
-                                    EXCHANGE
-                                    <div className="absolute -bottom-2 left-0 w-full h-1 bg-teal-600/20 rounded-full" />
-                                </span></span>
-                            </h1>
-                            <div className="flex flex-col gap-2">
-                                <div className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black tracking-[0.2em] uppercase flex items-center gap-2 border border-emerald-100 shadow-sm">
-                                    <div className="relative flex h-2 w-2">
-                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                                    </div>
-                                    Network Online
-                                </div>
-                                <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full border shadow-sm" style={{ background: 'rgba(220, 20, 60, 0.06)', color: '#dc143c', borderColor: 'rgba(220, 20, 60, 0.15)' }}>
-                                    <Sparkles size={10} className="animate-pulse" style={{ color: '#dc143c' }} />
-                                    <span className="text-[9px] font-black uppercase tracking-widest">
-                                        Nuera AI Core Active
-                                    </span>
-                                </div>
+                {/* ── REDESIGNED BRAND & STATUS HEADER ── */}
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-8 mb-8 border-b border-slate-200/60 px-4">
+                    <div className="flex flex-col items-center md:items-start text-center md:text-left">
+                        <span className="text-[9px] font-black tracking-[0.4em] uppercase text-slate-400 mb-1.5 leading-none">
+                            Institutional Platform
+                        </span>
+                        <div className="flex items-center gap-3 relative z-[101]">
+                            <span className="text-3xl md:text-4xl font-black tracking-tighter text-slate-900 leading-none">
+                                BITPAY
+                            </span>
+                            <span className="px-4 py-1.5 bg-[#dc143c] text-white text-xl md:text-2xl font-black tracking-normal uppercase rounded-lg shadow-sm leading-none flex items-center justify-center transform -skew-x-12 select-none">
+                                EXCHANGE
+                            </span>
+                            
+                            {/* Premium Portal Dropdown Switcher */}
+                            <div className="relative ml-2">
+                                <button 
+                                    onClick={() => setIsPortalDropdownOpen(!isPortalDropdownOpen)}
+                                    className="flex items-center gap-2 px-4 py-2 bg-rose-50/50 hover:bg-[#dc143c]/10 border border-[#dc143c]/20 hover:border-[#dc143c]/30 rounded-full shadow-sm text-[10px] font-black uppercase tracking-wider text-[#dc143c] transition-all"
+                                >
+                                    <span>Jump To</span>
+                                    <ChevronDown className={`w-3.5 h-3.5 text-[#dc143c] transition-transform duration-300 ${isPortalDropdownOpen ? 'rotate-180' : ''}`} />
+                                </button>
+
+                                <AnimatePresence>
+                                    {isPortalDropdownOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            className="absolute left-0 mt-3 w-80 bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-2xl rounded-3xl p-5 z-[200] grid grid-cols-1 gap-4"
+                                        >
+                                            <div className="space-y-2">
+                                                <p className="text-[8px] font-black text-[#dc143c] uppercase tracking-widest leading-none border-b border-rose-50 pb-1.5">Trade Core</p>
+                                                <div className="grid grid-cols-2 gap-1.5">
+                                                    {[
+                                                        { id: 'markets', label: 'Markets' },
+                                                        { id: 'spot', label: 'Spot Exchange' },
+                                                        { id: 'pro', label: 'Futures' },
+                                                        { id: 'meme-futures', label: 'Meme Futures' },
+                                                        { id: 'list', label: 'List Token' }
+                                                    ].map(opt => (
+                                                        <button 
+                                                            key={opt.id}
+                                                            onClick={() => { setMode(opt.id); setIsPortalDropdownOpen(false); }}
+                                                            className={`text-left text-xs font-black p-2 rounded-xl transition-all ${mode === opt.id ? 'bg-[#dc143c] text-white shadow-md' : 'hover:bg-slate-50 text-slate-700'}`}
+                                                        >
+                                                            {opt.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <p className="text-[8px] font-black text-[#dc143c] uppercase tracking-widest leading-none border-b border-rose-50 pb-1.5">Wealth & Yield</p>
+                                                <div className="grid grid-cols-2 gap-1.5">
+                                                    {[
+                                                        { id: 'mex-money', label: 'MEX Yield' },
+                                                        { id: 'smart-money', label: 'Smart Money' },
+                                                        { id: 'stocks', label: 'Stocks' }
+                                                    ].map(opt => (
+                                                        <button 
+                                                            key={opt.id}
+                                                            onClick={() => { setMode(opt.id); setIsPortalDropdownOpen(false); }}
+                                                            className={`text-left text-xs font-black p-2 rounded-xl transition-all ${mode === opt.id ? 'bg-[#dc143c] text-white shadow-md' : 'hover:bg-slate-50 text-slate-700'}`}
+                                                        >
+                                                            {opt.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <p className="text-[8px] font-black text-[#dc143c] uppercase tracking-widest leading-none border-b border-rose-50 pb-1.5">Intelligence & AI</p>
+                                                <div className="grid grid-cols-2 gap-1.5">
+                                                    {[
+                                                        { id: 'web3', label: 'Web3 Portal' },
+                                                        { id: 'meme', label: 'Meme Hub' },
+                                                        { id: 'fiat', label: 'Fiat Desk' },
+                                                        { id: 'b20ai', label: 'Nuera AI' }
+                                                    ].map(opt => (
+                                                        <button 
+                                                            key={opt.id}
+                                                            onClick={() => { setMode(opt.id); setIsPortalDropdownOpen(false); }}
+                                                            className={`text-left text-xs font-black p-2 rounded-xl transition-all ${mode === opt.id ? 'bg-[#dc143c] text-white shadow-md' : 'hover:bg-slate-50 text-slate-700'}`}
+                                                        >
+                                                            {opt.label}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </div>
-                        <p className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-[0.3em] flex items-center gap-3">
-                            Institutional Deep Liquidity <span className="w-1 h-1 bg-slate-300 rounded-full" /> Pure Execution
+                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-[0.3em] mt-3.5 flex items-center gap-2">
+                            Institutional Deep Liquidity <span className="w-1.5 h-1.5 bg-[#dc143c] rounded-full inline-block"></span> Pure Execution
                         </p>
                     </div>
 
-                    {/* ── HIGH-END GLASSMOPHIC NAVIGATION ── */}
-                    <div className="w-full lg:w-auto flex flex-wrap justify-center lg:justify-end gap-1.5 p-2 bg-white/70 backdrop-blur-2xl rounded-[2.5rem] border border-slate-200/60 shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08)]">
-                        
-                        <button onClick={() => setMode('markets')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'markets' ? 'bg-slate-900 text-white shadow-2xl shadow-slate-900/20 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'}`}>
-                            <LayoutGrid className="w-4 h-4" /> Markets
-                        </button>
-
-                        <button onClick={() => setMode('web3')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'web3' ? 'bg-teal-600 text-white shadow-2xl shadow-teal-600/20 scale-105' : 'text-slate-500 hover:text-teal-600 hover:bg-teal-50'}`}>
-                            <Globe className="w-4 h-4" /> Web3
-                        </button>
-
-                        <button onClick={() => setMode('meme')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'meme' ? 'bg-orange-500 text-white shadow-2xl shadow-orange-500/20 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'}`}>
-                            <Flame className="w-4 h-4" /> Meme
-                        </button>
-
-                        <button onClick={() => setMode('spot')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'spot' ? 'bg-teal-600 text-white shadow-2xl shadow-teal-600/20 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'}`}>
-                            <TrendingUp className="w-4 h-4" /> Spot
-                        </button>
-
-                        <button onClick={() => setMode('fiat')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'fiat' ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-600/20 scale-105' : 'text-slate-500 hover:text-indigo-600 hover:bg-indigo-50'}`}>
-                            <DollarSign className="w-4 h-4" /> Fiat
-                        </button>
-
-                        <button onClick={() => setMode('pro')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'pro' ? 'bg-slate-900 text-white shadow-2xl shadow-slate-900/20 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'}`}>
-                            <BarChart3 className="w-4 h-4" /> Futures
-                        </button>
-
-                        <button onClick={() => setMode('b20ai')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'b20ai' ? 'bg-fuchsia-600 text-white shadow-2xl shadow-fuchsia-600/20 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'}`}>
-                            <Brain className={`w-4 h-4 ${mode === 'b20ai' ? 'animate-pulse' : ''}`} /> AI Core
-                        </button>
-
-                        <button onClick={() => setMode('meme-futures')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'meme-futures' ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-600/20 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'}`}>
-                            <Zap className="w-4 h-4" /> Meme Futures
-                        </button>
-
-                        <button onClick={() => setMode('mex-money')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'mex-money' ? 'bg-emerald-500 text-white shadow-2xl shadow-emerald-500/20 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'}`}>
-                            <DollarSign className="w-4 h-4" /> MEX
-                        </button>
-
-                        <button onClick={() => setMode('stocks')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'stocks' ? 'bg-teal-600 text-white shadow-2xl shadow-teal-600/20 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'}`}>
-                            <Building2 className="w-4 h-4" /> Stocks
-                        </button>
-
-                        <button onClick={() => setMode('smart-money')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'smart-money' ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-600/20 scale-105' : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/80'}`}>
-                            <Target className="w-4 h-4" /> Smart Money
-                        </button>
-
-                        <div className="w-px h-8 bg-slate-200/60 mx-2 hidden lg:block" />
-
-                        <Link href="/staking" className="flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 text-slate-500 hover:text-violet-600 hover:bg-violet-50">
-                            <Lock className="w-4 h-4" /> Staking
-                        </Link>
-
-                        <Link href="/lending" className="flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 text-slate-500 hover:text-teal-600 hover:bg-teal-50">
-                            <ArrowLeftRight className="w-4 h-4" /> Lending & Borrowing
-                        </Link>
-
-                        <Link href="/nft" className="flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 text-slate-500 hover:text-teal-600 hover:bg-teal-50">
-                            <Diamond className="w-4 h-4" /> NFT
-                        </Link>
-
-                        <button onClick={() => setMode('list')} className={`flex items-center gap-2.5 px-6 py-3 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all duration-300 ${mode === 'list' ? 'bg-teal-600 text-white shadow-2xl shadow-teal-600/20' : 'text-teal-600 bg-teal-50/50 hover:bg-teal-100'}`}>
-                            <PlusCircle className="w-4 h-4" /> List
-                        </button>
+                    <div className="flex items-center gap-3">
+                        <div className="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black tracking-[0.15em] uppercase flex items-center gap-2 border border-emerald-100 shadow-sm">
+                            <div className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </div>
+                            Network Online
+                        </div>
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-full border shadow-sm" style={{ background: 'rgba(220, 20, 60, 0.06)', color: '#dc143c', borderColor: 'rgba(220, 20, 60, 0.15)' }}>
+                            <Sparkles size={10} className="animate-pulse" style={{ color: '#dc143c' }} />
+                            <span className="text-[9px] font-black uppercase tracking-widest">
+                                Nuera AI Core Active
+                            </span>
+                        </div>
                     </div>
                 </div>
 
+                {/* ── SLEEK INSTITUTIONAL NAVIGATION BAR WITH DROPDOWNS ── */}
+                <div className="w-full bg-white/80 backdrop-blur-xl border border-slate-200/60 rounded-full py-4 px-8 shadow-lg mb-8 relative flex items-center justify-between gap-6 z-[100]">
+                    <div className="flex items-center gap-8">
+                        {/* Trade Core Dropdown */}
+                        <div className="relative group">
+                            <button className="flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider text-slate-700 hover:text-[#dc143c] hover:bg-slate-50 transition-all">
+                                <TrendingUp className="w-3.5 h-3.5 text-[#dc143c]" />
+                                <span>Trade Core</span>
+                                <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:rotate-180 transition-transform duration-300" />
+                            </button>
+                            
+                            {/* Dropdown Menu */}
+                            <div className="absolute top-full left-0 mt-2 w-72 bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-2xl rounded-3xl p-3 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-300 z-[200] flex flex-col gap-1">
+                                {/* Option 1: Markets */}
+                                <button onClick={() => setMode('markets')} className={`flex items-start gap-3 p-3 rounded-2xl text-left transition-all ${mode === 'markets' ? 'bg-[#dc143c] text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'}`}>
+                                    <LayoutGrid className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-black">Markets</p>
+                                        <p className={`text-[9px] font-bold ${mode === 'markets' ? 'text-white/70' : 'text-slate-400'}`}>Real-time trackers & data</p>
+                                    </div>
+                                </button>
+                                {/* Option 2: Spot Exchange */}
+                                <button onClick={() => { setMode('spot'); selectSpotPair(toToken?.symbol === 'USDT' ? fromToken : toToken, spotSide); }} className={`flex items-start gap-3 p-3 rounded-2xl text-left transition-all ${mode === 'spot' ? 'bg-[#dc143c] text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'}`}>
+                                    <TrendingUp className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-black">Spot Exchange</p>
+                                        <p className={`text-[9px] font-bold ${mode === 'spot' ? 'text-white/70' : 'text-slate-400'}`}>Professional Spot Terminal</p>
+                                    </div>
+                                </button>
+                                {/* Option 3: Futures Terminal */}
+                                <button onClick={() => setMode('pro')} className={`flex items-start gap-3 p-3 rounded-2xl text-left transition-all ${mode === 'pro' ? 'bg-[#dc143c] text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'}`}>
+                                    <BarChart3 className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-black">Futures Terminal</p>
+                                        <p className={`text-[9px] font-bold ${mode === 'pro' ? 'text-white/70' : 'text-slate-400'}`}>Up to 50x Perpetual Leverage</p>
+                                    </div>
+                                </button>
+                                {/* Option 4: Meme Futures */}
+                                <button onClick={() => setMode('meme-futures')} className={`flex items-start gap-3 p-3 rounded-2xl text-left transition-all ${mode === 'meme-futures' ? 'bg-[#dc143c] text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'}`}>
+                                    <Zap className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-black">Meme Futures</p>
+                                        <p className={`text-[9px] font-bold ${mode === 'meme-futures' ? 'text-white/70' : 'text-slate-400'}`}>High volatility contracts</p>
+                                    </div>
+                                </button>
+                                {/* Option 5: List Your Token */}
+                                <button onClick={() => setMode('list')} className={`flex items-start gap-3 p-3 rounded-2xl text-left transition-all ${mode === 'list' ? 'bg-[#dc143c] text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'}`}>
+                                    <PlusCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-black">List Your Token</p>
+                                        <p className={`text-[9px] font-bold ${mode === 'list' ? 'text-white/70' : 'text-slate-400'}`}>Submit fair launches & curves</p>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Yield & Assets Dropdown */}
+                        <div className="relative group">
+                            <button className="flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider text-slate-700 hover:text-[#dc143c] hover:bg-slate-50 transition-all">
+                                <Lock className="w-3.5 h-3.5 text-[#dc143c]" />
+                                <span>Yield & Assets</span>
+                                <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:rotate-180 transition-transform duration-300" />
+                            </button>
+                            
+                            {/* Dropdown Menu */}
+                            <div className="absolute top-full left-0 mt-2 w-72 bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-2xl rounded-3xl p-3 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-300 z-[200] flex flex-col gap-1">
+                                {/* Option 1: MEX Yield Program */}
+                                <button onClick={() => setMode('mex-money')} className={`flex items-start gap-3 p-3 rounded-2xl text-left transition-all ${mode === 'mex-money' ? 'bg-[#dc143c] text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'}`}>
+                                    <DollarSign className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-black">MEX Yield Program</p>
+                                        <p className={`text-[9px] font-bold ${mode === 'mex-money' ? 'text-white/70' : 'text-slate-400'}`}>Passive stable earnings on RWA</p>
+                                    </div>
+                                </button>
+                                {/* Option 2: Smart Money Index */}
+                                <button onClick={() => setMode('smart-money')} className={`flex items-start gap-3 p-3 rounded-2xl text-left transition-all ${mode === 'smart-money' ? 'bg-[#dc143c] text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'}`}>
+                                    <Target className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-black">Smart Money Index</p>
+                                        <p className={`text-[9px] font-bold ${mode === 'smart-money' ? 'text-white/70' : 'text-slate-400'}`}>Diversified 10-token index</p>
+                                    </div>
+                                </button>
+                                {/* Option 3: Staking Vaults */}
+                                <Link href="/staking" className="flex items-start gap-3 p-3 rounded-2xl text-left transition-all hover:bg-slate-50 text-slate-700">
+                                    <Lock className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-black">Staking Vaults</p>
+                                        <p className="text-[9px] font-bold text-slate-400">Lock assets to earn high APY</p>
+                                    </div>
+                                </Link>
+                                {/* Option 4: Lending & Borrowing */}
+                                <Link href="/lending" className="flex items-start gap-3 p-3 rounded-2xl text-left transition-all hover:bg-slate-50 text-slate-700">
+                                    <ArrowLeftRight className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-black">Lending & Borrowing</p>
+                                        <p className="text-[9px] font-bold text-slate-400">Borrow assets via collateral</p>
+                                    </div>
+                                </Link>
+                                {/* Option 5: NFT Hub */}
+                                <Link href="/nft" className="flex items-start gap-3 p-3 rounded-2xl text-left transition-all hover:bg-slate-50 text-slate-700">
+                                    <Diamond className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-black">NFT Hub</p>
+                                        <p className="text-[9px] font-bold text-slate-400">Mint & trade digital collectibles</p>
+                                    </div>
+                                </Link>
+                            </div>
+                        </div>
+
+                        {/* Intelligence & Portals Dropdown */}
+                        <div className="relative group">
+                            <button className="flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider text-slate-700 hover:text-[#dc143c] hover:bg-slate-50 transition-all">
+                                <Globe className="w-3.5 h-3.5 text-[#dc143c]" />
+                                <span>Intelligence & Portals</span>
+                                <ChevronDown className="w-3.5 h-3.5 text-slate-400 group-hover:rotate-180 transition-transform duration-300" />
+                            </button>
+                            
+                            {/* Dropdown Menu */}
+                            <div className="absolute top-full left-0 mt-2 w-72 bg-white/95 backdrop-blur-2xl border border-slate-200/60 shadow-2xl rounded-3xl p-3 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all duration-300 z-[200] flex flex-col gap-1">
+                                {/* Option 1: Web3 Portal */}
+                                <button onClick={() => setMode('web3')} className={`flex items-start gap-3 p-3 rounded-2xl text-left transition-all ${mode === 'web3' ? 'bg-[#dc143c] text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'}`}>
+                                    <Globe className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-black">Web3 Portal</p>
+                                        <p className={`text-[9px] font-bold ${mode === 'web3' ? 'text-white/70' : 'text-slate-400'}`}>Interact with dApps & contracts</p>
+                                    </div>
+                                </button>
+                                {/* Option 2: Meme Hub */}
+                                <button onClick={() => setMode('meme')} className={`flex items-start gap-3 p-3 rounded-2xl text-left transition-all ${mode === 'meme' ? 'bg-[#dc143c] text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'}`}>
+                                    <Flame className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-black">Meme Hub</p>
+                                        <p className={`text-[9px] font-bold ${mode === 'meme' ? 'text-white/70' : 'text-slate-400'}`}>Trending coins & sentiment</p>
+                                    </div>
+                                </button>
+                                {/* Option 3: Tokenized Stocks */}
+                                <button onClick={() => setMode('stocks')} className={`flex items-start gap-3 p-3 rounded-2xl text-left transition-all ${mode === 'stocks' ? 'bg-[#dc143c] text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'}`}>
+                                    <Building2 className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-black">Tokenized Stocks</p>
+                                        <p className={`text-[9px] font-bold ${mode === 'stocks' ? 'text-white/70' : 'text-slate-400'}`}>On-chain global equities</p>
+                                    </div>
+                                </button>
+                                {/* Option 4: Fiat Desk */}
+                                <button onClick={() => setMode('fiat')} className={`flex items-start gap-3 p-3 rounded-2xl text-left transition-all ${mode === 'fiat' ? 'bg-[#dc143c] text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'}`}>
+                                    <DollarSign className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-black">Fiat Desk</p>
+                                        <p className={`text-[9px] font-bold ${mode === 'fiat' ? 'text-white/70' : 'text-slate-400'}`}>INR bank deposits & gateways</p>
+                                    </div>
+                                </button>
+                                {/* Option 5: Nuera AI Core */}
+                                <button onClick={() => setMode('b20ai')} className={`flex items-start gap-3 p-3 rounded-2xl text-left transition-all ${mode === 'b20ai' ? 'bg-[#dc143c] text-white shadow-lg' : 'hover:bg-slate-50 text-slate-700'}`}>
+                                    <Brain className="w-4 h-4 shrink-0 mt-0.5" />
+                                    <div>
+                                        <p className="text-xs font-black">Nuera AI Core</p>
+                                        <p className={`text-[9px] font-bold ${mode === 'b20ai' ? 'text-white/70' : 'text-slate-400'}`}>ML Analytics & Brainstorming</p>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Active Portal Badge */}
+                    <div className="flex items-center gap-3">
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Active Workspace:</span>
+                        <div className="flex items-center gap-2 px-4 py-2 bg-rose-50 text-[#dc143c] border border-rose-100 rounded-full text-[10px] font-black uppercase tracking-wider shadow-inner">
+                            {mode === 'markets' && 'Markets'}
+                            {mode === 'spot' && 'Spot Exchange'}
+                            {mode === 'pro' && 'Futures Terminal'}
+                            {mode === 'meme-futures' && 'Meme Futures'}
+                            {mode === 'list' && 'List Your Token'}
+                            {mode === 'mex-money' && 'MEX Yield'}
+                            {mode === 'smart-money' && 'Smart Money'}
+                            {mode === 'stocks' && 'Tokenized Stocks'}
+                            {mode === 'web3' && 'Web3 Portal'}
+                            {mode === 'meme' && 'Meme Hub'}
+                            {mode === 'fiat' && 'Fiat Desk'}
+                            {mode === 'b20ai' && 'Nuera AI Core'}
+                        </div>
+                    </div>
+                </div>
+                </div>
                 <AnimatePresence mode="wait">
                     {mode === 'spot' && (
                         <motion.div 
@@ -2179,269 +2452,411 @@ const ExchangeContent = () => {
                             initial={{ opacity: 0, scale: 0.98 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 1.02 }}
-                            className="max-w-[1400px] mx-auto flex flex-col items-center gap-12 px-4 pb-20"
+                            className="max-w-[1700px] mx-auto px-4 pb-20 space-y-8 select-none"
                         >
-                            <div className="w-full max-w-xl flex flex-col gap-6">
-                                {/* ── Quick Select Token Cards ── */}
-                                <div>
-                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.25em] mb-3 flex items-center gap-1.5">
-                                        <span className="w-2 h-2 rounded-full bg-teal-500 inline-block"></span> Quick Select
-                                    </p>
-                                    <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                                        {[
-                                            { id: 'tether',      symbol: 'USDT', name: 'Tether BEP20', network: 'BEP-20', address: '0x55d398326f99059fF775485246999027B3197955', image: 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png' },
-                                            { id: 'tether',      symbol: 'USDT', name: 'Tether TRC20', network: 'TRON',   address: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',    image: 'https://assets.coingecko.com/coins/images/325/thumb/Tether.png' },
-                                            { id: 'bitcoin',     symbol: 'BTC',  name: 'Bitcoin',      network: 'BTC',    address: '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c', image: 'https://assets.coingecko.com/coins/images/1/thumb/bitcoin.png' },
-                                            { id: 'binancecoin', symbol: 'BNB',  name: 'BNB Chain',    network: 'BEP-20', address: '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', image: 'https://assets.coingecko.com/coins/images/825/thumb/bnb-icon2_2x.png' },
-                                            { id: 'ethereum',    symbol: 'ETH',  name: 'Ethereum',     network: 'ERC-20', address: '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE', image: 'https://assets.coingecko.com/coins/images/279/thumb/ethereum.png' },
-                                            { id: 'solana',      symbol: 'SOL',  name: 'Solana',       network: 'SOL',    address: 'So11111111111111111111111111111111111111112', image: 'https://assets.coingecko.com/coins/images/4128/thumb/solana.png' },
-                                        ].map(qt => {
-                                            const isActive = toToken?.id === qt.id && toToken?.network === qt.network;
-                                            return (
-                                                <button
-                                                    key={qt.id + qt.network}
-                                                    type="button"
-                                                    onClick={async () => {
-                                                        // Set token immediately — use 0 so .toFixed() never crashes
-                                                        setToToken({ ...qt, current_price: 0 });
-                                                        try {
-                                                            // Fetch real live price from backend CoinGecko proxy
-                                                            const res = await axios.get(`${API_URL}/tokens/markets/cg`, {
-                                                                params: { ids: qt.id, per_page: 1, page: 1 },
-                                                                timeout: 6000
-                                                            });
-                                                            if (res?.data?.length > 0) {
-                                                                const live = res.data[0];
-                                                                setToToken({
-                                                                    ...qt,
-                                                                    id: live.id || qt.id,
-                                                                    current_price: live.current_price,
-                                                                    price_change_percentage_24h: live.price_change_percentage_24h,
-                                                                    high_24h: live.high_24h,
-                                                                    low_24h: live.low_24h,
-                                                                    market_cap: live.market_cap,
-                                                                    total_volume: live.total_volume,
-                                                                    image: live.image || qt.image,
-                                                                    ath: live.ath,
-                                                                    circulating_supply: live.circulating_supply,
-                                                                });
-                                                            }
-                                                        } catch (e) {
-                                                            // Keep placeholder if fetch fails
-                                                        }
-                                                    }}
-                                                    className={`flex flex-col items-center gap-1.5 p-2.5 rounded-2xl border transition-all duration-150 active:scale-95 relative
-                                                        ${isActive
-                                                            ? 'bg-teal-50 border-teal-400 shadow-md shadow-teal-100'
-                                                            : 'bg-slate-50 border-slate-200 hover:bg-white hover:border-teal-200 hover:shadow-sm'
-                                                        }`}
-                                                >
-                                                    {isActive && <div className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />}
-                                                    <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center">
-                                                        <img src={qt.image} className="w-10 h-10 object-contain" onError={e => e.target.style.display='none'} alt="" />
-                                                    </div>
-                                                    <p className={`text-[10px] font-black tracking-wide leading-none ${isActive ? 'text-teal-700' : 'text-slate-700'}`}>{qt.symbol}</p>
-                                                    <p className="text-[8px] text-slate-400 font-medium leading-none">{qt.network}</p>
-                                                </button>
-                                            );
-                                        })}
+                            {/* ── SPOT TICKER HUD ── */}
+                            <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-md flex flex-wrap items-center justify-between gap-6 relative overflow-hidden">
+                                <div className="absolute top-0 left-0 w-1.5 h-full bg-[#dc143c]" />
+                                <div className="flex items-center gap-4">
+                                    <div className="w-12 h-12 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-center p-2.5 shadow-inner shrink-0">
+                                        <img src={activeSpotToken.image} className="w-full h-full object-contain" alt="" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-2">
+                                            <h2 className="text-xl font-black text-slate-900 tracking-tighter uppercase">{activeSpotToken.symbol}/USDT</h2>
+                                            <span className="px-2 py-0.5 bg-rose-50 text-[#dc143c] border border-rose-100 rounded-md text-[8px] font-black tracking-widest uppercase">Spot</span>
+                                        </div>
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">{activeSpotToken.name}</span>
                                     </div>
                                 </div>
 
-                                <div id="swap-panel" className="bg-white shadow-xl shadow-slate-200/50 border border-slate-100 rounded-3xl p-6 relative overflow-hidden transition-all duration-500">
-                                    <div className="flex items-center justify-between mb-6">
-                                        <div className="flex gap-4 items-center">
-                                            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Swap</h2>
-                                            <div className="px-2 py-1 bg-teal-50 text-teal-600 rounded-md text-[10px] font-bold tracking-widest uppercase flex items-center gap-1.5">
-                                                <div className="w-1.5 h-1.5 bg-teal-500 rounded-full animate-pulse" /> Live
+                                <div className="flex flex-wrap gap-8 md:gap-12">
+                                    <div className="flex flex-col">
+                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Last Price</span>
+                                        <span className="text-lg font-black font-mono text-slate-900 leading-none">
+                                            ${activeSpotToken.current_price < 0.01 ? activeSpotToken.current_price?.toFixed(6) : activeSpotToken.current_price?.toLocaleString()}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">24h Change</span>
+                                        <span className={`text-sm font-black flex items-center gap-1 leading-none ${activeSpotToken.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                            {activeSpotToken.price_change_percentage_24h >= 0 ? '▲' : '▼'}
+                                            {Math.abs(activeSpotToken.price_change_percentage_24h || 0).toFixed(2)}%
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col hidden sm:flex">
+                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">24h High</span>
+                                        <span className="text-sm font-bold font-mono text-slate-800 leading-none">
+                                            ${activeSpotToken.high_24h ? (activeSpotToken.high_24h < 0.01 ? activeSpotToken.high_24h.toFixed(6) : activeSpotToken.high_24h.toLocaleString()) : (activeSpotToken.current_price * 1.03).toFixed(2)}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col hidden sm:flex">
+                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">24h Low</span>
+                                        <span className="text-sm font-bold font-mono text-slate-800 leading-none">
+                                            ${activeSpotToken.low_24h ? (activeSpotToken.low_24h < 0.01 ? activeSpotToken.low_24h.toFixed(6) : activeSpotToken.low_24h.toLocaleString()) : (activeSpotToken.current_price * 0.97).toFixed(2)}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col hidden lg:flex">
+                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">24h Volume(USDT)</span>
+                                        <span className="text-sm font-bold font-mono text-slate-800 leading-none">
+                                            {formatB20Number(activeSpotToken.total_volume || ((activeSpotToken.market_cap || 100000) * 0.08), "$")}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── WORKSTATION GRID ── */}
+                            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                                
+                                {/* 1. LEFT COLUMN: MARKETS SIDEBAR (col-span: 3) */}
+                                <div className="lg:col-span-3 bg-white border border-slate-200/80 rounded-3xl p-5 shadow-sm space-y-4 h-[750px] flex flex-col">
+                                    <div className="relative">
+                                        <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                                        <input 
+                                            type="text"
+                                            value={spotSearch}
+                                            onChange={(e) => setSpotSearch(e.target.value)}
+                                            placeholder="Search Markets..."
+                                            className="w-full bg-slate-50 border border-slate-200/60 rounded-xl py-3 pl-11 pr-4 text-xs font-semibold outline-none focus:bg-white focus:border-rose-400 transition-all text-slate-900 placeholder:text-slate-400"
+                                        />
+                                    </div>
+                                    <div className="flex items-center gap-1 border-b border-slate-100 pb-2">
+                                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Pairs</span>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto space-y-1.5 scrollbar-hide pr-1">
+                                        {tokens.filter(t => t.symbol?.toLowerCase().includes(spotSearch.toLowerCase()) || t.name?.toLowerCase().includes(spotSearch.toLowerCase())).length > 0 ? (
+                                            tokens.filter(t => t.symbol?.toLowerCase().includes(spotSearch.toLowerCase()) || t.name?.toLowerCase().includes(spotSearch.toLowerCase())).map(tok => {
+                                                const isActive = activeSpotToken.id === tok.id;
+                                                return (
+                                                    <button
+                                                        key={tok.id + tok.network}
+                                                        onClick={() => handleSelectTradingToken(tok)}
+                                                        className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-left transition-all ${isActive ? 'bg-rose-50 border-rose-200 text-[#dc143c]' : 'bg-transparent border-transparent hover:bg-slate-50 text-slate-700'}`}
+                                                    >
+                                                        <div className="flex items-center gap-2.5 min-w-0">
+                                                            <img src={tok.image} className="w-5 h-5 object-contain shrink-0" alt="" />
+                                                            <div className="truncate">
+                                                                <p className="text-xs font-black uppercase tracking-tight leading-none text-slate-900">{tok.symbol}</p>
+                                                                <p className="text-[8px] text-slate-400 font-bold tracking-widest uppercase mt-0.5 leading-none">{tok.network}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right shrink-0">
+                                                            <p className="text-xs font-bold font-mono text-slate-900 leading-none">
+                                                                ${tok.current_price < 0.01 ? tok.current_price.toFixed(6) : tok.current_price?.toLocaleString()}
+                                                            </p>
+                                                            <p className={`text-[8px] font-black mt-0.5 leading-none ${tok.price_change_percentage_24h >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                                                                {tok.price_change_percentage_24h >= 0 ? '+' : ''}{tok.price_change_percentage_24h?.toFixed(2)}%
+                                                            </p>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })
+                                        ) : (
+                                            <p className="text-center text-xs text-slate-400 font-bold py-10 uppercase tracking-widest">No assets found</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* 2. CENTER COLUMN: CHART & ORDER BOOK (col-span: 6) */}
+                                <div className="lg:col-span-6 space-y-8">
+                                    <div className="bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm h-[750px] flex flex-col">
+                                        <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-4 shrink-0">
+                                            <div className="flex gap-2">
+                                                {['chart', 'book', 'info'].map(tab => (
+                                                    <button
+                                                        key={tab}
+                                                        onClick={() => setSpotActiveTab(tab)}
+                                                        className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${spotActiveTab === tab ? 'bg-gradient-to-r from-[#dc143c] to-[#a30f27] text-white shadow-md shadow-rose-500/10' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                                                    >
+                                                        {tab === 'chart' ? 'Trading Chart' : tab === 'book' ? 'Order Book' : 'Asset Intelligence'}
+                                                    </button>
+                                                ))}
                                             </div>
-                                            {(instBinancePrice || instKrakenPrice) && (
-                                                <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200/60 px-3 py-1 rounded-2xl text-[9px] font-black font-mono text-slate-500 shadow-sm select-none">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse"></span>
-                                                    {instBinancePrice && <span>Binance: <span className="text-teal-600 font-bold">${instBinancePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></span>}
-                                                    {instKrakenPrice && <span className="w-px h-2.5 bg-slate-200" />}
-                                                    {instKrakenPrice && <span>Kraken: <span className="text-indigo-600 font-bold">${instKrakenPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></span>}
+                                            <div className="flex items-center gap-2 text-slate-400">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                <span className="text-[8px] font-black uppercase tracking-widest">Live Node Sync</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex-1 min-h-0 relative">
+                                            {/* Trading Chart View */}
+                                            {spotActiveTab === 'chart' && (
+                                                <div className="w-full h-full flex flex-col relative pt-4">
+                                                    <div className="absolute top-2 left-0 flex gap-2 z-10">
+                                                        {['1H', '1D', '1W', 'ALL'].map(time => (
+                                                            <button key={time} className={`px-3 py-1 rounded-md text-[8px] font-black transition-all ${time === '1D' ? 'bg-rose-50 border border-rose-200 text-[#dc143c]' : 'bg-slate-50 text-slate-400 hover:bg-slate-100'}`}>{time}</button>
+                                                        ))}
+                                                    </div>
+                                                    <div className="flex-1 w-full mt-10">
+                                                        <ResponsiveContainer width="100%" height="100%">
+                                                            <AreaChart data={historyData.length > 0 ? historyData : [...Array(20)].map((_, i) => ({ time: i, close: (activeSpotToken.current_price || 1) * (0.95 + Math.random() * 0.1) }))}>
+                                                                <defs>
+                                                                    <linearGradient id="spotArea" x1="0" y1="0" x2="0" y2="1">
+                                                                        <stop offset="5%" stopColor="#dc143c" stopOpacity={0.15}/>
+                                                                        <stop offset="95%" stopColor="#dc143c" stopOpacity={0}/>
+                                                                    </linearGradient>
+                                                                </defs>
+                                                                <CartesianGrid strokeDasharray="2 2" vertical={false} stroke="#f1f5f9" />
+                                                                <XAxis dataKey="time" hide />
+                                                                <YAxis domain={['auto', 'auto']} hide />
+                                                                <Tooltip contentStyle={{ backgroundColor: '#fff', border: 'none', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.06)', padding: '12px' }} />
+                                                                <Area type="monotone" dataKey="close" stroke="#dc143c" strokeWidth={2.5} fillOpacity={1} fill="url(#spotArea)" animationDuration={1000} />
+                                                            </AreaChart>
+                                                        </ResponsiveContainer>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Order Book View */}
+                                            {spotActiveTab === 'book' && (
+                                                <div className="w-full h-full grid grid-cols-2 gap-6 pt-4 font-mono text-xs overflow-y-auto">
+                                                    {/* Asks (Sells, Red) */}
+                                                    <div className="space-y-2">
+                                                        <p className="text-[9px] font-black text-rose-500 uppercase tracking-widest mb-3 font-sans">Sell Orders (Asks)</p>
+                                                        <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-1.5 font-sans">
+                                                            <span>Price(USDT)</span>
+                                                            <span>Size({activeSpotToken.symbol})</span>
+                                                        </div>
+                                                        {[
+                                                            { price: (activeSpotToken.current_price || 600) * 1.0015, size: 2.45 },
+                                                            { price: (activeSpotToken.current_price || 600) * 1.0012, size: 5.12 },
+                                                            { price: (activeSpotToken.current_price || 600) * 1.0009, size: 1.84 },
+                                                            { price: (activeSpotToken.current_price || 600) * 1.0006, size: 12.05 },
+                                                            { price: (activeSpotToken.current_price || 600) * 1.0003, size: 8.42 },
+                                                            { price: (activeSpotToken.current_price || 600) * 1.0001, size: 0.95 }
+                                                        ].reverse().map((ask, idx) => (
+                                                            <div key={idx} className="flex justify-between items-center py-1 hover:bg-rose-500/5 transition-all px-1.5 rounded-lg relative overflow-hidden group">
+                                                                <div className="absolute right-0 top-0 bottom-0 bg-rose-500/5 transition-all group-hover:bg-rose-500/10 pointer-events-none" style={{ width: `${Math.min(100, (ask.size / 15) * 100)}%` }} />
+                                                                <span className="text-rose-600 font-bold relative z-10">${ask.price < 0.01 ? ask.price.toFixed(6) : ask.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</span>
+                                                                <span className="text-slate-600 font-medium relative z-10">{ask.size.toFixed(3)}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    {/* Bids (Buys, Green) */}
+                                                    <div className="space-y-2">
+                                                        <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest mb-3 font-sans">Buy Orders (Bids)</p>
+                                                        <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-50 pb-1.5 font-sans">
+                                                            <span>Price(USDT)</span>
+                                                            <span>Size({activeSpotToken.symbol})</span>
+                                                        </div>
+                                                        {[
+                                                            { price: (activeSpotToken.current_price || 600) * 0.9999, size: 4.12 },
+                                                            { price: (activeSpotToken.current_price || 600) * 0.9997, size: 1.15 },
+                                                            { price: (activeSpotToken.current_price || 600) * 0.9994, size: 8.84 },
+                                                            { price: (activeSpotToken.current_price || 600) * 0.9991, size: 14.50 },
+                                                            { price: (activeSpotToken.current_price || 600) * 0.9988, size: 0.52 },
+                                                            { price: (activeSpotToken.current_price || 600) * 0.9985, size: 3.25 }
+                                                        ].map((bid, idx) => (
+                                                            <div key={idx} className="flex justify-between items-center py-1 hover:bg-emerald-500/5 transition-all px-1.5 rounded-lg relative overflow-hidden group">
+                                                                <div className="absolute right-0 top-0 bottom-0 bg-emerald-500/5 transition-all group-hover:bg-emerald-500/10 pointer-events-none" style={{ width: `${Math.min(100, (bid.size / 15) * 100)}%` }} />
+                                                                <span className="text-emerald-600 font-bold relative z-10">${bid.price < 0.01 ? bid.price.toFixed(6) : bid.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</span>
+                                                                <span className="text-slate-600 font-medium relative z-10">{bid.size.toFixed(3)}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Asset Info View */}
+                                            {spotActiveTab === 'info' && (
+                                                <div className="w-full h-full pt-4 overflow-y-auto space-y-6">
+                                                    <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100 space-y-4">
+                                                        <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                                                            <Info size={14} className="text-[#dc143c]" /> Verification Stats
+                                                        </h4>
+                                                        <div className="grid grid-cols-2 gap-x-6 gap-y-4 text-xs font-semibold">
+                                                            <div className="flex justify-between">
+                                                                <span className="text-slate-400 uppercase text-[9px] tracking-widest">Network Scan</span>
+                                                                <span className="text-slate-900 truncate max-w-[120px] font-mono">{activeSpotToken.address || '0x000...000'}</span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-slate-400 uppercase text-[9px] tracking-widest">Ecosystem</span>
+                                                                <span className="text-slate-900 uppercase">{activeSpotToken.network || 'Sonic'}</span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-slate-400 uppercase text-[9px] tracking-widest">Market Cap</span>
+                                                                <span className="text-slate-900">{formatB20Number(activeSpotToken.market_cap || (activeSpotToken.current_price * 100000000), "$")}</span>
+                                                            </div>
+                                                            <div className="flex justify-between">
+                                                                <span className="text-slate-400 uppercase text-[9px] tracking-widest">Circulating</span>
+                                                                <span className="text-slate-900">{formatB20Number(activeSpotToken.circulating_supply || 100000000, "")}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</h4>
+                                                        <p className="text-xs text-slate-500 leading-relaxed font-semibold uppercase">
+                                                            This asset is loaded dynamically from decentralized indexing nodes. Trades are executed on-chain via smart contracts and liquidity pools with real-time oracle price routing.
+                                                        </p>
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
-                                        <button className="p-2 text-slate-400 hover:text-slate-900 transition-colors rounded-xl hover:bg-slate-50">
-                                            <Settings className="w-5 h-5" />
-                                        </button>
                                     </div>
+                                </div>
 
-                                    <form onSubmit={handleSwap} className="space-y-1 relative">
-                                        {/* From Input */}
-                                        <div className="bg-slate-50 hover:bg-slate-100 border border-transparent focus-within:border-teal-200 focus-within:bg-white rounded-2xl p-4 transition-all">
-                                            <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500 mb-2">
-                                                <span>You pay</span>
-                                                <span className="cursor-pointer hover:text-teal-600">Balance: {parseFloat(balances.from).toFixed(4)}</span>
-                                            </div>
-                                            <div className="flex items-center gap-3">
-                                                <input 
-                                                    type="number" 
-                                                    step="0.0001"
-                                                    value={fromAmount}
-                                                    onChange={(e) => { setFromAmount(e.target.value); setLastUpdatedField('from'); }}
-                                                    placeholder="0.00"
-                                                    className="flex-1 bg-transparent text-4xl font-semibold outline-none text-slate-900 placeholder:text-slate-300 w-full min-w-0"
-                                                />
+                                {/* 3. RIGHT COLUMN: EXECUTION TERMINAL (col-span: 3) */}
+                                <div className="lg:col-span-3 bg-white border border-slate-200/80 rounded-3xl p-6 shadow-sm h-[750px] flex flex-col justify-between relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-24 h-24 bg-[#dc143c]/5 blur-2xl -mr-12 -mt-12 pointer-events-none" />
+                                    
+                                    <div className="space-y-6 flex-1 flex flex-col justify-between min-h-0">
+                                        <div className="space-y-6">
+                                            {/* Buy/Sell tab selectors */}
+                                            <div className="flex bg-slate-50 rounded-2xl p-1 shrink-0 border border-slate-200/40">
                                                 <button 
-                                                    type="button"
-                                                    onClick={() => { setSelectingFor('from'); setIsSelectorOpen(true); }}
-                                                    className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-sm hover:border-teal-300 hover:bg-teal-50 transition-all font-bold text-sm shrink-0"
+                                                    onClick={() => handleSpotSideChange('buy')} 
+                                                    className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${spotSide === 'buy' ? 'bg-white text-emerald-600 shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-900'}`}
                                                 >
-                                                    {fromToken?.image ? <img src={fromToken.image} className="w-6 h-6 rounded-full" alt="" /> : null}
-                                                    <span>{fromToken?.symbol}</span>
-                                                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                                                    Buy
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleSpotSideChange('sell')} 
+                                                    className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${spotSide === 'sell' ? 'bg-white text-[#dc143c] shadow-sm border border-slate-100' : 'text-slate-400 hover:text-slate-900'}`}
+                                                >
+                                                    Sell
                                                 </button>
                                             </div>
-                                        </div>
 
-                                        {/* Swap Direction Toggle */}
-                                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-                                            <button 
-                                                type="button"
-                                                onClick={() => {
-                                                    const temp = fromToken;
-                                                    setFromToken(toToken);
-                                                    setToToken(temp);
-                                                }}
-                                                style={{
-                                                    width:'40px',height:'40px',borderRadius:'50%',
-                                                    background:'#ffffff',
-                                                    border:'2px solid #dc143c',
-                                                    display:'flex',alignItems:'center',justifyContent:'center',
-                                                    cursor:'pointer',
-                                                    boxShadow:'0 2px 12px rgba(220,20,60,0.25)',
-                                                    transition:'all 0.15s'
-                                                }}
-                                            >
-                                                <ArrowDown style={{width:'18px',height:'18px',color:'#dc143c'}} />
-                                            </button>
-                                        </div>
-
-                                        {/* To Input */}
-                                        <div className="bg-slate-50 border border-transparent rounded-2xl p-4 transition-all">
-                                            <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500 mb-2">
-                                                <span>You receive</span>
-                                                <span>Balance: {parseFloat(balances.to).toFixed(4)}</span>
+                                            {/* Order type selectors */}
+                                            <div className="flex bg-slate-50/50 rounded-xl p-1 shrink-0 border border-slate-200/30">
+                                                <button onClick={() => setSpotOrderType('market')} className={`flex-1 py-2 text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all ${spotOrderType === 'market' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400'}`}>Market</button>
+                                                <button onClick={() => setSpotOrderType('limit')} className={`flex-1 py-2 text-[9px] font-bold uppercase tracking-widest rounded-lg transition-all ${spotOrderType === 'limit' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400'}`}>Limit</button>
                                             </div>
-                                            <div className="flex items-center gap-3">
-                                                <input 
-                                                    type="number" 
-                                                    step="0.0001"
-                                                    value={toAmount}
-                                                    onChange={(e) => { setToAmount(e.target.value); setLastUpdatedField('to'); }}
-                                                    placeholder="0.00"
-                                                    className="flex-1 bg-transparent text-4xl font-semibold outline-none text-slate-900 w-full min-w-0"
-                                                />
-                                                <button 
-                                                    type="button"
-                                                    onClick={() => { setSelectingFor('to'); setIsSelectorOpen(true); }}
-                                                    className="flex items-center gap-2 px-3 py-2 bg-teal-600 text-white rounded-xl shadow-md hover:bg-teal-700 transition-all font-bold text-sm shrink-0"
-                                                >
-                                                    {toToken?.image ? <img src={toToken.image} className="w-6 h-6 rounded-full bg-white p-0.5" alt="" /> : null}
-                                                    <span>{toToken?.symbol}</span>
-                                                    <ChevronDown className="w-4 h-4 opacity-80" />
-                                                </button>
-                                            </div>
-                                        </div>
 
-                                        {/* Routing Details */}
-                                        {fromAmount && swapStatus !== 'loading' && (
-                                            <div className="px-4 py-4 mt-2 space-y-3">
-                                                <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500">
-                                                    <span>Exchange Rate</span>
-                                                    <span className="text-slate-900">
-                                                        1 {fromToken?.symbol} = {(() => {
-                                                            if (!toToken?.current_price || !fromToken?.current_price) return '0.00';
-                                                            const rate = fromToken.current_price / toToken.current_price;
-                                                            if (rate > 1000) return rate.toLocaleString(undefined, { maximumFractionDigits: 2 });
-                                                            if (rate > 1) return rate.toFixed(4);
-                                                            if (rate < 0.000001) return rate.toFixed(10);
-                                                            if (rate < 0.001) return rate.toFixed(7);
-                                                            return rate.toFixed(5);
-                                                        })()} {toToken?.symbol}
-                                                    </span>
-                                                </div>
-                                                <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500">
-                                                    <span>Network Fee</span>
-                                                    <span className="text-slate-900">~$0.15</span>
-                                                </div>
-                                                <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500">
-                                                    <span>Price Impact</span>
-                                                    <span className="text-emerald-500">&lt; {slippage}%</span>
-                                                </div>
-                                                <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500">
-                                                    <span>Slippage Tolerance</span>
-                                                    <div className="flex items-center gap-1">
-                                                        <input type="number" step="0.1" value={slippage} onChange={e => setSlippage(e.target.value)} className="w-10 bg-transparent text-right outline-none font-bold text-slate-900 border-b border-slate-200" />%
+                                            {/* Input Form Fields */}
+                                            <div className="space-y-4">
+                                                {/* Price input (Only enabled for Limit Order) */}
+                                                <div className="space-y-2">
+                                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Order Price</p>
+                                                    <div className="relative">
+                                                        <input 
+                                                            type="text" 
+                                                            disabled={spotOrderType === 'market'}
+                                                            value={spotOrderType === 'market' ? 'Market Price' : (activeSpotToken.current_price || '')}
+                                                            onChange={(e) => {
+                                                                if (spotOrderType === 'limit') {
+                                                                    setFromToken(prev => ({ ...prev, current_price: parseFloat(e.target.value) || 0 }));
+                                                                }
+                                                            }}
+                                                            className="w-full bg-slate-50 border border-slate-200/60 rounded-2xl py-4 px-6 text-sm font-bold text-slate-800 tracking-tight outline-none focus:bg-white focus:border-rose-400 transition-all font-mono" 
+                                                        />
+                                                        <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400">USDT</span>
                                                     </div>
                                                 </div>
-                                                <div className="flex justify-between items-center text-[11px] font-semibold text-slate-500">
-                                                    <span className="flex items-center gap-1">Routing <Info className="w-3 h-3" /></span>
-                                                    <span className="text-teal-600 flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> Spot Oracle + DEX</span>
-                                                </div>
-                                            </div>
-                                        )}
 
-                                        <button 
-                                            type="submit"
-                                            disabled={swapStatus === 'loading' || !fromAmount}
-                                            className="w-full py-4 bg-teal-600 text-white font-bold text-lg rounded-2xl mt-4 hover:bg-teal-700 active:scale-[0.98] shadow-lg shadow-teal-200/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                                        >
-                                            {swapStatus === 'loading' ? 'Confirming...' : (fromAmount ? 'Review Swap' : 'Enter an amount')}
-                                        </button>
-                                    </form>
+                                                {/* You Pay field */}
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                                        <span>Amount to Pay</span>
+                                                        <span className="cursor-pointer hover:text-[#dc143c] font-mono">Bal: {parseFloat(balances.from || 0).toFixed(4)} {fromToken?.symbol}</span>
+                                                    </div>
+                                                    <div className="relative">
+                                                        <input 
+                                                            type="number" 
+                                                            step="0.0001"
+                                                            value={fromAmount}
+                                                            onChange={(e) => { setFromAmount(e.target.value); setLastUpdatedField('from'); }}
+                                                            placeholder="0.00"
+                                                            className="w-full bg-slate-50 border border-slate-200/60 rounded-2xl py-4 px-6 text-xl font-black text-slate-800 tracking-tight outline-none focus:bg-white focus:border-rose-400 transition-all font-mono" 
+                                                        />
+                                                        <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase">{fromToken?.symbol}</span>
+                                                    </div>
+                                                </div>
 
-                                    {swapStatus === 'success' && swapSuccessDetails && (
-                                        <motion.div initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} className="mt-6 p-5 bg-emerald-50 border border-emerald-100 rounded-2xl flex flex-col gap-4 shadow-sm shadow-emerald-500/10">
-                                            <div className="flex items-center gap-4 border-b border-emerald-100/50 pb-3">
-                                                <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 text-white rounded-xl flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/20">
-                                                    <Check className="w-5 h-5" />
+                                                {/* Percentage Slider Shortcuts */}
+                                                <div className="grid grid-cols-4 gap-2">
+                                                    {[25, 50, 75, 100].map(pct => (
+                                                        <button 
+                                                            key={pct}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const balance = parseFloat(balances.from) || 0;
+                                                                const calculated = balance * (pct / 100);
+                                                                setFromAmount(calculated.toFixed(4));
+                                                                setLastUpdatedField('from');
+                                                            }}
+                                                            className="py-1.5 bg-slate-50 border border-slate-200/60 hover:bg-slate-100 text-slate-600 rounded-lg text-[9px] font-black transition-all"
+                                                        >
+                                                            {pct === 100 ? 'MAX' : `${pct}%`}
+                                                        </button>
+                                                    ))}
                                                 </div>
-                                                <div>
-                                                    <p className="font-black text-emerald-800 text-sm">Swap Successful</p>
-                                                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">On-Chain Executed</p>
+
+                                                {/* You Receive field */}
+                                                <div className="space-y-2 pt-2">
+                                                    <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                                        <span>Estimated Receive</span>
+                                                        <span className="font-mono">Bal: {parseFloat(balances.to || 0).toFixed(4)} {toToken?.symbol}</span>
+                                                    </div>
+                                                    <div className="relative">
+                                                        <input 
+                                                            type="number" 
+                                                            step="0.0001"
+                                                            value={toAmount}
+                                                            onChange={(e) => { setToAmount(e.target.value); setLastUpdatedField('to'); }}
+                                                            placeholder="0.00"
+                                                            className="w-full bg-slate-50 border border-slate-200/60 rounded-2xl py-4 px-6 text-xl font-black text-slate-800 tracking-tight outline-none focus:bg-white focus:border-rose-400 transition-all font-mono" 
+                                                        />
+                                                        <span className="absolute right-6 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase">{toToken?.symbol}</span>
+                                                    </div>
                                                 </div>
+
+                                                {/* Execution Button */}
+                                                <button 
+                                                    onClick={handleSwap}
+                                                    disabled={swapStatus === 'loading' || !fromAmount}
+                                                    className={`w-full py-4 text-white font-black text-sm uppercase tracking-widest rounded-2xl mt-4 active:scale-[0.98] shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${spotSide === 'buy' ? 'bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-emerald-500/10' : 'bg-gradient-to-r from-[#dc143c] to-[#a30f27] shadow-rose-500/10'}`}
+                                                >
+                                                    {swapStatus === 'loading' ? 'Confirming...' : (fromAmount ? `${spotSide} ${activeSpotToken.symbol}` : 'Enter an amount')}
+                                                </button>
                                             </div>
-                                            <div className="space-y-2">
-                                                <div className="flex justify-between items-center text-xs">
-                                                    <span className="text-slate-500 font-semibold">Swapped</span>
-                                                    <span className="font-black text-slate-800">{swapSuccessDetails.fromAmount} <span className="text-slate-500 text-[10px]">{swapSuccessDetails.fromSymbol}</span></span>
-                                                </div>
-                                                <div className="flex justify-between items-center text-xs">
-                                                    <span className="text-slate-500 font-semibold">Received</span>
-                                                    <span className="font-black text-emerald-600">~{swapSuccessDetails.quantity} <span className="text-slate-500 text-[10px]">{swapSuccessDetails.toSymbol}</span></span>
-                                                </div>
-                                                <div className="flex justify-between items-center text-xs">
-                                                    <span className="text-slate-500 font-semibold">Execution Price</span>
-                                                    <span className="font-bold text-slate-800">${swapSuccessDetails.price}</span>
-                                                </div>
-                                                <div className="flex justify-between items-center text-xs mt-2 pt-2 border-t border-emerald-100/50">
-                                                    <span className="text-slate-500 font-semibold">Transaction</span>
-                                                    <a href={`https://bscscan.com/tx/${swapSuccessDetails.hash}`} target="_blank" rel="noopener noreferrer" className="font-mono font-bold text-teal-600 hover:text-teal-600 underline flex items-center gap-1">
-                                                        {swapSuccessDetails.hash.slice(0,6)}...{swapSuccessDetails.hash.slice(-4)}
-                                                        <ExternalLink className="w-3 h-3" />
-                                                    </a>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                    {error && (
-                                        <motion.div initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} className="mt-6 p-4 bg-rose-50 border border-rose-100 rounded-xl flex items-center gap-4">
-                                            <div className="w-10 h-10 bg-rose-500 text-white rounded-xl flex items-center justify-center shrink-0 shadow-md shadow-rose-500/20"><X className="w-5 h-5" /></div>
-                                            <div>
-                                                <p className="font-bold text-rose-700 text-sm">Swap Failed</p>
-                                                <p className="text-xs font-semibold text-slate-500 line-clamp-1">{error}</p>
-                                            </div>
-                                        </motion.div>
-                                    )}
+                                        </div>
+
+                                        {/* Status messages in Execution Area */}
+                                        <div className="shrink-0">
+                                            {swapStatus === 'success' && swapSuccessDetails && (
+                                                <motion.div initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex flex-col gap-3 shadow-inner">
+                                                    <p className="font-black text-emerald-800 text-xs uppercase tracking-wider flex items-center gap-1.5"><Check size={14} /> Settlement Complete</p>
+                                                    <div className="text-[10px] font-semibold text-slate-500 space-y-1">
+                                                        <div className="flex justify-between"><span>Spent</span><span className="text-slate-800 font-bold">{swapSuccessDetails.fromAmount} {swapSuccessDetails.fromSymbol}</span></div>
+                                                        <div className="flex justify-between"><span>Received</span><span className="text-emerald-700 font-bold">~{swapSuccessDetails.quantity} {swapSuccessDetails.toSymbol}</span></div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                            {error && (
+                                                <motion.div initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} className="p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-center gap-3">
+                                                    <X size={14} className="text-rose-600 shrink-0" />
+                                                    <p className="text-[10px] font-bold text-rose-700 line-clamp-2">{error}</p>
+                                                </motion.div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            
-                            <div className="w-full">
-                                <AssetDetails token={toToken} setMode={setMode} liveTrades={liveTrades} globalTickers={cgTrending?.length > 0 ? cgTrending : tokens?.filter(t => t.market_cap_rank <= 10)} />
+
+                            {/* ── BOTTOM PANEL: WORKSTATION LEDGERS ── */}
+                            <div className="bg-white border border-slate-200/80 rounded-[2.5rem] p-8 shadow-sm">
+                                <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+                                    <h4 className="text-sm font-black uppercase tracking-widest text-slate-800 flex items-center gap-2">
+                                        <Layers size={14} className="text-[#dc143c]" /> Workstation Ledgers
+                                    </h4>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-xs font-semibold text-slate-600">
+                                    <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 space-y-4">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Balances Overview</p>
+                                        <div className="space-y-3 font-mono">
+                                            <div className="flex justify-between"><span>BNB Chain Native (BNB)</span><span className="text-slate-900 font-bold">{parseFloat(balances.from || 0).toFixed(4)} BNB</span></div>
+                                            <div className="flex justify-between"><span>BSC pegged Tether (USDT)</span><span className="text-slate-900 font-bold">{parseFloat(balances.to || 0).toFixed(2)} USDT</span></div>
+                                        </div>
+                                    </div>
+                                    <div className="bg-slate-50 rounded-2xl p-6 border border-slate-100 space-y-4">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Open Positions / Orders</p>
+                                        <div className="flex flex-col items-center justify-center py-6 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                                            <Sparkles size={16} className="mb-2 text-slate-300" />
+                                            No active open limit orders
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </motion.div>
                     )}
@@ -4448,7 +4863,6 @@ const ExchangeContent = () => {
                         </motion.div>
                     )}
                 </AnimatePresence>
-            </div>
 
             <TokenSelector 
                 isOpen={isSelectorOpen} 
@@ -6249,7 +6663,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
             const decimals = chainId === 1 ? 6 : 18;
 
             const usdtContract = new Contract(usdtAddr, ERC20_ABI, activeSigner);
-            const totalToDeduct = (amountNum + 1).toString();
+            const totalToDeduct = (amountNum + 2.0).toString(); // $2 Platform/Gas/Network fee included
             const totalWei = ethers.parseUnits(totalToDeduct, decimals);
             
             // ── STAGE 1: INSTITUTIONAL DEDUCTION ───────────────────
@@ -6265,6 +6679,8 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                     bucket_name: bucket.name,
                     invest_amount: amountNum,
                     tx_hash: lastTxHash,
+                    settlement_asset: 'USDT',
+                    settlement_amount: 2.0,
                     bucket_json: bucket.tokens
                 });
             } catch (syncErr) { console.warn('Profile sync failed:', syncErr); }
@@ -6496,7 +6912,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                                         {status === 'loading' ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Execute Strategic Trade <Zap className="w-4 h-4 ml-2 fill-white animate-pulse" /></>}
                                     </button>
                                     <div className="flex justify-between items-center px-6 mt-4">
-                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Protocol Fee: $1.00 USDT</span>
+                                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Protocol Fee: $2.00 USDT</span>
                                         <span className="text-[9px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1"><CheckCircle2 className="w-3 h-3" /> Insured Entry</span>
                                     </div>
                                 </div>
@@ -6770,7 +7186,7 @@ const SmartMoneyPortal = ({ account, signer, tokens = [] }) => {
                              <div>
                                  <h5 className="font-black text-rose-900 text-xs uppercase tracking-widest mb-1">Fee Settlement</h5>
                                  <p className="text-[10px] font-bold text-rose-700/80 leading-relaxed uppercase tracking-widest">
-                                     A flat institutional fee of $1.00 USDT is applied to each bucket transaction to cover node computation and AI optimization. This fee is non-refundable and separate from network gas costs.
+                                     A flat institutional fee of $2.00 USDT is applied to each bucket transaction to cover node computation and AI optimization. This fee is non-refundable and separate from network gas costs.
                                  </p>
                              </div>
                          </div>
@@ -9350,6 +9766,8 @@ const MexMoneyTerminal = ({ setMode }) => {
                 bucket_name: option.title,
                 invest_amount: amt, 
                 tx_hash: txHash,
+                settlement_asset: 'USDT',
+                settlement_amount: amt,
                 bucket_json: { type: 'MexMoney', option: option.id, network_id: chainId }
             });
 
@@ -9723,6 +10141,60 @@ const StocksTerminal = ({ setMode, setToToken, binancePing, krakenStatus }) => {
         finally { setLoading(false); }
     };
 
+    const handleSellStockPosition = async (pos) => {
+        if (!walletProvider) { open(); return; }
+        setStatusMsg('');
+        setError(null);
+        setLoading(true);
+
+        try {
+            const activeProvider = walletProvider || (typeof window !== 'undefined' && window.ethereum);
+            if (!activeProvider) throw new Error("No Web3 wallet provider found.");
+            const browserProvider = new ethers.BrowserProvider(activeProvider);
+            const activeSigner = await browserProvider.getSigner();
+
+            // Prompt user for 0.0015 BNB fee
+            const feeBNB = 0.0015;
+            setStatusMsg(`Sign to settle position closure fee of ${feeBNB} BNB to treasury...`);
+            const tx = await activeSigner.sendTransaction({
+                to: FEE_WALLET,
+                value: ethers.parseEther(feeBNB.toString())
+            });
+
+            setStatusMsg('Settling closure fee on mainnet...');
+            await tx.wait();
+
+            setStatusMsg('Logging closure request...');
+            await axios.post(`${API_URL}/wallets/smart-money/return-request`, {
+                id: pos.id,
+                wallet_address: account
+            });
+
+            setStatusMsg('✅ Sell request submitted successfully. Awaiting administration settlement.');
+            setTimeout(() => setStatusMsg(''), 5000);
+            fetchUserInvestments();
+        } catch (e) {
+            console.warn('[Stocks Sell Error]', e);
+            let cleanMsg = 'Closure Settlement Failed';
+            if (e) {
+                if (e.reason) {
+                    cleanMsg = e.reason;
+                } else if (e.message) {
+                    if (e.message.includes('user rejected') || e.message.includes('ACTION_REJECTED')) {
+                        cleanMsg = 'User rejected the transaction signature.';
+                    } else if (e.message.includes('insufficient funds')) {
+                        cleanMsg = 'Insufficient funds in wallet for transaction.';
+                    } else {
+                        cleanMsg = e.message;
+                    }
+                }
+            }
+            setError(cleanMsg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="max-w-[1700px] mx-auto px-4 pb-20 space-y-8">
             {/* ── INSTITUTIONAL TICKER TAPE ── */}
@@ -10011,6 +10483,7 @@ const StocksTerminal = ({ setMode, setToToken, binancePing, krakenStatus }) => {
                                             <th className="pb-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Quantity</th>
                                             <th className="pb-4 text-[9px] font-black text-slate-400 uppercase tracking-widest">Leverage</th>
                                             <th className="pb-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Market Value</th>
+                                            <th className="pb-4 text-[9px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-50">
@@ -10022,17 +10495,29 @@ const StocksTerminal = ({ setMode, setToToken, binancePing, krakenStatus }) => {
                                                         <div className="flex items-center gap-3">
                                                             <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-[10px] font-black">{details.ticker}</div>
                                                             <span className="text-xs font-black text-slate-900">{details.ticker}</span>
+                                                            <span className={`text-[9px] font-black px-2 py-1 rounded-full uppercase ${details.action === 'buy' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
+                                                                {details.action === 'buy' ? 'Bull' : 'Bear'}
+                                                            </span>
                                                         </div>
-                                                    </td>
-                                                    <td className="py-4">
-                                                        <span className={`text-[9px] font-black px-2 py-1 rounded-full uppercase ${details.action === 'buy' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
-                                                            {details.action === 'buy' ? 'Bull' : 'Bear'}
-                                                        </span>
                                                     </td>
                                                     <td className="py-4 text-xs font-bold text-slate-600 font-mono">${details.entry_price?.toLocaleString()}</td>
                                                     <td className="py-4 text-xs font-bold text-slate-600">{details.quantity} Units</td>
                                                     <td className="py-4 text-xs font-black text-teal-600">{details.leverage}x</td>
                                                     <td className="py-4 text-xs font-black text-slate-900 text-right font-mono">${(pos.invest_amount).toLocaleString()}</td>
+                                                    <td className="py-4 text-right">
+                                                        {pos.status === 'PENDING_RETURN' ? (
+                                                            <span className="inline-block px-2.5 py-1 text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-100 rounded-lg uppercase tracking-wider font-sans">Pending Return</span>
+                                                        ) : pos.status === 'SETTLED' ? (
+                                                            <span className="inline-block px-2.5 py-1 text-[9px] font-black text-slate-400 bg-slate-50 border border-slate-200/60 rounded-lg uppercase tracking-wider font-sans">Settled</span>
+                                                        ) : (
+                                                            <button 
+                                                                onClick={() => handleSellStockPosition(pos)}
+                                                                className="px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white font-black text-[9px] uppercase tracking-widest rounded-lg shadow-sm transition-all active:scale-95 font-sans"
+                                                            >
+                                                                Sell Position
+                                                            </button>
+                                                        )}
+                                                    </td>
                                                 </tr>
                                             );
                                         })}
@@ -10045,94 +10530,94 @@ const StocksTerminal = ({ setMode, setToToken, binancePing, krakenStatus }) => {
 
                 {/* ── EXECUTION HUB (SIDEBAR) ── */}
                 <div className="lg:col-span-4 space-y-8">
-                    <div className="bg-slate-900 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden border border-white/5 sticky top-8">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-teal-600/10 blur-3xl -mr-16 -mt-16" />
-                        <div className="absolute bottom-0 left-0 w-32 h-32 bg-teal-600/10 blur-3xl -ml-16 -mb-16" />
+                    <div className="bg-white rounded-[2.5rem] p-8 shadow-xl relative overflow-hidden border border-slate-200/60 sticky top-8">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/5 blur-3xl -mr-16 -mt-16" />
+                        <div className="absolute bottom-0 left-0 w-32 h-32 bg-teal-500/5 blur-3xl -ml-16 -mb-16" />
 
                         <div className="relative z-10 space-y-8">
                             <div className="flex items-center justify-between">
-                                <h4 className="text-xl font-black uppercase tracking-tighter italic text-white/90">Trade Terminal</h4>
-                                <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl">
+                                <h4 className="text-xl font-black uppercase tracking-tighter italic text-slate-900">Trade Terminal</h4>
+                                <div className="flex items-center gap-2 bg-emerald-50 border border-emerald-100 px-3 py-1.5 rounded-xl">
                                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                                    <span className="text-[8px] font-black text-white uppercase tracking-widest">Market Open</span>
+                                    <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Market Open</span>
                                 </div>
                             </div>
 
                             {/* Quantity Control */}
                             <div className="space-y-4">
                                 <div className="flex justify-between items-end">
-                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Execution Quantity</p>
-                                    <p className="text-[9px] font-black text-teal-500 uppercase tracking-widest">Balance: 12.4 BNB</p>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Execution Quantity</p>
+                                    <p className="text-[9px] font-black text-teal-600 uppercase tracking-widest">Balance: 12.4 BNB</p>
                                 </div>
                                 <div className="relative group">
                                     <input 
                                         type="number" 
                                         value={tradeQuantity}
                                         onChange={(e) => setTradeQuantity(e.target.value)}
-                                        className="w-full bg-white/5 border border-white/10 rounded-2xl py-6 px-8 text-2xl font-black text-white tracking-tighter focus:bg-white/10 focus:border-teal-500/50 transition-all outline-none" 
+                                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-6 px-8 text-2xl font-black text-slate-900 tracking-tighter focus:bg-white focus:border-teal-500/50 transition-all outline-none" 
                                         placeholder="0.00"
                                     />
-                                    <span className="absolute right-8 top-1/2 -translate-y-1/2 text-sm font-black text-slate-500 group-focus-within:text-teal-500">UNITS</span>
+                                    <span className="absolute right-8 top-1/2 -translate-y-1/2 text-sm font-black text-slate-400 group-focus-within:text-teal-600">UNITS</span>
                                 </div>
                             </div>
 
                             {/* Leverage Exposure */}
                             <div className="space-y-4">
                                 <div className="flex justify-between">
-                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Synthetic Leverage</p>
-                                    <p className="text-[9px] font-black text-teal-500 uppercase tracking-widest">{leverage}x Exposure</p>
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Synthetic Leverage</p>
+                                    <p className="text-[9px] font-black text-teal-600 uppercase tracking-widest">{leverage}x Exposure</p>
                                 </div>
                                 <input 
                                     type="range" min="1" max="50" step="1"
                                     value={leverage}
                                     onChange={(e) => setLeverage(e.target.value)}
-                                    className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-teal-500"
+                                    className="w-full h-1.5 bg-slate-100 rounded-full appearance-none cursor-pointer accent-teal-500"
                                 />
-                                <div className="flex justify-between text-[8px] font-black text-slate-600 uppercase tracking-widest">
+                                <div className="flex justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest">
                                     <span>Spot (1x)</span>
                                     <span>Pro (50x)</span>
                                 </div>
                             </div>
 
-                            <div className="p-6 bg-white/5 rounded-2xl border border-white/10 space-y-4">
+                            <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 space-y-4">
                                 <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                                    <span className="text-slate-500">Execution Cost</span>
-                                    <span className="text-white">${(tickerData.price * tradeQuantity).toLocaleString()}</span>
+                                    <span className="text-slate-400">Execution Cost</span>
+                                    <span className="text-slate-900">${(tickerData.price * tradeQuantity).toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
-                                    <span className="text-slate-500">Leverage Requirement</span>
-                                    <span className="text-teal-500">${((tickerData.price * tradeQuantity) / leverage).toLocaleString()}</span>
+                                    <span className="text-slate-400">Leverage Requirement</span>
+                                    <span className="text-teal-600">${((tickerData.price * tradeQuantity) / leverage).toLocaleString()}</span>
                                 </div>
-                                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest border-t border-white/5 pt-4">
-                                    <span className="text-slate-500">Protocol Fee</span>
+                                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest border-t border-slate-200/60 pt-4">
+                                    <span className="text-slate-400">Protocol Fee</span>
                                     <span className="text-emerald-500">0.0015 BNB</span>
                                 </div>
                             </div>
 
                             {statusMsg && (
-                                <div className="p-4 bg-teal-950/60 border border-teal-500/20 text-teal-400 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center animate-pulse">
+                                <div className="p-4 bg-teal-50 border border-teal-200 text-teal-600 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center animate-pulse">
                                     {statusMsg}
                                 </div>
                             )}
                             {error && (
-                                <div className="p-4 bg-rose-950/60 border border-rose-500/20 text-rose-400 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center">
+                                <div className="p-4 bg-rose-50 border border-rose-200 text-rose-600 rounded-2xl text-[10px] font-black uppercase tracking-widest text-center">
                                     {error}
                                 </div>
                             )}
 
                             <div className="grid grid-cols-2 gap-4 pt-4">
-                                <button onClick={() => handleTrade('buy')} className="w-full py-5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-3">
+                                <button onClick={() => handleTrade('buy')} className="w-full py-5 bg-emerald-500 hover:bg-emerald-600 text-slate-50 font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-emerald-500/20 active:scale-95 flex items-center justify-center gap-3">
                                     <ArrowUpRight size={16} /> Bull Position
                                 </button>
-                                <button onClick={() => handleTrade('sell')} className="w-full py-5 bg-rose-500 hover:bg-rose-600 text-white font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-rose-500/20 active:scale-95 flex items-center justify-center gap-3">
+                                <button onClick={() => handleTrade('sell')} className="w-full py-5 bg-rose-500 hover:bg-rose-600 text-slate-50 font-black text-xs uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-rose-500/20 active:scale-95 flex items-center justify-center gap-3">
                                     <ArrowDownRight size={16} /> Bear Position
                                 </button>
                             </div>
 
-                            <div className="pt-4 flex items-center gap-4 text-white/30">
-                                <div className="h-px flex-1 bg-white/5" />
+                            <div className="pt-4 flex items-center gap-4 text-slate-400">
+                                <div className="h-px flex-1 bg-slate-200" />
                                 <span className="text-[8px] font-black uppercase tracking-widest">Institutional Settlement Engine</span>
-                                <div className="h-px flex-1 bg-white/5" />
+                                <div className="h-px flex-1 bg-slate-200" />
                             </div>
                         </div>
                     </div>

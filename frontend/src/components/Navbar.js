@@ -6,13 +6,14 @@ import { useWallet } from '@/context/WalletContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import axios from 'axios';
-import { Wallet, Rocket, Activity, Image as ImageIcon, Menu, X, FileText, ArrowRightLeft, ChevronDown, Coins, ShieldCheck, Shield, Sparkles, DollarSign, CreditCard, Lock, Brain, LayoutGrid } from 'lucide-react';
+import { Wallet, Rocket, Activity, Image as ImageIcon, Menu, X, FileText, ArrowRightLeft, ChevronDown, Coins, ShieldCheck, Shield, Sparkles, DollarSign, CreditCard, Lock, Brain, LayoutGrid, TrendingUp, BarChart3, Zap, Target, Flame, Building2, Globe, PlusCircle, Diamond } from 'lucide-react';
 import Logo from './Logo';
 
 export default function Navbar() {
     const { account, connectWallet, disconnectWallet, isConnecting } = useWallet();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
     const [isCreateDropdownOpen, setIsCreateDropdownOpen] = useState(false);
+    const [isExchangeDropdownOpen, setIsExchangeDropdownOpen] = useState(false);
     const TREASURY_WALLETS = {
         EVM: process.env.NEXT_PUBLIC_FEE_WALLET,
         BTC: process.env.NEXT_PUBLIC_TREASURY_BTC,
@@ -161,12 +162,133 @@ export default function Navbar() {
 
 
 
-                            <Link href="/exchange" className="group relative flex items-center gap-2 px-5 py-2 rounded-full font-black border transition-all duration-300 hover:-translate-y-1 active:scale-95" style={{background:'linear-gradient(135deg,#009393,#007a7a)',color:'white',borderColor:'rgba(0,147,147,0.3)',boxShadow:'0 8px 24px rgba(0,147,147,0.3)'}}>
-                                <div className="p-1.5 rounded-full border transition-colors duration-300" style={{background:'rgba(255,255,255,0.15)',borderColor:'rgba(255,255,255,0.1)'}}>
-                                    <Activity className="w-3.5 h-3.5 text-white" />
-                                </div>
-                                <span className="tracking-wide text-xs">Exchange</span>
-                            </Link>
+                            <div 
+                                className="relative"
+                                onMouseEnter={() => setIsExchangeDropdownOpen(true)}
+                                onMouseLeave={() => setIsExchangeDropdownOpen(false)}
+                            >
+                                <Link href="/exchange" className="group relative flex items-center gap-2 px-5 py-2 rounded-full font-black border transition-all duration-300 hover:-translate-y-1 active:scale-95" style={{background:'linear-gradient(135deg,#009393,#007a7a)',color:'white',borderColor:'rgba(0,147,147,0.3)',boxShadow:'0 8px 24px rgba(0,147,147,0.3)'}}>
+                                    <div className="p-1.5 rounded-full border transition-colors duration-300" style={{background:'rgba(255,255,255,0.15)',borderColor:'rgba(255,255,255,0.1)'}}>
+                                        <Activity className="w-3.5 h-3.5 text-white" />
+                                    </div>
+                                    <span className="tracking-wide text-xs">Exchange</span>
+                                    <ChevronDown className={`w-3 h-3 text-white/80 transition-transform duration-300 ${isExchangeDropdownOpen ? 'rotate-180' : ''}`} />
+                                </Link>
+                                
+                                <AnimatePresence>
+                                    {isExchangeDropdownOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="absolute top-full left-1/2 -translate-x-1/2 w-[980px] bg-white/98 backdrop-blur-3xl border border-rose-500/10 shadow-[0_25px_60px_-15px_rgba(220,20,60,0.12)] rounded-[2rem] p-6 z-50 mt-3 overflow-hidden grid grid-cols-3 gap-6"
+                                        >
+                                            {/* Column 1: Trade Core */}
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-2 border-b border-rose-50 pb-3 mb-1">
+                                                    <TrendingUp className="w-4 h-4 text-[#dc143c]" />
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Trade Core</span>
+                                                </div>
+                                                <div className="flex flex-col gap-2">
+                                                    {[
+                                                        { label: 'Markets', desc: 'Real-time token trackers & data', href: '/exchange?mode=markets', icon: LayoutGrid },
+                                                        { label: 'Spot Exchange', desc: 'Professional Spot Trading Terminal', href: '/exchange?mode=spot', icon: TrendingUp },
+                                                        { label: 'Futures Terminal', desc: 'Up to 50x Perpetual Leverage', href: '/exchange?mode=pro', icon: BarChart3 },
+                                                        { label: 'Meme Futures', desc: 'High volatility meme contracts', href: '/exchange?mode=meme-futures', icon: Zap },
+                                                        { label: 'List Your Token', desc: 'Submit fair launches & curves', href: '/exchange?mode=list', icon: PlusCircle }
+                                                    ].map((item, idx) => (
+                                                        <Link 
+                                                            key={idx}
+                                                            href={item.href}
+                                                            onClick={() => setIsExchangeDropdownOpen(false)}
+                                                            className="flex items-start gap-3.5 p-3 bg-slate-50/40 hover:bg-[#dc143c] border border-slate-100/70 hover:border-[#dc143c] rounded-2xl transition-all duration-350 group shadow-[0_2px_4px_rgba(0,0,0,0.02)] hover:shadow-lg hover:shadow-rose-500/15 active:scale-[0.98]"
+                                                        >
+                                                            <div className="p-2.5 rounded-xl bg-white border border-slate-100 text-slate-500 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent transition-all duration-300 shrink-0">
+                                                                <item.icon className="w-4 h-4" />
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="text-xs font-black uppercase text-slate-800 group-hover:text-white transition-colors tracking-tight leading-none">{item.label}</p>
+                                                                <span className="inline-block mt-2 px-2 py-0.5 bg-rose-50/50 text-[#dc143c] border border-rose-100/50 rounded-md text-[8px] font-bold uppercase tracking-wider group-hover:bg-white/10 group-hover:text-white/90 group-hover:border-transparent transition-all leading-none">
+                                                                    {item.desc}
+                                                                </span>
+                                                            </div>
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Column 2: Yield & Assets */}
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-2 border-b border-rose-50 pb-3 mb-1">
+                                                    <Lock className="w-4 h-4 text-[#dc143c]" />
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Yield & Assets</span>
+                                                </div>
+                                                <div className="flex flex-col gap-2">
+                                                    {[
+                                                        { label: 'MEX Yield Program', desc: 'Passive stable earnings on RWA debt', href: '/exchange?mode=mex-money', icon: DollarSign },
+                                                        { label: 'Smart Money Index', desc: 'Diversified 10-token index buckets', href: '/exchange?mode=smart-money', icon: Target },
+                                                        { label: 'Staking Vaults', desc: 'Lock assets to earn high-yield APY', href: '/staking', icon: Lock },
+                                                        { label: 'Lending & Borrowing', desc: 'Borrow assets via collateralized pools', href: '/lending', icon: ArrowRightLeft },
+                                                        { label: 'NFT Hub', desc: 'Mint & trade digital collectibles', href: '/nft', icon: Diamond }
+                                                    ].map((item, idx) => (
+                                                        <Link 
+                                                            key={idx}
+                                                            href={item.href}
+                                                            onClick={() => setIsExchangeDropdownOpen(false)}
+                                                            className="flex items-start gap-3.5 p-3 bg-slate-50/40 hover:bg-[#dc143c] border border-slate-100/70 hover:border-[#dc143c] rounded-2xl transition-all duration-350 group shadow-[0_2px_4px_rgba(0,0,0,0.02)] hover:shadow-lg hover:shadow-rose-500/15 active:scale-[0.98]"
+                                                        >
+                                                            <div className="p-2.5 rounded-xl bg-white border border-slate-100 text-slate-500 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent transition-all duration-300 shrink-0">
+                                                                <item.icon className="w-4 h-4" />
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="text-xs font-black uppercase text-slate-800 group-hover:text-white transition-colors tracking-tight leading-none">{item.label}</p>
+                                                                <span className="inline-block mt-2 px-2 py-0.5 bg-rose-50/50 text-[#dc143c] border border-rose-100/50 rounded-md text-[8px] font-bold uppercase tracking-wider group-hover:bg-white/10 group-hover:text-white/90 group-hover:border-transparent transition-all leading-none">
+                                                                    {item.desc}
+                                                                </span>
+                                                            </div>
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Column 3: Intelligence & Portals */}
+                                            <div className="space-y-4">
+                                                <div className="flex items-center gap-2 border-b border-rose-50 pb-3 mb-1">
+                                                    <Globe className="w-4 h-4 text-[#dc143c]" />
+                                                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Intelligence & Portals</span>
+                                                </div>
+                                                <div className="flex flex-col gap-2">
+                                                    {[
+                                                        { label: 'Web3 Portal', desc: 'Interact with dApps and smart contracts', href: '/exchange?mode=web3', icon: Globe },
+                                                        { label: 'Meme Hub', desc: 'Trending coins, launches & sentiment', href: '/exchange?mode=meme', icon: Flame },
+                                                        { label: 'Tokenized Stocks', desc: 'On-chain tokenized global equity shares', href: '/exchange?mode=stocks', icon: Building2 },
+                                                        { label: 'Fiat Desk', desc: 'Secure bank deposits & gateways', href: '/exchange?mode=fiat', icon: CreditCard },
+                                                        { label: 'Nuera AI Core', desc: 'Machine learning analytics & brainstorming', href: '/exchange?mode=b20ai', icon: Brain }
+                                                    ].map((item, idx) => (
+                                                        <Link 
+                                                            key={idx}
+                                                            href={item.href}
+                                                            onClick={() => setIsExchangeDropdownOpen(false)}
+                                                            className="flex items-start gap-3.5 p-3 bg-slate-50/40 hover:bg-[#dc143c] border border-slate-100/70 hover:border-[#dc143c] rounded-2xl transition-all duration-350 group shadow-[0_2px_4px_rgba(0,0,0,0.02)] hover:shadow-lg hover:shadow-rose-500/15 active:scale-[0.98]"
+                                                        >
+                                                            <div className="p-2.5 rounded-xl bg-white border border-slate-100 text-slate-500 group-hover:bg-white/10 group-hover:text-white group-hover:border-transparent transition-all duration-300 shrink-0">
+                                                                <item.icon className="w-4 h-4" />
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <p className="text-xs font-black uppercase text-slate-800 group-hover:text-white transition-colors tracking-tight leading-none">{item.label}</p>
+                                                                <span className="inline-block mt-2 px-2 py-0.5 bg-rose-50/50 text-[#dc143c] border border-rose-100/50 rounded-md text-[8px] font-bold uppercase tracking-wider group-hover:bg-white/10 group-hover:text-white/90 group-hover:border-transparent transition-all leading-none">
+                                                                    {item.desc}
+                                                                </span>
+                                                            </div>
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
 
 
 
@@ -349,7 +471,7 @@ export default function Navbar() {
                                         <Activity className="w-4 h-4 text-white" />
                                     </div>
                                     <div className="z-10">
-                                        <p className="text-sm font-black leading-tight">Crypto Exchange</p>
+                                        <p className="text-sm font-black leading-tight">Bitpay Exchange</p>
                                         <p className="text-[9px] text-white/60 font-medium">Trade &amp; Futures</p>
                                     </div>
                                     <div className="ml-auto z-10 text-[8px] font-black text-white px-2 py-0.5 rounded-full" style={{background:'rgba(255,255,255,0.25)'}}>LIVE</div>

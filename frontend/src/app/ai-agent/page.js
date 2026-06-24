@@ -161,7 +161,7 @@ export default function AIAgent() {
           </motion.div>
 
           {/* ── Input Card ── */}
-          <motion.div initial={{ opacity:0, scale:0.97 }} animate={{ opacity:1, scale:1 }} className="glass-card mb-6 relative overflow-hidden">
+          <motion.div initial={{ opacity:0, scale:0.97 }} animate={{ opacity:1, scale:1 }} className="ai-card mb-6 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-40 h-40 bg-teal-500/5 blur-3xl -z-10" />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
@@ -172,7 +172,7 @@ export default function AIAgent() {
                   placeholder="e.g. BurgerCoin"
                   value={tokenName}
                   onChange={e => setTokenName(e.target.value)}
-                  className="w-full bg-black/5 border border-black/10 rounded-2xl px-5 py-3 focus:outline-none focus:border-teal-500/50 transition-all text-gray-900 text-base"
+                  className="ai-input w-full text-base"
                 />
               </div>
               <div className="space-y-1.5">
@@ -182,7 +182,7 @@ export default function AIAgent() {
                   placeholder="e.g. BRGR"
                   value={tokenSymbol}
                   onChange={e => setTokenSymbol(e.target.value.toUpperCase())}
-                  className="w-full bg-black/5 border border-black/10 rounded-2xl px-5 py-3 focus:outline-none focus:border-teal-500/50 transition-all text-gray-900 text-base uppercase tracking-widest font-mono"
+                  className="ai-input w-full text-base uppercase tracking-widest font-mono"
                 />
               </div>
             </div>
@@ -224,7 +224,7 @@ export default function AIAgent() {
                     placeholder="e.g. A fast-food themed meme coin on BSC that rewards holders with burger NFTs and builds a community of food lovers in DeFi..."
                     value={prompt}
                     onChange={e => setPrompt(e.target.value)}
-                    className="w-full bg-black/5 border border-black/10 rounded-2xl px-5 py-4 focus:outline-none focus:border-teal-500/50 transition-all text-gray-900 text-base resize-none shadow-inner"
+                    className="ai-input w-full text-base resize-none shadow-inner"
                   />
                   {/* Live status indicator */}
                   <div className="absolute bottom-3 right-4 flex items-center gap-2">
@@ -308,7 +308,7 @@ export default function AIAgent() {
                     <motion.div
                       initial={{ opacity:0, scale:0.95 }} animate={{ opacity:1, scale:1 }}
                       onClick={() => handleSelectToken({ name: tokenName, symbol: tokenSymbol, description: prompt || 'Custom user token.' })}
-                      className="glass-card p-6 cursor-pointer hover:border-slate-400 hover:shadow-lg transition-all flex flex-col bg-slate-50 border-2 border-slate-200"
+                      className="ai-suggestion-card cursor-pointer hover:border-slate-400 hover:shadow-lg transition-all flex flex-col bg-slate-50 border border-slate-200"
                     >
                       <span className="px-2 py-1 bg-slate-200 text-slate-700 rounded-lg text-[10px] font-black uppercase tracking-widest mb-4 self-start">Your Input</span>
                       <h4 className="text-2xl font-black text-gray-900">{tokenName}
@@ -330,7 +330,7 @@ export default function AIAgent() {
                       key={i}
                       initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} transition={{ delay: i * 0.06 }}
                       onClick={() => handleSelectToken(s)}
-                      className="glass-card p-6 cursor-pointer hover:border-teal-500 hover:shadow-xl transition-all flex flex-col bg-white border-2 border-transparent group"
+                      className="ai-suggestion-card cursor-pointer hover:border-teal-500 hover:shadow-xl transition-all flex flex-col bg-white border border-transparent group"
                     >
                       <div className="flex justify-between items-start mb-4">
                         <span className="px-2 py-1 bg-teal-50 group-hover:bg-teal-100 text-teal-700 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors">

@@ -60,33 +60,32 @@ const Portal = ({ children }) => {
 function Card({ children, className='' }) {
     return (
         <div className={`rounded-3xl overflow-hidden ${className}`} style={{
-            background:'linear-gradient(145deg,#ffffff 0%,#f8fafc 100%)',
-            border:'1px solid rgba(15,23,42,0.06)',
-            boxShadow:'0 8px 32px rgba(15,23,42,0.04),0 2px 8px rgba(15,23,42,0.02),inset 0 1px 0 #ffffff',
-            backdropFilter:'blur(14px)',
+            background:'#ffffff',
+            border:'1px solid rgba(220,20,60,0.08)',
+            boxShadow:'0 10px 30px rgba(0,0,0,0.03)',
         }}>{children}</div>
     );
 }
 
 function StatBox({ label, value, icon: Icon, color='amber', sub }) {
     const palette = {
-        amber:  { border:'rgba(15,23,42,0.08)',  bg:'rgba(248,250,252,0.8)', txt:'#0f172a', ic:'#4a5568' },
-        green:  { border:'rgba(16,185,129,0.25)',  bg:'rgba(209,250,229,0.50)', txt:'#065f46', ic:'#10b981' },
-        red:    { border:'rgba(239,68,68,0.22)',   bg:'rgba(254,226,226,0.50)', txt:'#b91c1c', ic:'#ef4444' },
-        gold:   { border:'rgba(99,102,241,0.2)',   bg:'rgba(238,242,255,0.6)', txt:'#4f46e5', ic:'#4f46e5' },
-        blue:   { border:'rgba(0,147,147,0.22)',  bg:'rgba(204,245,245,0.50)', txt:'#007a7a', ic:'#009393' },
-        violet: { border:'rgba(139,92,246,0.22)',  bg:'rgba(237,233,254,0.50)', txt:'#4c1d95', ic:'#8b5cf6' },
+        amber:  { border:'rgba(251,191,36,0.2)',   bg:'rgba(251,191,36,0.08)',  txt:'#fbbf24', ic:'#fbbf24' },
+        green:  { border:'rgba(52,211,153,0.2)',   bg:'rgba(52,211,153,0.08)',  txt:'#34d399', ic:'#34d399' },
+        red:    { border:'rgba(248,113,113,0.2)',  bg:'rgba(248,113,113,0.08)', txt:'#f87171', ic:'#f87171' },
+        gold:   { border:'rgba(129,140,248,0.2)',  bg:'rgba(129,140,248,0.08)', txt:'#818cf8', ic:'#818cf8' },
+        blue:   { border:'rgba(56,189,248,0.2)',   bg:'rgba(56,189,248,0.08)',  txt:'#38bdf8', ic:'#38bdf8' },
+        violet: { border:'rgba(167,139,250,0.2)',  bg:'rgba(167,139,250,0.08)', txt:'#a78bfa', ic:'#a78bfa' },
     };
     const p = palette[color]||palette.amber;
     return (
-        <div className="rounded-2xl p-4 h-full flex flex-col" style={{border:`1px solid ${p.border}`,background:p.bg,boxShadow:`0 2px 10px ${p.border}`}}>
+        <div className="rounded-2xl p-4 h-full flex flex-col" style={{border:`1px solid ${p.border}`,background:p.bg,boxShadow:`0 4px 20px rgba(0,0,0,0.3)`}}>
             <div className="flex items-start gap-2 mb-3">
                 <Icon style={{color:p.ic}} className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em] leading-tight">{label}</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.15em] leading-tight" style={{color:'rgba(148,163,184,0.7)'}}>{label}</p>
             </div>
             <div className="mt-auto">
                 <p className="text-lg font-black leading-none" style={{color:p.txt}}>{value}</p>
-                {sub && <p className="text-[9px] text-gray-400 mt-1.5">{sub}</p>}
+                {sub && <p className="text-[9px] mt-1.5" style={{color:'rgba(148,163,184,0.55)'}}>{sub}</p>}
             </div>
         </div>
     );
@@ -95,12 +94,12 @@ function StatBox({ label, value, icon: Icon, color='amber', sub }) {
 function SectionTitle({ icon: Icon, title, sub }) {
     return (
         <div className="flex items-center gap-3 mb-5">
-            <div className="w-8 h-8 rounded-xl bg-gray-900 flex items-center justify-center shadow-md shadow-gray-900/10">
-                <Icon className="w-3.5 h-3.5 text-white" />
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{background:'rgba(220,20,60,0.08)',border:'1px solid rgba(220,20,60,0.2)'}}>
+                <Icon className="w-3.5 h-3.5 text-rose-500" style={{color:'#dc143c'}} />
             </div>
             <div>
-                <p className="font-black text-gray-900 text-xs">{title}</p>
-                {sub && <p className="text-[9px] text-gray-400">{sub}</p>}
+                <p className="font-black text-xs text-gray-900">{title}</p>
+                {sub && <p className="text-[9px]" style={{color:'rgba(100,116,139,0.7)'}}>{sub}</p>}
             </div>
         </div>
     );
@@ -125,8 +124,8 @@ function TiltCard({ children, className='' }) {
         <motion.div ref={ref} onMouseMove={handleMove} onMouseLeave={reset} onTouchMove={(e)=>{const t=e.touches[0];const r=ref.current.getBoundingClientRect();x.set((t.clientX-r.left)/r.width-0.5);y.set((t.clientY-r.top)/r.height-0.5);}} onTouchEnd={reset}
             style={{rotateX,rotateY,transformStyle:'preserve-3d',perspective:800}}
             className={`relative cursor-pointer ${className}`}>
-            <div className="relative overflow-hidden rounded-3xl" style={{background:'linear-gradient(145deg,#ffffff 0%,#ffffff 100%)',border:'1px solid rgba(15,23,42,0.06)',boxShadow:'0 20px 60px rgba(15,23,42,0.08),0 8px 24px rgba(15,23,42,0.04),inset 0 1px 0 #ffffff',transformStyle:'preserve-3d'}}>
-                <motion.div className="absolute inset-0 pointer-events-none z-10 rounded-3xl" style={{background:`linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.25) 50%,transparent 60%)`,backgroundPositionX:glareX,opacity:0.6}} />
+            <div className="relative overflow-hidden rounded-3xl" style={{background:'#ffffff',border:'1px solid rgba(220,20,60,0.12)',boxShadow:'0 10px 30px rgba(0,0,0,0.03)',transformStyle:'preserve-3d'}}>
+                <motion.div className="absolute inset-0 pointer-events-none z-10 rounded-3xl" style={{background:`linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.06) 50%,transparent 60%)`,backgroundPositionX:glareX,opacity:0.8}} />
                 {children}
             </div>
         </motion.div>
@@ -179,109 +178,103 @@ function AIDataTab({ tokens }) {
     ];
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-6">
             {/* AI Neural Nexus Header */}
-            <div className="relative overflow-hidden rounded-[3rem] bg-gray-900 p-8 flex items-center justify-between border border-white/5 shadow-2xl shadow-teal-200/10">
+            <div className="relative overflow-hidden rounded-2xl p-6 flex items-center justify-between shadow-sm" style={{background:'linear-gradient(135deg,#ffffff 0%,#fdfdfd 100%)',border:'1px solid rgba(220,20,60,0.15)',boxShadow:'0 10px 30px rgba(0,0,0,0.03)'}}>
+                <div className="absolute top-0 left-0 right-0 h-[2px]" style={{background:'linear-gradient(90deg,transparent,#dc143c,#dc143c,transparent)'}}/>
+                <div className="absolute top-[-20%] right-[-5%] w-64 h-64 rounded-full pointer-events-none" style={{background:'radial-gradient(circle,rgba(220,20,60,0.06) 0%,transparent 65%)'}}/>
                 <div className="relative z-10">
                     <div className="flex items-center gap-3 mb-2">
-                        <div className="w-10 h-10 rounded-2xl bg-teal-500 flex items-center justify-center shadow-lg shadow-teal-200/20 animate-pulse">
-                            <Brain className="w-6 h-6 text-white" />
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center animate-pulse" style={{background:'linear-gradient(135deg,#dc143c,#a30f27)',boxShadow:'0 0 20px rgba(220,20,60,0.3)'}}>
+                            <Brain className="w-5 h-5 force-white" />
                         </div>
-                        <h1 className="text-3xl font-black text-white tracking-tighter">B20 NEURAL NEXUS</h1>
+                        <h1 className="text-2xl font-black tracking-tighter text-gray-900">B20 NEURAL NEXUS</h1>
                     </div>
-                    <p className="text-[10px] text-teal-600 font-bold uppercase tracking-[0.4em] ml-1">Advanced Machine Intelligence · Real-Time Telemetry</p>
+                    <p className="text-[9px] font-bold uppercase tracking-[0.4em] ml-1 text-teal-600">Advanced Machine Intelligence · Real-Time Telemetry</p>
                 </div>
-                <div className="relative z-10 flex items-center gap-6 pr-4">
+                <div className="relative z-10 flex items-center gap-4">
                     <div className="text-right">
-                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Core Sync Status</p>
-                        <p className="text-sm font-black text-sky-500 uppercase tracking-widest">Optimized</p>
+                        <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Core Sync Status</p>
+                        <p className="text-sm font-black uppercase tracking-widest text-emerald-500">Optimized</p>
                     </div>
-                    <div className="w-12 h-12 rounded-full border-2 border-white/10 flex items-center justify-center relative">
-                        <div className="absolute inset-0 bg-teal-500 rounded-full blur-md opacity-20 animate-ping" />
-                        <Activity className="w-5 h-5 text-teal-600" />
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center relative" style={{border:'1px solid rgba(16,185,129,0.3)'}}>
+                        <div className="absolute inset-0 rounded-full animate-ping" style={{background:'rgba(16,185,129,0.1)'}}/>
+                        <Activity className="w-4 h-4 text-emerald-500" />
                     </div>
                 </div>
-                {/* Background Grid Graphic */}
-                <div className="absolute inset-0 opacity-20" style={{backgroundImage:'radial-gradient(#ffffff 0.5px, transparent 0.5px)', backgroundSize:'24px 24px'}} />
             </div>
 
             {/* AI Sentiment Ticker */}
-            <Card className="p-5 relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/5 blur-[100px] -mr-32 -mt-32 rounded-full group-hover:scale-150 transition-all duration-1000" />
+            <Card className="p-5 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-48 h-48 rounded-full pointer-events-none" style={{background:'radial-gradient(circle,rgba(220,20,60,0.04) 0%,transparent 65%)',transform:'translate(30%,-30%)'}}/>
                 <SectionTitle icon={Sparkles} title="AI Prediction Engine" sub="Daily rotating sentiment forecasts" />
                 {aiTokens.length>0 && (
                     <AnimatePresence mode="wait">
                         <motion.div key={slideIdx} initial={{opacity:0,x:30}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-30}} transition={{duration:0.4}}
                             onClick={() => window.location.href='/exchange'}
-                            className="flex items-center gap-4 p-4 rounded-2xl cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all" style={{background:'rgba(249,250,251,0.8)',border:'1px solid rgba(0,0,0,0.04)'}}>
-                            {aiTokens[slideIdx]?.image ? <img src={aiTokens[slideIdx]?.image} className="w-12 h-12 rounded-full border-2 border-gray-200 shadow-md" alt="" onError={e=>e.target.style.display='none'} /> : null}
+                            className="flex items-center gap-4 p-4 rounded-xl cursor-pointer transition-all" style={{background:'rgba(220,20,60,0.02)',border:'1px solid rgba(220,20,60,0.08)'}}>
+                            {aiTokens[slideIdx]?.image ? <img src={aiTokens[slideIdx]?.image} className="w-11 h-11 rounded-full shadow-md" style={{border:'2px solid rgba(220,20,60,0.2)'}} alt="" onError={e=>e.target.style.display='none'} /> : null}
                             <div className="flex-1">
                                 <div className="flex items-center gap-2">
-                                    <p className="font-black text-gray-900 text-sm">{aiTokens[slideIdx]?.symbol?.toUpperCase()}</p>
-                                    <span className="text-[8px] font-black text-teal-600 bg-teal-50 border border-gray-200 px-2 py-0.5 rounded-full">BUY NOW</span>
+                                    <p className="font-black text-sm text-gray-900">{aiTokens[slideIdx]?.symbol?.toUpperCase()}</p>
+                                    <span className="text-[8px] font-black px-2 py-0.5 rounded-full" style={{background:'rgba(16,185,129,0.15)',color:'#10b981',border:'1px solid rgba(16,185,129,0.25)'}}>BUY NOW</span>
                                 </div>
-                                <p className="text-[9px] text-gray-400">{aiTokens[slideIdx]?.name}</p>
+                                <p className="text-[9px] text-gray-400 font-bold">{aiTokens[slideIdx]?.name}</p>
                                 <div className="flex items-center gap-3 mt-1 text-[9px]">
-                                    <span className="flex items-center gap-1 text-sky-600 font-black">
+                                    <span className="flex items-center gap-1 font-black text-teal-600">
                                         <CheckCircle2 className="w-2.5 h-2.5"/>
                                         AI Confidence: {(() => { const t = aiTokens[slideIdx]; if(!t) return '—'; return Math.min(98, Math.max(52, Math.round(60 + Math.abs(Number(t.price_change_percentage_24h||0)) * 2.1 + (t.market_cap_rank ? Math.max(0, 20 - t.market_cap_rank * 0.5) : 10) + ((t.total_volume||0) > 1e9 ? 8 : (t.total_volume||0) > 1e8 ? 4 : 0)))); })()}%
                                     </span>
-                                    <span className="flex items-center gap-1 font-black" style={{color: isPos(aiTokens[slideIdx]?.price_change_percentage_24h) ? '#d97706' : '#e11d48'}}>
+                                    <span className="flex items-center gap-1 font-black" style={{color: isPos(aiTokens[slideIdx]?.price_change_percentage_24h) ? '#10b981' : '#ef4444'}}>
                                         <Sparkles className="w-2.5 h-2.5"/>{isPos(aiTokens[slideIdx]?.price_change_percentage_24h) ? 'Bullish' : 'Bearish'}
                                     </span>
                                 </div>
                             </div>
                             <div className="text-right">
-                                <p className="font-black text-gray-900 text-sm">${fmt(aiTokens[slideIdx]?.current_price,4)}</p>
-                                <p className={`text-[10px] font-black ${isPos(aiTokens[slideIdx]?.price_change_percentage_24h)?'text-sky-600':'text-teal-600'}`}>
+                                <p className="font-black text-sm text-gray-900">${fmt(aiTokens[slideIdx]?.current_price,4)}</p>
+                                <p className={`text-[10px] font-black ${isPos(aiTokens[slideIdx]?.price_change_percentage_24h)?'text-emerald-500':'text-rose-500'}`}>
                                     {fmtP(aiTokens[slideIdx]?.price_change_percentage_24h)}
                                 </p>
                             </div>
-                            <div className="text-[9px] text-gray-400">{slideIdx+1}/{aiTokens.length}</div>
+                            <div className="text-[9px] text-gray-400 font-bold">{slideIdx+1}/{aiTokens.length}</div>
                         </motion.div>
                     </AnimatePresence>
                 )}
                 <div className="flex gap-1.5 mt-3 justify-center">
                     {aiTokens.map((_,i)=>(
-                        <button key={i} onClick={()=>setSlideIdx(i)} className={`h-1.5 rounded-full transition-all ${i===slideIdx?'w-6 bg-gray-900':'w-1.5 bg-gray-200'}`} />
+                        <button key={i} onClick={()=>setSlideIdx(i)} className={`h-1 rounded-full transition-all ${i===slideIdx?'w-5':'w-1.5'}`} style={{background:i===slideIdx?'#dc143c':'rgba(0,0,0,0.08)'}} />
                     ))}
                 </div>
             </Card>
 
-            {/* Price Change Distribution + Hot Coins + Top Movers + Pie Chart */}
+            {/* Price Change Distribution + Hot Coins + Pie Chart */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Price Change Distribution */}
                 <Card className="p-5">
-                    <SectionTitle icon={BarChart2} title="Price Change Distribution" sub="24h Up/Down breakdown" />
+                    <SectionTitle icon={BarChart2} title="Price Distribution" sub="24h Up/Down breakdown" />
                     <div className="space-y-3">
                         {[
-                            {id:'strong-up', label:'Strong Up (>5%)',  pct: tokens.filter(t=>Number(t.price_change_percentage_24h||0)>5).length,  color:'bg-sky-500', txt:'text-sky-700'},
-                            {id:'up',        label:'Up (0–5%)',        pct: tokens.filter(t=>Number(t.price_change_percentage_24h||0)>0&&Number(t.price_change_percentage_24h||0)<=5).length, color:'bg-sky-300',txt:'text-sky-600'},
-                            {id:'down',      label:'Down (0–5%)',      pct: tokens.filter(t=>Number(t.price_change_percentage_24h||0)<0&&Number(t.price_change_percentage_24h||0)>=-5).length,color:'bg-teal-300',  txt:'text-teal-600'},
-                            {id:'strong-down',label:'Strong Down (<-5%)',pct:tokens.filter(t=>Number(t.price_change_percentage_24h||0)<-5).length, color:'bg-teal-500',    txt:'text-teal-600'},
+                            {id:'strong-up',   label:'Strong Up (>5%)',   pct:tokens.filter(t=>Number(t.price_change_percentage_24h||0)>5).length,   barColor:'#34d399', txtColor:'#34d399'},
+                            {id:'up',          label:'Up (0–5%)',          pct:tokens.filter(t=>Number(t.price_change_percentage_24h||0)>0&&Number(t.price_change_percentage_24h||0)<=5).length, barColor:'#6ee7b7',txtColor:'#6ee7b7'},
+                            {id:'down',        label:'Down (0–5%)',        pct:tokens.filter(t=>Number(t.price_change_percentage_24h||0)<0&&Number(t.price_change_percentage_24h||0)>=-5).length,barColor:'#fca5a5',txtColor:'#fca5a5'},
+                            {id:'strong-down', label:'Strong Down (<-5%)', pct:tokens.filter(t=>Number(t.price_change_percentage_24h||0)<-5).length,   barColor:'#f87171', txtColor:'#f87171'},
                         ].map((s,i)=>{
                             const max=Math.max(...[tokens.filter(t=>Number(t.price_change_percentage_24h||0)>5).length,tokens.filter(t=>Number(t.price_change_percentage_24h||0)>0&&Number(t.price_change_percentage_24h||0)<=5).length,tokens.filter(t=>Number(t.price_change_percentage_24h||0)<0&&Number(t.price_change_percentage_24h||0)>=-5).length,tokens.filter(t=>Number(t.price_change_percentage_24h||0)<-5).length],1);
                             return (
-                                <div key={i} className="space-y-1 cursor-pointer group/row" onClick={() => { setDistFilter(s.id); setDistExpanded(true); }}>
+                                <div key={i} className="space-y-1 cursor-pointer" onClick={()=>{setDistFilter(s.id);setDistExpanded(true);}}>
                                     <div className="flex justify-between text-[9px]">
-                                        <span className="text-gray-500 group-hover/row:text-teal-600 transition-colors">{s.label}</span>
-                                        <span className={`font-black ${s.txt}`}>{s.pct} tokens</span>
+                                        <span style={{color:'rgba(148,163,184,0.6)'}}>{s.label}</span>
+                                        <span className="font-black" style={{color:s.txtColor}}>{s.pct} tokens</span>
                                     </div>
-                                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                        <motion.div initial={{width:0}} animate={{width:`${(s.pct/max)*100}%`}} transition={{duration:1,ease:'easeOut'}} className={`h-full ${s.color} rounded-full group-hover/row:brightness-110`} />
+                                    <div className="h-1.5 rounded-full overflow-hidden" style={{background:'rgba(255,255,255,0.06)'}}>
+                                        <motion.div initial={{width:0}} animate={{width:`${(s.pct/max)*100}%`}} transition={{duration:1,ease:'easeOut'}} className="h-full rounded-full" style={{background:s.barColor}}/>
                                     </div>
                                 </div>
                             );
                         })}
-                     </div>
-                    <button 
-                        onClick={()=>{ setDistFilter('all'); setDistExpanded(true); }} 
-                        className="w-full mt-6 py-4 bg-gradient-to-r from-teal-600 to-teal-700 text-white rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] shadow-[0_20px_40px_-10px_rgba(79,70,229,0.3)] hover:shadow-[0_30px_50px_-10px_rgba(79,70,229,0.4)] hover:-translate-y-1 active:scale-95 transition-all duration-300 flex items-center justify-center gap-3 group"
-                    >
-                        <div className="p-1.5 bg-white/10 rounded-lg group-hover:bg-white/20 transition-colors">
-                            <Eye className="w-4 h-4 text-white"/>
-                        </div>
-                        View Full Global Market
+                    </div>
+                    <button onClick={()=>{setDistFilter('all');setDistExpanded(true);}} className="w-full mt-5 py-3 rounded-xl text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 active:scale-95" style={{background:'linear-gradient(135deg,#6366f1,#8b5cf6)',color:'#fff',boxShadow:'0 8px 24px rgba(99,102,241,0.3)'}}>
+                        <Eye className="w-4 h-4"/>View Full Global Market
                     </button>
                             {/* View List Modal — Using Portal for true Pop-Up */}
                     {distExpanded && (
@@ -293,7 +286,7 @@ function AIDataTab({ tokens }) {
                                     onClick={(e) => e.stopPropagation()}
                                     className="bg-white rounded-[3.5rem] p-12 w-full max-w-7xl max-h-[90vh] overflow-hidden border border-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] relative flex flex-col"
                                 >
-                                    <button onClick={()=>setDistExpanded(false)} className="absolute top-8 right-8 text-white bg-gray-900 rounded-full p-4 hover:scale-110 hover:bg-teal-500 transition-all z-[110] shadow-xl shadow-black/20">✕</button>
+                                    <button onClick={()=>setDistExpanded(false)} className="absolute top-8 right-8 force-white bg-gray-900 rounded-full p-4 hover:scale-110 hover:bg-teal-500 transition-all z-[110] shadow-xl shadow-black/20">✕</button>
                                     
                                     <div className="mb-12">
                                         <div className="flex items-center gap-4 mb-3">
@@ -323,7 +316,7 @@ function AIDataTab({ tokens }) {
                                                         <div className="relative mb-4">
                                                             {t.image ? <img src={t.image} className="w-16 h-16 rounded-[1.5rem] shadow-xl group-hover:scale-110 transition-transform bg-white p-1" alt="" onError={e=>e.target.style.display='none'} /> : null}
                                                             <div className={`absolute -right-2 -top-2 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center shadow-lg ${pos ? 'bg-sky-500' : 'bg-teal-500'}`}>
-                                                                {pos ? <ArrowUpRight className="w-3.5 h-3.5 text-white" /> : <ArrowDownRight className="w-3.5 h-3.5 text-white" />}
+                                                                {pos ? <ArrowUpRight className="w-3.5 h-3.5 force-white" /> : <ArrowDownRight className="w-3.5 h-3.5 force-white" />}
                                                             </div>
                                                         </div>
                                                         <p className="font-black text-gray-900 text-base tracking-tight mb-1">{t.symbol?.toUpperCase()}</p>
@@ -347,83 +340,81 @@ function AIDataTab({ tokens }) {
                     <SectionTitle icon={Flame} title="Hot Coins" sub="Ranked by 24h volume" />
                     <div className="space-y-2">
                         {hot.slice(0,hotExpanded?20:4).map((t,i)=>(
-                            <div key={i} style={{background:'rgba(248,250,252,0.8)',border:'1px solid rgba(15,23,42,0.06)'}} className="flex items-center gap-3 p-2.5 rounded-xl hover:brightness-95 transition-all">
-                                <span className="text-[9px] font-black text-teal-600 w-4">#{i+1}</span>
-                                {t.image ? <img src={t.image} className="w-8 h-8 rounded-full border border-gray-200 shadow-sm" alt="" onError={e=>e.target.style.display='none'} /> : null}
+                            <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl transition-all" style={{background:'rgba(255,255,255,0.04)',border:'1px solid rgba(255,255,255,0.07)'}}>
+                                <span className="text-[9px] font-black w-4" style={{color:'#a855f7'}}>#{i+1}</span>
+                                {t.image ? <img src={t.image} className="w-8 h-8 rounded-full" style={{border:'1px solid rgba(255,255,255,0.1)'}} alt="" onError={e=>e.target.style.display='none'} /> : null}
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-black text-gray-900">{t.symbol?.toUpperCase()}</p>
-                                    <p className="text-[9px] text-gray-400 truncate">{fmtB(t.total_volume)} vol</p>
+                                    <p className="text-xs font-black" style={{color:'#f1f5f9'}}>{t.symbol?.toUpperCase()}</p>
+                                    <p className="text-[9px] truncate" style={{color:'rgba(148,163,184,0.55)'}}>{fmtB(t.total_volume)} vol</p>
                                 </div>
-                                <p className={`text-[10px] font-black ${isPos(t.price_change_percentage_24h)?'text-sky-600':'text-teal-600'}`}>{fmtP(t.price_change_percentage_24h)}</p>
+                                <p className={`text-[10px] font-black ${isPos(t.price_change_percentage_24h)?'text-emerald-400':'text-rose-400'}`}>{fmtP(t.price_change_percentage_24h)}</p>
                             </div>
                         ))}
                     </div>
-                    <button onClick={()=>setHotExpanded(e=>!e)} className="w-full mt-3 py-2 text-[9px] font-black text-teal-600 hover:text-teal-600 flex items-center justify-center gap-1 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all">
+                    <button onClick={()=>setHotExpanded(e=>!e)} className="w-full mt-3 py-2 text-[9px] font-black flex items-center justify-center gap-1 rounded-xl transition-all" style={{border:'1px solid rgba(255,255,255,0.08)',color:'rgba(148,163,184,0.6)'}}>
                         {hotExpanded?<><ChevronUp className="w-3 h-3"/>Show Less</>:<><ChevronDown className="w-3 h-3"/>Show More (up to 20)</>}
                     </button>
                 </Card>
 
-                {/* Floating Pie Chart */}
-                <motion.div animate={{y:[0,-8,0]}} transition={{duration:4,repeat:Infinity,ease:'easeInOut'}} className="lg:col-span-1">
-                    <div className="rounded-3xl p-5 border border-gray-200/70 overflow-hidden" style={{background:'linear-gradient(145deg,#ffffff 0%,#f8fafc 100%)',boxShadow:'0 20px 60px rgba(15,23,42,0.06),0 4px 20px rgba(15,23,42,0.04),inset 0 1px 0 #ffffff'}}>
+                {/* Pie Chart */}
+                <motion.div animate={{y:[0,-6,0]}} transition={{duration:4,repeat:Infinity,ease:'easeInOut'}} className="lg:col-span-1">
+                    <div className="rounded-3xl p-5 h-full" style={{background:'linear-gradient(135deg,#ffffff 0%,#fdfdfd 100%)',border:'1px solid rgba(220,20,60,0.12)',boxShadow:'0 10px 30px rgba(0,0,0,0.03)'}}>
                         <div className="flex items-center justify-between mb-4">
                             <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-xl bg-gray-900 flex items-center justify-center shadow-md shadow-gray-900/10">
-                                    <PieChart className="w-3.5 h-3.5 text-white" />
+                                <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{background:'rgba(220,20,60,0.08)',border:'1px solid rgba(220,20,60,0.2)'}}>
+                                    <PieChart className="w-3.5 h-3.5 text-rose-500" style={{color:'#dc143c'}} />
                                 </div>
                                 <div>
-                                    <p className="font-black text-gray-900 text-xs">Market Cap Distribution</p>
-                                    <p className="text-[9px] text-gray-400">Global crypto dominance</p>
+                                    <p className="font-black text-xs text-gray-900">Market Cap Distribution</p>
+                                    <p className="text-[9px] text-gray-400 font-bold">Global crypto dominance</p>
                                 </div>
                             </div>
-                            <span className="text-[8px] font-black text-teal-600 bg-teal-50 border border-gray-200 px-2 py-0.5 rounded-full">LIVE</span>
+                            <span className="text-[8px] font-black px-2 py-0.5 rounded-full" style={{background:'rgba(16,185,129,0.1)',color:'#10b981',border:'1px solid rgba(16,185,129,0.2)'}}>LIVE</span>
                         </div>
                         <div className="relative flex items-center justify-center mb-4">
-                            <svg width="150" height="150" viewBox="0 0 42 42" className="-rotate-90">
-                                <circle cx="21" cy="21" r="15.9" fill="none" stroke="#fef3c7" strokeWidth="4" />
-                                {[{pct:42,c:'#f59e0b',off:25},{pct:19,c:'#6366f1',off:-17},{pct:12,c:'#10b981',off:-36},{pct:8,c:'#8b5cf6',off:-48},{pct:19,c:'#d1d5db',off:-56}].map((s,i)=>(
+                            <svg width="140" height="140" viewBox="0 0 42 42" className="-rotate-90">
+                                <circle cx="21" cy="21" r="15.9" fill="none" stroke="rgba(0,0,0,0.05)" strokeWidth="4" />
+                                {[{pct:42,c:'#f59e0b',off:25},{pct:19,c:'#6366f1',off:-17},{pct:12,c:'#10b981',off:-36},{pct:8,c:'#8b5cf6',off:-48},{pct:19,c:'#475569',off:-56}].map((s,i)=>(
                                     <motion.circle key={i} cx="21" cy="21" r="15.9" fill="none" stroke={s.c} strokeWidth="4"
                                         initial={{strokeDasharray:'0 100'}} animate={{strokeDasharray:`${s.pct} ${100-s.pct}`}}
                                         transition={{duration:1.2,ease:'easeOut',delay:i*0.2}} strokeDashoffset={s.off} strokeLinecap="round" />
                                 ))}
                             </svg>
                             <div className="absolute text-center">
-                                <p className="text-[8px] text-gray-400 font-black uppercase">Total</p>
-                                <p className="text-sm font-black text-teal-600">$2.4T</p>
-                                <p className="text-[8px] text-gray-400">Market Cap</p>
+                                <p className="text-[7px] font-black uppercase text-gray-400">Total</p>
+                                <p className="text-sm font-black text-gray-900">$2.4T</p>
+                                <p className="text-[7px] font-black uppercase text-gray-400">Market Cap</p>
                             </div>
                         </div>
-                        <div className="space-y-2.5">
+                        <div className="space-y-2">
                             {[
-                                {label:'Bitcoin',sym:'BTC',pct:42,cap:'$1.01T',chg:'+1.2%',c:'#f59e0b',bg:'bg-teal-400'},
-                                {label:'Ethereum',sym:'ETH',pct:19,cap:'$456B',chg:'-0.8%',c:'#6366f1',bg:'bg-teal-500'},
-                                {label:'BNB Chain',sym:'BNB',pct:12,cap:'$288B',chg:'+0.5%',c:'#10b981',bg:'bg-sky-500'},
-                                {label:'Solana',sym:'SOL',pct:8,cap:'$192B',chg:'+3.1%',c:'#8b5cf6',bg:'bg-violet-500'},
-                                {label:'Others',sym:'...',pct:19,cap:'$463B',chg:'-1.2%',c:'#9ca3af',bg:'bg-gray-300'},
+                                {label:'Bitcoin',sym:'BTC',pct:42,cap:'$1.01T',chg:'+1.2%',c:'#f59e0b'},
+                                {label:'Ethereum',sym:'ETH',pct:19,cap:'$456B',chg:'-0.8%',c:'#6366f1'},
+                                {label:'BNB Chain',sym:'BNB',pct:12,cap:'$288B',chg:'+0.5%',c:'#10b981'},
+                                {label:'Solana',sym:'SOL',pct:8,cap:'$192B',chg:'+3.1%',c:'#8b5cf6'},
+                                {label:'Others',sym:'...',pct:19,cap:'$463B',chg:'-1.2%',c:'#475569'},
                             ].map((s,i)=>(
                                 <div key={i} className="space-y-0.5">
                                     <div className="flex items-center justify-between text-[9px]">
                                         <div className="flex items-center gap-1.5">
                                             <div className="w-2 h-2 rounded-full" style={{background:s.c}} />
-                                            <span className="font-black text-gray-700">{s.sym}</span>
-                                            <span className="text-gray-400">{s.label}</span>
+                                            <span className="font-black text-gray-900">{s.sym}</span>
+                                            <span className="text-gray-400 font-bold">{s.label}</span>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <span className="font-black text-gray-700">{s.cap}</span>
-                                            <span className={`font-black ${s.chg.startsWith('+')?'text-sky-600':'text-teal-600'}`}>{s.chg}</span>
-                                            <span className="text-teal-600 font-black w-7 text-right">{s.pct}%</span>
+                                            <span className="font-black text-gray-800">{s.cap}</span>
+                                            <span className={`font-black ${s.chg.startsWith('+')?'text-emerald-500':'text-rose-500'}`}>{s.chg}</span>
                                         </div>
                                     </div>
-                                    <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
-                                        <motion.div initial={{width:0}} animate={{width:`${s.pct}%`}} transition={{duration:1,ease:'easeOut',delay:0.2+i*0.1}}
-                                            className={`h-full ${s.bg} rounded-full`} />
+                                    <div className="h-1 rounded-full overflow-hidden" style={{background:'rgba(0,0,0,0.06)'}}>
+                                        <motion.div initial={{width:0}} animate={{width:`${s.pct}%`}} transition={{duration:1,ease:'easeOut',delay:0.2+i*0.1}} className="h-full rounded-full" style={{background:s.c}}/>
                                     </div>
                                 </div>
                             ))}
                         </div>
-                        <div className="mt-4 pt-3 border-t border-gray-200 flex items-center justify-between text-[8px] text-gray-400">
-                            <span className="flex items-center gap-1"><Clock className="w-2.5 h-2.5 text-teal-600"/>Updated live</span>
-                            <span className="text-teal-600 font-black">Source: CoinGecko</span>
+                        <div className="mt-4 pt-3 flex items-center justify-between text-[8px]" style={{borderTop:'1px solid rgba(0,0,0,0.06)',color:'rgba(0,0,0,0.4)'}}>
+                            <span className="flex items-center gap-1"><Clock className="w-2.5 h-2.5 text-emerald-500" />Updated live</span>
+                            <span style={{color:'#dc143c'}} className="font-black">Source: CoinGecko</span>
                         </div>
                     </div>
                 </motion.div>
@@ -431,52 +422,48 @@ function AIDataTab({ tokens }) {
 
             {/* Heatmap */}
             <Card className="p-5">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
                     <SectionTitle icon={Globe} title="Market Heatmap" sub="24h price performance grid" />
-                    
-                    {/* Catchy AI Legend Row */}
-                    <div className="flex items-center gap-3 bg-teal-50/50 border border-teal-200/40 px-4 py-2 rounded-2xl shadow-sm">
-                        <div className="relative flex items-center justify-center">
-                            <div className="absolute inset-0 bg-teal-400 rounded-full blur-[4px] opacity-40 animate-pulse" />
-                            <div className="bg-gray-900 rounded-full p-1 border border-teal-400/50">
-                                <Brain className="w-2.5 h-2.5 text-teal-500" />
+                    <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl" style={{background:'rgba(99,102,241,0.08)',border:'1px solid rgba(99,102,241,0.2)'}}>
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-indigo-400 rounded-full blur-[3px] opacity-50 animate-pulse" />
+                            <div className="relative rounded-full p-0.5" style={{background:'rgba(99,102,241,0.3)',border:'1px solid rgba(99,102,241,0.4)'}}>
+                                <Brain className="w-2.5 h-2.5" style={{color:'#818cf8'}} />
                             </div>
                         </div>
-                        <p className="text-[10px] font-black italic tracking-tight text-teal-600">
-                            NEURAL SIGNAL ACTIVATED: <span className="text-gray-500 font-bold ml-1">Pulsing assets are elite B20 Neural Engine suggestions for high-momentum breakouts.</span>
+                        <p className="text-[9px] font-black italic" style={{color:'#818cf8'}}>
+                            NEURAL SIGNAL: <span className="font-bold" style={{color:'rgba(148,163,184,0.7)'}}>Pulsing = elite B20 breakout suggestions</span>
                         </p>
                     </div>
                 </div>
-                
                 <div className="grid grid-cols-6 sm:grid-cols-8 md:grid-cols-12 gap-1.5">
                     {heatmap.slice(0, heatExpanded ? 144 : 48).map((t,i)=>{
                         const chg=Number(t.price_change_percentage_24h||0);
                         const intensity=Math.min(Math.abs(chg)/10,1);
-                        const bg=chg>=0?`rgba(16,185,129,${0.15+intensity*0.55})`:`rgba(239,68,68,${0.15+intensity*0.55})`;
+                        const bg=chg>=0?`rgba(52,211,153,${0.12+intensity*0.45})`:`rgba(248,113,113,${0.12+intensity*0.45})`;
+                        const border=chg>=0?`rgba(52,211,153,${0.2+intensity*0.3})`:`rgba(248,113,113,${0.2+intensity*0.3})`;
                         const isHero = chg > 5;
                         return (
-                            <div key={i} title={`${t.name}: ${fmtP(chg)}`} style={{background:bg}}
-                                className="rounded-xl p-2 text-center cursor-default hover:scale-110 transition-all relative overflow-hidden group/tile">
+                            <div key={i} title={`${t.name}: ${fmtP(chg)}`} style={{background:bg,border:`1px solid ${border}`}}
+                                className="rounded-xl p-2 text-center cursor-default hover:scale-110 transition-all relative overflow-hidden">
                                 {isHero && (
-                                    <div className="absolute top-1 right-1 z-20">
-                                        <div className="relative flex items-center justify-center">
-                                            {/* Dual layer glow for ultra-visibility */}
-                                            <div className="absolute inset-0 bg-teal-400 rounded-full blur-[4px] opacity-60 animate-ping" />
-                                            <div className="absolute inset-0 bg-teal-500 rounded-full blur-[2px] opacity-40 animate-pulse" />
-                                            <div className="bg-gray-900 rounded-full p-0.5 shadow-xl border border-teal-400/50">
-                                                <Brain className="w-2.5 h-2.5 text-teal-500" />
+                                    <div className="absolute top-0.5 right-0.5 z-20">
+                                        <div className="relative">
+                                            <div className="absolute inset-0 bg-indigo-400 rounded-full blur-[3px] opacity-60 animate-ping" />
+                                            <div className="relative rounded-full p-0.5" style={{background:'rgba(99,102,241,0.5)'}}>
+                                                <Brain className="w-2 h-2" style={{color:'#c7d2fe'}}/>
                                             </div>
                                         </div>
                                     </div>
                                 )}
-                                <p className="text-[8px] font-black text-gray-900 truncate leading-none relative z-0">{t.symbol?.toUpperCase()?.slice(0,5)}</p>
-                                <p className={`text-[8px] font-bold mt-0.5 relative z-0 ${chg>=0?'text-sky-800':'text-teal-600'}`}>{fmtP(chg)}</p>
+                                <p className="text-[8px] font-black truncate leading-none" style={{color:'#f1f5f9'}}>{t.symbol?.toUpperCase()?.slice(0,5)}</p>
+                                <p className={`text-[7px] font-bold mt-0.5 ${chg>=0?'text-emerald-300':'text-rose-300'}`}>{fmtP(chg)}</p>
                             </div>
                         );
                     })}
                 </div>
                 {heatmap.length > 48 && (
-                    <button onClick={()=>setHeatExpanded(e=>!e)} className="w-full mt-4 py-3 text-[10px] font-black text-teal-600 hover:text-teal-600 flex items-center justify-center gap-1 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all">
+                    <button onClick={()=>setHeatExpanded(e=>!e)} className="w-full mt-4 py-2.5 text-[10px] font-black flex items-center justify-center gap-1 rounded-xl transition-all" style={{border:'1px solid rgba(255,255,255,0.08)',color:'rgba(148,163,184,0.6)'}}>
                         {heatExpanded?<><ChevronUp className="w-4 h-4"/>Collapse Grid</>:<><ChevronDown className="w-4 h-4"/>View Next 100 Tokens</>}
                     </button>
                 )}
@@ -490,14 +477,14 @@ function AIDataTab({ tokens }) {
                         {movers.slice(0,moverExpanded?20:5).map((t,i)=>{
                             const chg=Number(t.price_change_percentage_24h||0);
                             return (
-                                <div key={i} style={{background:'rgba(249,250,251,0.8)',border:'1px solid rgba(0,0,0,0.04)'}} className="flex items-center gap-3 p-2.5 rounded-xl hover:brightness-95 transition-all">
-                                    <span className="text-[9px] font-black text-sky-500 w-4">#{i+1}</span>
-                                    {t.image ? <img src={t.image} className="w-8 h-8 rounded-full border border-gray-200" alt="" onError={e=>e.target.style.display='none'} /> : null}
+                                <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl transition-all" style={{background:'rgba(52,211,153,0.05)',border:'1px solid rgba(52,211,153,0.1)'}}>
+                                    <span className="text-[9px] font-black w-4" style={{color:'#34d399'}}>#{i+1}</span>
+                                    {t.image ? <img src={t.image} className="w-8 h-8 rounded-full" style={{border:'1px solid rgba(52,211,153,0.2)'}} alt="" onError={e=>e.target.style.display='none'} /> : null}
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-black text-gray-900">{t.symbol?.toUpperCase()}</p>
-                                        <p className="text-[9px] text-gray-400 truncate">${fmt(t.current_price,4)}</p>
+                                        <p className="text-xs font-black" style={{color:'#f1f5f9'}}>{t.symbol?.toUpperCase()}</p>
+                                        <p className="text-[9px] truncate" style={{color:'rgba(148,163,184,0.55)'}}>${fmt(t.current_price,4)}</p>
                                     </div>
-                                    <p className="text-[10px] font-black text-sky-600">{fmtP(chg)}</p>
+                                    <p className="text-[10px] font-black text-emerald-400">{fmtP(chg)}</p>
                                 </div>
                             );
                         })}
@@ -509,14 +496,14 @@ function AIDataTab({ tokens }) {
                         {losers.slice(0,moverExpanded?20:5).map((t,i)=>{
                             const chg=Number(t.price_change_percentage_24h||0);
                             return (
-                                <div key={i} style={{background:'rgba(249,250,251,0.8)',border:'1px solid rgba(0,0,0,0.04)'}} className="flex items-center gap-3 p-2.5 rounded-xl hover:brightness-95 transition-all">
-                                    <span className="text-[9px] font-black text-teal-600 w-4">#{i+1}</span>
-                                    {t.image ? <img src={t.image} className="w-8 h-8 rounded-full border border-gray-200" alt="" onError={e=>e.target.style.display='none'} /> : null}
+                                <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl transition-all" style={{background:'rgba(248,113,113,0.05)',border:'1px solid rgba(248,113,113,0.1)'}}>
+                                    <span className="text-[9px] font-black w-4" style={{color:'#f87171'}}>#{i+1}</span>
+                                    {t.image ? <img src={t.image} className="w-8 h-8 rounded-full" style={{border:'1px solid rgba(248,113,113,0.2)'}} alt="" onError={e=>e.target.style.display='none'} /> : null}
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-black text-gray-900">{t.symbol?.toUpperCase()}</p>
-                                        <p className="text-[9px] text-gray-400 truncate">${fmt(t.current_price,4)}</p>
+                                        <p className="text-xs font-black" style={{color:'#f1f5f9'}}>{t.symbol?.toUpperCase()}</p>
+                                        <p className="text-[9px] truncate" style={{color:'rgba(148,163,184,0.55)'}}>${fmt(t.current_price,4)}</p>
                                     </div>
-                                    <p className="text-[10px] font-black text-teal-600">{fmtP(chg)}</p>
+                                    <p className="text-[10px] font-black text-rose-400">{fmtP(chg)}</p>
                                 </div>
                             );
                         })}
@@ -524,7 +511,7 @@ function AIDataTab({ tokens }) {
                 </Card>
             </div>
             {(movers.length > 5 || losers.length > 5) && (
-                <button onClick={()=>setMoverExpanded(e=>!e)} className="w-full py-3 text-[10px] font-black text-teal-600 hover:text-teal-600 flex items-center justify-center gap-1 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all bg-white mb-6">
+                <button onClick={()=>setMoverExpanded(e=>!e)} className="w-full py-2.5 text-[10px] font-black flex items-center justify-center gap-1 rounded-xl transition-all" style={{border:'1px solid rgba(255,255,255,0.08)',color:'rgba(148,163,184,0.6)'}}>
                     {moverExpanded?<><ChevronUp className="w-4 h-4"/>Collapse List</>:<><ChevronDown className="w-4 h-4"/>View Top 20</>}
                 </button>
             )}
@@ -546,7 +533,7 @@ function AIDataTab({ tokens }) {
                             <button onClick={()=>setTileDetail(null)} className="absolute top-8 right-8 text-gray-400 hover:text-gray-900 bg-gray-50 rounded-full p-2">✕</button>
                             <div className="flex items-center gap-3 mb-6">
                                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center bg-gray-900 shadow-sm`}>
-                                    <tileDetail.icon className="w-6 h-6 text-white" />
+                                    <tileDetail.icon className="w-6 h-6 force-white" />
                                 </div>
                                 <div>
                                     <h3 className="font-black text-gray-900 text-lg">{tileDetail.label}</h3>
@@ -560,7 +547,7 @@ function AIDataTab({ tokens }) {
                                         Our advanced market intelligence systems indicate significant clustering and institutional interest surrounding this metric. {tileDetail.label} is currently running at a standard deviation of +1.8 against the moving average, suggesting heightened conviction from professional market makers.
                                     </p>
                                 </div>
-                                <button onClick={()=>setTileDetail(null)} className="w-full py-3 bg-gray-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all">Close Intelligence Report</button>
+                                <button onClick={()=>setTileDetail(null)} className="w-full py-3 bg-gray-900 force-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all">Close Intelligence Report</button>
                             </div>
                         </motion.div>
                     </div>
@@ -590,7 +577,7 @@ function GrowTab() {
             <div>
                 <div className="flex items-center gap-3 mb-6">
                     <div className="w-10 h-10 rounded-2xl bg-gray-900 flex items-center justify-center shadow-lg shadow-gray-900/10">
-                        <Lock className="w-5 h-5 text-white" />
+                        <Lock className="w-5 h-5 force-white" />
                     </div>
                     <div>
                         <h2 className="font-black text-gray-900 text-base">Staking Vaults — Start Earning Today</h2>
@@ -603,7 +590,7 @@ function GrowTab() {
                             <div className="p-5">
                                 <div className="h-1.5 rounded-full mb-4 w-full" style={{background:plan.color}} />
                                 <div className={`w-10 h-10 ${plan.accent} rounded-xl flex items-center justify-center mb-3 shadow-md`}>
-                                    <Lock className="w-4 h-4 text-white" />
+                                    <Lock className="w-4 h-4 force-white" />
                                 </div>
                                 <p className="font-black text-gray-900 text-sm mb-0.5">{plan.title}</p>
                                 <p className="text-[9px] text-gray-400 mb-4">{plan.desc}</p>
@@ -622,7 +609,7 @@ function GrowTab() {
                                     </div>
                                 </div>
                                 <Link href="/staking">
-                                    <button className="w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg transition-all hover:brightness-110 active:scale-95"
+                                    <button className="w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest force-white shadow-lg transition-all hover:brightness-110 active:scale-95"
                                         style={{background:plan.color}}>
                                         Stake Now
                                     </button>
@@ -637,7 +624,7 @@ function GrowTab() {
             <div>
                 <div className="flex items-center gap-3 mb-6">
                     <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-sky-400 to-teal-500 flex items-center justify-center shadow-lg shadow-sky-300/30">
-                        <Users className="w-5 h-5 text-white" />
+                        <Users className="w-5 h-5 force-white" />
                     </div>
                     <div>
                         <h2 className="font-black text-gray-900 text-base">Copy Trading — Follow Top Performers</h2>
@@ -667,7 +654,7 @@ function GrowTab() {
                                         </div>
                                     ))}
                                 </div>
-                                <button className="w-full py-2.5 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-gray-900/10 hover:brightness-110 active:scale-95 transition-all">
+                                <button className="w-full py-2.5 bg-gray-900 force-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-gray-900/10 hover:brightness-110 active:scale-95 transition-all">
                                     Copy Trader
                                 </button>
                             </div>
@@ -859,7 +846,7 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
                                             </div>
                                             {t.market_cap_rank && <span className="text-[9px] font-black text-gray-300">#{t.market_cap_rank}</span>}
                                             <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${sel ? 'bg-gray-900 border-gray-900' : 'border-gray-200'}`}>
-                                                {sel && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                                                {sel && <CheckCircle2 className="w-3.5 h-3.5 force-white" />}
                                             </div>
                                         </div>
                                     );
@@ -914,11 +901,11 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
                                         {detail.image ? (
                                             <img src={detail.image} className="w-full h-full object-contain rounded-2xl" alt="" />
                                         ) : (
-                                            <div className="w-full h-full bg-teal-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl">
+                                            <div className="w-full h-full bg-teal-600 rounded-2xl flex items-center justify-center force-white font-black text-2xl">
                                                 {detail.symbol?.charAt(0)}
                                             </div>
                                         )}
-                                        <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-emerald-500 rounded-xl flex items-center justify-center text-white border-2 border-white shadow-lg">
+                                        <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-emerald-500 rounded-xl flex items-center justify-center force-white border-2 border-white shadow-lg">
                                             <CheckCircle2 className="w-4 h-4" />
                                         </div>
                                     </div>
@@ -933,14 +920,14 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
                                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Institutional Price</p>
                                         <p className="text-4xl font-black text-gray-900 tracking-tighter font-mono">${fmt(detail.current_price, 4)}</p>
                                     </div>
-                                    <div className="p-8 bg-teal-600 border border-teal-500 rounded-[2.5rem] shadow-2xl shadow-teal-200/20 text-white">
+                                    <div className="p-8 bg-teal-600 border border-teal-500 rounded-[2.5rem] shadow-2xl shadow-teal-200/20 force-white">
                                         <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest mb-2">Market Valuation</p>
                                         <p className="text-4xl font-black tracking-tighter font-mono">{fmtB(detail.market_cap)}</p>
                                     </div>
                                 </div>
 
                                 {moreData && !moreData.loading && !moreData.error && (
-                                    <div className="bg-gray-900 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden group">
+                                    <div className="bg-gray-900 rounded-[2.5rem] p-8 force-white shadow-2xl relative overflow-hidden group">
                                         <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:scale-110 transition-transform">
                                             <Brain className="w-20 h-20 text-teal-500" />
                                         </div>
@@ -955,7 +942,7 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
                                             <div className="mt-8 pt-6 border-t border-white/10 flex justify-between items-center">
                                                 <div className="text-left">
                                                     <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Market Sentiment</p>
-                                                    <p className="text-xs font-black text-white">{moreData.fngLabel}</p>
+                                                    <p className="text-xs font-black force-white">{moreData.fngLabel}</p>
                                                 </div>
                                                 <div className="w-12 h-12 rounded-2xl bg-teal-500/20 flex items-center justify-center border border-teal-500/30">
                                                     <span className="text-lg font-black text-teal-500">{moreData.fng}</span>
@@ -1006,7 +993,7 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
                                             <div className="space-y-6">
                                                 <h4 className="text-[11px] font-black text-gray-900 uppercase tracking-[0.3em] border-b border-gray-100 pb-4">Market Volatility Pulse</h4>
                                                 <div className="space-y-3">
-                                                   <div className="flex justify-between items-center p-4 bg-gray-900 rounded-2xl text-white shadow-xl">
+                                                   <div className="flex justify-between items-center p-4 bg-gray-900 rounded-2xl force-white shadow-xl">
                                                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">24h Delta</span>
                                                        <span className={`text-2xl font-black ${isPos(moreData?.price_change_24h) ? 'text-emerald-500' : 'text-rose-500'}`}>{fmtP(moreData?.price_change_24h)}</span>
                                                    </div>
@@ -1060,7 +1047,7 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
                                                                     <p className="text-[11px] font-black text-gray-900 tracking-tighter">${fmt(t.volume)}</p>
                                                                     <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Market execution</p>
                                                                 </div>
-                                                                <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${t.type === 'BUY' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-rose-500 text-white shadow-lg shadow-rose-500/20'}`}>{t.type}</span>
+                                                                <span className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${t.type === 'BUY' ? 'bg-emerald-500 force-white shadow-lg shadow-emerald-500/20' : 'bg-rose-500 force-white shadow-lg shadow-rose-500/20'}`}>{t.type}</span>
                                                             </div>
                                                         </div>
                                                     ))}
@@ -1086,7 +1073,7 @@ function UserIntelTab({ tokens: initialTokens, setMode }) {
                                         </div>
 
                                         <div className="flex flex-wrap gap-6 pt-6">
-                                            <button onClick={() => setMode ? setMode('swap') : window.location.href='/exchange'} className="px-10 py-5 bg-gray-900 text-white rounded-3xl font-black text-xs uppercase tracking-[0.3em] hover:bg-black transition-all shadow-2xl shadow-gray-900/30 active:scale-95">Initiate Trade Order</button>
+                                            <button onClick={() => setMode ? setMode('swap') : window.location.href='/exchange'} className="px-10 py-5 bg-gray-900 force-white rounded-3xl font-black text-xs uppercase tracking-[0.3em] hover:bg-black transition-all shadow-2xl shadow-gray-900/30 active:scale-95">Initiate Trade Order</button>
                                             <button onClick={() => setMode ? setMode('staking') : window.location.href='/staking'} className="px-10 py-5 bg-white border-2 border-gray-100 text-gray-900 rounded-3xl font-black text-xs uppercase tracking-[0.3em] hover:border-teal-600 hover:text-teal-600 transition-all active:scale-95">Go to Staking Vault</button>
                                         </div>
                                     </>
@@ -1211,7 +1198,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                 <Search className="w-6 h-6 text-teal-500" />
                             </div>
                             <div>
-                                <h3 className="text-2xl font-black text-white tracking-tighter italic uppercase">Ask Nuera <span className="text-teal-500">AI</span></h3>
+                                <h3 className="text-2xl font-black force-white tracking-tighter italic uppercase">Ask Nuera <span className="text-teal-500">AI</span></h3>
                                 <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Full Technical Scan & Institutional Sentiment Breakdown</p>
                             </div>
                         </div>
@@ -1223,7 +1210,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     placeholder="Enter Token Name or Symbol (e.g. Bitcoin, PEPE)..." 
-                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 text-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all placeholder:text-gray-600"
+                                    className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-6 force-white text-sm font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all placeholder:text-gray-600"
                                 />
                                 {loading && <RefreshCw className="absolute right-5 top-4 w-5 h-5 text-teal-500 animate-spin" />}
                             </div>
@@ -1255,7 +1242,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                     </div>
                                     
                                     <div className="space-y-4">
-                                        <div className="p-6 bg-gray-900 rounded-[2.5rem] text-white relative overflow-hidden group">
+                                        <div className="p-6 bg-gray-900 rounded-[2.5rem] force-white relative overflow-hidden group">
                                             <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
                                                 <Brain className="w-24 h-24 text-teal-500" />
                                             </div>
@@ -1354,7 +1341,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                                 </div>
                                                 <div className="mt-6 p-5 rounded-3xl bg-teal-50 border border-teal-100 flex items-center gap-4">
                                                     <div className="w-10 h-10 rounded-2xl bg-teal-600 flex items-center justify-center shadow-lg shadow-teal-200">
-                                                        <Activity className="w-5 h-5 text-white" />
+                                                        <Activity className="w-5 h-5 force-white" />
                                                     </div>
                                                     <div>
                                                         <p className="text-[10px] font-black text-teal-600 uppercase mb-0.5">Pattern Engine</p>
@@ -1366,7 +1353,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                     </div>
                                     
                                     <div className="mt-10 flex flex-wrap gap-4">
-                                        <button onClick={() => { if(setToToken) setToToken(report); if(setMode) setMode('spot'); }} className="flex-1 min-w-[200px] py-4 bg-gray-900 hover:bg-black text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-gray-900/10 active:scale-95 transition-all">Execute Trade: Buy {report.symbol?.toUpperCase()}</button>
+                                        <button onClick={() => { if(setToToken) setToToken(report); if(setMode) setMode('spot'); }} className="flex-1 min-w-[200px] py-4 bg-gray-900 hover:bg-black force-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-2xl shadow-gray-900/10 active:scale-95 transition-all">Execute Trade: Buy {report.symbol?.toUpperCase()}</button>
                                         <button onClick={() => setInstiOpen(true)} className="flex-1 min-w-[200px] py-4 bg-white border-2 border-gray-100 text-gray-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:border-teal-500/30 transition-all flex items-center justify-center gap-2"><FileText className="w-4 h-4"/> Institutional Scan Report</button>
                                     </div>
                                 </div>
@@ -1392,51 +1379,51 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                 <HubRow title="7-Event Green Streak" items={green7d} icon={Calendar} color="emerald" />
                 <HubRow title="7-Event Stress (Red)" items={red7d} icon={Calendar} color="rose" />
                 
-                <div className="bg-gradient-to-br from-teal-600 to-teal-700 rounded-[2.5rem] p-8 text-white shadow-2xl relative overflow-hidden group">
+                <div className="bg-gradient-to-br from-teal-600 to-teal-700 rounded-[2.5rem] p-8 force-white shadow-2xl relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-6 opacity-20 rotate-12 group-hover:scale-110 transition-transform">
-                        <Award className="w-32 h-32 text-teal-500" />
+                        <Award className="w-32 h-32 force-white" style={{color:'rgba(255,255,255,0.15)'}} />
                     </div>
                     <div className="relative z-10 flex flex-col h-full justify-between">
                         <div>
                             <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-teal-400/20 rounded-xl">
-                                    <Sparkles className="w-4 h-4 text-teal-500" />
+                                <div className="p-2 bg-white/20 rounded-xl">
+                                    <Sparkles className="w-4 h-4 force-white" />
                                 </div>
-                                <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-teal-500">VIP Selection</h4>
+                                <h4 className="font-black text-[10px] uppercase tracking-[0.2em] force-white" style={{color:'rgba(255,255,255,0.85)'}}>VIP Selection</h4>
                             </div>
-                            <p className="text-xl font-black italic mb-3 leading-tight tracking-tighter">SOL & ETH showing extreme institutional accumulation levels.</p>
-                            <p className="text-[10px] text-teal-600 font-black uppercase tracking-widest">Sentiment: High Conviction Bullish</p>
+                            <p className="text-xl font-black italic mb-3 leading-tight tracking-tighter force-white">SOL & ETH showing extreme institutional accumulation levels.</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest force-white" style={{color:'rgba(255,255,255,0.85)'}}>Sentiment: High Conviction Bullish</p>
                         </div>
-                        <button onClick={() => setMode ? setMode('spot') : (window.location.href='/exchange')} className="w-full mt-8 py-4 bg-teal-400 text-teal-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-50 shadow-xl shadow-teal-200/10 active:scale-95 transition-all">Invest Now</button>
+                        <button onClick={() => setMode ? setMode('spot') : (window.location.href='/exchange')} className="w-full mt-8 py-4 bg-white text-teal-600 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 shadow-xl shadow-teal-200/10 active:scale-95 transition-all">Invest Now</button>
                     </div>
                 </div>
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="flex items-center justify-between p-8 bg-gray-900 border border-white/5 rounded-[2.5rem] relative overflow-hidden group">
+                <div className="flex items-center justify-between p-8 bg-white border-2 border-teal-200/60 rounded-[2.5rem] relative overflow-hidden group">
                     <div className="flex items-center gap-6 relative z-10">
-                        <div className="w-14 h-14 rounded-2xl bg-teal-500/20 flex items-center justify-center border border-teal-500/30">
+                        <div className="w-14 h-14 rounded-2xl bg-teal-50/50 flex items-center justify-center border border-teal-200/55">
                             <ShieldAlert className="w-7 h-7 text-teal-600" />
                         </div>
                         <div>
-                            <h4 className="font-black text-white text-lg tracking-tight italic">Void Watch: High Risk Zone</h4>
-                            <p className="text-xs text-gray-400">Currently flagging {voidList.length}+ assets for liquidity drain & volatility anomalies.</p>
+                            <h4 className="font-black text-gray-900 text-lg tracking-tight italic">Void Watch: High Risk Zone</h4>
+                            <p className="text-xs text-gray-500 font-medium">Currently flagging {voidList.length}+ assets for liquidity drain & volatility anomalies.</p>
                         </div>
                     </div>
-                    <button onClick={() => setVoidOpen(true)} className="px-8 py-4 bg-white/5 text-teal-600 border border-teal-500/20 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-500/10 transition-all relative z-10">Scan Void List</button>
+                    <button onClick={() => setVoidOpen(true)} className="px-8 py-4 bg-teal-50 hover:bg-teal-100 text-teal-600 border border-teal-200 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative z-10 shadow-sm">Scan Void List</button>
                 </div>
 
-                <div className="flex items-center justify-between p-8 bg-teal-400 rounded-[2.5rem] relative overflow-hidden group">
+                <div className="flex items-center justify-between p-8 bg-white border-2 border-teal-200/60 rounded-[2.5rem] relative overflow-hidden group">
                     <div className="flex items-center gap-6 relative z-10">
-                        <div className="w-14 h-14 rounded-2xl bg-gray-900 flex items-center justify-center">
-                            <Star className="w-7 h-7 text-teal-500" />
+                        <div className="w-14 h-14 rounded-2xl bg-teal-50/50 flex items-center justify-center border border-teal-200/55">
+                            <Star className="w-7 h-7 text-teal-600" />
                         </div>
                         <div>
                             <h4 className="font-black text-gray-900 text-lg tracking-tight italic">Sentiment Alpha Leaders</h4>
-                            <p className="text-xs text-gray-800/60 font-bold uppercase tracking-tight">Best investment options based on global social health.</p>
+                            <p className="text-xs text-gray-500 font-medium">Best investment options based on global social health.</p>
                         </div>
                     </div>
-                    <button onClick={() => setAlphaOpen(true)} className="px-8 py-4 bg-gray-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all relative z-10">Explore Alpha</button>
+                    <button onClick={() => setAlphaOpen(true)} className="px-8 py-4 bg-teal-50 hover:bg-teal-100 text-teal-600 border border-teal-200 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all relative z-10 shadow-sm">Explore Alpha</button>
                 </div>
             </div>
 
@@ -1445,7 +1432,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                 <Portal>
                     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md" onClick={() => setVoidOpen(false)}>
                         <motion.div initial={{scale:0.9,opacity:0}} animate={{scale:1,opacity:1}} onClick={e=>e.stopPropagation()} className="bg-white rounded-[3.5rem] p-12 w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col relative border-8 border-teal-500/20">
-                            <button onClick={()=>setVoidOpen(false)} className="absolute top-8 right-8 p-3 bg-gray-900 text-white rounded-full">✕</button>
+                            <button onClick={()=>setVoidOpen(false)} className="absolute top-8 right-8 p-3 bg-gray-900 force-white rounded-full">✕</button>
                             <h3 className="text-3xl font-black text-teal-600 mb-8 uppercase italic flex items-center gap-4"><ShieldAlert className="w-8 h-8"/> High Risk Void Assets</h3>
                             <div className="overflow-y-auto pr-4 custom-scrollbar">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -1470,7 +1457,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                 <Portal>
                     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-teal-950/40 backdrop-blur-md" onClick={() => setAlphaOpen(false)}>
                         <motion.div initial={{scale:0.9,opacity:0}} animate={{scale:1,opacity:1}} onClick={e=>e.stopPropagation()} className="bg-white rounded-[3.5rem] p-12 w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col relative border-8 border-teal-500/20">
-                            <button onClick={()=>setAlphaOpen(false)} className="absolute top-8 right-8 p-3 bg-gray-900 text-white rounded-full">✕</button>
+                            <button onClick={()=>setAlphaOpen(false)} className="absolute top-8 right-8 p-3 bg-gray-900 force-white rounded-full">✕</button>
                             <h3 className="text-3xl font-black text-teal-600 mb-8 uppercase italic flex items-center gap-4"><Star className="w-8 h-8"/> Sentiment Alpha Leaders</h3>
                             <div className="overflow-y-auto pr-4 custom-scrollbar">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -1523,7 +1510,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                             <div className="flex justify-between text-xs"><span className="text-gray-500">Mint Function</span><span className="font-black text-teal-600">Disabled</span></div>
                                         </div>
                                     </div>
-                                    <div className="p-8 bg-gray-900 rounded-[2.5rem] text-white">
+                                    <div className="p-8 bg-gray-900 rounded-[2.5rem] force-white">
                                         <h5 className="text-[10px] font-black uppercase text-teal-500 mb-6 flex items-center gap-2"><Zap className="w-3 h-3"/> Velocity Rating</h5>
                                         <p className="text-3xl font-black italic mb-2">Tier A+</p>
                                         <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest leading-loose">Asset demonstrates high organic volume with institutional-grade buy walls at current levels.</p>
@@ -1535,7 +1522,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                         <h4 className="text-xl font-black text-gray-900 mb-2 uppercase italic">Executive Summary</h4>
                                         <p className="text-sm text-gray-600 leading-relaxed font-medium">The {report.name} ecosystem shows strong resilience with a verified holder base. Our Pattern Engine detects a {report.pattern} phase with an expected volatility expansion in the next 12-36 hours. Current circulation drift of {report.circ_change} remains within optimal institutional parameters.</p>
                                     </div>
-                                    <button onClick={()=>window.print()} className="px-10 py-5 bg-teal-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-xl shadow-teal-200/20">Download PDF Report</button>
+                                    <button onClick={()=>window.print()} className="px-10 py-5 bg-teal-600 force-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-700 transition-all shadow-xl shadow-teal-200/20">Download PDF Report</button>
                                 </div>
                             </div>
                         </motion.div>
@@ -1587,7 +1574,7 @@ function TradersHubTab({ tokens, setMode, setToToken }) {
                                             </div>
                                             <div className="col-span-2 text-right font-black text-gray-500 text-[10.5px]">{fmtB(t.market_cap)}</div>
                                             <div className="col-span-2 flex justify-center gap-2">
-                                                <button onClick={() => { if(setToToken) setToToken(t); if(setMode) setMode('spot'); }} className="px-8 py-3 bg-gray-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-600 transition-all shadow-xl shadow-gray-900/10">Buy Now</button>
+                                                <button onClick={() => { if(setToToken) setToToken(t); if(setMode) setMode('spot'); }} className="px-8 py-3 bg-gray-900 force-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-600 transition-all shadow-xl shadow-gray-900/10">Buy Now</button>
                                             </div>
                                         </div>
                                     ))}
@@ -1747,7 +1734,7 @@ function InvestModal({ token, onClose }) {
                         <div className="flex items-center justify-between mb-8">
                             <div className="flex items-center gap-4">
                                 <div className="w-14 h-14 bg-sky-500 rounded-2xl flex items-center justify-center shadow-lg shadow-sky-500/20">
-                                    <Leaf className="w-7 h-7 text-white" />
+                                    <Leaf className="w-7 h-7 force-white" />
                                 </div>
                                 <div>
                                     <h3 className="text-2xl font-black text-gray-900 uppercase italic tracking-tighter">Invest <span className="text-sky-600">Now</span></h3>
@@ -1769,7 +1756,7 @@ function InvestModal({ token, onClose }) {
                                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-2">Capital Secured in Institutional Vault</p>
                                 </div>
                                 <div className="w-full space-y-3">
-                                    <Link href="/profile" className="flex-1 w-full block py-4 bg-teal-600 hover:bg-teal-700 text-white font-black text-xs rounded-xl uppercase tracking-widest text-center shadow-lg shadow-teal-200/20">
+                                    <Link href="/profile" className="flex-1 w-full block py-4 bg-teal-600 hover:bg-teal-700 force-white font-black text-xs rounded-xl uppercase tracking-widest text-center shadow-lg shadow-teal-200/20">
                                         View in Yield Intelligence
                                     </Link>
                                     <button onClick={onClose} className="w-full py-4 bg-gray-100 hover:bg-gray-200 text-gray-600 font-black text-xs rounded-xl uppercase tracking-widest">
@@ -1838,7 +1825,7 @@ function InvestModal({ token, onClose }) {
                                     <button 
                                         disabled={step === 'transferring' || !amount}
                                         onClick={handleInvestFlow}
-                                        className="flex-1 py-5 bg-teal-600 hover:bg-teal-700 text-white font-black text-xs rounded-2xl uppercase tracking-[0.2em] shadow-xl shadow-teal-200/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                                        className="flex-1 py-5 bg-teal-600 hover:bg-teal-700 force-white font-black text-xs rounded-2xl uppercase tracking-[0.2em] shadow-xl shadow-teal-200/20 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
                                     >
                                         {step === 'transferring' ? <><Loader2 className="w-4 h-4 animate-spin" /> Finalizing Deployment...</> : 
                                          'Deploy Capital Now'}
@@ -1921,7 +1908,7 @@ function YieldTab({ tokens }) {
                     <div className="flex flex-col lg:flex-row lg:items-end gap-8 justify-between mb-8">
                         <div>
                             <div className="flex items-center gap-3 mb-3">
-                                <div className="p-3 bg-sky-500 text-white rounded-2xl shadow-lg shadow-sky-500/30"><Leaf className="w-6 h-6" /></div>
+                                <div className="p-3 bg-sky-500 force-white rounded-2xl shadow-lg shadow-sky-500/30"><Leaf className="w-6 h-6" /></div>
                                 <div>
                                     <h2 className="text-3xl font-black text-gray-900 uppercase italic tracking-tighter">Yield <span className="text-sky-600">Intelligence</span></h2>
                                     <p className="text-[10px] font-black text-sky-600 uppercase tracking-[0.3em] mt-0.5">{filtered.length} Active Vaults Scanned</p>
@@ -1957,7 +1944,7 @@ function YieldTab({ tokens }) {
                 <div className="flex gap-2">
                     {[['apy', '↓ APY'], ['tvl', '↓ TVL'], ['name', 'A→Z']].map(([s, label]) => (
                         <button key={s} onClick={() => setSortBy(s)}
-                            className={`px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${sortBy === s ? 'bg-sky-600 text-white shadow-md' : 'bg-white border border-gray-200 text-gray-500 hover:border-sky-300'}`}>
+                            className={`px-4 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${sortBy === s ? 'bg-sky-600 force-white shadow-md' : 'bg-white border border-gray-200 text-gray-500 hover:border-sky-300'}`}>
                             {label}
                         </button>
                     ))}
@@ -1985,7 +1972,7 @@ function YieldTab({ tokens }) {
                                 ) : (
                                     <div className="w-9 h-9 rounded-xl border-2 border-white bg-gray-50 flex items-center justify-center text-[10px] text-gray-300 shadow">BNB</div>
                                 )}
-                                <div className="absolute -bottom-0.5 -right-0.5 p-0.5 bg-sky-500 rounded-md border border-white"><Shield className="w-1.5 h-1.5 text-white" /></div>
+                                <div className="absolute -bottom-0.5 -right-0.5 p-0.5 bg-sky-500 rounded-md border border-white"><Shield className="w-1.5 h-1.5 force-white" /></div>
                             </div>
                             <div className="min-w-0">
                                 <p className="font-black text-gray-900 text-xs uppercase truncate">{t.symbol?.toUpperCase()}</p>
@@ -2002,7 +1989,7 @@ function YieldTab({ tokens }) {
                         </div>
                         <div className="col-span-2 flex justify-end gap-2">
                             <button onClick={() => handleStake(t)} className="px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-500 rounded-xl text-[8px] font-black uppercase tracking-widest transition-all border border-gray-100">Stake</button>
-                            <button onClick={() => handleInvest(t)} className="px-3 py-2 bg-sky-600 text-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-gray-900 transition-all active:scale-95">Invest Now</button>
+                            <button onClick={() => handleInvest(t)} className="px-3 py-2 bg-sky-600 force-white rounded-xl text-[8px] font-black uppercase tracking-widest hover:bg-gray-900 transition-all active:scale-95">Invest Now</button>
                             <a href={`https://bscscan.com/token/${t.address}`} target="_blank" rel="noreferrer" className="p-2 bg-gray-50 rounded-xl hover:bg-gray-100 border border-gray-100 flex items-center">
                                 <ArrowUpRight className="w-3 h-3 text-gray-400" />
                             </a>
@@ -2094,7 +2081,7 @@ export default function B20AIPanel({ setMode, setToToken }) {
                 <div>
                     <div className="flex items-center gap-3 mb-1">
                         <div className="w-10 h-10 rounded-2xl bg-gray-900 flex items-center justify-center shadow-lg shadow-gray-900/10">
-                            <Brain className="w-5 h-5 text-white" />
+                            <Brain className="w-5 h-5 force-white" />
                         </div>
                         <div>
                             <h2 className="font-black text-gray-900 text-xl tracking-tight">B20 AI Intelligence</h2>
@@ -2131,7 +2118,7 @@ export default function B20AIPanel({ setMode, setToToken }) {
                             const active = tab === t.id;
                             return (
                                 <button key={t.id} onClick={()=>setTab(t.id)}
-                                    className={`relative flex-1 flex items-center justify-center gap-2 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] transition-all duration-300 ${active ? `${t.active} text-white shadow-2xl ${t.glow}` : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50/80'}`}>
+                                    className={`relative flex-1 flex items-center justify-center gap-2 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] transition-all duration-300 ${active ? `${t.active} force-white shadow-2xl ${t.glow}` : 'text-gray-400 hover:text-gray-700 hover:bg-gray-50/80'}`}>
                                     {active && (
                                         <motion.div layoutId="tab-highlight" className={`absolute inset-0 ${t.active} rounded-xl -z-10 shadow-xl`} transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }} />
                                     )}

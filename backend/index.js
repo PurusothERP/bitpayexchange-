@@ -56,7 +56,7 @@ app.use(cors({
 }));
 
 app.use((req, res, next) => {
-    console.log(`[Request] ${req.method} ${req.url}`);
+    console.log(`[Request] ${req.method} ${req.url} - IP: ${req.ip} - Forwarded-For: ${req.headers['x-forwarded-for']}`);
     next();
 });
 
@@ -74,8 +74,12 @@ try {
         legacyHeaders: false,
         message: { error: 'Too many requests — please slow down.' },
         skip: (req) => {
-            // Skip rate-limiting for health checks and internal calls
-            return req.path === '/health';
+            // Skip rate-limiting for health checks and internal calls/testing
+            return req.path === '/health' || 
+                   req.ip === '127.0.0.1' || 
+                   req.ip === '::1' || 
+                   req.ip === '::ffff:127.0.0.1' ||
+                   req.headers['x-forwarded-for'] === '127.0.0.1';
         }
     });
     // Tighter limit for settlement endpoint (prevent brute force)

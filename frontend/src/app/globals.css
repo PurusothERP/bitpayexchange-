@@ -1,65 +1,91 @@
 @import "tailwindcss";
 
 @theme {
-  /* Core Tailwind v4 color remapping for the new Slate & Emerald layout */
-  --color-white: #080a0f;
-  --color-slate-50: #0d1117;
-  --color-slate-100: #161b22;
-  --color-slate-200: #21262d;
-  --color-slate-300: #30363d;
-  --color-slate-400: #484f58;
-  --color-slate-500: #58a6ff;
-  --color-slate-600: #8b949e;
-  --color-slate-700: #c9d1d9;
-  --color-slate-800: #e6edf2;
-  --color-slate-900: #ffffff;
-  --color-slate-950: #ffffff;
+  /* ── White + Cherry Red Theme — Tailwind v4 Color Remapping ── */
+  --color-white: #ffffff;
 
-  --color-gray-50: #0d1117;
-  --color-gray-100: #161b22;
-  --color-gray-200: #21262d;
-  --color-gray-300: #30363d;
-  --color-gray-400: #484f58;
-  --color-gray-500: #58a6ff;
-  --color-gray-600: #8b949e;
-  --color-gray-700: #c9d1d9;
-  --color-gray-800: #e6edf2;
-  --color-gray-900: #ffffff;
+  --color-slate-50:  #f8f8f8;
+  --color-slate-100: #f1f1f1;
+  --color-slate-200: #e5e5e5;
+  --color-slate-300: #d4d4d4;
+  --color-slate-400: #a3a3a3;
+  --color-slate-500: #737373;
+  --color-slate-600: #525252;
+  --color-slate-700: #404040;
+  --color-slate-800: #262626;
+  --color-slate-900: #171717;
+  --color-slate-950: #0a0a0a;
 
-  --color-rose-500: #00e575;
-  --color-rose-600: #00ca65;
-  --color-rose-700: #00ad54;
+  --color-gray-50:  #f9f9f9;
+  --color-gray-100: #f2f2f2;
+  --color-gray-200: #e8e8e8;
+  --color-gray-300: #d5d5d5;
+  --color-gray-400: #a8a8a8;
+  --color-gray-500: #737373;
+  --color-gray-600: #525252;
+  --color-gray-700: #404040;
+  --color-gray-800: #262626;
+  --color-gray-900: #171717;
+
+  /* Cherry Red — Primary Accent */
+  --color-teal-50:  rgba(220,20,60,0.06);
+  --color-teal-100: rgba(220,20,60,0.10);
+  --color-teal-200: rgba(220,20,60,0.18);
+  --color-teal-300: #f47c8a;
+  --color-teal-400: #e84060;
+  --color-teal-500: #dc143c;
+  --color-teal-600: #c4122f;
+  --color-teal-700: #a30f27;
+
+  /* Rose / Red for price-down */
+  --color-rose-50:  rgba(220,38,38,0.07);
+  --color-rose-100: rgba(220,38,38,0.12);
+  --color-rose-400: #f87171;
+  --color-rose-500: #ef4444;
+  --color-rose-600: #dc2626;
+  --color-rose-700: #b91c1c;
+
+  /* Emerald for price-up */
+  --color-emerald-50:  rgba(16,185,129,0.07);
+  --color-emerald-100: rgba(16,185,129,0.12);
+  --color-emerald-400: #34d399;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   B20 EXCHANGE — PROFESSIONAL TRADING TERMINAL STYLE Overwrite
-   Low-Fatigue Charcoal & Slate Slate, Flat Edges, High Contrast
+   BITPAY EXCHANGE — WHITE + CHERRY RED PROFESSIONAL THEME
+   Maximum contrast · Clean white surfaces · Cherry red accents
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  /* Trading Core Palette */
-  --background: #080a0f; /* Deep Charcoal Black */
-  --surface:    #0d1117; /* Dark Slate Panel background */
-  --surface-2:  #161b22; /* Slightly lighter Slate */
-  --border:     rgba(255, 255, 255, 0.08); /* Clean, thin border */
-  --border-strong: rgba(255, 255, 255, 0.15);
-  --foreground: #f0f6fc; /* Off-white text */
-  --muted:      #8b949e; /* Muted grey text */
-  --accent:     #00e575; /* Buy Green */
-  --accent-hover: #39f39b;
-  --accent-blue:  #58a6ff; /* Clean Info Blue */
+  /* Core Palette */
+  --background:    #f5f5f5;   /* Warm off-white page background */
+  --surface:       #ffffff;   /* Pure white cards/panels */
+  --surface-2:     #f8f8f8;   /* Slightly off-white surface */
+  --border:        rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.15);
+  --foreground:    #171717;   /* Near-black text */
+  --muted:         #737373;   /* Mid-gray muted text */
 
-  --card-bg: #0d1117;
-  --border-color: rgba(255, 255, 255, 0.08);
+  /* Cherry Red Accent */
+  --accent:        #dc143c;
+  --accent-hover:  #c4122f;
+  --accent-light:  rgba(220,20,60,0.08);
+  --accent-blue:   #2563eb;
+
+  --card-bg:       #ffffff;
+  --border-color:  rgba(0, 0, 0, 0.08);
   --bottom-nav-height: 56px;
 
   /* Trading Signals */
-  --green:  #00e575; /* Buy / Up */
-  --red:    #ff3b30; /* Sell / Down */
-  --yellow: #ffb800; /* Amber Warning */
+  --green:  #10b981;   /* Buy / Up — Emerald */
+  --red:    #ef4444;   /* Sell / Down — Red */
+  --cherry: #dc143c;   /* Primary Cherry Red */
+  --yellow: #f59e0b;
 }
 
-/* ── Base Styles ───────────────────────────────────────────── */
+/* ── Base Styles ────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
 
@@ -71,229 +97,389 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Typography Scale ─────────────────────────────────────── */
-h1, h2, h3, h4, h5, h6 { font-weight: 700; letter-spacing: -0.02em; }
+/* ── Typography ──────────────────────────────────────────────── */
+h1, h2, h3, h4, h5, h6 { font-weight: 700; letter-spacing: -0.02em; color: #171717; }
 
-/* ── Scrollbars ───────────────────────────────────────────── */
+/* ── Scrollbars ───────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: var(--surface); }
-::-webkit-scrollbar-thumb { background: var(--surface-2); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+::-webkit-scrollbar-track { background: #f1f1f1; }
+::-webkit-scrollbar-thumb { background: #d5d5d5; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #a3a3a3; }
 
-/* ── Bubbly Rounded Corner Overrides ──────────────────────── */
+/* ── Remove heavy rounded corners → clean sharp-ish edges ─────── */
 .rounded-3xl, .rounded-2xl, .rounded-xl, .rounded-lg,
 .rounded-\[3rem\], .rounded-\[2\.5rem\], .rounded-\[2rem\], .rounded-\[1\.5rem\] {
-  border-radius: 6px !important;
+  border-radius: 8px !important;
 }
 
-/* ── Page Background Overrides (Catching light-mode values) ── */
+/* ── Page & Main Background ──────────────────────────────────── */
 main, .min-h-screen, body, html {
-  background-color: #080a0f !important;
+  background-color: #f5f5f5 !important;
   background-image: none !important;
+  color: #171717 !important;
 }
 
-.bg-white, .bg-slate-50, .bg-gray-50, .bg-slate-100, .bg-gray-100, .bg-slate-200, .bg-gray-200 {
-  background-color: #0d1117 !important;
-  background-image: none !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+/* ── Surface / Card Colors ───────────────────────────────────── */
+.bg-white {
+  background-color: #ffffff !important;
+  color: #171717 !important;
+}
+.bg-slate-50, .bg-gray-50 {
+  background-color: #f8f8f8 !important;
+  color: #171717 !important;
+}
+.bg-slate-100, .bg-gray-100 {
+  background-color: #f2f2f2 !important;
+  color: #171717 !important;
+}
+.bg-slate-200, .bg-gray-200 {
+  background-color: #e8e8e8 !important;
+  color: #171717 !important;
 }
 
-[class*="bg-white/"], [class*="bg-slate-50/"], [class*="bg-gray-50/"] {
-  background-color: rgba(13, 17, 23, 0.9) !important;
+[class*="bg-white/"] {
+  background-color: rgba(255,255,255,0.92) !important;
   backdrop-filter: blur(12px) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(0,0,0,0.08) !important;
+}
+[class*="bg-slate-50/"], [class*="bg-gray-50/"] {
+  background-color: rgba(248,248,248,0.92) !important;
 }
 
-[class*="bg-\[#FDFDFD\]"], [class*="bg-\[#fdfdfd\]"] {
-  background-color: #080a0f !important;
+/* ── Dark Surface — invert for special dark blocks ───────────── */
+.bg-slate-900, .bg-gray-900, .bg-slate-800, .bg-gray-800 {
+  background-color: #1a1a1a !important;
+  color: #f5f5f5 !important;
 }
 
-/* ── Divider & Border Overrides ────────────────────────────── */
-.border, .border-b, .border-t, .border-r, .border-l, 
+/* ── Borders ─────────────────────────────────────────────────── */
+.border, .border-b, .border-t, .border-r, .border-l,
 .border-slate-100, .border-gray-100, .border-slate-200, .border-gray-200,
 .border-slate-200\/60, .border-slate-200\/40, .border-slate-100\/40,
 .border-white\/10, .border-white\/20, .border-black\/5, .border-black\/8, .border-black\/10 {
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
 }
 
-/* ── Text Color Overrides ──────────────────────────────────── */
+/* ── Text Colors — High Contrast ─────────────────────────────── */
+.text-white { color: #171717 !important; }
+
 .text-slate-900, .text-gray-900, .text-black,
 .text-slate-800, .text-gray-800, .text-slate-700, .text-gray-700 {
-  color: #f0f6fc !important;
+  color: #171717 !important;
 }
-.text-slate-600, .text-gray-600, .text-slate-500, .text-gray-500,
+.text-slate-600, .text-gray-600 {
+  color: #404040 !important;
+}
+.text-slate-500, .text-gray-500 {
+  color: #525252 !important;
+}
 .text-slate-400, .text-gray-400 {
-  color: #8b949e !important;
+  color: #737373 !important;
+}
+.text-slate-300, .text-gray-300 {
+  color: #a3a3a3 !important;
 }
 
-/* ── Card Styles ───────────────────────────────────────────── */
+/* ── Cherry Red Accent ───────────────────────────────────────── */
+.text-teal-600, .text-teal-500, .text-teal-400 {
+  color: #dc143c !important;
+}
+.bg-teal-600, .bg-teal-500 {
+  background-color: #dc143c !important;
+  color: #ffffff !important;
+}
+.bg-teal-50 {
+  background-color: rgba(220,20,60,0.07) !important;
+  color: #dc143c !important;
+}
+.bg-teal-100 {
+  background-color: rgba(220,20,60,0.12) !important;
+}
+.border-teal-600, .border-teal-500, .border-teal-400, .border-teal-300, .border-teal-200 {
+  border-color: rgba(220,20,60,0.3) !important;
+}
+.text-teal-700 { color: #a30f27 !important; }
+
+/* ── Trading Signal Colors ───────────────────────────────────── */
+.price-up,
+.text-emerald-400, .text-emerald-500, .text-emerald-600,
+.text-green-500, .text-green-600 {
+  color: #10b981 !important;
+}
+.price-down,
+.text-red-400, .text-red-500, .text-red-600,
+.text-rose-400, .text-rose-500, .text-rose-600 {
+  color: #ef4444 !important;
+}
+
+.bg-emerald-50, .bg-green-50 {
+  background-color: rgba(16,185,129,0.08) !important;
+  color: #059669 !important;
+}
+.bg-emerald-100, .bg-green-100 {
+  background-color: rgba(16,185,129,0.13) !important;
+}
+.bg-rose-50, .bg-red-50 {
+  background-color: rgba(239,68,68,0.07) !important;
+  color: #dc2626 !important;
+}
+.bg-rose-100, .bg-red-100 {
+  background-color: rgba(239,68,68,0.12) !important;
+}
+
+/* ── Card Style ──────────────────────────────────────────────── */
 .exchange-card, .glass-card {
-  background: var(--surface) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 6px !important;
-  box-shadow: none !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,0.07) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06) !important;
   transform: none !important;
-  transition: border-color 0.15s ease !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
 }
 .exchange-card:hover, .glass-card:hover {
-  border-color: rgba(255, 255, 255, 0.15) !important;
-  box-shadow: none !important;
+  border-color: rgba(220,20,60,0.25) !important;
+  box-shadow: 0 4px 20px rgba(220,20,60,0.08) !important;
   transform: none !important;
 }
 
-/* ── Shadow Override ────────────────────────────────────────── */
-.shadow-sm, .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl, .shadow-inner, [class*="shadow-["] {
-  box-shadow: none !important;
-  filter: none !important;
-}
+/* ── Shadows — allow subtle shadows ──────────────────────────── */
+.shadow-sm  { box-shadow: 0 1px 3px rgba(0,0,0,0.06) !important; }
+.shadow-md  { box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important; }
+.shadow-lg  { box-shadow: 0 4px 16px rgba(0,0,0,0.10) !important; }
+.shadow-xl  { box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important; }
+.shadow-2xl { box-shadow: 0 12px 40px rgba(0,0,0,0.14) !important; }
+.shadow-inner { box-shadow: inset 0 2px 4px rgba(0,0,0,0.06) !important; }
 
-/* ── High-Density Spacing & Padding ────────────────────────── */
-.p-10, .p-12, .p-14, .p-16, .p-8 {
-  padding: 1.25rem !important;
-}
-.px-10, .px-12, .px-8 {
-  padding-left: 1.25rem !important;
-  padding-right: 1.25rem !important;
-}
-.py-16, .py-12, .py-8 {
-  padding-top: 1.25rem !important;
-  padding-bottom: 1.25rem !important;
-}
-.gap-12, .gap-10 {
-  gap: 1rem !important;
-}
-.mb-12, .mb-16, .mb-20 {
-  margin-bottom: 1rem !important;
-}
+/* ── High-Density Spacing ────────────────────────────────────── */
+.p-10, .p-12, .p-14, .p-16, .p-8 { padding: 1.25rem !important; }
+.px-10, .px-12, .px-8 { padding-left: 1.25rem !important; padding-right: 1.25rem !important; }
+.py-16, .py-12, .py-8 { padding-top: 1.25rem !important; padding-bottom: 1.25rem !important; }
+.gap-12, .gap-10 { gap: 1rem !important; }
+.mb-12, .mb-16, .mb-20 { margin-bottom: 1rem !important; }
 
-/* ── Input Fields ────────────────────────────────────────── */
+/* ── Input Fields ────────────────────────────────────────────── */
 .exchange-input, input[type="text"], input[type="number"], select, textarea {
-  background: #161b22 !important;
-  border: 1px solid #30363d !important;
-  border-radius: 4px !important;
+  background: #f8f8f8 !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 6px !important;
   padding: 0.55rem 0.8rem !important;
   font-size: 0.8rem !important;
   font-weight: 600 !important;
-  color: #f0f6fc !important;
+  color: #171717 !important;
   outline: none !important;
   box-shadow: none !important;
   transition: border-color 0.15s !important;
 }
-.exchange-input:focus, input[type="text"]:focus, input[type="number"]:focus, select:focus, textarea:focus {
-  border-color: #58a6ff !important;
-  box-shadow: none !important;
+.exchange-input:focus,
+input[type="text"]:focus,
+input[type="number"]:focus,
+select:focus, textarea:focus {
+  border-color: #dc143c !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px rgba(220,20,60,0.10) !important;
+}
+input::placeholder, textarea::placeholder {
+  color: #a3a3a3 !important;
 }
 
-/* ── Flat Professional Trading Buttons ─────────────────────── */
-.btn-primary, button[type="submit"], button[class*="bg-white"], .bg-slate-600, .bg-emerald-600 {
-  background: #21262d !important;
-  color: #00e575 !important;
-  border: 1px solid #30363d !important;
-  border-radius: 4px !important;
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn-primary,
+button[type="submit"],
+button[class*="bg-teal-6"],
+button[class*="bg-cherry"] {
+  background: #dc143c !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 6px !important;
   padding: 0.55rem 1.25rem !important;
   font-weight: 700 !important;
   font-size: 0.75rem !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.05em !important;
-  box-shadow: none !important;
-  text-shadow: none !important;
-  transform: none !important;
+  letter-spacing: 0.06em !important;
+  box-shadow: 0 2px 8px rgba(220,20,60,0.25) !important;
   transition: all 0.12s ease !important;
   cursor: pointer !important;
 }
-.btn-primary:hover, button[type="submit"]:hover, button[class*="bg-white"]:hover, .bg-slate-600:hover {
-  background-color: #30363d !important;
-  border-color: #8b949e !important;
-  color: #ffffff !important;
+.btn-primary:hover,
+button[type="submit"]:hover {
+  background: #c4122f !important;
+  box-shadow: 0 4px 16px rgba(220,20,60,0.35) !important;
 }
 
-/* ── Professional Trading Navigation Menu Overrides ─────────── */
+/* ── Navigation Mode Menu ────────────────────────────────────── */
 div.w-full.lg\:w-auto.flex.flex-wrap.justify-center.lg\:justify-end {
-  background-color: #161b22 !important;
-  border: 1px solid #30363d !important;
-  border-radius: 6px !important;
+  background-color: #f2f2f2 !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 8px !important;
   padding: 4px !important;
   gap: 4px !important;
 }
 div.w-full.lg\:w-auto.flex.flex-wrap.justify-center.lg\:justify-end button,
 div.w-full.lg\:w-auto.flex.flex-wrap.justify-center.lg\:justify-end a {
-  border-radius: 4px !important;
+  border-radius: 6px !important;
   padding: 5px 10px !important;
   font-size: 10px !important;
   font-weight: 700 !important;
-  height: auto !important;
-  min-height: 0 !important;
   background: transparent !important;
-  color: #8b949e !important;
+  color: #525252 !important;
   border: none !important;
   box-shadow: none !important;
-  transform: none !important;
 }
 div.w-full.lg\:w-auto.flex.flex-wrap.justify-center.lg\:justify-end button:hover,
 div.w-full.lg\:w-auto.flex.flex-wrap.justify-center.lg\:justify-end a:hover {
-  color: #f0f6fc !important;
-  background-color: rgba(255, 255, 255, 0.05) !important;
+  color: #dc143c !important;
+  background-color: rgba(220,20,60,0.07) !important;
+}
+div.w-full.lg\:w-auto.flex.flex-wrap.justify-center.lg\:justify-end button[class*="bg-slate-9"],
+div.w-full.lg\:w-auto.flex.flex-wrap.justify-center.lg\:justify-end button[class*="bg-teal-6"],
+div.w-full.lg\:w-auto.flex.flex-wrap.justify-center.lg\:justify-end button[class*="bg-orange-5"],
+div.w-full.lg\:w-auto.flex.flex-wrap.justify-center.lg\:justify-end button[class*="bg-indigo-6"],
+div.w-full.lg\:w-auto.flex.flex-wrap.justify-center.lg\:justify-end button[class*="bg-emerald-5"],
+div.w-full.lg\:w-auto.flex.flex-wrap.justify-center.lg\:justify-end button[class*="bg-fuchsia-6"] {
+  background-color: #dc143c !important;
+  color: #ffffff !important;
+  border: none !important;
 }
 
-/* Selected button states in menu card */
-div.w-full.lg\:w-auto.flex.flex-wrap.justify-center.lg\:justify-end button[class*="bg-slate-900"],
-div.w-full.lg\:w-auto.flex.flex-wrap.justify-center.lg\:justify-end button[class*="bg-teal-600"],
-div.w-full.lg\:w-auto.flex.flex-wrap.justify-center.lg\:justify-end button[class*="bg-orange-500"],
-div.w-full.lg\:w-auto.flex.flex-wrap.justify-center.lg\:justify-end button[class*="bg-indigo-600"],
-div.w-full.lg\:w-auto.flex.flex-wrap.justify-center.lg\:justify-end button[class*="bg-emerald-500"],
-div.w-full.lg\:w-auto.flex.flex-wrap.justify-center.lg\:justify-end button[class*="bg-fuchsia-600"] {
-  background-color: #21262d !important;
-  color: #00e575 !important;
-  border: 1px solid #30363d !important;
-}
+/* ── Table Rows ──────────────────────────────────────────────── */
+.data-row, tr { transition: background-color 0.1s ease !important; }
+.data-row:hover, tr:hover { background-color: #fef2f4 !important; }
 
-/* ── Table Row Overrides ────────────────────────────────────── */
-.data-row, tr {
-  transition: background-color 0.1s ease !important;
-}
-.data-row:hover, tr:hover {
-  background-color: #161b22 !important;
-}
-
-/* ── Trading Signal Colors ──────────────────────────────────── */
-.price-up, .text-emerald-600, .text-green-500, .text-teal-600 {
-  color: #00e575 !important;
-}
-.price-down, .text-red-500, .text-rose-500 {
-  color: #ff3b30 !important;
-}
-
-.bg-emerald-50, .bg-green-50, .bg-teal-50 {
-  background-color: rgba(0, 229, 117, 0.06) !important;
-  color: #00e575 !important;
-}
-.bg-red-50, .bg-rose-50 {
-  background-color: rgba(255, 59, 48, 0.06) !important;
-  color: #ff3b30 !important;
-}
-
-/* ── Scroll patterns removal ────────────────────────────────── */
+/* ── Background Patterns ─────────────────────────────────────── */
 .paw-pattern, .dark-grid {
-  background-color: #080a0f !important;
+  background-color: #f5f5f5 !important;
   background-image: none !important;
 }
 
-/* ── Typography Tweaks ──────────────────────────────────────── */
+/* ── Typography Tweaks ───────────────────────────────────────── */
 .text-red-gradient, .text-premium-gradient {
   background: none !important;
   background-clip: unset !important;
   -webkit-background-clip: unset !important;
-  color: #f0f6fc !important;
+  color: #171717 !important;
 }
-
-/* ── Navbar ────────────────────────────────────────────────── */
-nav.fixed {
-  background-color: #0d1117 !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-  box-shadow: none !important;
-}
-
-/* ── Outlined Title Styling (Remap CRYPTO outline effect) ───── */
 .font-outline-2 {
-  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.15) !important;
+  -webkit-text-stroke: 1px rgba(0,0,0,0.15) !important;
+}
+
+/* ── Navbar ──────────────────────────────────────────────────── */
+nav.fixed {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid rgba(0,0,0,0.08) !important;
+  box-shadow: 0 1px 8px rgba(0,0,0,0.06) !important;
+}
+
+/* ── Mobile Bottom Navigation ────────────────────────────────── */
+.mobile-bottom-nav { display: none; }
+@media (max-width: 767px) {
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 9999;
+    background-color: #ffffff;
+    border-top: 1px solid rgba(0,0,0,0.08);
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.08);
+    height: 56px;
+    align-items: stretch;
+    justify-content: space-around;
+    padding: 0;
+  }
+  .mobile-bottom-nav a {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    flex: 1;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #a3a3a3;
+    text-decoration: none;
+    padding: 6px 4px;
+    transition: color 0.15s;
+  }
+  .mobile-bottom-nav a:hover { color: #dc143c; }
+  .mobile-bottom-nav a.bn-active { color: #dc143c; }
+  body { padding-bottom: 56px; }
+}
+
+/* ── Footer ──────────────────────────────────────────────────── */
+footer {
+  background-color: #1a1a1a !important;
+  border-top: 1px solid rgba(255,255,255,0.08) !important;
+  color: #a3a3a3 !important;
+}
+footer h4 { color: #ffffff !important; }
+footer p, footer a, footer li { color: #a3a3a3 !important; }
+footer a:hover { color: #dc143c !important; }
+footer .text-gray-900, footer .text-slate-900 { color: #ffffff !important; }
+
+/* ── Cherry Red Glow & Highlight Utilities ───────────────────── */
+.cherry-glow {
+  box-shadow: 0 0 20px rgba(220,20,60,0.3) !important;
+}
+.cherry-border {
+  border-color: rgba(220,20,60,0.4) !important;
+}
+.cherry-bg {
+  background-color: rgba(220,20,60,0.08) !important;
+}
+
+/* ── Animation: subtle red pulse for important CTAs ─────────── */
+@keyframes cherryPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220,20,60,0.4); }
+  50%       { box-shadow: 0 0 0 8px rgba(220,20,60,0); }
+}
+.cherry-pulse { animation: cherryPulse 2s infinite; }
+
+/* ── Custom Theme Overrides to bypass global style compression ── */
+.force-white {
+  color: #ffffff !important;
+}
+
+.ai-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(220, 20, 60, 0.15) !important;
+  border-radius: 24px !important;
+  padding: 2.25rem !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.ai-card:hover {
+  border-color: rgba(220, 20, 60, 0.35) !important;
+  box-shadow: 0 20px 40px rgba(220, 20, 60, 0.08) !important;
+}
+
+.ai-input {
+  background: rgba(0, 0, 0, 0.02) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: 14px !important;
+  padding: 0.9rem 1.2rem !important;
+  font-size: 0.95rem !important;
+  font-weight: 500 !important;
+  color: #171717 !important;
+  transition: all 0.25s ease !important;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.01) !important;
+}
+.ai-input:focus {
+  border-color: #dc143c !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 4px rgba(220, 20, 60, 0.12) !important;
+}
+
+.ai-suggestion-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-radius: 18px !important;
+  padding: 1.5rem !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+  transition: all 0.25s ease !important;
+}
+.ai-suggestion-card:hover {
+  border-color: #dc143c !important;
+  box-shadow: 0 12px 24px rgba(220, 20, 60, 0.08) !important;
+  transform: translateY(-2px) !important;
 }

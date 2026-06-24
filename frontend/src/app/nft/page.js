@@ -259,7 +259,7 @@ export default function NFTExchange() {
                         <button
                             onClick={triggerSync}
                             disabled={syncing}
-                            className="w-full md:w-auto flex items-center justify-center gap-2 px-5 py-4 bg-slate-900 hover:bg-black text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50"
+                            className="w-full md:w-auto flex items-center justify-center gap-2 px-5 py-4 bg-teal-600 hover:bg-teal-700 force-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50"
                         >
                             <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
                             {syncing ? 'Syncing...' : 'Sync Mainnet'}
@@ -271,7 +271,7 @@ export default function NFTExchange() {
                 <div className="flex items-center gap-4 mb-6">
                     <button 
                         onClick={() => setActiveTab('market')}
-                        className={`px-8 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === 'market' ? 'bg-slate-900 text-white shadow-xl' : 'bg-white text-slate-500 border border-slate-100 hover:bg-slate-50'}`}
+                        className={`px-8 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === 'market' ? 'bg-teal-600 force-white shadow-xl' : 'bg-white text-slate-500 border border-slate-100 hover:bg-slate-50'}`}
                     >
                         Market
                     </button>
@@ -280,7 +280,7 @@ export default function NFTExchange() {
                             if (!account) connectWallet();
                             setActiveTab('portfolio');
                         }}
-                        className={`px-8 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === 'portfolio' ? 'bg-teal-600 text-white shadow-xl shadow-teal-600/20' : 'bg-white text-slate-500 border border-slate-100 hover:bg-slate-50'}`}
+                        className={`px-8 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all ${activeTab === 'portfolio' ? 'bg-teal-600 force-white shadow-xl shadow-teal-600/20' : 'bg-white text-slate-500 border border-slate-100 hover:bg-slate-50'}`}
                     >
                         My Vault
                     </button>
@@ -331,7 +331,7 @@ export default function NFTExchange() {
                     <div className="py-20 md:py-40 text-center bg-white border border-slate-100 rounded-3xl p-6">
                         <Diamond className="w-16 h-16 text-slate-100 mx-auto mb-4" />
                         <h3 className="text-xl font-black text-slate-300 uppercase tracking-tighter">No Collections Found</h3>
-                        <button onClick={triggerSync} className="mt-6 px-8 py-4 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest">
+                        <button onClick={triggerSync} className="mt-6 px-8 py-4 bg-teal-600 force-white rounded-2xl font-black text-[11px] uppercase tracking-widest">
                             Sync Mainnet Data
                         </button>
                     </div>
@@ -431,11 +431,11 @@ export default function NFTExchange() {
                                     ))}
                                 </div>
 
-                                <div className="mb-5 bg-slate-900 rounded-2xl p-4">
-                                    <p className="text-[9px] font-black text-teal-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
-                                        <ShieldCheck className="w-3 h-3" /> Contract Address
+                                <div className="mb-5 bg-teal-50/50 border border-teal-200/50 rounded-2xl p-4">
+                                    <p className="text-[9px] font-black text-teal-600 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                        <ShieldCheck className="w-3 h-3 text-teal-600" /> Contract Address
                                     </p>
-                                    <p className="text-[10px] font-mono text-white break-all">{selectedNft.contract_address || '—'}</p>
+                                    <p className="text-[10px] font-mono text-slate-700 break-all select-all">{selectedNft.contract_address || '—'}</p>
                                 </div>
 
                                 {purchaseError && (
@@ -446,7 +446,7 @@ export default function NFTExchange() {
                                     <button
                                         onClick={() => executePurchase('buy')}
                                         disabled={purchaseStatus.startsWith('pending') || purchaseStatus.startsWith('success')}
-                                        className="flex-1 py-4 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-teal-600/20"
+                                        className="flex-1 py-4 bg-teal-600 hover:bg-teal-700 force-white rounded-2xl font-black text-[11px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 disabled:opacity-60 shadow-lg shadow-teal-600/20"
                                     >
                                         {purchaseStatus === 'pending_buy' ? <><Loader2 className="w-4 h-4 animate-spin" /> Confirming...</>
                                          : purchaseStatus === 'success_buy' ? '✅ Bought!'
